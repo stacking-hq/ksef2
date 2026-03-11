@@ -35,7 +35,10 @@ jobs:
       - name: Check for changes
         id: diff
         run: |
-          if git diff --quiet openapi.json src/ksef2/infra/schema/api/spec/models.py; then
+          if git diff --quiet \
+            openapi.json \
+            src/ksef2/__openapi_version__.py \
+            src/ksef2/infra/schema/api/spec/models.py; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -48,7 +51,7 @@ jobs:
           add-paths: |
             uv.lock
             openapi.json
-            src/ksef2/_openapi.py
+            src/ksef2/__openapi_version__.py
             src/ksef2/infra/schema/api/spec/models.py
           branch: chore/update-openapi-spec
           commit-message: "chore: update OpenAPI spec and regenerate models"

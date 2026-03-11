@@ -44,8 +44,9 @@ sync-ksef-api-version:
     uv run python scripts/sync_ksef_api_version.py
 
 
-fetch-spec: && sync-ksef-api-version
+fetch-spec:
     wget https://api-test.ksef.mf.gov.pl/docs/v2/openapi.json -O openapi.json
+    just sync-ksef-api-version
 
 
 regenerate-models:
