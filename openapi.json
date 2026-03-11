@@ -2,7 +2,7 @@
   "openapi": "3.0.4",
   "info": {
     "title": "KSeF API TE",
-    "description": "**Wersja API:** 2.2.1 (build 2.2.1-te-20260306.1+ef50a46f03814f0b8f9628f2d9e0fb37bb5a5dc4)<br>\n**Klucze publiczne** Ministerstwa Finansów (dla danego środowiska): [Pobierz klucze](#tag/Certyfikaty-klucza-publicznego)<br>\n**Historia zmian:** [Changelog](https://github.com/CIRFMF/ksef-docs/blob/main/api-changelog.md)<br>\n**Rozszerzona dokumentacja API:** [ksef-docs](https://github.com/CIRFMF/ksef-docs/tree/main)\n\n**Adres serwera API:**\n- Środowisko TEST: `https://api-test.ksef.mf.gov.pl/v2`\n",
+    "description": "**Wersja API:** 2.2.1 (build 2.2.1-te-20260310.1+fa840b089a49c8673d2264e3fdfe5ceca2931c99)<br>\n**Klucze publiczne** Ministerstwa Finansów (dla danego środowiska): [Pobierz klucze](#tag/Certyfikaty-klucza-publicznego)<br>\n**Historia zmian:** [Changelog](https://github.com/CIRFMF/ksef-docs/blob/main/api-changelog.md)<br>\n**Rozszerzona dokumentacja API:** [ksef-docs](https://github.com/CIRFMF/ksef-docs/tree/main)\n\n**Adres serwera API:**\n- Środowisko TEST: `https://api-test.ksef.mf.gov.pl/v2`\n",
     "version": "v2"
   },
   "servers": [
@@ -12670,6 +12670,10 @@
           },
           "extensions": {
             "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "nullable": true
+            },
             "description": "Zbiór dodatkowych informacji związanych ze statusem faktury, zapisanych jako pary klucz–wartość.\nUmożliwia rozszerzenie modelu o dane specyficzne dla danego przypadku.",
             "nullable": true
           }
@@ -12945,6 +12949,10 @@
           },
           "headers": {
             "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "nullable": true
+            },
             "description": "Nagłówki, których należy użyć przy wysyłce części pliku paczki."
           }
         }
