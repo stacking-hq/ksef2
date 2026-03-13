@@ -1,7 +1,6 @@
 from collections.abc import Callable
 from typing import final
 
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.x509 import Certificate
 from httpx import Response
 from tenacity import (
@@ -12,7 +11,7 @@ from tenacity import (
     wait_fixed,
 )
 
-from ksef2.core.xades import generate_test_certificate
+from ksef2.core.xades import XAdESPrivateKey, generate_test_certificate
 from ksef2.clients.authenticated import AuthenticatedClient
 from ksef2.clients.encryption import EncryptionClient
 from ksef2.config import Environment
@@ -111,7 +110,7 @@ class AuthClient:
         *,
         nip: str,
         cert: Certificate,
-        private_key: RSAPrivateKey,
+        private_key: XAdESPrivateKey,
         verify_chain: bool = False,
         poll_interval: float = 1.0,
         max_poll_attempts: int = 60,
@@ -121,7 +120,7 @@ class AuthClient:
         Args:
             nip: Taxpayer identifier embedded in the authentication request.
             cert: Signing certificate accepted by the target environment.
-            private_key: Private key used to sign the XAdES payload.
+            private_key: RSA or EC private key used to sign the XAdES payload.
             verify_chain: Whether KSeF should verify the certificate chain.
             poll_interval: Delay in seconds between authentication status checks.
             max_poll_attempts: Maximum number of polling attempts before timing out.

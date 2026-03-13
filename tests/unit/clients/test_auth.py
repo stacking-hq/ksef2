@@ -1,6 +1,11 @@
+import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.x509.oid import NameOID, ObjectIdentifier
 from polyfactory import BaseFactory
 
 from ksef2.clients.auth import AuthClient
@@ -20,6 +25,32 @@ from ksef2.domain.models.encryption import PublicKeyCertificate
 from ksef2.infra.schema.api import spec
 from tests.unit.fakes.transport import FakeTransport
 from tests.unit.helpers import VALID_BASE64
+
+
+def _generate_ec_test_certificate(
+    nip: str,
+) -> tuple[x509.Certificate, ec.EllipticCurvePrivateKey]:
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    subject = issuer = x509.Name(
+        [
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "KSeF SDK Test"),
+            x509.NameAttribute(ObjectIdentifier("2.5.4.97"), f"VATPL-{nip}"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "KSeF SDK Test"),
+            x509.NameAttribute(NameOID.COUNTRY_NAME, "PL"),
+        ]
+    )
+    now = datetime.datetime.now(datetime.timezone.utc)
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(issuer)
+        .public_key(private_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now - datetime.timedelta(hours=1))
+        .not_valid_after(now + datetime.timedelta(days=1))
+        .sign(private_key, hashes.SHA256())
+    )
+    return cert, private_key
 
 
 def _build_auth_client(
@@ -217,6 +248,51 @@ class TestAuthClient:
         assert xades_call.content == b"<SignedXML />"
         assert xades_call.params is not None
         assert xades_call.params["verifyCertificateChain"] == "true"
+
+    @patch(
+        "ksef2.core.xades.sign_xades",
+        return_value=b"<SignedXML />",
+    )
+    @patch(
+        "ksef2.core.xades.build_auth_token_request_xml",
+        return_value=b"<AuthTokenRequest />",
+    )
+    def test_with_xades_accepts_ec_private_key(
+        self,
+        _mock_build_xml: MagicMock,
+        _mock_sign_xades: MagicMock,
+        fake_transport: FakeTransport,
+        domain_public_key_cert: BaseFactory[PublicKeyCertificate],
+        auth_challenge_resp: BaseFactory[spec.AuthenticationChallengeResponse],
+        auth_init_resp: BaseFactory[spec.AuthenticationInitResponse],
+        auth_status_resp: BaseFactory[spec.AuthenticationOperationStatusResponse],
+        auth_tokens_resp: BaseFactory[spec.AuthenticationTokensResponse],
+    ) -> None:
+        client = _build_auth_client(
+            fake_transport,
+            _token_store(domain_public_key_cert.build(usage=["ksef_token_encryption"])),
+        )
+        challenge = auth_challenge_resp.build()
+        init_response = auth_init_resp.build()
+        status_response = auth_status_resp.build(
+            status=spec.StatusInfo(code=200, description="Authenticated")
+        )
+        tokens_response = auth_tokens_resp.build()
+        fake_transport.enqueue(challenge.model_dump(mode="json"))
+        fake_transport.enqueue(init_response.model_dump(mode="json"))
+        fake_transport.enqueue(status_response.model_dump(mode="json"))
+        fake_transport.enqueue(tokens_response.model_dump(mode="json"))
+        cert, private_key = _generate_ec_test_certificate("1234567890")
+
+        result = client.with_xades(
+            nip="1234567890",
+            cert=cert,
+            private_key=private_key,
+            verify_chain=False,
+        )
+
+        assert isinstance(result, AuthenticatedClient)
+        assert len(fake_transport.calls) == 4
 
     def test_refresh(
         self,
