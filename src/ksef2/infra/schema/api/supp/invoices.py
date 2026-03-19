@@ -63,6 +63,7 @@ class SessionInvoicesResponse(BaseSupp):
 
 class InvoiceExportRequest(BaseSupp):
     encryption: EncryptionInfo
+    onlyMetadata: bool = False
     filters: InvoiceQueryFilters
 
 

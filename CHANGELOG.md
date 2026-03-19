@@ -1,3 +1,10 @@
+## v0.10.0 (2026-03-19)
+
+### Feat
+
+- **invoices**: add metadata-only exports and invoice schema filtering
+- **sessions**: add FA_RR form schema support for session requests
+
 ## v0.9.2 (2026-03-14)
 
 ### Fix

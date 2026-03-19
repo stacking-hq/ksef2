@@ -78,6 +78,22 @@ def _map_invoicing_mode(
             raise ValueError(f"Unknown invoicing mode: {value!r}")
 
 
+def _map_form_type(
+    value: invoices.FormSchema | None,
+) -> spec.InvoiceQueryFormType | None:
+    match value:
+        case invoices.FormSchema.FA2 | invoices.FormSchema.FA3:
+            return spec.InvoiceQueryFormType.FA
+        case invoices.FormSchema.FA_RR1:
+            return spec.InvoiceQueryFormType.FA_RR
+        case invoices.FormSchema.PEF3 | invoices.FormSchema.PEF_KOR3:
+            return spec.InvoiceQueryFormType.PEF
+        case None:
+            return None
+        case _:
+            raise ValueError(f"Unknown invoice schema: {value!r}")
+
+
 def _map_buyer_identifier(
     request: invoices.InvoicesFilter,
 ) -> spec.InvoiceQueryBuyerIdentifier | None:
@@ -216,6 +232,7 @@ def _(request: invoices.InvoicesFilter) -> spec.InvoiceQueryFilters:
         currencyCodes=_map_currency_codes(request),
         invoicingMode=_map_invoicing_mode(request.invoicing_mode),
         isSelfInvoicing=request.is_self_invoicing,
+        formType=_map_form_type(request.invoice_schema),
         invoiceTypes=_map_invoice_types(request),
         hasAttachment=request.has_attachment,
     )
@@ -228,6 +245,7 @@ def _(request: invoices.ExportInvoicesPayload) -> spec.InvoiceExportRequest:
             encryptedSymmetricKey=request.encrypted_symmetric_key,
             initializationVector=request.initialization_vector,
         ),
+        onlyMetadata=request.only_metadata,
         filters=to_spec(request.filter),
     )
 

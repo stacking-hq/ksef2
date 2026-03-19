@@ -65,12 +65,14 @@ class InvoicesService:
         self,
         *,
         filters: InvoicesFilter,
+        only_metadata: bool = False,
     ) -> ExportHandle:
         self._ensure_encryption_certificates_loaded()
         cert = self._certificate_store.get_valid("symmetric_key_encryption")
         return self._client.schedule_export(
             filters=filters,
             encryption_certificate=cert.certificate,
+            only_metadata=only_metadata,
         )
 
     def get_export_status(
@@ -204,11 +206,15 @@ class InvoicesService:
         self,
         *,
         filters: InvoicesFilter,
+        only_metadata: bool = False,
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> list[bytes]:
         """Schedule an export, wait for it, and download the decrypted package."""
-        handle = self.schedule_export(filters=filters)
+        handle = self.schedule_export(
+            filters=filters,
+            only_metadata=only_metadata,
+        )
         package = self.wait_for_export_package(
             reference_number=handle.reference_number,
             timeout=timeout,

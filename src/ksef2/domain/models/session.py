@@ -13,6 +13,7 @@ class FormSchema(Enum):
 
     FA2 = ("FA (2)", "1-0E", "FA")
     FA3 = ("FA (3)", "1-0E", "FA")
+    FA_RR1 = ("FA_RR (1)", "1-1E", "FA_RR")
     PEF3 = ("PEF (3)", "2-1", "PEF")
     PEF_KOR3 = ("PEF_KOR (3)", "2-1", "PEF")
 

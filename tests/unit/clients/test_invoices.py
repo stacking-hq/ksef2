@@ -5,6 +5,7 @@ from polyfactory import BaseFactory
 from ksef2.clients.invoices import InvoicesClient
 from ksef2.core.routes import InvoiceRoutes
 from ksef2.domain.models import invoices
+from ksef2.domain.models.session import FormSchema
 from ksef2.domain.models.pagination import InvoiceMetadataParams
 from ksef2.infra.schema.api import spec
 from tests.unit.fakes.transport import FakeTransport
@@ -25,7 +26,7 @@ class TestInvoicesClient:
         fake_transport.enqueue(expected.model_dump(mode="json"))
 
         result = invoices_client.query_metadata(
-            filters=inv_export_filters.build(),
+            filters=inv_export_filters.build(invoice_schema=FormSchema.FA_RR1),
             params=InvoiceMetadataParams(
                 page_size=20,
                 page_offset=1,
@@ -40,6 +41,7 @@ class TestInvoicesClient:
         assert call.json is not None
         assert "subjectType" in call.json
         assert "dateRange" in call.json
+        assert call.json["formType"] == "FA_RR"
         assert "filters" not in call.json
         assert call.params is not None
         assert call.params["pageSize"] == "20"
@@ -80,6 +82,7 @@ class TestInvoicesClient:
         result = invoices_client.schedule_export(
             filters=inv_export_filters.build(),
             encryption_certificate="ZmFrZS1jZXJ0",
+            only_metadata=True,
         )
 
         assert isinstance(result, invoices.ExportHandle)
@@ -91,6 +94,7 @@ class TestInvoicesClient:
         assert str(call.path) == InvoiceRoutes.EXPORT
         assert call.json is not None
         assert "encryption" in call.json
+        assert call.json["onlyMetadata"] is True
         assert "filters" in call.json
 
     def test_get_export_status(

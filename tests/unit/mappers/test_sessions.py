@@ -19,6 +19,14 @@ from ksef2.infra.schema.api import spec
 
 
 class TestSessionRequestMapper:
+    def test_to_spec_form_schema_fa_rr1(self) -> None:
+        result = to_spec(FormSchema.FA_RR1)
+
+        assert isinstance(result, spec.FormCode)
+        assert result.systemCode == "FA_RR (1)"
+        assert result.schemaVersion == "1-1E"
+        assert result.value == "FA_RR"
+
     def test_to_spec_open_online_session_request(
         self,
         domain_session_open_online_req: BaseFactory[OpenOnlineSessionRequest],
