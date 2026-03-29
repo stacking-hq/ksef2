@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
-from xsdata.models.datatype import XmlDate
-from xsdata_pydantic.fields import field
+from dataclasses import dataclass, field
 
 from .kody_krajow_v10_0_e import TkodKraju
 
@@ -11,7 +9,8 @@ __NAMESPACE__ = (
 )
 
 
-class TidentyfikatorOsobyFizycznej(BaseModel):
+@dataclass(kw_only=True)
+class TidentyfikatorOsobyFizycznej:
     """
     Podstawowy zestaw danych identyfikacyjnych o osobie fizycznej.
 
@@ -26,13 +25,13 @@ class TidentyfikatorOsobyFizycznej(BaseModel):
     class Meta:
         name = "TIdentyfikatorOsobyFizycznej"
 
-    model_config = ConfigDict(defer_build=True)
     nip: str = field(
         metadata={
             "name": "NIP",
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
             "required": True,
+            "pattern": r"[1-9]((\d[1-9])|([1-9]\d))\d{7}",
         }
     )
     imie_pierwsze: str = field(
@@ -55,14 +54,15 @@ class TidentyfikatorOsobyFizycznej(BaseModel):
             "max_length": 81,
         }
     )
-    data_urodzenia: XmlDate = field(
+    data_urodzenia: str = field(
         metadata={
             "name": "DataUrodzenia",
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
             "required": True,
-            "min_inclusive": XmlDate(1900, 1, 1),
-            "max_inclusive": XmlDate(2050, 12, 31),
+            "min_inclusive": "1900-01-01",
+            "max_inclusive": "2050-12-31",
+            "pattern": r"((\d{4})-(\d{2})-(\d{2}))",
         }
     )
     pesel: None | str = field(
@@ -71,11 +71,13 @@ class TidentyfikatorOsobyFizycznej(BaseModel):
             "name": "PESEL",
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
+            "pattern": r"\d{11}",
         },
     )
 
 
-class TidentyfikatorOsobyFizycznej1(BaseModel):
+@dataclass(kw_only=True)
+class TidentyfikatorOsobyFizycznej1:
     """
     Podstawowy zestaw danych identyfikacyjnych o osobie fizycznej z
     identyfikatorem NIP albo PESEL.
@@ -91,13 +93,13 @@ class TidentyfikatorOsobyFizycznej1(BaseModel):
     class Meta:
         name = "TIdentyfikatorOsobyFizycznej1"
 
-    model_config = ConfigDict(defer_build=True)
     nip: None | str = field(
         default=None,
         metadata={
             "name": "NIP",
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
+            "pattern": r"[1-9]((\d[1-9])|([1-9]\d))\d{7}",
         },
     )
     pesel: None | str = field(
@@ -106,6 +108,7 @@ class TidentyfikatorOsobyFizycznej1(BaseModel):
             "name": "PESEL",
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
+            "pattern": r"\d{11}",
         },
     )
     imie_pierwsze: str = field(
@@ -128,19 +131,21 @@ class TidentyfikatorOsobyFizycznej1(BaseModel):
             "max_length": 81,
         }
     )
-    data_urodzenia: XmlDate = field(
+    data_urodzenia: str = field(
         metadata={
             "name": "DataUrodzenia",
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
             "required": True,
-            "min_inclusive": XmlDate(1900, 1, 1),
-            "max_inclusive": XmlDate(2050, 12, 31),
+            "min_inclusive": "1900-01-01",
+            "max_inclusive": "2050-12-31",
+            "pattern": r"((\d{4})-(\d{2})-(\d{2}))",
         }
     )
 
 
-class TidentyfikatorOsobyFizycznej2(BaseModel):
+@dataclass(kw_only=True)
+class TidentyfikatorOsobyFizycznej2:
     """
     Podstawowy zestaw danych identyfikacyjnych o osobie fizycznej z
     identyfikatorem NIP.
@@ -155,13 +160,13 @@ class TidentyfikatorOsobyFizycznej2(BaseModel):
     class Meta:
         name = "TIdentyfikatorOsobyFizycznej2"
 
-    model_config = ConfigDict(defer_build=True)
     nip: str = field(
         metadata={
             "name": "NIP",
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
             "required": True,
+            "pattern": r"[1-9]((\d[1-9])|([1-9]\d))\d{7}",
         }
     )
     imie_pierwsze: str = field(
@@ -184,19 +189,21 @@ class TidentyfikatorOsobyFizycznej2(BaseModel):
             "max_length": 81,
         }
     )
-    data_urodzenia: XmlDate = field(
+    data_urodzenia: str = field(
         metadata={
             "name": "DataUrodzenia",
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
             "required": True,
-            "min_inclusive": XmlDate(1900, 1, 1),
-            "max_inclusive": XmlDate(2050, 12, 31),
+            "min_inclusive": "1900-01-01",
+            "max_inclusive": "2050-12-31",
+            "pattern": r"((\d{4})-(\d{2})-(\d{2}))",
         }
     )
 
 
-class TidentyfikatorOsobyFizycznejPelny(BaseModel):
+@dataclass(kw_only=True)
+class TidentyfikatorOsobyFizycznejPelny:
     """
     Pełny zestaw danych identyfikacyjnych o osobie fizycznej.
 
@@ -213,13 +220,13 @@ class TidentyfikatorOsobyFizycznejPelny(BaseModel):
     class Meta:
         name = "TIdentyfikatorOsobyFizycznejPelny"
 
-    model_config = ConfigDict(defer_build=True)
     nip: None | str = field(
         default=None,
         metadata={
             "name": "NIP",
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
+            "pattern": r"[1-9]((\d[1-9])|([1-9]\d))\d{7}",
         },
     )
     imie_pierwsze: str = field(
@@ -242,14 +249,15 @@ class TidentyfikatorOsobyFizycznejPelny(BaseModel):
             "max_length": 81,
         }
     )
-    data_urodzenia: XmlDate = field(
+    data_urodzenia: str = field(
         metadata={
             "name": "DataUrodzenia",
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
             "required": True,
-            "min_inclusive": XmlDate(1900, 1, 1),
-            "max_inclusive": XmlDate(2050, 12, 31),
+            "min_inclusive": "1900-01-01",
+            "max_inclusive": "2050-12-31",
+            "pattern": r"((\d{4})-(\d{2})-(\d{2}))",
         }
     )
     imie_ojca: str = field(
@@ -278,11 +286,13 @@ class TidentyfikatorOsobyFizycznejPelny(BaseModel):
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
             "required": True,
+            "pattern": r"\d{11}",
         }
     )
 
 
-class TidentyfikatorOsobyFizycznejZagranicznej(BaseModel):
+@dataclass(kw_only=True)
+class TidentyfikatorOsobyFizycznejZagranicznej:
     """
     Zestaw danych identyfikacyjnych dla osoby fizycznej zagranicznej.
 
@@ -291,8 +301,8 @@ class TidentyfikatorOsobyFizycznejZagranicznej(BaseModel):
         nazwisko: Nazwisko [Family name]
         data_urodzenia: Data urodzenia [Date of Birth]
         miejsce_urodzenia: Miejsce urodzenia [Place of Birth]
-        imie_ojca: Imię ojca [Father’request name]
-        imie_matki: Imię matki [Mother’request name]
+        imie_ojca: Imię ojca [Father’s name]
+        imie_matki: Imię matki [Mother’s name]
         nip: Identyfikator podatkowy NIP [Tax Identification Number
             (NIP)]
     """
@@ -300,7 +310,6 @@ class TidentyfikatorOsobyFizycznejZagranicznej(BaseModel):
     class Meta:
         name = "TIdentyfikatorOsobyFizycznejZagranicznej"
 
-    model_config = ConfigDict(defer_build=True)
     imie_pierwsze: str = field(
         metadata={
             "name": "ImiePierwsze",
@@ -321,14 +330,15 @@ class TidentyfikatorOsobyFizycznejZagranicznej(BaseModel):
             "max_length": 81,
         }
     )
-    data_urodzenia: XmlDate = field(
+    data_urodzenia: str = field(
         metadata={
             "name": "DataUrodzenia",
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
             "required": True,
-            "min_inclusive": XmlDate(1900, 1, 1),
-            "max_inclusive": XmlDate(2050, 12, 31),
+            "min_inclusive": "1900-01-01",
+            "max_inclusive": "2050-12-31",
+            "pattern": r"((\d{4})-(\d{2})-(\d{2}))",
         }
     )
     miejsce_urodzenia: str = field(
@@ -367,11 +377,13 @@ class TidentyfikatorOsobyFizycznejZagranicznej(BaseModel):
             "name": "NIP",
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
+            "pattern": r"[1-9]((\d[1-9])|([1-9]\d))\d{7}",
         },
     )
 
 
-class TidentyfikatorOsobyNiefizycznej(BaseModel):
+@dataclass(kw_only=True)
+class TidentyfikatorOsobyNiefizycznej:
     """
     Podstawowy zestaw danych identyfikacyjnych o osobie niefizycznej.
 
@@ -384,13 +396,13 @@ class TidentyfikatorOsobyNiefizycznej(BaseModel):
     class Meta:
         name = "TIdentyfikatorOsobyNiefizycznej"
 
-    model_config = ConfigDict(defer_build=True)
     nip: str = field(
         metadata={
             "name": "NIP",
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
             "required": True,
+            "pattern": r"[1-9]((\d[1-9])|([1-9]\d))\d{7}",
         }
     )
     pelna_nazwa: str = field(
@@ -409,11 +421,13 @@ class TidentyfikatorOsobyNiefizycznej(BaseModel):
             "name": "REGON",
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
+            "pattern": r"\d{14}",
         },
     )
 
 
-class TidentyfikatorOsobyNiefizycznej1(BaseModel):
+@dataclass(kw_only=True)
+class TidentyfikatorOsobyNiefizycznej1:
     """
     Podstawowy zestaw danych identyfikacyjnych o osobie niefizycznej - bez
     elementu Numer REGON.
@@ -426,13 +440,13 @@ class TidentyfikatorOsobyNiefizycznej1(BaseModel):
     class Meta:
         name = "TIdentyfikatorOsobyNiefizycznej1"
 
-    model_config = ConfigDict(defer_build=True)
     nip: str = field(
         metadata={
             "name": "NIP",
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
             "required": True,
+            "pattern": r"[1-9]((\d[1-9])|([1-9]\d))\d{7}",
         }
     )
     pelna_nazwa: str = field(
@@ -447,7 +461,8 @@ class TidentyfikatorOsobyNiefizycznej1(BaseModel):
     )
 
 
-class TidentyfikatorOsobyNiefizycznejPelny(BaseModel):
+@dataclass(kw_only=True)
+class TidentyfikatorOsobyNiefizycznejPelny:
     """
     Pełny zestaw danych identyfikacyjnych o osobie niefizycznej.
 
@@ -461,13 +476,13 @@ class TidentyfikatorOsobyNiefizycznejPelny(BaseModel):
     class Meta:
         name = "TIdentyfikatorOsobyNiefizycznejPelny"
 
-    model_config = ConfigDict(defer_build=True)
     nip: None | str = field(
         default=None,
         metadata={
             "name": "NIP",
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
+            "pattern": r"[1-9]((\d[1-9])|([1-9]\d))\d{7}",
         },
     )
     pelna_nazwa: str = field(
@@ -496,11 +511,13 @@ class TidentyfikatorOsobyNiefizycznejPelny(BaseModel):
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
             "required": True,
+            "pattern": r"\d{14}",
         }
     )
 
 
-class TidentyfikatorOsobyNiefizycznejZagranicznej(BaseModel):
+@dataclass(kw_only=True)
+class TidentyfikatorOsobyNiefizycznejZagranicznej:
     """
     Zestaw danych identyfikacyjnych dla osoby niefizycznej zagranicznej.
 
@@ -514,7 +531,6 @@ class TidentyfikatorOsobyNiefizycznejZagranicznej(BaseModel):
     class Meta:
         name = "TIdentyfikatorOsobyNiefizycznejZagranicznej"
 
-    model_config = ConfigDict(defer_build=True)
     pelna_nazwa: str = field(
         metadata={
             "name": "PelnaNazwa",
@@ -541,11 +557,13 @@ class TidentyfikatorOsobyNiefizycznejZagranicznej(BaseModel):
             "name": "NIP",
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
+            "pattern": r"[1-9]((\d[1-9])|([1-9]\d))\d{7}",
         },
     )
 
 
-class TadresPolski(BaseModel):
+@dataclass(kw_only=True)
+class TadresPolski:
     """
     Informacje opisujące adres polski.
 
@@ -565,9 +583,8 @@ class TadresPolski(BaseModel):
     class Meta:
         name = "TAdresPolski"
 
-    model_config = ConfigDict(defer_build=True)
     kod_kraju: TkodKraju = field(
-        const=True,
+        init=False,
         default=TkodKraju.PL,
         metadata={
             "name": "KodKraju",
@@ -668,7 +685,8 @@ class TadresPolski(BaseModel):
     )
 
 
-class TadresPolski1(BaseModel):
+@dataclass(kw_only=True)
+class TadresPolski1:
     """
     Informacje opisujące adres polski - bez elementu Poczta.
 
@@ -687,9 +705,8 @@ class TadresPolski1(BaseModel):
     class Meta:
         name = "TAdresPolski1"
 
-    model_config = ConfigDict(defer_build=True)
     kod_kraju: TkodKraju = field(
-        const=True,
+        init=False,
         default=TkodKraju.PL,
         metadata={
             "name": "KodKraju",
@@ -780,7 +797,8 @@ class TadresPolski1(BaseModel):
     )
 
 
-class TadresZagraniczny(BaseModel):
+@dataclass(kw_only=True)
+class TadresZagraniczny:
     """
     Informacje opisujące adres zagraniczny.
 
@@ -796,13 +814,13 @@ class TadresZagraniczny(BaseModel):
     class Meta:
         name = "TAdresZagraniczny"
 
-    model_config = ConfigDict(defer_build=True)
     kod_kraju: TkodKraju = field(
         metadata={
             "name": "KodKraju",
             "type": "Element",
             "namespace": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
             "required": True,
+            "pattern": r"P[A-KM-Z]|[A-OQ-Z][A-Z]",
         }
     )
     kod_pocztowy: None | str = field(
@@ -857,7 +875,8 @@ class TadresZagraniczny(BaseModel):
     )
 
 
-class TpodmiotDowolnyBezAdresu(BaseModel):
+@dataclass(kw_only=True)
+class TpodmiotDowolnyBezAdresu:
     """
     Skrócony zestaw danych o osobie fizycznej lub niefizycznej.
     """
@@ -865,7 +884,6 @@ class TpodmiotDowolnyBezAdresu(BaseModel):
     class Meta:
         name = "TPodmiotDowolnyBezAdresu"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_fizyczna: None | TidentyfikatorOsobyFizycznej = field(
         default=None,
         metadata={
@@ -884,7 +902,8 @@ class TpodmiotDowolnyBezAdresu(BaseModel):
     )
 
 
-class TpodmiotDowolnyBezAdresu1(BaseModel):
+@dataclass(kw_only=True)
+class TpodmiotDowolnyBezAdresu1:
     """
     Skrócony zestaw danych o osobie fizycznej lub niefizycznej z
     identyfikatorem NIP albo PESEL.
@@ -893,7 +912,6 @@ class TpodmiotDowolnyBezAdresu1(BaseModel):
     class Meta:
         name = "TPodmiotDowolnyBezAdresu1"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_fizyczna: None | TidentyfikatorOsobyFizycznej1 = field(
         default=None,
         metadata={
@@ -912,7 +930,8 @@ class TpodmiotDowolnyBezAdresu1(BaseModel):
     )
 
 
-class TpodmiotDowolnyBezAdresu2(BaseModel):
+@dataclass(kw_only=True)
+class TpodmiotDowolnyBezAdresu2:
     """
     Skrócony zestaw danych o osobie fizycznej lub niefizycznej z
     identyfikatorem NIP.
@@ -921,7 +940,6 @@ class TpodmiotDowolnyBezAdresu2(BaseModel):
     class Meta:
         name = "TPodmiotDowolnyBezAdresu2"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_fizyczna: None | TidentyfikatorOsobyFizycznej2 = field(
         default=None,
         metadata={
@@ -940,7 +958,8 @@ class TpodmiotDowolnyBezAdresu2(BaseModel):
     )
 
 
-class TpodmiotDowolnyBezAdresu3(BaseModel):
+@dataclass(kw_only=True)
+class TpodmiotDowolnyBezAdresu3:
     """
     Skrócony zestaw danych o osobie fizycznej lub niefizycznej z
     identyfikatorem NIP - bez elementu numer REGON dla osoby niefizycznej.
@@ -949,7 +968,6 @@ class TpodmiotDowolnyBezAdresu3(BaseModel):
     class Meta:
         name = "TPodmiotDowolnyBezAdresu3"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_fizyczna: None | TidentyfikatorOsobyFizycznej2 = field(
         default=None,
         metadata={
@@ -968,7 +986,8 @@ class TpodmiotDowolnyBezAdresu3(BaseModel):
     )
 
 
-class Tadres(BaseModel):
+@dataclass(kw_only=True)
+class Tadres:
     """
     Dane określające adres.
     """
@@ -976,7 +995,6 @@ class Tadres(BaseModel):
     class Meta:
         name = "TAdres"
 
-    model_config = ConfigDict(defer_build=True)
     adres_pol: None | TadresPolski = field(
         default=None,
         metadata={
@@ -995,7 +1013,8 @@ class Tadres(BaseModel):
     )
 
 
-class Tadres1(BaseModel):
+@dataclass(kw_only=True)
+class Tadres1:
     """
     Dane określające adres - bez elementu Poczta w adresie polskim.
     """
@@ -1003,7 +1022,6 @@ class Tadres1(BaseModel):
     class Meta:
         name = "TAdres1"
 
-    model_config = ConfigDict(defer_build=True)
     adres_pol: None | TadresPolski1 = field(
         default=None,
         metadata={
@@ -1022,13 +1040,13 @@ class Tadres1(BaseModel):
     )
 
 
+@dataclass(kw_only=True)
 class TosobaFizyczna1AdresZamieszkania(Tadres):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_adresu: str = field(
-        const=True,
+        init=False,
         default="RAD",
         metadata={
             "name": "rodzajAdresu",
@@ -1038,13 +1056,13 @@ class TosobaFizyczna1AdresZamieszkania(Tadres):
     )
 
 
+@dataclass(kw_only=True)
 class TosobaFizyczna2AdresZamieszkania(Tadres):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_adresu: str = field(
-        const=True,
+        init=False,
         default="RAD",
         metadata={
             "name": "rodzajAdresu",
@@ -1054,13 +1072,13 @@ class TosobaFizyczna2AdresZamieszkania(Tadres):
     )
 
 
+@dataclass(kw_only=True)
 class TosobaFizyczna3AdresZamieszkania(Tadres1):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_adresu: str = field(
-        const=True,
+        init=False,
         default="RAD",
         metadata={
             "name": "rodzajAdresu",
@@ -1070,13 +1088,13 @@ class TosobaFizyczna3AdresZamieszkania(Tadres1):
     )
 
 
+@dataclass(kw_only=True)
 class TosobaFizyczna4AdresZamieszkania(Tadres1):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_adresu: str = field(
-        const=True,
+        init=False,
         default="RAD",
         metadata={
             "name": "rodzajAdresu",
@@ -1086,13 +1104,13 @@ class TosobaFizyczna4AdresZamieszkania(Tadres1):
     )
 
 
+@dataclass(kw_only=True)
 class TosobaFizyczna5AdresZamieszkania(Tadres1):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_adresu: str = field(
-        const=True,
+        init=False,
         default="RAD",
         metadata={
             "name": "rodzajAdresu",
@@ -1102,13 +1120,13 @@ class TosobaFizyczna5AdresZamieszkania(Tadres1):
     )
 
 
+@dataclass(kw_only=True)
 class TosobaFizycznaPelna1AdresZamieszkania(Tadres1):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_adresu: str = field(
-        const=True,
+        init=False,
         default="RAD",
         metadata={
             "name": "rodzajAdresu",
@@ -1118,13 +1136,13 @@ class TosobaFizycznaPelna1AdresZamieszkania(Tadres1):
     )
 
 
+@dataclass(kw_only=True)
 class TosobaFizycznaPelnaAdresZamieszkania(Tadres):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_adresu: str = field(
-        const=True,
+        init=False,
         default="RAD",
         metadata={
             "name": "rodzajAdresu",
@@ -1134,13 +1152,13 @@ class TosobaFizycznaPelnaAdresZamieszkania(Tadres):
     )
 
 
+@dataclass(kw_only=True)
 class TosobaFizycznaAdresZamieszkania(Tadres):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_adresu: str = field(
-        const=True,
+        init=False,
         default="RAD",
         metadata={
             "name": "rodzajAdresu",
@@ -1150,13 +1168,13 @@ class TosobaFizycznaAdresZamieszkania(Tadres):
     )
 
 
+@dataclass(kw_only=True)
 class TosobaNiefizyczna1AdresSiedziby(Tadres1):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_adresu: str = field(
-        const=True,
+        init=False,
         default="RAD",
         metadata={
             "name": "rodzajAdresu",
@@ -1166,13 +1184,13 @@ class TosobaNiefizyczna1AdresSiedziby(Tadres1):
     )
 
 
+@dataclass(kw_only=True)
 class TosobaNiefizyczna2AdresSiedziby(Tadres1):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_adresu: str = field(
-        const=True,
+        init=False,
         default="RAD",
         metadata={
             "name": "rodzajAdresu",
@@ -1182,13 +1200,13 @@ class TosobaNiefizyczna2AdresSiedziby(Tadres1):
     )
 
 
+@dataclass(kw_only=True)
 class TosobaNiefizycznaPelna1AdresSiedziby(Tadres1):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_adresu: str = field(
-        const=True,
+        init=False,
         default="RAD",
         metadata={
             "name": "rodzajAdresu",
@@ -1198,13 +1216,13 @@ class TosobaNiefizycznaPelna1AdresSiedziby(Tadres1):
     )
 
 
+@dataclass(kw_only=True)
 class TosobaNiefizycznaPelnaAdresSiedziby(Tadres):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_adresu: str = field(
-        const=True,
+        init=False,
         default="RAD",
         metadata={
             "name": "rodzajAdresu",
@@ -1214,13 +1232,13 @@ class TosobaNiefizycznaPelnaAdresSiedziby(Tadres):
     )
 
 
+@dataclass(kw_only=True)
 class TosobaNiefizycznaAdresSiedziby(Tadres):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_adresu: str = field(
-        const=True,
+        init=False,
         default="RAD",
         metadata={
             "name": "rodzajAdresu",
@@ -1230,13 +1248,13 @@ class TosobaNiefizycznaAdresSiedziby(Tadres):
     )
 
 
+@dataclass(kw_only=True)
 class TpodmiotDowolny1AdresZamieszkaniaSiedziby(Tadres1):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_adresu: str = field(
-        const=True,
+        init=False,
         default="RAD",
         metadata={
             "name": "rodzajAdresu",
@@ -1246,13 +1264,13 @@ class TpodmiotDowolny1AdresZamieszkaniaSiedziby(Tadres1):
     )
 
 
+@dataclass(kw_only=True)
 class TpodmiotDowolny2AdresZamieszkaniaSiedziby(Tadres1):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_adresu: str = field(
-        const=True,
+        init=False,
         default="RAD",
         metadata={
             "name": "rodzajAdresu",
@@ -1262,13 +1280,13 @@ class TpodmiotDowolny2AdresZamieszkaniaSiedziby(Tadres1):
     )
 
 
+@dataclass(kw_only=True)
 class TpodmiotDowolnyPelny1AdresZamieszkaniaSiedziby(Tadres1):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_adresu: str = field(
-        const=True,
+        init=False,
         default="RAD",
         metadata={
             "name": "rodzajAdresu",
@@ -1278,13 +1296,13 @@ class TpodmiotDowolnyPelny1AdresZamieszkaniaSiedziby(Tadres1):
     )
 
 
+@dataclass(kw_only=True)
 class TpodmiotDowolnyPelnyAdresZamieszkaniaSiedziby(Tadres):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_adresu: str = field(
-        const=True,
+        init=False,
         default="RAD",
         metadata={
             "name": "rodzajAdresu",
@@ -1294,13 +1312,13 @@ class TpodmiotDowolnyPelnyAdresZamieszkaniaSiedziby(Tadres):
     )
 
 
+@dataclass(kw_only=True)
 class TpodmiotDowolnyAdresZamieszkaniaSiedziby(Tadres):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_adresu: str = field(
-        const=True,
+        init=False,
         default="RAD",
         metadata={
             "name": "rodzajAdresu",
@@ -1310,7 +1328,8 @@ class TpodmiotDowolnyAdresZamieszkaniaSiedziby(Tadres):
     )
 
 
-class TosobaFizyczna(BaseModel):
+@dataclass(kw_only=True)
+class TosobaFizyczna:
     """
     Podstawowy zestaw danych o osobie fizycznej.
     """
@@ -1318,7 +1337,6 @@ class TosobaFizyczna(BaseModel):
     class Meta:
         name = "TOsobaFizyczna"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_fizyczna: TidentyfikatorOsobyFizycznej = field(
         metadata={
             "name": "OsobaFizyczna",
@@ -1337,7 +1355,8 @@ class TosobaFizyczna(BaseModel):
     )
 
 
-class TosobaFizyczna1(BaseModel):
+@dataclass(kw_only=True)
+class TosobaFizyczna1:
     """
     Podstawowy zestaw danych o osobie fizycznej z identyfikatorem NIP albo
     PESEL.
@@ -1346,7 +1365,6 @@ class TosobaFizyczna1(BaseModel):
     class Meta:
         name = "TOsobaFizyczna1"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_fizyczna: TidentyfikatorOsobyFizycznej1 = field(
         metadata={
             "name": "OsobaFizyczna",
@@ -1365,7 +1383,8 @@ class TosobaFizyczna1(BaseModel):
     )
 
 
-class TosobaFizyczna2(BaseModel):
+@dataclass(kw_only=True)
+class TosobaFizyczna2:
     """
     Podstawowy zestaw danych o osobie fizycznej z identyfikatorem NIP.
     """
@@ -1373,7 +1392,6 @@ class TosobaFizyczna2(BaseModel):
     class Meta:
         name = "TOsobaFizyczna2"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_fizyczna: TidentyfikatorOsobyFizycznej2 = field(
         metadata={
             "name": "OsobaFizyczna",
@@ -1392,7 +1410,8 @@ class TosobaFizyczna2(BaseModel):
     )
 
 
-class TosobaFizyczna3(BaseModel):
+@dataclass(kw_only=True)
+class TosobaFizyczna3:
     """
     Podstawowy zestaw danych o osobie fizycznej z identyfikatorem NIP albo
     PESEL - bez elementu Poczta w adresie polskim.
@@ -1401,7 +1420,6 @@ class TosobaFizyczna3(BaseModel):
     class Meta:
         name = "TOsobaFizyczna3"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_fizyczna: TidentyfikatorOsobyFizycznej1 = field(
         metadata={
             "name": "OsobaFizyczna",
@@ -1420,7 +1438,8 @@ class TosobaFizyczna3(BaseModel):
     )
 
 
-class TosobaFizyczna4(BaseModel):
+@dataclass(kw_only=True)
+class TosobaFizyczna4:
     """
     Podstawowy zestaw danych o osobie fizycznej z identyfikatorem NIP - bez
     elementu Poczta w adresie polskim.
@@ -1429,7 +1448,6 @@ class TosobaFizyczna4(BaseModel):
     class Meta:
         name = "TOsobaFizyczna4"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_fizyczna: TidentyfikatorOsobyFizycznej2 = field(
         metadata={
             "name": "OsobaFizyczna",
@@ -1448,7 +1466,8 @@ class TosobaFizyczna4(BaseModel):
     )
 
 
-class TosobaFizyczna5(BaseModel):
+@dataclass(kw_only=True)
+class TosobaFizyczna5:
     """
     Podstawowy zestaw danych o osobie fizycznej - bez elementu Poczta w
     adresie polskim.
@@ -1457,7 +1476,6 @@ class TosobaFizyczna5(BaseModel):
     class Meta:
         name = "TOsobaFizyczna5"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_fizyczna: TidentyfikatorOsobyFizycznej = field(
         metadata={
             "name": "OsobaFizyczna",
@@ -1476,7 +1494,8 @@ class TosobaFizyczna5(BaseModel):
     )
 
 
-class TosobaFizycznaPelna(BaseModel):
+@dataclass(kw_only=True)
+class TosobaFizycznaPelna:
     """
     Pełny zestaw danych o osobie fizycznej.
     """
@@ -1484,7 +1503,6 @@ class TosobaFizycznaPelna(BaseModel):
     class Meta:
         name = "TOsobaFizycznaPelna"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_fizyczna: TidentyfikatorOsobyFizycznejPelny = field(
         metadata={
             "name": "OsobaFizyczna",
@@ -1503,7 +1521,8 @@ class TosobaFizycznaPelna(BaseModel):
     )
 
 
-class TosobaFizycznaPelna1(BaseModel):
+@dataclass(kw_only=True)
+class TosobaFizycznaPelna1:
     """
     Pełny zestaw danych o osobie fizycznej - bez elementu Poczta w adresie
     polskim.
@@ -1512,7 +1531,6 @@ class TosobaFizycznaPelna1(BaseModel):
     class Meta:
         name = "TOsobaFizycznaPelna1"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_fizyczna: TidentyfikatorOsobyFizycznejPelny = field(
         metadata={
             "name": "OsobaFizyczna",
@@ -1531,7 +1549,8 @@ class TosobaFizycznaPelna1(BaseModel):
     )
 
 
-class TosobaNiefizyczna(BaseModel):
+@dataclass(kw_only=True)
+class TosobaNiefizyczna:
     """
     Podstawowy zestaw danych o osobie niefizycznej.
     """
@@ -1539,7 +1558,6 @@ class TosobaNiefizyczna(BaseModel):
     class Meta:
         name = "TOsobaNiefizyczna"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_niefizyczna: TidentyfikatorOsobyNiefizycznej = field(
         metadata={
             "name": "OsobaNiefizyczna",
@@ -1558,7 +1576,8 @@ class TosobaNiefizyczna(BaseModel):
     )
 
 
-class TosobaNiefizyczna1(BaseModel):
+@dataclass(kw_only=True)
+class TosobaNiefizyczna1:
     """
     Podstawowy zestaw danych o osobie niefizycznej - bez elementu Poczta w
     adresie polskim.
@@ -1567,7 +1586,6 @@ class TosobaNiefizyczna1(BaseModel):
     class Meta:
         name = "TOsobaNiefizyczna1"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_niefizyczna: TidentyfikatorOsobyNiefizycznej = field(
         metadata={
             "name": "OsobaNiefizyczna",
@@ -1586,7 +1604,8 @@ class TosobaNiefizyczna1(BaseModel):
     )
 
 
-class TosobaNiefizyczna2(BaseModel):
+@dataclass(kw_only=True)
+class TosobaNiefizyczna2:
     """
     Podstawowy zestaw danych o osobie niefizycznej - bez elementu Numer
     REGON oraz bez elementu Poczta w adresie polskim.
@@ -1595,7 +1614,6 @@ class TosobaNiefizyczna2(BaseModel):
     class Meta:
         name = "TOsobaNiefizyczna2"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_niefizyczna: TidentyfikatorOsobyNiefizycznej1 = field(
         metadata={
             "name": "OsobaNiefizyczna",
@@ -1614,7 +1632,8 @@ class TosobaNiefizyczna2(BaseModel):
     )
 
 
-class TosobaNiefizycznaPelna(BaseModel):
+@dataclass(kw_only=True)
+class TosobaNiefizycznaPelna:
     """
     Pełny zestaw danych o niefizycznej.
     """
@@ -1622,7 +1641,6 @@ class TosobaNiefizycznaPelna(BaseModel):
     class Meta:
         name = "TOsobaNiefizycznaPelna"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_niefizyczna: TidentyfikatorOsobyNiefizycznejPelny = field(
         metadata={
             "name": "OsobaNiefizyczna",
@@ -1641,7 +1659,8 @@ class TosobaNiefizycznaPelna(BaseModel):
     )
 
 
-class TosobaNiefizycznaPelna1(BaseModel):
+@dataclass(kw_only=True)
+class TosobaNiefizycznaPelna1:
     """
     Pełny zestaw danych o osobie niefizycznej - bez elementu Poczta w
     adresie polskim.
@@ -1650,7 +1669,6 @@ class TosobaNiefizycznaPelna1(BaseModel):
     class Meta:
         name = "TOsobaNiefizycznaPelna1"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_niefizyczna: TidentyfikatorOsobyNiefizycznejPelny = field(
         metadata={
             "name": "OsobaNiefizyczna",
@@ -1669,15 +1687,15 @@ class TosobaNiefizycznaPelna1(BaseModel):
     )
 
 
+@dataclass(kw_only=True)
 class TpodmiotDowolny(TpodmiotDowolnyBezAdresu):
     """
     Podstawowy zestaw danych o osobie fizycznej lub niefizycznej.
     """
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         name = "TPodmiotDowolny"
 
-    model_config = ConfigDict(defer_build=True)
     adres_zamieszkania_siedziby: TpodmiotDowolnyAdresZamieszkaniaSiedziby = field(
         metadata={
             "name": "AdresZamieszkaniaSiedziby",
@@ -1688,16 +1706,16 @@ class TpodmiotDowolny(TpodmiotDowolnyBezAdresu):
     )
 
 
+@dataclass(kw_only=True)
 class TpodmiotDowolny1(TpodmiotDowolnyBezAdresu):
     """
     Podstawowy zestaw danych o osobie fizycznej lub niefizycznej - bez
     elementu Poczta w adresie polskim.
     """
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         name = "TPodmiotDowolny1"
 
-    model_config = ConfigDict(defer_build=True)
     adres_zamieszkania_siedziby: TpodmiotDowolny1AdresZamieszkaniaSiedziby = field(
         metadata={
             "name": "AdresZamieszkaniaSiedziby",
@@ -1708,16 +1726,16 @@ class TpodmiotDowolny1(TpodmiotDowolnyBezAdresu):
     )
 
 
+@dataclass(kw_only=True)
 class TpodmiotDowolny2(TpodmiotDowolnyBezAdresu3):
     """
     Podstawowy zestaw danych o osobie fizycznej lub niefizycznej - bez
     elementu Numer REGON oraz bez elementu Poczta w adresie polskim.
     """
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         name = "TPodmiotDowolny2"
 
-    model_config = ConfigDict(defer_build=True)
     adres_zamieszkania_siedziby: TpodmiotDowolny2AdresZamieszkaniaSiedziby = field(
         metadata={
             "name": "AdresZamieszkaniaSiedziby",
@@ -1728,7 +1746,8 @@ class TpodmiotDowolny2(TpodmiotDowolnyBezAdresu3):
     )
 
 
-class TpodmiotDowolnyPelny(BaseModel):
+@dataclass(kw_only=True)
+class TpodmiotDowolnyPelny:
     """
     Pełny zestaw danych o osobie fizycznej lub niefizycznej.
     """
@@ -1736,7 +1755,6 @@ class TpodmiotDowolnyPelny(BaseModel):
     class Meta:
         name = "TPodmiotDowolnyPelny"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_fizyczna: None | TidentyfikatorOsobyFizycznejPelny = field(
         default=None,
         metadata={
@@ -1763,7 +1781,8 @@ class TpodmiotDowolnyPelny(BaseModel):
     )
 
 
-class TpodmiotDowolnyPelny1(BaseModel):
+@dataclass(kw_only=True)
+class TpodmiotDowolnyPelny1:
     """
     Pełny zestaw danych o osobie fizycznej lub niefizycznej - bez elementu
     Poczta w adresie polskim.
@@ -1772,7 +1791,6 @@ class TpodmiotDowolnyPelny1(BaseModel):
     class Meta:
         name = "TPodmiotDowolnyPelny1"
 
-    model_config = ConfigDict(defer_build=True)
     osoba_fizyczna: None | TidentyfikatorOsobyFizycznejPelny = field(
         default=None,
         metadata={

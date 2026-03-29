@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from dataclasses import dataclass, field
 from decimal import Decimal
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict
-from xsdata.models.datatype import XmlDate, XmlDateTime
-from xsdata_pydantic.fields import field
+from xsdata.models.datatype import XmlDateTime
 
 from .elementarne_typy_danych_v10_0_e import (
     Twybor1,
@@ -17,7 +15,8 @@ from .kody_krajow_v10_0_e import TkodKraju
 __NAMESPACE__ = "http://crd.gov.pl/wzor/2025/06/25/13775/"
 
 
-class FakturaFaAdnotacjeNoweSrodkiTransportuNowySrodekTransportu(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaAdnotacjeNoweSrodkiTransportuNowySrodekTransportu:
     """
     Attributes:
         p_22_a: Data dopuszczenia nowego środka transportu do użytku
@@ -58,15 +57,15 @@ class FakturaFaAdnotacjeNoweSrodkiTransportuNowySrodekTransportu(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    p_22_a: XmlDate = field(
+    p_22_a: str = field(
         metadata={
             "name": "P_22A",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "required": True,
-            "min_inclusive": XmlDate(2006, 1, 1),
-            "max_inclusive": XmlDate(2050, 1, 1),
+            "min_inclusive": "2006-01-01",
+            "max_inclusive": "2050-01-01",
+            "pattern": r"((\d{4})-(\d{2})-(\d{2}))",
         }
     )
     p_nr_wiersza_nst: int = field(
@@ -232,7 +231,8 @@ class FakturaFaAdnotacjeNoweSrodkiTransportuNowySrodekTransportu(BaseModel):
     )
 
 
-class FakturaFaOkresFa(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaOkresFa:
     """
     Attributes:
         p_6_od: Data początkowa okresu, którego dotyczy faktura
@@ -244,30 +244,32 @@ class FakturaFaOkresFa(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    p_6_od: XmlDate = field(
+    p_6_od: str = field(
         metadata={
             "name": "P_6_Od",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "required": True,
-            "min_inclusive": XmlDate(2006, 1, 1),
-            "max_inclusive": XmlDate(2050, 1, 1),
+            "min_inclusive": "2006-01-01",
+            "max_inclusive": "2050-01-01",
+            "pattern": r"((\d{4})-(\d{2})-(\d{2}))",
         }
     )
-    p_6_do: XmlDate = field(
+    p_6_do: str = field(
         metadata={
             "name": "P_6_Do",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "required": True,
-            "min_inclusive": XmlDate(2006, 1, 1),
-            "max_inclusive": XmlDate(2050, 1, 1),
+            "min_inclusive": "2006-01-01",
+            "max_inclusive": "2050-01-01",
+            "pattern": r"((\d{4})-(\d{2})-(\d{2}))",
         }
     )
 
 
-class FakturaFaPlatnoscSkonto(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaPlatnoscSkonto:
     """
     Attributes:
         warunki_skonta: Warunki, które nabywca powinien spełnić, aby
@@ -278,7 +280,6 @@ class FakturaFaPlatnoscSkonto(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     warunki_skonta: str = field(
         metadata={
             "name": "WarunkiSkonta",
@@ -301,11 +302,11 @@ class FakturaFaPlatnoscSkonto(BaseModel):
     )
 
 
-class FakturaFaPlatnoscTerminPlatnosciTerminOpis(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaPlatnoscTerminPlatnosciTerminOpis:
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     ilosc: int = field(
         metadata={
             "name": "Ilosc",
@@ -336,7 +337,8 @@ class FakturaFaPlatnoscTerminPlatnosciTerminOpis(BaseModel):
     )
 
 
-class FakturaFaRozliczenieObciazenia(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaRozliczenieObciazenia:
     """
     Attributes:
         kwota: Kwota doliczona do kwoty wykazanej w polu P_15
@@ -346,8 +348,7 @@ class FakturaFaRozliczenieObciazenia(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    kwota: Decimal = field(
+    kwota: str = field(
         metadata={
             "name": "Kwota",
             "type": "Element",
@@ -355,6 +356,7 @@ class FakturaFaRozliczenieObciazenia(BaseModel):
             "required": True,
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         }
     )
     powod: str = field(
@@ -369,7 +371,8 @@ class FakturaFaRozliczenieObciazenia(BaseModel):
     )
 
 
-class FakturaFaRozliczenieOdliczenia(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaRozliczenieOdliczenia:
     """
     Attributes:
         kwota: Kwota odliczona od kwoty wykazanej w polu P_15
@@ -379,8 +382,7 @@ class FakturaFaRozliczenieOdliczenia(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    kwota: Decimal = field(
+    kwota: str = field(
         metadata={
             "name": "Kwota",
             "type": "Element",
@@ -388,6 +390,7 @@ class FakturaFaRozliczenieOdliczenia(BaseModel):
             "required": True,
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         }
     )
     powod: str = field(
@@ -402,7 +405,8 @@ class FakturaFaRozliczenieOdliczenia(BaseModel):
     )
 
 
-class FakturaFaWarunkiTransakcjiUmowy(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaWarunkiTransakcjiUmowy:
     """
     Attributes:
         data_umowy: Data umowy
@@ -412,15 +416,15 @@ class FakturaFaWarunkiTransakcjiUmowy(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    data_umowy: None | XmlDate = field(
+    data_umowy: None | str = field(
         default=None,
         metadata={
             "name": "DataUmowy",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
-            "min_inclusive": XmlDate(1990, 1, 1),
-            "max_inclusive": XmlDate(2050, 1, 1),
+            "min_inclusive": "1990-01-01",
+            "max_inclusive": "2050-01-01",
+            "pattern": r"((\d{4})-(\d{2})-(\d{2}))",
         },
     )
     nr_umowy: None | str = field(
@@ -435,7 +439,8 @@ class FakturaFaWarunkiTransakcjiUmowy(BaseModel):
     )
 
 
-class FakturaFaWarunkiTransakcjiZamowienia(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaWarunkiTransakcjiZamowienia:
     """
     Attributes:
         data_zamowienia: Data zamówienia
@@ -445,15 +450,15 @@ class FakturaFaWarunkiTransakcjiZamowienia(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    data_zamowienia: None | XmlDate = field(
+    data_zamowienia: None | str = field(
         default=None,
         metadata={
             "name": "DataZamowienia",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
-            "min_inclusive": XmlDate(1990, 1, 1),
-            "max_inclusive": XmlDate(2050, 1, 1),
+            "min_inclusive": "1990-01-01",
+            "max_inclusive": "2050-01-01",
+            "pattern": r"((\d{4})-(\d{2})-(\d{2}))",
         },
     )
     nr_zamowienia: None | str = field(
@@ -468,7 +473,8 @@ class FakturaFaWarunkiTransakcjiZamowienia(BaseModel):
     )
 
 
-class FakturaFaZaliczkaCzesciowa(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaZaliczkaCzesciowa:
     """
     Attributes:
         p_6_z: Data otrzymania płatności, o której mowa w art. 106b ust.
@@ -484,18 +490,18 @@ class FakturaFaZaliczkaCzesciowa(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    p_6_z: XmlDate = field(
+    p_6_z: str = field(
         metadata={
             "name": "P_6Z",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "required": True,
-            "min_inclusive": XmlDate(2006, 1, 1),
-            "max_inclusive": XmlDate(2050, 1, 1),
+            "min_inclusive": "2006-01-01",
+            "max_inclusive": "2050-01-01",
+            "pattern": r"((\d{4})-(\d{2})-(\d{2}))",
         }
     )
-    p_15_z: Decimal = field(
+    p_15_z: str = field(
         metadata={
             "name": "P_15Z",
             "type": "Element",
@@ -503,9 +509,10 @@ class FakturaFaZaliczkaCzesciowa(BaseModel):
             "required": True,
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         }
     )
-    kurs_waluty_zw: None | Decimal = field(
+    kurs_waluty_zw: None | str = field(
         default=None,
         metadata={
             "name": "KursWalutyZW",
@@ -513,11 +520,13 @@ class FakturaFaZaliczkaCzesciowa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 22,
             "fraction_digits": 6,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,6})?",
         },
     )
 
 
-class FakturaPodmiot1DaneKontaktowe(BaseModel):
+@dataclass(kw_only=True)
+class FakturaPodmiot1DaneKontaktowe:
     """
     Attributes:
         email: Adres e-mail podatnika
@@ -527,7 +536,6 @@ class FakturaPodmiot1DaneKontaktowe(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     email: None | str = field(
         default=None,
         metadata={
@@ -536,6 +544,7 @@ class FakturaPodmiot1DaneKontaktowe(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "min_length": 3,
             "max_length": 255,
+            "pattern": r"(.)+@(.)+",
         },
     )
     telefon: None | str = field(
@@ -550,7 +559,8 @@ class FakturaPodmiot1DaneKontaktowe(BaseModel):
     )
 
 
-class FakturaPodmiot2DaneKontaktowe(BaseModel):
+@dataclass(kw_only=True)
+class FakturaPodmiot2DaneKontaktowe:
     """
     Attributes:
         email: Adres e-mail nabywcy
@@ -560,7 +570,6 @@ class FakturaPodmiot2DaneKontaktowe(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     email: None | str = field(
         default=None,
         metadata={
@@ -569,6 +578,7 @@ class FakturaPodmiot2DaneKontaktowe(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "min_length": 3,
             "max_length": 255,
+            "pattern": r"(.)+@(.)+",
         },
     )
     telefon: None | str = field(
@@ -605,7 +615,8 @@ class FakturaPodmiot2Jst(Enum):
     VALUE_2 = 2
 
 
-class FakturaPodmiot3DaneKontaktowe(BaseModel):
+@dataclass(kw_only=True)
+class FakturaPodmiot3DaneKontaktowe:
     """
     Attributes:
         email: Adres e-mail podmiotu trzeciego
@@ -615,7 +626,6 @@ class FakturaPodmiot3DaneKontaktowe(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     email: None | str = field(
         default=None,
         metadata={
@@ -624,6 +634,7 @@ class FakturaPodmiot3DaneKontaktowe(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "min_length": 3,
             "max_length": 255,
+            "pattern": r"(.)+@(.)+",
         },
     )
     telefon: None | str = field(
@@ -638,7 +649,8 @@ class FakturaPodmiot3DaneKontaktowe(BaseModel):
     )
 
 
-class FakturaPodmiotUpowaznionyDaneKontaktowe(BaseModel):
+@dataclass(kw_only=True)
+class FakturaPodmiotUpowaznionyDaneKontaktowe:
     """
     Attributes:
         email_pu: Adres e-mail podmiotu upoważnionego
@@ -648,7 +660,6 @@ class FakturaPodmiotUpowaznionyDaneKontaktowe(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     email_pu: None | str = field(
         default=None,
         metadata={
@@ -657,6 +668,7 @@ class FakturaPodmiotUpowaznionyDaneKontaktowe(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "min_length": 3,
             "max_length": 255,
+            "pattern": r"(.)+@(.)+",
         },
     )
     telefon_pu: None | str = field(
@@ -671,7 +683,8 @@ class FakturaPodmiotUpowaznionyDaneKontaktowe(BaseModel):
     )
 
 
-class FakturaStopkaInformacje(BaseModel):
+@dataclass(kw_only=True)
+class FakturaStopkaInformacje:
     """
     Attributes:
         stopka_faktury: Stopka faktury
@@ -680,7 +693,6 @@ class FakturaStopkaInformacje(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     stopka_faktury: None | str = field(
         default=None,
         metadata={
@@ -693,7 +705,8 @@ class FakturaStopkaInformacje(BaseModel):
     )
 
 
-class FakturaStopkaRejestry(BaseModel):
+@dataclass(kw_only=True)
+class FakturaStopkaRejestry:
     """
     Attributes:
         pelna_nazwa: Pełna nazwa
@@ -705,7 +718,6 @@ class FakturaStopkaRejestry(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     pelna_nazwa: None | str = field(
         default=None,
         metadata={
@@ -722,6 +734,7 @@ class FakturaStopkaRejestry(BaseModel):
             "name": "KRS",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
+            "pattern": r"\d{10}",
         },
     )
     regon: None | str = field(
@@ -730,6 +743,7 @@ class FakturaStopkaRejestry(BaseModel):
             "name": "REGON",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
+            "pattern": r"\d{14}",
         },
     )
     bdo: None | str = field(
@@ -744,7 +758,8 @@ class FakturaStopkaRejestry(BaseModel):
     )
 
 
-class FakturaZalacznikBlokDanychMetaDane(BaseModel):
+@dataclass(kw_only=True)
+class FakturaZalacznikBlokDanychMetaDane:
     """
     Attributes:
         zklucz: Klucz
@@ -754,7 +769,6 @@ class FakturaZalacznikBlokDanychMetaDane(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     zklucz: str = field(
         metadata={
             "name": "ZKlucz",
@@ -777,7 +791,8 @@ class FakturaZalacznikBlokDanychMetaDane(BaseModel):
     )
 
 
-class FakturaZalacznikBlokDanychTabelaSuma(BaseModel):
+@dataclass(kw_only=True)
+class FakturaZalacznikBlokDanychTabelaSuma:
     """
     Attributes:
         skom: Zawartość pola
@@ -786,8 +801,7 @@ class FakturaZalacznikBlokDanychTabelaSuma(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    skom: Sequence[str] = field(
+    skom: list[str] = field(
         default_factory=list,
         metadata={
             "name": "SKom",
@@ -801,7 +815,8 @@ class FakturaZalacznikBlokDanychTabelaSuma(BaseModel):
     )
 
 
-class FakturaZalacznikBlokDanychTabelaTmetaDane(BaseModel):
+@dataclass(kw_only=True)
+class FakturaZalacznikBlokDanychTabelaTmetaDane:
     """
     Attributes:
         tklucz: Klucz
@@ -811,7 +826,6 @@ class FakturaZalacznikBlokDanychTabelaTmetaDane(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     tklucz: str = field(
         metadata={
             "name": "TKlucz",
@@ -834,11 +848,11 @@ class FakturaZalacznikBlokDanychTabelaTmetaDane(BaseModel):
     )
 
 
-class FakturaZalacznikBlokDanychTabelaTnaglowekKolNkom(BaseModel):
+@dataclass(kw_only=True)
+class FakturaZalacznikBlokDanychTabelaTnaglowekKolNkom:
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     value: str = field(
         default="",
         metadata={
@@ -858,7 +872,8 @@ class FakturaZalacznikBlokDanychTabelaTnaglowekKolTyp(Enum):
     TXT = "txt"
 
 
-class FakturaZalacznikBlokDanychTabelaWiersz(BaseModel):
+@dataclass(kw_only=True)
+class FakturaZalacznikBlokDanychTabelaWiersz:
     """
     Attributes:
         wkom: Zawartość pola
@@ -867,8 +882,7 @@ class FakturaZalacznikBlokDanychTabelaWiersz(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    wkom: Sequence[str] = field(
+    wkom: list[str] = field(
         default_factory=list,
         metadata={
             "name": "WKom",
@@ -882,7 +896,8 @@ class FakturaZalacznikBlokDanychTabelaWiersz(BaseModel):
     )
 
 
-class FakturaZalacznikBlokDanychTekst(BaseModel):
+@dataclass(kw_only=True)
+class FakturaZalacznikBlokDanychTekst:
     """
     Attributes:
         akapit: Opis
@@ -891,8 +906,7 @@ class FakturaZalacznikBlokDanychTekst(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    akapit: Sequence[str] = field(
+    akapit: list[str] = field(
         default_factory=list,
         metadata={
             "name": "Akapit",
@@ -1003,7 +1017,8 @@ class Tgtu(Enum):
     GTU_13 = "GTU_13"
 
 
-class TkluczWartosc(BaseModel):
+@dataclass(kw_only=True)
+class TkluczWartosc:
     """
     Typ złożony, klucz-wartość.
 
@@ -1018,7 +1033,6 @@ class TkluczWartosc(BaseModel):
     class Meta:
         name = "TKluczWartosc"
 
-    model_config = ConfigDict(defer_build=True)
     nr_wiersza: None | int = field(
         default=None,
         metadata={
@@ -1643,7 +1657,8 @@ class ToznaczenieProceduryZ(Enum):
     B_MPV_PROWIZJA = "B_MPV_PROWIZJA"
 
 
-class Tpodmiot1(BaseModel):
+@dataclass(kw_only=True)
+class Tpodmiot1:
     """
     Zestaw danych identyfikacyjnych oraz danych adresowych podatnika.
 
@@ -1655,13 +1670,13 @@ class Tpodmiot1(BaseModel):
     class Meta:
         name = "TPodmiot1"
 
-    model_config = ConfigDict(defer_build=True)
     nip: str = field(
         metadata={
             "name": "NIP",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "required": True,
+            "pattern": r"[1-9]((\d[1-9])|([1-9]\d))\d{7}",
         }
     )
     nazwa: str = field(
@@ -1899,7 +1914,8 @@ class TtypKorekty(Enum):
     VALUE_3 = 3
 
 
-class FakturaFaAdnotacjeNoweSrodkiTransportu(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaAdnotacjeNoweSrodkiTransportu:
     """
     Attributes:
         p_22: Znacznik wewnątrzwspólnotowej dostawy nowych środków
@@ -1915,7 +1931,6 @@ class FakturaFaAdnotacjeNoweSrodkiTransportu(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     p_22: None | Twybor1 = field(
         default=None,
         metadata={
@@ -1932,7 +1947,7 @@ class FakturaFaAdnotacjeNoweSrodkiTransportu(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
         },
     )
-    nowy_srodek_transportu: Sequence[
+    nowy_srodek_transportu: list[
         FakturaFaAdnotacjeNoweSrodkiTransportuNowySrodekTransportu
     ] = field(
         default_factory=list,
@@ -1953,7 +1968,8 @@ class FakturaFaAdnotacjeNoweSrodkiTransportu(BaseModel):
     )
 
 
-class FakturaFaAdnotacjePmarzy(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaAdnotacjePmarzy:
     """
     Attributes:
         p_pmarzy: Znacznik wystąpienia procedur marży, o których mowa w
@@ -1982,7 +1998,6 @@ class FakturaFaAdnotacjePmarzy(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     p_pmarzy: None | Twybor1 = field(
         default=None,
         metadata={
@@ -2033,7 +2048,8 @@ class FakturaFaAdnotacjePmarzy(BaseModel):
     )
 
 
-class FakturaFaAdnotacjeZwolnienie(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaAdnotacjeZwolnienie:
     """
     Attributes:
         p_19: Znacznik dostawy towarów lub świadczenia usług zwolnionych
@@ -2059,7 +2075,6 @@ class FakturaFaAdnotacjeZwolnienie(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     p_19: None | Twybor1 = field(
         default=None,
         metadata={
@@ -2108,7 +2123,8 @@ class FakturaFaAdnotacjeZwolnienie(BaseModel):
     )
 
 
-class FakturaFaDaneFaKorygowanej(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaDaneFaKorygowanej:
     """
     Attributes:
         data_wyst_fa_korygowanej: Data wystawienia faktury korygowanej
@@ -2122,15 +2138,15 @@ class FakturaFaDaneFaKorygowanej(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    data_wyst_fa_korygowanej: XmlDate = field(
+    data_wyst_fa_korygowanej: str = field(
         metadata={
             "name": "DataWystFaKorygowanej",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "required": True,
-            "min_inclusive": XmlDate(2006, 1, 1),
-            "max_inclusive": XmlDate(2050, 1, 1),
+            "min_inclusive": "2006-01-01",
+            "max_inclusive": "2050-01-01",
+            "pattern": r"((\d{4})-(\d{2})-(\d{2}))",
         }
     )
     nr_fa_korygowanej: str = field(
@@ -2157,6 +2173,7 @@ class FakturaFaDaneFaKorygowanej(BaseModel):
             "name": "NrKSeFFaKorygowanej",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
+            "pattern": r"([1-9]((\d[1-9])|([1-9]\d))\d{7}|M\d{9}|[A-Z]{3}\d{7})-(20[2-9][0-9]|2[1-9][0-9]{2}|[3-9][0-9]{3})(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])-([0-9A-F]{6})-?([0-9A-F]{6})-([0-9A-F]{2})",
         },
     )
     nr_kse_fn: None | Twybor1 = field(
@@ -2169,7 +2186,8 @@ class FakturaFaDaneFaKorygowanej(BaseModel):
     )
 
 
-class FakturaFaFaWiersz(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaFaWiersz:
     """
     Attributes:
         nr_wiersza_fa: Kolejny numer wiersza faktury
@@ -2238,7 +2256,6 @@ class FakturaFaFaWiersz(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     nr_wiersza_fa: int = field(
         metadata={
             "name": "NrWierszaFa",
@@ -2260,14 +2277,15 @@ class FakturaFaFaWiersz(BaseModel):
             "max_length": 50,
         },
     )
-    p_6_a: None | XmlDate = field(
+    p_6_a: None | str = field(
         default=None,
         metadata={
             "name": "P_6A",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
-            "min_inclusive": XmlDate(2006, 1, 1),
-            "max_inclusive": XmlDate(2050, 1, 1),
+            "min_inclusive": "2006-01-01",
+            "max_inclusive": "2050-01-01",
+            "pattern": r"((\d{4})-(\d{2})-(\d{2}))",
         },
     )
     p_7: None | str = field(
@@ -2340,7 +2358,7 @@ class FakturaFaFaWiersz(BaseModel):
             "max_length": 256,
         },
     )
-    p_8_b: None | Decimal = field(
+    p_8_b: None | str = field(
         default=None,
         metadata={
             "name": "P_8B",
@@ -2348,9 +2366,10 @@ class FakturaFaFaWiersz(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 22,
             "fraction_digits": 6,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,6})?",
         },
     )
-    p_9_a: None | Decimal = field(
+    p_9_a: None | str = field(
         default=None,
         metadata={
             "name": "P_9A",
@@ -2358,9 +2377,10 @@ class FakturaFaFaWiersz(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 22,
             "fraction_digits": 8,
+            "pattern": r"-?([1-9]\d{0,13}|0)(\.\d{1,8})?",
         },
     )
-    p_9_b: None | Decimal = field(
+    p_9_b: None | str = field(
         default=None,
         metadata={
             "name": "P_9B",
@@ -2368,9 +2388,10 @@ class FakturaFaFaWiersz(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 22,
             "fraction_digits": 8,
+            "pattern": r"-?([1-9]\d{0,13}|0)(\.\d{1,8})?",
         },
     )
-    p_10: None | Decimal = field(
+    p_10: None | str = field(
         default=None,
         metadata={
             "name": "P_10",
@@ -2378,9 +2399,10 @@ class FakturaFaFaWiersz(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 22,
             "fraction_digits": 8,
+            "pattern": r"-?([1-9]\d{0,13}|0)(\.\d{1,8})?",
         },
     )
-    p_11: None | Decimal = field(
+    p_11: None | str = field(
         default=None,
         metadata={
             "name": "P_11",
@@ -2388,9 +2410,10 @@ class FakturaFaFaWiersz(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_11_a: None | Decimal = field(
+    p_11_a: None | str = field(
         default=None,
         metadata={
             "name": "P_11A",
@@ -2398,9 +2421,10 @@ class FakturaFaFaWiersz(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_11_vat: None | Decimal = field(
+    p_11_vat: None | str = field(
         default=None,
         metadata={
             "name": "P_11Vat",
@@ -2408,6 +2432,7 @@ class FakturaFaFaWiersz(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
     p_12: None | TstawkaPodatku = field(
@@ -2439,7 +2464,7 @@ class FakturaFaFaWiersz(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
         },
     )
-    kwota_akcyzy: None | Decimal = field(
+    kwota_akcyzy: None | str = field(
         default=None,
         metadata={
             "name": "KwotaAkcyzy",
@@ -2447,6 +2472,7 @@ class FakturaFaFaWiersz(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
     gtu: None | Tgtu = field(
@@ -2465,7 +2491,7 @@ class FakturaFaFaWiersz(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
         },
     )
-    kurs_waluty: None | Decimal = field(
+    kurs_waluty: None | str = field(
         default=None,
         metadata={
             "name": "KursWaluty",
@@ -2473,6 +2499,7 @@ class FakturaFaFaWiersz(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 22,
             "fraction_digits": 6,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,6})?",
         },
     )
     stan_przed: None | Twybor1 = field(
@@ -2485,7 +2512,8 @@ class FakturaFaFaWiersz(BaseModel):
     )
 
 
-class FakturaFaFakturaZaliczkowa(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaFakturaZaliczkowa:
     """
     Attributes:
         nr_kse_fzn: Znacznik faktury zaliczkowej wystawionej poza KSeF
@@ -2502,7 +2530,6 @@ class FakturaFaFakturaZaliczkowa(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     nr_kse_fzn: None | Twybor1 = field(
         default=None,
         metadata={
@@ -2527,11 +2554,13 @@ class FakturaFaFakturaZaliczkowa(BaseModel):
             "name": "NrKSeFFaZaliczkowej",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
+            "pattern": r"([1-9]((\d[1-9])|([1-9]\d))\d{7}|M\d{9}|[A-Z]{3}\d{7})-(20[2-9][0-9]|2[1-9][0-9]{2}|[3-9][0-9]{3})(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])-([0-9A-F]{6})-?([0-9A-F]{6})-([0-9A-F]{2})",
         },
     )
 
 
-class FakturaFaPlatnoscTerminPlatnosci(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaPlatnoscTerminPlatnosci:
     """
     Attributes:
         termin: Termin płatności
@@ -2541,15 +2570,15 @@ class FakturaFaPlatnoscTerminPlatnosci(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    termin: None | XmlDate = field(
+    termin: None | str = field(
         default=None,
         metadata={
             "name": "Termin",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
-            "min_inclusive": XmlDate(2016, 7, 1),
-            "max_inclusive": XmlDate(2050, 1, 1),
+            "min_inclusive": "2016-07-01",
+            "max_inclusive": "2050-01-01",
+            "pattern": r"((\d{4})-(\d{2})-(\d{2}))",
         },
     )
     termin_opis: None | FakturaFaPlatnoscTerminPlatnosciTerminOpis = field(
@@ -2562,7 +2591,8 @@ class FakturaFaPlatnoscTerminPlatnosci(BaseModel):
     )
 
 
-class FakturaFaPlatnoscZaplataCzesciowa(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaPlatnoscZaplataCzesciowa:
     """
     Attributes:
         kwota_zaplaty_czesciowej: Kwota zapłaty częściowej
@@ -2577,8 +2607,7 @@ class FakturaFaPlatnoscZaplataCzesciowa(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    kwota_zaplaty_czesciowej: Decimal = field(
+    kwota_zaplaty_czesciowej: str = field(
         metadata={
             "name": "KwotaZaplatyCzesciowej",
             "type": "Element",
@@ -2586,16 +2615,18 @@ class FakturaFaPlatnoscZaplataCzesciowa(BaseModel):
             "required": True,
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         }
     )
-    data_zaplaty_czesciowej: XmlDate = field(
+    data_zaplaty_czesciowej: str = field(
         metadata={
             "name": "DataZaplatyCzesciowej",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "required": True,
-            "min_inclusive": XmlDate(2016, 7, 1),
-            "max_inclusive": XmlDate(2050, 1, 1),
+            "min_inclusive": "2016-07-01",
+            "max_inclusive": "2050-01-01",
+            "pattern": r"((\d{4})-(\d{2})-(\d{2}))",
         }
     )
     forma_platnosci: None | TformaPlatnosci = field(
@@ -2626,7 +2657,8 @@ class FakturaFaPlatnoscZaplataCzesciowa(BaseModel):
     )
 
 
-class FakturaFaRozliczenie(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaRozliczenie:
     """
     Attributes:
         obciazenia: Obciążenia
@@ -2641,8 +2673,7 @@ class FakturaFaRozliczenie(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    obciazenia: Sequence[FakturaFaRozliczenieObciazenia] = field(
+    obciazenia: list[FakturaFaRozliczenieObciazenia] = field(
         default_factory=list,
         metadata={
             "name": "Obciazenia",
@@ -2651,7 +2682,7 @@ class FakturaFaRozliczenie(BaseModel):
             "max_occurs": 100,
         },
     )
-    suma_obciazen: None | Decimal = field(
+    suma_obciazen: None | str = field(
         default=None,
         metadata={
             "name": "SumaObciazen",
@@ -2659,9 +2690,10 @@ class FakturaFaRozliczenie(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    odliczenia: Sequence[FakturaFaRozliczenieOdliczenia] = field(
+    odliczenia: list[FakturaFaRozliczenieOdliczenia] = field(
         default_factory=list,
         metadata={
             "name": "Odliczenia",
@@ -2670,7 +2702,7 @@ class FakturaFaRozliczenie(BaseModel):
             "max_occurs": 100,
         },
     )
-    suma_odliczen: None | Decimal = field(
+    suma_odliczen: None | str = field(
         default=None,
         metadata={
             "name": "SumaOdliczen",
@@ -2678,9 +2710,10 @@ class FakturaFaRozliczenie(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    do_zaplaty: None | Decimal = field(
+    do_zaplaty: None | str = field(
         default=None,
         metadata={
             "name": "DoZaplaty",
@@ -2688,9 +2721,10 @@ class FakturaFaRozliczenie(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    do_rozliczenia: None | Decimal = field(
+    do_rozliczenia: None | str = field(
         default=None,
         metadata={
             "name": "DoRozliczenia",
@@ -2698,11 +2732,13 @@ class FakturaFaRozliczenie(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
 
 
-class FakturaFaZamowienieZamowienieWiersz(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaZamowienieZamowienieWiersz:
     """
     Attributes:
         nr_wiersza_zam: Kolejny numer wiersza zamówienia lub umowy
@@ -2742,7 +2778,6 @@ class FakturaFaZamowienieZamowienieWiersz(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     nr_wiersza_zam: int = field(
         metadata={
             "name": "NrWierszaZam",
@@ -2834,7 +2869,7 @@ class FakturaFaZamowienieZamowienieWiersz(BaseModel):
             "max_length": 256,
         },
     )
-    p_8_bz: None | Decimal = field(
+    p_8_bz: None | str = field(
         default=None,
         metadata={
             "name": "P_8BZ",
@@ -2842,9 +2877,10 @@ class FakturaFaZamowienieZamowienieWiersz(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 22,
             "fraction_digits": 6,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,6})?",
         },
     )
-    p_9_az: None | Decimal = field(
+    p_9_az: None | str = field(
         default=None,
         metadata={
             "name": "P_9AZ",
@@ -2852,9 +2888,10 @@ class FakturaFaZamowienieZamowienieWiersz(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 22,
             "fraction_digits": 8,
+            "pattern": r"-?([1-9]\d{0,13}|0)(\.\d{1,8})?",
         },
     )
-    p_11_netto_z: None | Decimal = field(
+    p_11_netto_z: None | str = field(
         default=None,
         metadata={
             "name": "P_11NettoZ",
@@ -2862,9 +2899,10 @@ class FakturaFaZamowienieZamowienieWiersz(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_11_vat_z: None | Decimal = field(
+    p_11_vat_z: None | str = field(
         default=None,
         metadata={
             "name": "P_11VatZ",
@@ -2872,6 +2910,7 @@ class FakturaFaZamowienieZamowienieWiersz(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
     p_12_z: None | TstawkaPodatku = field(
@@ -2919,7 +2958,7 @@ class FakturaFaZamowienieZamowienieWiersz(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
         },
     )
-    kwota_akcyzy_z: None | Decimal = field(
+    kwota_akcyzy_z: None | str = field(
         default=None,
         metadata={
             "name": "KwotaAkcyzyZ",
@@ -2927,6 +2966,7 @@ class FakturaFaZamowienieZamowienieWiersz(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
     stan_przed_z: None | Twybor1 = field(
@@ -2939,7 +2979,8 @@ class FakturaFaZamowienieZamowienieWiersz(BaseModel):
     )
 
 
-class FakturaStopka(BaseModel):
+@dataclass(kw_only=True)
+class FakturaStopka:
     """
     Attributes:
         informacje: Pozostałe dane
@@ -2950,8 +2991,7 @@ class FakturaStopka(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    informacje: Sequence[FakturaStopkaInformacje] = field(
+    informacje: list[FakturaStopkaInformacje] = field(
         default_factory=list,
         metadata={
             "name": "Informacje",
@@ -2960,7 +3000,7 @@ class FakturaStopka(BaseModel):
             "max_occurs": 3,
         },
     )
-    rejestry: Sequence[FakturaStopkaRejestry] = field(
+    rejestry: list[FakturaStopkaRejestry] = field(
         default_factory=list,
         metadata={
             "name": "Rejestry",
@@ -2971,7 +3011,8 @@ class FakturaStopka(BaseModel):
     )
 
 
-class FakturaZalacznikBlokDanychTabelaTnaglowekKol(BaseModel):
+@dataclass(kw_only=True)
+class FakturaZalacznikBlokDanychTabelaTnaglowekKol:
     """
     Attributes:
         nkom: Zawartość pola
@@ -2981,7 +3022,6 @@ class FakturaZalacznikBlokDanychTabelaTnaglowekKol(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     nkom: FakturaZalacznikBlokDanychTabelaTnaglowekKolNkom = field(
         metadata={
             "name": "NKom",
@@ -2999,7 +3039,8 @@ class FakturaZalacznikBlokDanychTabelaTnaglowekKol(BaseModel):
     )
 
 
-class Tadres(BaseModel):
+@dataclass(kw_only=True)
+class Tadres:
     """
     Informacje opisujące adres.
 
@@ -3013,7 +3054,6 @@ class Tadres(BaseModel):
     class Meta:
         name = "TAdres"
 
-    model_config = ConfigDict(defer_build=True)
     kod_kraju: TkodKraju = field(
         metadata={
             "name": "KodKraju",
@@ -3054,18 +3094,18 @@ class Tadres(BaseModel):
     )
 
 
-class TnaglowekKodFormularza(BaseModel):
+@dataclass(kw_only=True)
+class TnaglowekKodFormularza:
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     value: TkodFormularza = field(
         metadata={
             "required": True,
         }
     )
     kod_systemowy: str = field(
-        const=True,
+        init=False,
         default="FA (3)",
         metadata={
             "name": "kodSystemowy",
@@ -3074,7 +3114,7 @@ class TnaglowekKodFormularza(BaseModel):
         },
     )
     wersja_schemy: str = field(
-        const=True,
+        init=False,
         default="1-0E",
         metadata={
             "name": "wersjaSchemy",
@@ -3084,7 +3124,8 @@ class TnaglowekKodFormularza(BaseModel):
     )
 
 
-class Tpodmiot2(BaseModel):
+@dataclass(kw_only=True)
+class Tpodmiot2:
     """
     Zestaw danych identyfikacyjnych oraz danych adresowych nabywcy.
 
@@ -3104,13 +3145,13 @@ class Tpodmiot2(BaseModel):
     class Meta:
         name = "TPodmiot2"
 
-    model_config = ConfigDict(defer_build=True)
     nip: None | str = field(
         default=None,
         metadata={
             "name": "NIP",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
+            "pattern": r"[1-9]((\d[1-9])|([1-9]\d))\d{7}",
         },
     )
     kod_ue: None | TkodyKrajowUe = field(
@@ -3127,6 +3168,7 @@ class Tpodmiot2(BaseModel):
             "name": "NrVatUE",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
+            "pattern": r"(\d|[A-Z]|\+|\*){1,12}",
         },
     )
     kod_kraju: None | TkodKraju = field(
@@ -3168,7 +3210,8 @@ class Tpodmiot2(BaseModel):
     )
 
 
-class Tpodmiot3(BaseModel):
+@dataclass(kw_only=True)
+class Tpodmiot3:
     """
     Zestaw danych identyfikacyjnych oraz danych adresowych podmiotów
     trzecich.
@@ -3190,13 +3233,13 @@ class Tpodmiot3(BaseModel):
     class Meta:
         name = "TPodmiot3"
 
-    model_config = ConfigDict(defer_build=True)
     nip: None | str = field(
         default=None,
         metadata={
             "name": "NIP",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
+            "pattern": r"[1-9]((\d[1-9])|([1-9]\d))\d{7}",
         },
     )
     idwew: None | str = field(
@@ -3207,6 +3250,7 @@ class Tpodmiot3(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "min_length": 1,
             "max_length": 20,
+            "pattern": r"[1-9]((\d[1-9])|([1-9]\d))\d{7}-\d{5}",
         },
     )
     kod_ue: None | TkodyKrajowUe = field(
@@ -3223,6 +3267,7 @@ class Tpodmiot3(BaseModel):
             "name": "NrVatUE",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
+            "pattern": r"(\d|[A-Z]|\+|\*){1,12}",
         },
     )
     kod_kraju: None | TkodKraju = field(
@@ -3264,7 +3309,8 @@ class Tpodmiot3(BaseModel):
     )
 
 
-class TrachunekBankowy(BaseModel):
+@dataclass(kw_only=True)
+class TrachunekBankowy:
     """
     Informacje o rachunku.
 
@@ -3279,7 +3325,6 @@ class TrachunekBankowy(BaseModel):
     class Meta:
         name = "TRachunekBankowy"
 
-    model_config = ConfigDict(defer_build=True)
     nr_rb: str = field(
         metadata={
             "name": "NrRB",
@@ -3296,6 +3341,7 @@ class TrachunekBankowy(BaseModel):
             "name": "SWIFT",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
+            "pattern": r"[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3}){0,1}",
         },
     )
     rachunek_wlasny_banku: None | TrachunekWlasnyBanku = field(
@@ -3328,7 +3374,8 @@ class TrachunekBankowy(BaseModel):
     )
 
 
-class FakturaFaAdnotacje(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaAdnotacje:
     """
     Attributes:
         p_16: W przypadku dostawy towarów lub świadczenia usług, w
@@ -3369,7 +3416,6 @@ class FakturaFaAdnotacje(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     p_16: Twybor12 = field(
         metadata={
             "name": "P_16",
@@ -3436,7 +3482,8 @@ class FakturaFaAdnotacje(BaseModel):
     )
 
 
-class FakturaFaPlatnosc(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaPlatnosc:
     """
     Attributes:
         zaplacono: Znacznik informujący, że należność wynikająca z
@@ -3466,7 +3513,6 @@ class FakturaFaPlatnosc(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     zaplacono: None | Twybor1 = field(
         default=None,
         metadata={
@@ -3475,14 +3521,15 @@ class FakturaFaPlatnosc(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
         },
     )
-    data_zaplaty: None | XmlDate = field(
+    data_zaplaty: None | str = field(
         default=None,
         metadata={
             "name": "DataZaplaty",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
-            "min_inclusive": XmlDate(2016, 7, 1),
-            "max_inclusive": XmlDate(2050, 1, 1),
+            "min_inclusive": "2016-07-01",
+            "max_inclusive": "2050-01-01",
+            "pattern": r"((\d{4})-(\d{2})-(\d{2}))",
         },
     )
     znacznik_zaplaty_czesciowej: None | Twybor12 = field(
@@ -3493,7 +3540,7 @@ class FakturaFaPlatnosc(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
         },
     )
-    zaplata_czesciowa: Sequence[FakturaFaPlatnoscZaplataCzesciowa] = field(
+    zaplata_czesciowa: list[FakturaFaPlatnoscZaplataCzesciowa] = field(
         default_factory=list,
         metadata={
             "name": "ZaplataCzesciowa",
@@ -3502,7 +3549,7 @@ class FakturaFaPlatnosc(BaseModel):
             "max_occurs": 100,
         },
     )
-    termin_platnosci: Sequence[FakturaFaPlatnoscTerminPlatnosci] = field(
+    termin_platnosci: list[FakturaFaPlatnoscTerminPlatnosci] = field(
         default_factory=list,
         metadata={
             "name": "TerminPlatnosci",
@@ -3537,7 +3584,7 @@ class FakturaFaPlatnosc(BaseModel):
             "max_length": 256,
         },
     )
-    rachunek_bankowy: Sequence[TrachunekBankowy] = field(
+    rachunek_bankowy: list[TrachunekBankowy] = field(
         default_factory=list,
         metadata={
             "name": "RachunekBankowy",
@@ -3546,7 +3593,7 @@ class FakturaFaPlatnosc(BaseModel):
             "max_occurs": 100,
         },
     )
-    rachunek_bankowy_faktora: Sequence[TrachunekBankowy] = field(
+    rachunek_bankowy_faktora: list[TrachunekBankowy] = field(
         default_factory=list,
         metadata={
             "name": "RachunekBankowyFaktora",
@@ -3571,6 +3618,7 @@ class FakturaFaPlatnosc(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "min_length": 1,
             "max_length": 512,
+            "pattern": r"(https?)://([a-zA-Z0-9][a-zA-Z0-9-]*\.)+[a-zA-Z]{2,}(:[0-9]{1,5})?(/[^\s?#]*)?\?([^#\s]*&)?IPKSeF=[0-9]{3}[a-zA-Z0-9]{10}(&[^#\s]*)?(#.*)?",
         },
     )
     ipkse_f: None | str = field(
@@ -3581,11 +3629,13 @@ class FakturaFaPlatnosc(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "min_length": 1,
             "max_length": 13,
+            "pattern": r"[0-9]{3}[a-zA-Z0-9]{10}",
         },
     )
 
 
-class FakturaFaPodmiot1K(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaPodmiot1K:
     """
     Attributes:
         prefiks_podatnika: Kod (prefiks) podatnika VAT UE dla przypadków
@@ -3598,7 +3648,6 @@ class FakturaFaPodmiot1K(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     prefiks_podatnika: None | TkodyKrajowUe = field(
         default=None,
         metadata={
@@ -3625,7 +3674,8 @@ class FakturaFaPodmiot1K(BaseModel):
     )
 
 
-class FakturaFaPodmiot2K(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaPodmiot2K:
     """
     Attributes:
         dane_identyfikacyjne: Dane identyfikujące nabywcę
@@ -3640,7 +3690,6 @@ class FakturaFaPodmiot2K(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     dane_identyfikacyjne: Tpodmiot2 = field(
         metadata={
             "name": "DaneIdentyfikacyjne",
@@ -3669,7 +3718,8 @@ class FakturaFaPodmiot2K(BaseModel):
     )
 
 
-class FakturaFaWarunkiTransakcjiTransportPrzewoznik(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaWarunkiTransakcjiTransportPrzewoznik:
     """
     Attributes:
         dane_identyfikacyjne: Dane identyfikacyjne przewoźnika
@@ -3679,7 +3729,6 @@ class FakturaFaWarunkiTransakcjiTransportPrzewoznik(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     dane_identyfikacyjne: Tpodmiot2 = field(
         metadata={
             "name": "DaneIdentyfikacyjne",
@@ -3698,7 +3747,8 @@ class FakturaFaWarunkiTransakcjiTransportPrzewoznik(BaseModel):
     )
 
 
-class FakturaFaZamowienie(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaZamowienie:
     """
     Attributes:
         wartosc_zamowienia: Wartość zamówienia lub umowy z
@@ -3710,8 +3760,7 @@ class FakturaFaZamowienie(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    wartosc_zamowienia: Decimal = field(
+    wartosc_zamowienia: str = field(
         metadata={
             "name": "WartoscZamowienia",
             "type": "Element",
@@ -3719,9 +3768,10 @@ class FakturaFaZamowienie(BaseModel):
             "required": True,
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         }
     )
-    zamowienie_wiersz: Sequence[FakturaFaZamowienieZamowienieWiersz] = field(
+    zamowienie_wiersz: list[FakturaFaZamowienieZamowienieWiersz] = field(
         default_factory=list,
         metadata={
             "name": "ZamowienieWiersz",
@@ -3733,14 +3783,14 @@ class FakturaFaZamowienie(BaseModel):
     )
 
 
+@dataclass(kw_only=True)
 class FakturaPodmiot1AdresKoresp(Tadres):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
 
-
-class FakturaPodmiot2(BaseModel):
+@dataclass(kw_only=True)
+class FakturaPodmiot2:
     """
     Attributes:
         nr_eori: Numer EORI nabywcy towarów
@@ -3772,7 +3822,6 @@ class FakturaPodmiot2(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     nr_eori: None | str = field(
         default=None,
         metadata={
@@ -3807,7 +3856,7 @@ class FakturaPodmiot2(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
         },
     )
-    dane_kontaktowe: Sequence[FakturaPodmiot2DaneKontaktowe] = field(
+    dane_kontaktowe: list[FakturaPodmiot2DaneKontaktowe] = field(
         default_factory=list,
         metadata={
             "name": "DaneKontaktowe",
@@ -3854,7 +3903,8 @@ class FakturaPodmiot2(BaseModel):
     )
 
 
-class FakturaPodmiot3(BaseModel):
+@dataclass(kw_only=True)
+class FakturaPodmiot3:
     """
     Attributes:
         idnabywcy: Unikalny klucz powiązania danych nabywcy na fakturach
@@ -3883,7 +3933,6 @@ class FakturaPodmiot3(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     idnabywcy: None | str = field(
         default=None,
         metadata={
@@ -3928,7 +3977,7 @@ class FakturaPodmiot3(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
         },
     )
-    dane_kontaktowe: Sequence[FakturaPodmiot3DaneKontaktowe] = field(
+    dane_kontaktowe: list[FakturaPodmiot3DaneKontaktowe] = field(
         default_factory=list,
         metadata={
             "name": "DaneKontaktowe",
@@ -3988,7 +4037,8 @@ class FakturaPodmiot3(BaseModel):
     )
 
 
-class FakturaPodmiotUpowazniony(BaseModel):
+@dataclass(kw_only=True)
+class FakturaPodmiotUpowazniony:
     """
     Attributes:
         nr_eori: Numer EORI podmiotu upoważnionego
@@ -4002,7 +4052,6 @@ class FakturaPodmiotUpowazniony(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     nr_eori: None | str = field(
         default=None,
         metadata={
@@ -4037,7 +4086,7 @@ class FakturaPodmiotUpowazniony(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
         },
     )
-    dane_kontaktowe: Sequence[FakturaPodmiotUpowaznionyDaneKontaktowe] = field(
+    dane_kontaktowe: list[FakturaPodmiotUpowaznionyDaneKontaktowe] = field(
         default_factory=list,
         metadata={
             "name": "DaneKontaktowe",
@@ -4056,12 +4105,12 @@ class FakturaPodmiotUpowazniony(BaseModel):
     )
 
 
-class FakturaZalacznikBlokDanychTabelaTnaglowek(BaseModel):
+@dataclass(kw_only=True)
+class FakturaZalacznikBlokDanychTabelaTnaglowek:
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    kol: Sequence[FakturaZalacznikBlokDanychTabelaTnaglowekKol] = field(
+    kol: list[FakturaZalacznikBlokDanychTabelaTnaglowekKol] = field(
         default_factory=list,
         metadata={
             "name": "Kol",
@@ -4073,7 +4122,8 @@ class FakturaZalacznikBlokDanychTabelaTnaglowek(BaseModel):
     )
 
 
-class Tnaglowek(BaseModel):
+@dataclass(kw_only=True)
+class Tnaglowek:
     """
     Nagłówek.
 
@@ -4088,7 +4138,6 @@ class Tnaglowek(BaseModel):
     class Meta:
         name = "TNaglowek"
 
-    model_config = ConfigDict(defer_build=True)
     kod_formularza: TnaglowekKodFormularza = field(
         metadata={
             "name": "KodFormularza",
@@ -4128,7 +4177,8 @@ class Tnaglowek(BaseModel):
     )
 
 
-class FakturaFaWarunkiTransakcjiTransport(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaWarunkiTransakcjiTransport:
     """
     Attributes:
         rodzaj_transportu: Rodzaj zastosowanego transportu w przypadku
@@ -4153,7 +4203,6 @@ class FakturaFaWarunkiTransakcjiTransport(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     rodzaj_transportu: None | TrodzajTransportu = field(
         default=None,
         metadata={
@@ -4264,7 +4313,7 @@ class FakturaFaWarunkiTransakcjiTransport(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
         },
     )
-    wysylka_przez: Sequence[Tadres] = field(
+    wysylka_przez: list[Tadres] = field(
         default_factory=list,
         metadata={
             "name": "WysylkaPrzez",
@@ -4283,7 +4332,8 @@ class FakturaFaWarunkiTransakcjiTransport(BaseModel):
     )
 
 
-class FakturaPodmiot1(BaseModel):
+@dataclass(kw_only=True)
+class FakturaPodmiot1:
     """
     Attributes:
         prefiks_podatnika: Kod (prefiks) podatnika VAT UE dla przypadków
@@ -4300,7 +4350,6 @@ class FakturaPodmiot1(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     prefiks_podatnika: None | TkodyKrajowUe = field(
         default=None,
         metadata={
@@ -4343,7 +4392,7 @@ class FakturaPodmiot1(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
         },
     )
-    dane_kontaktowe: Sequence[FakturaPodmiot1DaneKontaktowe] = field(
+    dane_kontaktowe: list[FakturaPodmiot1DaneKontaktowe] = field(
         default_factory=list,
         metadata={
             "name": "DaneKontaktowe",
@@ -4362,7 +4411,8 @@ class FakturaPodmiot1(BaseModel):
     )
 
 
-class FakturaZalacznikBlokDanychTabela(BaseModel):
+@dataclass(kw_only=True)
+class FakturaZalacznikBlokDanychTabela:
     """
     Attributes:
         tmeta_dane: Dane opisowe dotyczące tabeli
@@ -4375,8 +4425,7 @@ class FakturaZalacznikBlokDanychTabela(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    tmeta_dane: Sequence[FakturaZalacznikBlokDanychTabelaTmetaDane] = field(
+    tmeta_dane: list[FakturaZalacznikBlokDanychTabelaTmetaDane] = field(
         default_factory=list,
         metadata={
             "name": "TMetaDane",
@@ -4403,7 +4452,7 @@ class FakturaZalacznikBlokDanychTabela(BaseModel):
             "required": True,
         }
     )
-    wiersz: Sequence[FakturaZalacznikBlokDanychTabelaWiersz] = field(
+    wiersz: list[FakturaZalacznikBlokDanychTabelaWiersz] = field(
         default_factory=list,
         metadata={
             "name": "Wiersz",
@@ -4423,7 +4472,8 @@ class FakturaZalacznikBlokDanychTabela(BaseModel):
     )
 
 
-class FakturaFaWarunkiTransakcji(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFaWarunkiTransakcji:
     """
     Attributes:
         umowy:
@@ -4452,8 +4502,7 @@ class FakturaFaWarunkiTransakcji(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    umowy: Sequence[FakturaFaWarunkiTransakcjiUmowy] = field(
+    umowy: list[FakturaFaWarunkiTransakcjiUmowy] = field(
         default_factory=list,
         metadata={
             "name": "Umowy",
@@ -4462,7 +4511,7 @@ class FakturaFaWarunkiTransakcji(BaseModel):
             "max_occurs": 100,
         },
     )
-    zamowienia: Sequence[FakturaFaWarunkiTransakcjiZamowienia] = field(
+    zamowienia: list[FakturaFaWarunkiTransakcjiZamowienia] = field(
         default_factory=list,
         metadata={
             "name": "Zamowienia",
@@ -4471,7 +4520,7 @@ class FakturaFaWarunkiTransakcji(BaseModel):
             "max_occurs": 100,
         },
     )
-    nr_partii_towaru: Sequence[str] = field(
+    nr_partii_towaru: list[str] = field(
         default_factory=list,
         metadata={
             "name": "NrPartiiTowaru",
@@ -4492,7 +4541,7 @@ class FakturaFaWarunkiTransakcji(BaseModel):
             "max_length": 256,
         },
     )
-    kurs_umowny: None | Decimal = field(
+    kurs_umowny: None | str = field(
         default=None,
         metadata={
             "name": "KursUmowny",
@@ -4500,6 +4549,7 @@ class FakturaFaWarunkiTransakcji(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 22,
             "fraction_digits": 6,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,6})?",
         },
     )
     waluta_umowna: None | TkodWaluty = field(
@@ -4510,7 +4560,7 @@ class FakturaFaWarunkiTransakcji(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
         },
     )
-    transport: Sequence[FakturaFaWarunkiTransakcjiTransport] = field(
+    transport: list[FakturaFaWarunkiTransakcjiTransport] = field(
         default_factory=list,
         metadata={
             "name": "Transport",
@@ -4529,7 +4579,8 @@ class FakturaFaWarunkiTransakcji(BaseModel):
     )
 
 
-class FakturaZalacznikBlokDanych(BaseModel):
+@dataclass(kw_only=True)
+class FakturaZalacznikBlokDanych:
     """
     Attributes:
         znaglowek: Nagłówek bloku danych
@@ -4541,7 +4592,6 @@ class FakturaZalacznikBlokDanych(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     znaglowek: None | str = field(
         default=None,
         metadata={
@@ -4552,7 +4602,7 @@ class FakturaZalacznikBlokDanych(BaseModel):
             "max_length": 512,
         },
     )
-    meta_dane: Sequence[FakturaZalacznikBlokDanychMetaDane] = field(
+    meta_dane: list[FakturaZalacznikBlokDanychMetaDane] = field(
         default_factory=list,
         metadata={
             "name": "MetaDane",
@@ -4570,7 +4620,7 @@ class FakturaZalacznikBlokDanych(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
         },
     )
-    tabela: Sequence[FakturaZalacznikBlokDanychTabela] = field(
+    tabela: list[FakturaZalacznikBlokDanychTabela] = field(
         default_factory=list,
         metadata={
             "name": "Tabela",
@@ -4581,7 +4631,8 @@ class FakturaZalacznikBlokDanych(BaseModel):
     )
 
 
-class FakturaFa(BaseModel):
+@dataclass(kw_only=True)
+class FakturaFa:
     """
     Attributes:
         kod_waluty: Kod waluty (ISO 4217)
@@ -4838,7 +4889,6 @@ class FakturaFa(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
     kod_waluty: TkodWaluty = field(
         metadata={
             "name": "KodWaluty",
@@ -4847,14 +4897,15 @@ class FakturaFa(BaseModel):
             "required": True,
         }
     )
-    p_1: XmlDate = field(
+    p_1: str = field(
         metadata={
             "name": "P_1",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "required": True,
-            "min_inclusive": XmlDate(2006, 1, 1),
-            "max_inclusive": XmlDate(2050, 1, 1),
+            "min_inclusive": "2006-01-01",
+            "max_inclusive": "2050-01-01",
+            "pattern": r"((\d{4})-(\d{2})-(\d{2}))",
         }
     )
     p_1_m: None | str = field(
@@ -4877,7 +4928,7 @@ class FakturaFa(BaseModel):
             "max_length": 256,
         }
     )
-    wz: Sequence[str] = field(
+    wz: list[str] = field(
         default_factory=list,
         metadata={
             "name": "WZ",
@@ -4888,14 +4939,15 @@ class FakturaFa(BaseModel):
             "max_length": 256,
         },
     )
-    p_6: None | XmlDate = field(
+    p_6: None | str = field(
         default=None,
         metadata={
             "name": "P_6",
             "type": "Element",
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
-            "min_inclusive": XmlDate(2006, 1, 1),
-            "max_inclusive": XmlDate(2050, 1, 1),
+            "min_inclusive": "2006-01-01",
+            "max_inclusive": "2050-01-01",
+            "pattern": r"((\d{4})-(\d{2})-(\d{2}))",
         },
     )
     okres_fa: None | FakturaFaOkresFa = field(
@@ -4906,7 +4958,7 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
         },
     )
-    p_13_1: None | Decimal = field(
+    p_13_1: None | str = field(
         default=None,
         metadata={
             "name": "P_13_1",
@@ -4914,9 +4966,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_14_1: None | Decimal = field(
+    p_14_1: None | str = field(
         default=None,
         metadata={
             "name": "P_14_1",
@@ -4924,9 +4977,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_14_1_w: None | Decimal = field(
+    p_14_1_w: None | str = field(
         default=None,
         metadata={
             "name": "P_14_1W",
@@ -4934,9 +4988,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_13_2: None | Decimal = field(
+    p_13_2: None | str = field(
         default=None,
         metadata={
             "name": "P_13_2",
@@ -4944,9 +4999,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_14_2: None | Decimal = field(
+    p_14_2: None | str = field(
         default=None,
         metadata={
             "name": "P_14_2",
@@ -4954,9 +5010,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_14_2_w: None | Decimal = field(
+    p_14_2_w: None | str = field(
         default=None,
         metadata={
             "name": "P_14_2W",
@@ -4964,9 +5021,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_13_3: None | Decimal = field(
+    p_13_3: None | str = field(
         default=None,
         metadata={
             "name": "P_13_3",
@@ -4974,9 +5032,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_14_3: None | Decimal = field(
+    p_14_3: None | str = field(
         default=None,
         metadata={
             "name": "P_14_3",
@@ -4984,9 +5043,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_14_3_w: None | Decimal = field(
+    p_14_3_w: None | str = field(
         default=None,
         metadata={
             "name": "P_14_3W",
@@ -4994,9 +5054,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_13_4: None | Decimal = field(
+    p_13_4: None | str = field(
         default=None,
         metadata={
             "name": "P_13_4",
@@ -5004,9 +5065,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_14_4: None | Decimal = field(
+    p_14_4: None | str = field(
         default=None,
         metadata={
             "name": "P_14_4",
@@ -5014,9 +5076,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_14_4_w: None | Decimal = field(
+    p_14_4_w: None | str = field(
         default=None,
         metadata={
             "name": "P_14_4W",
@@ -5024,9 +5087,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_13_5: None | Decimal = field(
+    p_13_5: None | str = field(
         default=None,
         metadata={
             "name": "P_13_5",
@@ -5034,9 +5098,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_14_5: None | Decimal = field(
+    p_14_5: None | str = field(
         default=None,
         metadata={
             "name": "P_14_5",
@@ -5044,9 +5109,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_13_6_1: None | Decimal = field(
+    p_13_6_1: None | str = field(
         default=None,
         metadata={
             "name": "P_13_6_1",
@@ -5054,9 +5120,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_13_6_2: None | Decimal = field(
+    p_13_6_2: None | str = field(
         default=None,
         metadata={
             "name": "P_13_6_2",
@@ -5064,9 +5131,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_13_6_3: None | Decimal = field(
+    p_13_6_3: None | str = field(
         default=None,
         metadata={
             "name": "P_13_6_3",
@@ -5074,9 +5142,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_13_7: None | Decimal = field(
+    p_13_7: None | str = field(
         default=None,
         metadata={
             "name": "P_13_7",
@@ -5084,9 +5153,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_13_8: None | Decimal = field(
+    p_13_8: None | str = field(
         default=None,
         metadata={
             "name": "P_13_8",
@@ -5094,9 +5164,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_13_9: None | Decimal = field(
+    p_13_9: None | str = field(
         default=None,
         metadata={
             "name": "P_13_9",
@@ -5104,9 +5175,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_13_10: None | Decimal = field(
+    p_13_10: None | str = field(
         default=None,
         metadata={
             "name": "P_13_10",
@@ -5114,9 +5186,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_13_11: None | Decimal = field(
+    p_13_11: None | str = field(
         default=None,
         metadata={
             "name": "P_13_11",
@@ -5124,9 +5197,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    p_15: Decimal = field(
+    p_15: str = field(
         metadata={
             "name": "P_15",
             "type": "Element",
@@ -5134,9 +5208,10 @@ class FakturaFa(BaseModel):
             "required": True,
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         }
     )
-    kurs_waluty_z: None | Decimal = field(
+    kurs_waluty_z: None | str = field(
         default=None,
         metadata={
             "name": "KursWalutyZ",
@@ -5144,6 +5219,7 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 22,
             "fraction_digits": 6,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,6})?",
         },
     )
     adnotacje: FakturaFaAdnotacje = field(
@@ -5180,7 +5256,7 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
         },
     )
-    dane_fa_korygowanej: Sequence[FakturaFaDaneFaKorygowanej] = field(
+    dane_fa_korygowanej: list[FakturaFaDaneFaKorygowanej] = field(
         default_factory=list,
         metadata={
             "name": "DaneFaKorygowanej",
@@ -5217,7 +5293,7 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
         },
     )
-    podmiot2_k: Sequence[FakturaFaPodmiot2K] = field(
+    podmiot2_k: list[FakturaFaPodmiot2K] = field(
         default_factory=list,
         metadata={
             "name": "Podmiot2K",
@@ -5226,7 +5302,7 @@ class FakturaFa(BaseModel):
             "max_occurs": 101,
         },
     )
-    p_15_zk: None | Decimal = field(
+    p_15_zk: None | str = field(
         default=None,
         metadata={
             "name": "P_15ZK",
@@ -5234,9 +5310,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 18,
             "fraction_digits": 2,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,2})?",
         },
     )
-    kurs_waluty_zk: None | Decimal = field(
+    kurs_waluty_zk: None | str = field(
         default=None,
         metadata={
             "name": "KursWalutyZK",
@@ -5244,9 +5321,10 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
             "total_digits": 22,
             "fraction_digits": 6,
+            "pattern": r"-?([1-9]\d{0,15}|0)(\.\d{1,6})?",
         },
     )
-    zaliczka_czesciowa: Sequence[FakturaFaZaliczkaCzesciowa] = field(
+    zaliczka_czesciowa: list[FakturaFaZaliczkaCzesciowa] = field(
         default_factory=list,
         metadata={
             "name": "ZaliczkaCzesciowa",
@@ -5271,7 +5349,7 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
         },
     )
-    dodatkowy_opis: Sequence[TkluczWartosc] = field(
+    dodatkowy_opis: list[TkluczWartosc] = field(
         default_factory=list,
         metadata={
             "name": "DodatkowyOpis",
@@ -5280,7 +5358,7 @@ class FakturaFa(BaseModel):
             "max_occurs": 10000,
         },
     )
-    faktura_zaliczkowa: Sequence[FakturaFaFakturaZaliczkowa] = field(
+    faktura_zaliczkowa: list[FakturaFaFakturaZaliczkowa] = field(
         default_factory=list,
         metadata={
             "name": "FakturaZaliczkowa",
@@ -5297,7 +5375,7 @@ class FakturaFa(BaseModel):
             "namespace": "http://crd.gov.pl/wzor/2025/06/25/13775/",
         },
     )
-    fa_wiersz: Sequence[FakturaFaFaWiersz] = field(
+    fa_wiersz: list[FakturaFaFaWiersz] = field(
         default_factory=list,
         metadata={
             "name": "FaWiersz",
@@ -5340,7 +5418,8 @@ class FakturaFa(BaseModel):
     )
 
 
-class FakturaZalacznik(BaseModel):
+@dataclass(kw_only=True)
+class FakturaZalacznik:
     """
     Attributes:
         blok_danych: Szczegółowe dane załącznika
@@ -5349,8 +5428,7 @@ class FakturaZalacznik(BaseModel):
     class Meta:
         global_type = False
 
-    model_config = ConfigDict(defer_build=True)
-    blok_danych: Sequence[FakturaZalacznikBlokDanych] = field(
+    blok_danych: list[FakturaZalacznikBlokDanych] = field(
         default_factory=list,
         metadata={
             "name": "BlokDanych",
@@ -5362,7 +5440,8 @@ class FakturaZalacznik(BaseModel):
     )
 
 
-class Faktura(BaseModel):
+@dataclass(kw_only=True)
+class Faktura:
     """
     Faktura VAT.
 
@@ -5391,7 +5470,6 @@ class Faktura(BaseModel):
     class Meta:
         namespace = "http://crd.gov.pl/wzor/2025/06/25/13775/"
 
-    model_config = ConfigDict(defer_build=True)
     naglowek: Tnaglowek = field(
         metadata={
             "name": "Naglowek",
@@ -5413,7 +5491,7 @@ class Faktura(BaseModel):
             "required": True,
         }
     )
-    podmiot3: Sequence[FakturaPodmiot3] = field(
+    podmiot3: list[FakturaPodmiot3] = field(
         default_factory=list,
         metadata={
             "name": "Podmiot3",
