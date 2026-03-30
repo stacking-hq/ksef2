@@ -4,13 +4,8 @@ from decimal import Decimal
 from pathlib import Path
 
 from lxml import etree
-from xsdata.formats.dataclass.serializers import XmlSerializer
-from xsdata.formats.dataclass.serializers.config import SerializerConfig
 
-from ksef2.domain.models.fa3 import KsefInvoice
 from ksef2.domain.models.fa3.body import VatRate
-from ksef2.infra.mappers.invoices.fa3.invoice import to_spec as invoice_to_spec
-from ksef2.infra.schema.fa3.models.schemat import __NAMESPACE__
 from ksef2.services import FA3InvoiceBuilder
 from ksef2.services.renderers import InvoicePDFExporter
 
@@ -31,10 +26,15 @@ class ExampleConfig:
     schema_path: Path = repo_root() / "schemas" / "FA3" / "schemat.xsd"
 
 
-def build_invoice() -> KsefInvoice:
+builder = FA3InvoiceBuilder()
+
+
+invoice = builder.header(system_info="ksef2 example builder")
+
+
+def build_invoice():
     return (
-        FA3InvoiceBuilder()
-        .header(system_info="ksef2 example builder")
+        builder.header(system_info="ksef2 example builder")
         .seller(
             name="ACME S.A.",
             tax_id="1234567890",
@@ -64,21 +64,6 @@ def build_invoice() -> KsefInvoice:
             period_start=date(2026, 3, 1),
             period_end=date(2026, 3, 31),
         )
-        .build()
-    )
-
-
-def render_invoice_xml(invoice: KsefInvoice) -> str:
-    serializer = XmlSerializer(
-        config=SerializerConfig(
-            pretty_print=True,
-            xml_declaration=True,
-            encoding="UTF-8",
-        )
-    )
-    return serializer.render(
-        invoice_to_spec(invoice),
-        ns_map={None: __NAMESPACE__},
     )
 
 
@@ -97,7 +82,7 @@ def export_invoice_pdf(xml_path: Path, pdf_output_path: Path) -> Path:
 
 
 def run(config: ExampleConfig) -> tuple[Path, Path]:
-    invoice_xml = render_invoice_xml(build_invoice())
+    invoice_xml = build_invoice().to_xml()
     config.output_path.parent.mkdir(parents=True, exist_ok=True)
     config.output_path.write_text(invoice_xml, encoding="utf-8")
     validate_invoice_xml(config.output_path, config.schema_path)

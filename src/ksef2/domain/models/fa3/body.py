@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from enum import StrEnum
 from typing import Annotated, Literal, Callable, Self, assert_never
 
@@ -321,6 +321,10 @@ class InvoiceLine(KSeFBaseModel):
                 )
 
 
+def get_placeholder_invoice_number() -> str:
+    return f"DEMO-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+
+
 class KsefInvoiceBody(KSeFBaseModel):
     currency: str = Field(
         default="PLN",
@@ -331,7 +335,8 @@ class KsefInvoiceBody(KSeFBaseModel):
         None, description="p_1_m: Place where the invoice was issued."
     )
     invoice_number: str = Field(
-        description="p_2: Sequential invoice number identifying the invoice."
+        description="p_2: Sequential invoice number identifying the invoice.",
+        default_factory=get_placeholder_invoice_number,
     )
     invoice_type: InvoiceType = Field(
         default=InvoiceType.VAT, description="rodzaj_faktury: Type of invoice."
