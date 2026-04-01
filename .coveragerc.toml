@@ -1,0 +1,11 @@
+[tool.coverage.run]
+omit = [
+    "src/ksef2/infra/schema/*",
+    "*/src/ksef2/infra/schema/*",
+]
+
+[tool.coverage.report]
+omit = [
+    "src/ksef2/infra/schema/*",
+    "*/src/ksef2/infra/schema/*",
+]

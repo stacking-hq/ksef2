@@ -22,6 +22,7 @@ dependencies = [
     "polyfactory>=3.3.0",
     "beartype>=0.22.9",
     "camel-converter>=5.1.0",
+    "pytest-cov>=7.1.0",
 ]
 
 [dependency-groups]

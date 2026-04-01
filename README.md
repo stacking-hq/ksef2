@@ -6,6 +6,7 @@
 **Python SDK for Poland's KSeF (Krajowy System e-Faktur) v2 API.**
 
 ![API Coverage](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/artpods56/ksef2/master/coverage.json&query=$.message&label=KSeF%20API%20coverage&color=$.color)
+[![Unit Test Coverage](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/artpods56/ksef2/master/test-coverage.json&query=$.message&label=Unit%20test%20coverage&color=$.color)](https://github.com/artpods56/ksef2/actions/workflows/test-coverage.yml)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Integration Tests](https://github.com/artpods56/ksef2/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/artpods56/ksef2/actions/workflows/integration-tests.yml) \
 [![beartype](https://raw.githubusercontent.com/beartype/beartype-assets/main/badge/bear-ified.svg)](https://github.com/beartype/beartype)
@@ -228,6 +229,7 @@ Run examples as modules with `uv run -m ...`; direct execution by file path is n
 ```bash
 just sync          # Install all dependencies (including dev)
 just test          # Run unit tests
+just test-coverage # Run unit tests with coverage and update test-coverage.json
 just release-check # Run the pre-release verification suite and build artifacts
 just regenerate-models  # Regenerate OpenAPI models
 ```

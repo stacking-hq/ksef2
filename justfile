@@ -15,6 +15,11 @@ test:
     uv run pytest tests/unit/ -v
 
 
+test-coverage:
+    uv run pytest --cov=ksef2 --cov-config=.coveragerc.toml --cov-report=xml tests/unit/ -v
+    uv run python scripts/test_coverage_badge.py
+
+
 release-check:
     just lint
     just format-check
