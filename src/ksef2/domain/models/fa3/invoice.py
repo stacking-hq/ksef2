@@ -9,6 +9,7 @@ from pydantic import Field, field_validator, model_validator
 
 from ksef2.domain.models.base import KSeFBaseModel
 from ksef2.domain.models.fa3.body import KsefInvoiceBody
+from ksef2 import __version__
 
 
 class InvoiceDetails(KSeFBaseModel):
@@ -20,13 +21,27 @@ class InvoiceDetails(KSeFBaseModel):
 
 
 class InvoiceHeader(KSeFBaseModel):
+    """FA(3) invoice header.
+
+    References:
+        schemat.Tnaglowek
+
+    Maps:
+        generation_timestamp - data_wytworzenia_fa
+        system_info - system_info
+        <absent> - wariant_formularza = KodFormularza.VALUE_3
+        <absent> - kod_systemowy = "FA (3)"
+        <absent> - wersja_schemy = "1-0E"
+    """
+
     generation_timestamp: datetime = Field(
         default_factory=datetime.now, description="Maps to Tnaglowek.DataWytworzeniaFA"
     )
 
     system_info: str = Field(
-        default="ksef2-mcp server",
-        max_length=250,
+        default=f"ksef2 sdk version: {__version__.version}",
+        min_length=1,
+        max_length=256,
         description="Maps to Tnaglowek.SystemInfo",
     )
 
