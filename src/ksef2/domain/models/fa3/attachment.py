@@ -1,101 +1,164 @@
-from enum import Enum
+from collections.abc import Sequence
+from datetime import datetime, date, time
+from decimal import Decimal, InvalidOperation
+from typing import Literal, Self
+
+from pydantic import field_validator, Field, model_validator
 
 from ksef2.domain.models import KSeFBaseModel
 
-
-class AttachmentMetaData(KSeFBaseModel):
-    """Key-value metadata for attachment data block."""
-
-    key: str
-    value: str
-
-
-class AttachmentText(KSeFBaseModel):
-    """Text block with paragraphs."""
-
-    paragraphs: list[str]
-
-
-class TableColumnType(str, Enum):
-    """Column data type for table headers."""
-
-    DATE = "date"
-    DATETIME = "datetime"
-    DECIMAL = "dec"
-    INTEGER = "int"
-    TIME = "time"
-    TEXT = "txt"
-
-
-class TableMetaData(KSeFBaseModel):
-    """Key-value metadata for table."""
-
-    key: str
-    value: str
-
-
-class TableHeaderColumn(KSeFBaseModel):
-    """Column definition in table header."""
-
-    name: str
-    type: TableColumnType
-
-
-class TableHeader(KSeFBaseModel):
-    """Table header with column definitions."""
-
-    columns: list[TableHeaderColumn]
-
-
-class TableRow(KSeFBaseModel):
-    """Row in a table with cell values."""
-
-    cells: list[str]
-
-
-class TableSum(KSeFBaseModel):
-    """Table footer/summary row with cell values."""
-
-    cells: list[str]
+ValueType = Literal["date", "datetime", "decimal", "integer", "time", "txt"]
+NUMERIC_TYPES = {"decimal", "integer"}
 
 
 class AttachmentTable(KSeFBaseModel):
-    """Table structure for attachment data block.
+    """FA(3) invoice attachment table structure.
 
-    Maps to FakturaZalacznikBlokDanychTabela from schema.
+    References:
+        schemat.FakturaZalacznikBlokDanychTabela
 
-    Attributes:
-        meta_data: Optional metadata key-value pairs for the table
-        description: Optional description of the table
-        header: Table header with column definitions (required)
-        rows: Table data rows (at least 1 required, max 1000)
-        summary: Optional summary/footer row
+    Maps:
+    meta_data - tmeta_dane List(FakturaZalacznikBlokDanychTabelaTmetaDane)
+    description - opis (str)
+    columns_format - tnaglowek (FakturaZalacznikBlokDanychTabelaTnaglowek)
+    rows - wiersz (FakturaZalacznikBlokDanychTabelaWiersz)
+    summary - suma (FakturaZalacznikBlokDanychTabelaSuma)
     """
 
-    meta_data: list[TableMetaData] | None = None
+    meta_data: list[dict[str, str]] = Field(default_factory=list)
     description: str | None = None
-    header: TableHeader
-    rows: list[TableRow]
-    summary: TableSum | None = None
+    columns_format: list[ValueType] = Field(default_factory=list)
+    rows: list[list[str]] = Field(
+        min_length=1,
+        max_length=1000,
+        description="Maps to FakturaZalacznikBlokDanychTabelaWiersz",
+    )
+    summary: list[str] | None = Field(default=None, description="Maps to")
+
+    @model_validator(mode="after")
+    def validate_rows_and_columns(self) -> Self:
+
+        if len(self.columns_format) != len(self.rows[0]):
+            raise ValueError("Column count does not match row count")
+
+        def _validate_cell(value: str, row_idx: int, col_idx: int) -> None:
+            match self.columns_format[col_idx]:
+                case "decimal" | "integer":
+                    try:
+                        _ = Decimal(value)
+                    except InvalidOperation as exc:
+                        raise ValueError(
+                            f"Cell ({row_idx}, {col_idx}) of value `{value}` is not numeric"
+                        ) from exc
+                case "date":
+                    try:
+                        _ = date.fromisoformat(value)
+                    except ValueError as exc:
+                        raise ValueError(
+                            f"Cell ({row_idx}, {col_idx}) of value `{value}` is not a valid date"
+                        ) from exc
+                case "datetime":
+                    try:
+                        _ = datetime.fromisoformat(value)
+                    except ValueError as exc:
+                        raise ValueError(
+                            f"Cell ({row_idx}, {col_idx}) of value `{value}` is not a valid datetime"
+                        ) from exc
+                case "time":
+                    try:
+                        _ = time.fromisoformat(value)
+                    except ValueError as exc:
+                        raise ValueError(
+                            f"Cell ({row_idx}, {col_idx}) of value `{value}` is not a valid time"
+                        ) from exc
+                case "txt":
+                    return
+                case _:
+                    raise ValueError(  # pyright: ignore[reportUnreachable]
+                        f"Unsupported column type: {self.columns_format[col_idx]}"
+                    )
+
+        for row_idx, row in enumerate(self.rows):
+            for col_idx, cell in enumerate(row):
+                _validate_cell(cell, row_idx, col_idx)
+
+        return self
+
+    @model_validator(mode="after")
+    def populate_summary(self) -> Self:
+        if self.summary is not None:
+            return self
+
+        if not self.rows or not self.columns_format:
+            return self
+
+        summary: list[str] = []
+
+        for col_idx, col_type in enumerate(self.columns_format):
+            if col_type not in NUMERIC_TYPES:
+                summary.append("-")
+                continue
+
+            try:
+                total = sum(Decimal(row[col_idx]) for row in self.rows)
+            except InvalidOperation as exc:
+                raise ValueError(
+                    f"Column {col_idx} declared as {col_type} but contains non-numeric data"
+                ) from exc
+
+            summary.append(str(total))
+
+        self.summary = summary
+        return self
 
 
 class DataBlock(KSeFBaseModel):
-    """Data block for invoice attachment.
+    """FA(3) invoice attachment data block.
 
-    Attributes:
-        header: Optional header/title for the data block
-        meta_data: Optional metadata key-value pairs
-        text: Optional text content with paragraphs
-        tables: Optional list of tables
+    References:
+        schemat.FakturaZalacznikBlokDanych
+
+    Maps:
+        header - znaglowek (str)
+        meta_data - meta_dane (FakturaZalacznikBlokDanychMetaDane)
+        paragraphs:
+            tekst - akapit (FakturaZalacznikBlokDanychTekst)
+        tables - tabela (FakturaZalacznikBlokDanychTabela)
+
     """
 
     header: str | None = None
-    meta_data: list[AttachmentMetaData] | None = None
-    text: AttachmentText | None = None
+    meta_data: Sequence[dict[str, str]] | None = Field(
+        default=None, description="Maps to FakturaZalacznikBlokDanychMetaDane"
+    )
+    paragraphs: Sequence[str] | None = Field(
+        default=None,
+        description="Maps to FakturaZalacznikBlokDanychTekst",
+        min_length=1,
+        max_length=10,
+    )
     tables: list[AttachmentTable] | None = None
+
+    @field_validator("paragraphs")
+    @classmethod
+    def validate_paragraphs(cls, value: list[str] | None) -> list[str] | None:
+        if value is None:
+            return value
+
+        if any(len(p) == 0 or len(p) > 512 for p in value):
+            raise ValueError("Paragraphs must be between 1 and 512 characters long")
+
+        return value
 
 
 class Attachment(KSeFBaseModel):
-    """Invoice attachment containing data blocks."""
+    """FA(3) invoice attachment containing data blocks.
+
+    References:
+        schemat.FakturaZalacznik
+
+    Maps:
+        data_blocks - blok_danych List(FakturaZalacznikBlokDanych)
+    """
 
     data_blocks: list[DataBlock]
