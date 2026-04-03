@@ -1,58 +1,36 @@
 from collections.abc import Callable
 from datetime import date, datetime
+from decimal import Decimal, ROUND_HALF_UP
 from enum import StrEnum
-from typing import Annotated, Literal, Self, assert_never
+from typing import Annotated
 
 from pydantic import Field, model_validator
 
 from ksef2.domain.models import KSeFBaseModel
+from ksef2.domain.models.fa3.body.advance_payment import PartialAdvancePayment
+from ksef2.domain.models.fa3.body.order import InvoiceOrder, InvoiceOrderLine
 from ksef2.domain.models.fa3.body.payment import InvoicePayment
-from ksef2.domain.models.fa3.body.transaction import TransactionConditions
-from ksef2.domain.models.fa3.drafts import (
-    AdvanceInvoiceReference,
-    AdvanceOrderLine,
-    CorrectedInvoiceReference,
-    MarginProcedure,
+from ksef2.domain.models.fa3.body.row import Money, InvoiceRow, SaleCategory, VatRate
+from ksef2.domain.models.fa3.body.settlement import (
+    InvoiceSettlement,
     SettlementCharge,
     SettlementDeduction,
 )
-
-from decimal import Decimal, ROUND_HALF_UP
+from ksef2.domain.models.fa3.body.transaction import TransactionConditions
+from ksef2.domain.models.fa3.drafts import (
+    AdvanceInvoiceReference,
+    CorrectedInvoiceReference,
+    MarginProcedure,
+)
+from ksef2.domain.models.fa3.party import (
+    CorrectedBuyerEntity,
+    CorrectedSellerEntity,
+)
 
 
 # Helper to round to 2 decimal places (standard Polish accounting rounding)
 def round_pln(value: Decimal) -> Decimal:
     return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-
-
-Money = Decimal
-
-GtuCode = Literal[
-    "GTU_01",
-    "GTU_02",
-    "GTU_03",
-    "GTU_04",
-    "GTU_05",
-    "GTU_06",
-    "GTU_07",
-    "GTU_08",
-    "GTU_09",
-    "GTU_10",
-    "GTU_11",
-    "GTU_12",
-    "GTU_13",
-]
-
-InvoiceProcedure = Literal[
-    "WSTO_EE",
-    "IED",
-    "TT_D",
-    "I_42",
-    "I_63",
-    "B_SPV",
-    "B_SPV_DOSTAWA",
-    "B_MPV_PROWIZJA",
-]
 
 
 class InvoiceType(StrEnum):
@@ -65,272 +43,6 @@ class InvoiceType(StrEnum):
     CORRECTING_ROZ = (
         "Faktura korygująca fakturę wystawioną w związku z art. 106f ust. 3 ustawy"
     )
-
-
-class VatRate(StrEnum):
-    VAT_23 = "23"
-    VAT_22 = "22"
-    VAT_8 = "8"
-    VAT_7 = "7"
-    VAT_5 = "5"
-    VAT_4 = "4"
-    VAT_3 = "3"
-    VAT_0 = "0"
-    EXEMPT = "zw"
-    NOT_SUBJECT = "np"
-    REVERSE_CHARGE = "oo"
-
-
-class SaleCategory(StrEnum):
-    STANDARD = "standard"
-    TAXI_FLAT_RATE = "taxi_flat_rate"
-    SPECIAL_XII = "special_xii"
-    ZERO_DOMESTIC = "zero_domestic"
-    ZERO_WDT = "zero_wdt"
-    ZERO_EXPORT = "zero_export"
-    EXEMPT = "exempt"
-    OUT_OF_TERRITORY = "out_of_territory"
-    ARTICLE_100 = "article_100"
-    REVERSE_CHARGE = "reverse_charge"
-    MARGIN = "margin"
-
-
-class InvoiceLine(KSeFBaseModel):
-    name: str = Field(description="p_7: Name of good/service")
-    supply_date: date | None = Field(default=None, description="p_6_a: Date of supply")
-    unit_price_net: Money = Field(description="p_9_a: Net unit price")
-    vat_rate: VatRate | None = Field(
-        default=None,
-        description="p_12: VAT rate / formal tax marker where applicable",
-    )
-    unit_of_measure: str = Field(default="szt", description="p_8_a: Unit of measure")
-    quantity: Decimal = Field(description="p_8_b: Quantity")
-    discount_amount: Money | None = Field(
-        default=Decimal("0.00"), description="p_10: Discount amount"
-    )
-
-    # --- computed fields ---
-    unit_price_gross: Money | None = Field(
-        default=None, description="p_9_b: Price with VAT"
-    )
-    gross_amount: Money | None = Field(
-        default=None, description="p_11_a: Gross value of the line"
-    )
-    net_amount: Money | None = Field(
-        default=None, description="p_11: Net value of the line"
-    )
-    vat_amount: Money | None = Field(
-        default=None, description="p_11_vat: VAT amount of the line"
-    )
-
-    @model_validator(mode="after")
-    def compute_financial_field(self):
-        if self.net_amount is None:
-            base_net = self.unit_price_net * self.quantity
-            self.net_amount = round_pln(base_net) - (
-                self.discount_amount or Decimal("0.00")
-            )
-
-        if self.vat_amount is None:
-            if self.vat_rate in {
-                VatRate.VAT_23,
-                VatRate.VAT_22,
-                VatRate.VAT_8,
-                VatRate.VAT_7,
-                VatRate.VAT_5,
-                VatRate.VAT_4,
-            }:
-                decimal_vat_rate = (
-                    Decimal(self.vat_rate.value) / Decimal("100")
-                    if self.vat_rate
-                    else Decimal("0.00")
-                )
-                rate_decimal = decimal_vat_rate
-                self.vat_amount = round_pln(self.net_amount * rate_decimal)
-            else:
-                # for VAT_0, EXEMPT (zw), NOT_SUBJECT (np), REVERSE_CHARGE (oo)
-                self.vat_amount = Decimal("0.00")
-
-        if self.gross_amount is None:
-            self.gross_amount = round_pln(self.net_amount + self.vat_amount)
-
-        _ = self.validate_tax_logic()
-
-        return self
-
-    vat_rate_xii: Decimal | None = Field(
-        default=None, description="p_12_XII: VAT rate XII"
-    )
-    annex_15_marker: bool | None = Field(
-        default=None, description="p_12_ZAL_15: Annex 15 marker"
-    )
-
-    sale_category: SaleCategory = Field(
-        default=SaleCategory.STANDARD,
-        description=(
-            "Logical classification used to map the line into KSeF summary buckets "
-            "(e.g. standard, WDT 0%, export 0%, exempt, reverse charge, margin)."
-        ),
-    )
-
-    excise_amount: Money | None = Field(
-        default=None, description="kwota_akcyzy: Excise amount"
-    )
-    unique_id: str | None = Field(default=None, description="uu_id: Unique ID")
-    sku: str | None = Field(
-        default=None, description="indeks: Internal SKU or additional description"
-    )
-    gtin: str | None = Field(default=None, description="gtin: Global Trade Item Number")
-    pkwiu: str | None = Field(
-        default=None, description="pkwi_u: Polish Goods Classification"
-    )
-    cn: str | None = Field(default=None, description="cn: Nomenclature Code")
-    pkob: str | None = Field(
-        default=None, description="pkob: Polish Construction Object Classification"
-    )
-
-    gtu_code: GtuCode | None = Field(default=None, description="gtu: GTU code")
-    procedure: InvoiceProcedure | None = Field(
-        default=None, description="procedura: Procedure code"
-    )
-    currency_exchange_rate: Decimal | None = Field(
-        default=None, description="kurs_waluty: Currency exchange rate"
-    )
-    before_correction: bool = Field(
-        default=False,
-        description="stan_przed: Marks the row as representing state before correction",
-    )
-
-    def validate_tax_logic(self) -> Self:
-        self._validate_quantity()
-        self._validate_sale_category_rules()
-        self._validate_gross_amount_consistency()
-        return self
-
-    def _validate_quantity(self) -> None:
-        if self.quantity == 0:
-            raise ValueError("quantity cannot be zero")
-
-    def _validate_sale_category_rules(self) -> None:
-        match self.sale_category:
-            case SaleCategory.STANDARD:
-                self._validate_standard_sale()
-            case SaleCategory.TAXI_FLAT_RATE:
-                self._validate_taxi_flat_rate()
-            case SaleCategory.ZERO_DOMESTIC:
-                self._validate_zero_domestic()
-            case SaleCategory.ZERO_WDT:
-                self._validate_zero_wdt()
-            case SaleCategory.ZERO_EXPORT:
-                self._validate_zero_export()
-            case SaleCategory.EXEMPT:
-                self._validate_exempt()
-            case SaleCategory.OUT_OF_TERRITORY:
-                self._validate_out_of_territory()
-            case SaleCategory.ARTICLE_100:
-                self._validate_article_100()
-            case SaleCategory.REVERSE_CHARGE:
-                self._validate_reverse_charge()
-            case SaleCategory.MARGIN:
-                self._validate_margin()
-            case SaleCategory.SPECIAL_XII:
-                self._validate_special_xii()
-            case _ as unreachable:  # pyright: ignore[reportUnnecessaryComparison]
-                assert_never(unreachable)
-
-    def _validate_standard_sale(self) -> None:
-        # Standard domestic taxable sale using ordinary VAT rate buckets.
-        # This category maps to the classic KSeF summary fields such as p_13_1..p_13_3 and p_14_1..p_14_3.
-        if self.vat_rate not in {
-            VatRate.VAT_23,
-            VatRate.VAT_22,
-            VatRate.VAT_8,
-            VatRate.VAT_7,
-            VatRate.VAT_5,
-        }:
-            raise ValueError(
-                "STANDARD sale_category requires vat_rate equal to 23, 22, 8, 7, or 5"
-            )
-
-    def _validate_taxi_flat_rate(self) -> None:
-        # Taxi flat-rate sale is a special tax regime.
-        # It should be represented only with the dedicated 4% bucket.
-        if self.vat_rate != VatRate.VAT_4:
-            raise ValueError("TAXI_FLAT_RATE requires vat_rate='4'")
-
-    def _validate_zero_domestic(self) -> None:
-        # Domestic 0% sale, excluding intra-EU supply and export.
-        # This maps to p_13_6_1.
-        if self.vat_rate != VatRate.VAT_0:
-            raise ValueError("ZERO_DOMESTIC requires vat_rate='0'")
-
-    def _validate_zero_wdt(self) -> None:
-        # Intra-EU supply of goods taxed at 0%.
-        # This maps to p_13_6_2.
-        if self.vat_rate != VatRate.VAT_0:
-            raise ValueError("ZERO_WDT requires vat_rate='0'")
-
-    def _validate_zero_export(self) -> None:
-        # Export sale taxed at 0%.
-        # This maps to p_13_6_3.
-        if self.vat_rate != VatRate.VAT_0:
-            raise ValueError("ZERO_EXPORT requires vat_rate='0'")
-
-    def _validate_exempt(self) -> None:
-        # VAT-exempt sale.
-        # This maps to p_13_7 and must not be treated as a taxable rate bucket.
-        if self.vat_rate != VatRate.EXEMPT:
-            raise ValueError("EXEMPT category requires vat_rate='zw'")
-
-    def _validate_out_of_territory(self) -> None:
-        # Sale outside the territory of Poland.
-        # Usually represented as not subject to Polish VAT and maps to p_13_8.
-        if self.vat_rate not in {VatRate.NOT_SUBJECT, None}:
-            raise ValueError("OUT_OF_TERRITORY requires vat_rate='np' or None")
-
-    def _validate_article_100(self) -> None:
-        # Services reported under Article 100(1)(4).
-        # This is a reporting-specific bucket and should be marked as not subject in Poland.
-        if self.vat_rate not in {VatRate.NOT_SUBJECT, None}:
-            raise ValueError("ARTICLE_100 requires vat_rate='np' or None")
-
-    def _validate_reverse_charge(self) -> None:
-        # Reverse-charge sale where the buyer accounts for VAT.
-        # This maps to p_13_10 and should not use ordinary VAT sale buckets.
-        if self.vat_rate not in {VatRate.REVERSE_CHARGE, None}:
-            raise ValueError("REVERSE_CHARGE requires vat_rate='oo' or None")
-
-    def _validate_margin(self) -> None:
-        # Margin scheme sale under the dedicated margin procedure.
-        # It maps to p_13_11 and must not be represented as a normal VAT rate bucket.
-        if self.vat_rate in {
-            VatRate.VAT_23,
-            VatRate.VAT_22,
-            VatRate.VAT_8,
-            VatRate.VAT_7,
-            VatRate.VAT_5,
-            VatRate.VAT_4,
-            VatRate.VAT_0,
-        }:
-            raise ValueError("MARGIN category should not use standard VAT rates")
-
-    def _validate_special_xii(self) -> None:
-        # Special Title XII procedure.
-        # This category requires the dedicated vat_rate_xii field instead of ordinary VAT rate handling.
-        if self.vat_rate_xii is None:
-            raise ValueError("SPECIAL_XII requires vat_rate_xii")
-
-    def _validate_gross_amount_consistency(self) -> None:
-        # Gross amount, when provided, must equal net amount plus VAT amount.
-        if self.gross_amount is not None:
-            assert self.net_amount is not None and self.vat_amount is not None, (
-                "net_amount and vat_amount must be set when gross_amount is provided"
-            )
-            expected_gross = self.net_amount + self.vat_amount
-            if self.gross_amount != expected_gross:
-                raise ValueError(
-                    f"gross_amount must equal net_amount + vat_amount ({expected_gross})"
-                )
 
 
 def get_placeholder_invoice_number() -> str:
@@ -372,14 +84,11 @@ class KsefInvoiceBody(KSeFBaseModel):
         description="okres_fa_b: End date of the accounting/service period.",
     )
 
-    lines: list[InvoiceLine] = Field(
-        default_factory=list,
-        description="fa_wiersz: Detailed invoice line items.",
+    return_of_excise: bool | None = Field(
+        default=None,
+        description="zwrot_akcyzy: Flag indicating return of excise duty.",
     )
-    order_lines: list[AdvanceOrderLine] = Field(
-        default_factory=list,
-        description="zamowienie: Order rows used on advance invoices.",
-    )
+
     correction_reason: str | None = Field(
         default=None, description="przyczyna_korekty: Optional correction reason."
     )
@@ -387,30 +96,55 @@ class KsefInvoiceBody(KSeFBaseModel):
         default_factory=list,
         description="dane_fa_korygowanej: References to corrected invoices.",
     )
-    advance_invoice_references: list[AdvanceInvoiceReference] = Field(
-        default_factory=list,
-        description="faktura_zaliczkowa: Referenced advance invoices on settlements.",
-    )
-    settlement_charges: list[SettlementCharge] = Field(
-        default_factory=list,
-        description="rozliczenie/obciazenia",
-    )
-    settlement_deductions: list[SettlementDeduction] = Field(
-        default_factory=list,
-        description="rozliczenie/odliczenia",
-    )
-    payment: InvoicePayment | None = Field(
+    corrected_seller: CorrectedSellerEntity | None = Field(
         default=None,
-        description="platnosc: Payment details for the invoice.",
+        description="podmiot1_k: Seller data from the corrected invoice.",
     )
-    transaction_conditions: TransactionConditions | None = Field(
-        default=None,
-        description="warunki_transakcji: Transaction conditions for the invoice.",
+    corrected_buyers: list[CorrectedBuyerEntity] = Field(
+        default_factory=list,
+        description="podmiot2_k: Buyer data from the corrected invoice.",
     )
+
     margin_procedure: MarginProcedure | None = Field(
         default=None,
         description="adnotacje/pmarzy: Margin procedure flag.",
     )
+    advance_partial_payments: list[PartialAdvancePayment] = Field(
+        default_factory=list,
+        description="zaliczka_czesciowa: Partial advance payments.",
+    )
+    # --- aggregated fields ---
+    advance_invoice_references: list[AdvanceInvoiceReference] = Field(
+        default_factory=list,
+        description="faktura_zaliczkowa: Referenced advance invoices on settlements.",
+    )
+
+    rows: list[InvoiceRow] = Field(
+        default_factory=list,
+        description="fa_wiersz: Detailed invoice line items.",
+    )
+
+    settlement: InvoiceSettlement | None = Field(
+        default=None,
+        description="rozliczenie: Additional settlement data for the invoice.",
+    )
+
+    payment: InvoicePayment | None = Field(
+        default=None,
+        description="platnosc: Payment details for the invoice.",
+    )
+
+    transaction_conditions: TransactionConditions | None = Field(
+        default=None,
+        description="warunki_transakcji: Transaction conditions for the invoice.",
+    )
+
+    order: InvoiceOrder | None = Field(
+        default=None,
+        description="zamowienie: Order block used on advance invoices.",
+    )
+
+    # --- validation ---
 
     @model_validator(mode="after")
     def validate_dates(self) -> "KsefInvoiceBody":
@@ -436,17 +170,17 @@ class KsefInvoiceBody(KSeFBaseModel):
         return self
 
     def _validate_row_presence(self) -> None:
-        if not self.lines and not self.order_lines:
-            raise ValueError("At least one invoice line or order line is required")
+        if not self.rows and self.order is None:
+            raise ValueError("At least one invoice line or order is required")
 
         if self.invoice_type == InvoiceType.ZAL:
-            if self.lines:
-                raise ValueError("Advance invoices use order_lines instead of lines")
-            if not self.order_lines:
-                raise ValueError("Advance invoices require at least one order line")
-        elif self.order_lines:
-            raise ValueError("order_lines are only valid for advance invoices")
-        elif not self.lines:
+            if self.rows:
+                raise ValueError("Advance invoices use order instead of lines")
+            if self.order is None:
+                raise ValueError("Advance invoices require order data")
+        elif self.order is not None:
+            raise ValueError("order is only valid for advance invoices")
+        elif not self.rows:
             raise ValueError("At least one invoice line is required")
 
     def _validate_intent_specific_data(self) -> None:
@@ -456,24 +190,39 @@ class KsefInvoiceBody(KSeFBaseModel):
             raise ValueError(
                 "Settlement invoices require at least one advance invoice reference"
             )
+        if self.corrected_seller is not None or self.corrected_buyers:
+            if self.invoice_type not in {
+                InvoiceType.CORRECTING,
+                InvoiceType.CORRECTING_ZAL,
+                InvoiceType.CORRECTING_ROZ,
+            }:
+                raise ValueError(
+                    "corrected_seller and corrected_buyers are only valid for correcting invoices"
+                )
         if self.margin_procedure is not None:
-            if not self.lines:
+            if not self.rows:
                 raise ValueError("Margin procedure requires invoice lines")
             non_margin_lines = [
-                line for line in self.lines if line.sale_category != SaleCategory.MARGIN
+                line for line in self.rows if line.sale_category != SaleCategory.MARGIN
             ]
             if non_margin_lines:
                 raise ValueError(
                     "Margin procedure can only be used with MARGIN sale_category lines"
                 )
 
-    def _financial_rows(self) -> list[InvoiceLine | AdvanceOrderLine]:
+    @property
+    def order_lines(self) -> list[InvoiceOrderLine]:
+        if self.order is None:
+            return []
+        return list(self.order.order_lines)
+
+    def _financial_rows(self) -> list[InvoiceRow | InvoiceOrderLine]:
         if self.invoice_type == InvoiceType.ZAL:
-            return list(self.order_lines)
-        return list(self.lines)
+            return self.order_lines
+        return list(self.rows)
 
     def _sum_net(
-        self, predicate: Callable[[InvoiceLine | AdvanceOrderLine], bool]
+        self, predicate: Callable[[InvoiceRow | InvoiceOrderLine], bool]
     ) -> Money:
         sum_net = Decimal("0.00")
         for line in self._financial_rows():
@@ -486,7 +235,7 @@ class KsefInvoiceBody(KSeFBaseModel):
         return sum_net
 
     def _sum_vat(
-        self, predicate: Callable[[InvoiceLine | AdvanceOrderLine], bool]
+        self, predicate: Callable[[InvoiceRow | InvoiceOrderLine], bool]
     ) -> Money:
         sum_vat = Decimal("0.00")
         for line in self._financial_rows():
@@ -710,6 +459,12 @@ class KsefInvoiceBody(KSeFBaseModel):
 
     @property
     def settlement_charges_total(self) -> Money:
+        if self.settlement is None:
+            return Decimal("0.00")
+
+        if self.settlement.charges_total is not None:
+            return self.settlement.charges_total
+
         return sum(
             (charge.amount for charge in self.settlement_charges),
             start=Decimal("0.00"),
@@ -717,21 +472,46 @@ class KsefInvoiceBody(KSeFBaseModel):
 
     @property
     def settlement_deductions_total(self) -> Money:
-        explicit_deductions = [
-            deduction.amount for deduction in self.settlement_deductions
-        ]
+        explicit_deductions_total = Decimal("0.00")
+        if self.settlement is not None:
+            if self.settlement.deductions_total is not None:
+                explicit_deductions_total = self.settlement.deductions_total
+            else:
+                explicit_deductions_total = sum(
+                    (deduction.amount for deduction in self.settlement_deductions),
+                    start=Decimal("0.00"),
+                )
+
         referenced_deductions = [
             reference.deduction_amount
             for reference in self.advance_invoice_references
             if reference.deduction_amount is not None
         ]
         return sum(
-            explicit_deductions + referenced_deductions,
+            [explicit_deductions_total] + referenced_deductions,
             start=Decimal("0.00"),
         )
 
     @property
+    def settlement_charges(self) -> list[SettlementCharge]:
+        if self.settlement is None:
+            return []
+        return list(self.settlement.charges)
+
+    @property
+    def settlement_deductions(self) -> list[SettlementDeduction]:
+        if self.settlement is None:
+            return []
+        return list(self.settlement.deductions)
+
+    @property
     def settlement_balance(self) -> Money:
+        if self.settlement is not None:
+            if self.settlement.amount_due is not None:
+                return self.settlement.amount_due
+            if self.settlement.amount_to_settle is not None:
+                return -self.settlement.amount_to_settle
+
         return (
             self.total_gross
             + self.settlement_charges_total

@@ -2,13 +2,15 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from ksef2.domain.models.fa3 import (
+    CorrectedBuyerEntity,
+    CorrectedSellerEntity,
     InvoiceAddress,
     InvoiceEntity,
     InvoiceHeader,
-    InvoiceLine,
     KsefInvoiceBody,
     KsefInvoice,
 )
+from ksef2.domain.models.fa3.body import InvoiceRow
 from ksef2.domain.models.fa3.body.payment import InvoicePayment
 from ksef2.domain.models.fa3.body.transaction import (
     TransactionAddress,
@@ -57,8 +59,8 @@ def test_invoice_to_spec_assembles_root_faktura() -> None:
             body=KsefInvoiceBody(
                 issue_date=date(2026, 3, 29),
                 invoice_number="FV/1/2026",
-                lines=[
-                    InvoiceLine(
+                rows=[
+                    InvoiceRow(
                         name="Consulting service",
                         supply_date=date(2026, 3, 28),
                         quantity=Decimal("10"),
@@ -74,7 +76,7 @@ def test_invoice_to_spec_assembles_root_faktura() -> None:
                         before_correction=True,
                         vat_amount=Decimal("230.00"),
                     ),
-                    InvoiceLine(
+                    InvoiceRow(
                         name="Support service",
                         unit_of_measure="h",
                         quantity=Decimal("5"),
@@ -143,3 +145,70 @@ def test_invoice_to_spec_assembles_root_faktura() -> None:
     assert output.fa.adnotacje.zwolnienie.p_19_n == Twybor1.VALUE_1
     assert output.fa.adnotacje.nowe_srodki_transportu.p_22_n == Twybor1.VALUE_1
     assert output.fa.adnotacje.pmarzy.p_pmarzy_n == Twybor1.VALUE_1
+
+
+def test_invoice_to_spec_maps_correction_party_blocks() -> None:
+    output = invoice_to_spec(
+        KsefInvoice(
+            invoice_header=InvoiceHeader(
+                generation_timestamp=datetime(2026, 2, 1, 12, 30, 45),
+                system_info="ACME ERP",
+            ),
+            seller=InvoiceEntity(
+                tax_id="1234567890",
+                name="Seller Sp. z o.o.",
+                address=make_polish_address(),
+            ),
+            buyer=InvoiceEntity(
+                name="Buyer GmbH",
+                address=InvoiceAddress(
+                    country_code="DE",
+                    address_line_1="Unter den Linden 1",
+                ),
+            ),
+            body=KsefInvoiceBody(
+                issue_date=date(2026, 3, 29),
+                invoice_number="FK/1/2026",
+                invoice_type="Faktura korygująca",
+                correction_reason="Buyer data correction",
+                corrected_invoices=[
+                    {
+                        "issue_date": "2026-03-01",
+                        "invoice_number": "FV/1/2026",
+                        "ksef_id": "1234567890-20260301-ABCDEF-ABCDEF-FF",
+                    }
+                ],
+                corrected_seller=CorrectedSellerEntity(
+                    vat_prefix="DE",
+                    tax_id="1234567890",
+                    name="Old Seller Sp. z o.o.",
+                    address=make_polish_address(),
+                ),
+                corrected_buyers=[
+                    CorrectedBuyerEntity(
+                        eu_vat_id="DE123456789",
+                        name="Old Buyer GmbH",
+                        buyer_id="BUYER-1",
+                    )
+                ],
+                rows=[
+                    InvoiceRow(
+                        name="Consulting service",
+                        quantity=Decimal("1"),
+                        unit_price_net=Decimal("100.00"),
+                        net_amount=Decimal("100.00"),
+                        vat_rate="23",
+                        vat_amount=Decimal("23.00"),
+                    )
+                ],
+            ),
+        )
+    )
+
+    assert output.fa.podmiot1_k is not None
+    assert output.fa.podmiot1_k.prefiks_podatnika.name == "DE"
+    assert output.fa.podmiot1_k.dane_identyfikacyjne.nazwa == "Old Seller Sp. z o.o."
+    assert len(output.fa.podmiot2_k) == 1
+    assert output.fa.podmiot2_k[0].dane_identyfikacyjne.kod_ue.name == "DE"
+    assert output.fa.podmiot2_k[0].dane_identyfikacyjne.nr_vat_ue == "123456789"
+    assert output.fa.podmiot2_k[0].idnabywcy == "BUYER-1"

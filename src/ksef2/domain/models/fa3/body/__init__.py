@@ -1,3 +1,11 @@
+from ksef2.domain.models.fa3.body.advance_payment import (
+    AdvancePayment,
+    PartialAdvancePayment,
+)
+from ksef2.domain.models.fa3.party import (
+    CorrectedBuyerEntity,
+    CorrectedSellerEntity,
+)
 from ksef2.domain.models.fa3.body.payment import (
     BankAccount,
     BankOwnAccountType,
@@ -7,6 +15,16 @@ from ksef2.domain.models.fa3.body.payment import (
     PaymentForm,
     PaymentTerm,
     PaymentTermDescription,
+)
+from ksef2.domain.models.fa3.body.order import (
+    AdvanceOrderLine,
+    InvoiceOrder,
+    InvoiceOrderLine,
+)
+from ksef2.domain.models.fa3.body.settlement import (
+    InvoiceSettlement,
+    SettlementCharge,
+    SettlementDeduction,
 )
 from ksef2.domain.models.fa3.body.transaction import (
     CargoType,
@@ -19,21 +37,29 @@ from ksef2.domain.models.fa3.body.transaction import (
     TransportType,
 )
 from ksef2.domain.models.fa3.body.root import (
-    GtuCode,
-    InvoiceLine,
-    InvoiceProcedure,
     InvoiceType,
     KsefInvoiceBody,
+)
+from ksef2.domain.models.fa3.body.row import (
     Money,
-    SaleCategory,
+    GtuCode,
+    InvoiceProcedure,
     VatRate,
+    SaleCategory,
+    InvoiceRow,
 )
 
 __all__ = [
     "BankAccount",
     "BankOwnAccountType",
+    "AdvancePayment",
+    "PartialAdvancePayment",
+    "CorrectedBuyerEntity",
+    "CorrectedSellerEntity",
     "GtuCode",
-    "InvoiceLine",
+    "InvoiceRow",
+    "InvoiceOrder",
+    "InvoiceOrderLine",
     "InvoicePayment",
     "InvoiceProcedure",
     "InvoiceType",
@@ -44,6 +70,10 @@ __all__ = [
     "PaymentForm",
     "PaymentTerm",
     "PaymentTermDescription",
+    "AdvanceOrderLine",
+    "InvoiceSettlement",
+    "SettlementCharge",
+    "SettlementDeduction",
     "SaleCategory",
     "CargoType",
     "TransactionAddress",

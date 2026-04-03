@@ -12,6 +12,9 @@ from ksef2.domain.models.fa3.body import (
 )
 from ksef2.domain.models.fa3 import KsefInvoice
 from ksef2.infra.mappers.invoices.fa3.buyer import to_spec as buyer_to_spec
+from ksef2.infra.mappers.invoices.fa3.correction_party import (
+    to_spec as correction_party_to_spec,
+)
 from ksef2.infra.mappers.invoices.fa3.header import to_spec as header_to_spec
 from ksef2.infra.mappers.invoices.fa3.lines import to_spec as line_to_spec
 from ksef2.infra.mappers.invoices.fa3.payment import to_spec as payment_to_spec
@@ -128,6 +131,7 @@ def _map_advance_invoice_reference(
 
 
 def _map_rozliczenie(request: KsefInvoiceBody) -> FakturaFaRozliczenie | None:
+    settlement = request.settlement
     charges = [
         FakturaFaRozliczenieObciazenia(
             kwota=_format_decimal(charge.amount),
@@ -152,18 +156,36 @@ def _map_rozliczenie(request: KsefInvoiceBody) -> FakturaFaRozliczenie | None:
         and reference.deduction_reason is not None
     )
 
-    if not charges and not deductions:
+    has_explicit_settlement_values = settlement is not None and any(
+        value is not None
+        for value in (
+            settlement.charges_total,
+            settlement.deductions_total,
+            settlement.amount_due,
+            settlement.amount_to_settle,
+        )
+    )
+
+    if not charges and not deductions and not has_explicit_settlement_values:
         return None
 
+    charges_total = request.settlement_charges_total
+    deductions_total = request.settlement_deductions_total
     balance = request.settlement_balance
+    amount_due = settlement.amount_due if settlement else None
+    amount_to_settle = settlement.amount_to_settle if settlement else None
+    if amount_due is None and amount_to_settle is None:
+        amount_due = balance if balance >= Decimal("0.00") else None
+        amount_to_settle = abs(balance) if balance < Decimal("0.00") else None
+
     return FakturaFaRozliczenie(
         obciazenia=charges,
-        suma_obciazen=_opt_dec(request.settlement_charges_total),
+        suma_obciazen=_opt_dec(charges_total),
         odliczenia=deductions,
-        suma_odliczen=_opt_dec(request.settlement_deductions_total),
-        do_zaplaty=_format_decimal(balance) if balance >= Decimal("0.00") else None,
-        do_rozliczenia=_format_decimal(abs(balance))
-        if balance < Decimal("0.00")
+        suma_odliczen=_opt_dec(deductions_total),
+        do_zaplaty=_format_decimal(amount_due) if amount_due is not None else None,
+        do_rozliczenia=_format_decimal(amount_to_settle)
+        if amount_to_settle is not None
         else None,
     )
 
@@ -223,14 +245,22 @@ def _(request: KsefInvoiceBody) -> FakturaFa:
         )
 
     zamowienie = None
-    if request.order_lines:
+    if request.order is not None:
         zamowienie = FakturaFaZamowienie(
-            wartosc_zamowienia=_format_decimal(request.total_gross),
+            wartosc_zamowienia=_format_decimal(request.order.total_value),
             zamowienie_wiersz=[
                 line_to_spec(line, row_number)
-                for row_number, line in enumerate(request.order_lines, start=1)
+                for row_number, line in enumerate(request.order.order_lines, start=1)
             ],
         )
+
+    corrected_seller = None
+    if request.corrected_seller is not None:
+        corrected_seller = correction_party_to_spec(request.corrected_seller)
+
+    corrected_buyers = [
+        correction_party_to_spec(buyer) for buyer in request.corrected_buyers
+    ]
 
     return FakturaFa(
         kod_waluty=_map_currency(request.currency),
@@ -275,6 +305,8 @@ def _(request: KsefInvoiceBody) -> FakturaFa:
             )
             for reference in request.corrected_invoices
         ],
+        podmiot1_k=corrected_seller,
+        podmiot2_k=corrected_buyers,
         faktura_zaliczkowa=[
             _map_advance_invoice_reference(
                 ksef_id=reference.ksef_id,
@@ -286,7 +318,7 @@ def _(request: KsefInvoiceBody) -> FakturaFa:
         # Finally, build the actual invoice lines
         fa_wiersz=[
             line_to_spec(line, row_number)
-            for row_number, line in enumerate(request.lines, start=1)
+            for row_number, line in enumerate(request.rows, start=1)
         ],
         rozliczenie=_map_rozliczenie(request),
         platnosc=payment_to_spec(request.payment) if request.payment else None,
