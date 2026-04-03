@@ -1,10 +1,20 @@
+from collections.abc import Callable
 from datetime import date, datetime
 from enum import StrEnum
-from typing import Annotated, Literal, Callable, Self, assert_never
+from typing import Annotated, Literal, Self, assert_never
 
 from pydantic import Field, model_validator
 
 from ksef2.domain.models import KSeFBaseModel
+from ksef2.domain.models.fa3.body.payment import InvoicePayment
+from ksef2.domain.models.fa3.drafts import (
+    AdvanceInvoiceReference,
+    AdvanceOrderLine,
+    CorrectedInvoiceReference,
+    MarginProcedure,
+    SettlementCharge,
+    SettlementDeduction,
+)
 
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -63,6 +73,7 @@ class VatRate(StrEnum):
     VAT_7 = "7"
     VAT_5 = "5"
     VAT_4 = "4"
+    VAT_3 = "3"
     VAT_0 = "0"
     EXEMPT = "zw"
     NOT_SUBJECT = "np"
@@ -360,10 +371,41 @@ class KsefInvoiceBody(KSeFBaseModel):
         description="okres_fa_b: End date of the accounting/service period.",
     )
 
-    lines: Annotated[
-        list[InvoiceLine],
-        Field(min_length=1, description="fa_wiersz: Detailed invoice line items."),
-    ]
+    lines: list[InvoiceLine] = Field(
+        default_factory=list,
+        description="fa_wiersz: Detailed invoice line items.",
+    )
+    order_lines: list[AdvanceOrderLine] = Field(
+        default_factory=list,
+        description="zamowienie: Order rows used on advance invoices.",
+    )
+    correction_reason: str | None = Field(
+        default=None, description="przyczyna_korekty: Optional correction reason."
+    )
+    corrected_invoices: list[CorrectedInvoiceReference] = Field(
+        default_factory=list,
+        description="dane_fa_korygowanej: References to corrected invoices.",
+    )
+    advance_invoice_references: list[AdvanceInvoiceReference] = Field(
+        default_factory=list,
+        description="faktura_zaliczkowa: Referenced advance invoices on settlements.",
+    )
+    settlement_charges: list[SettlementCharge] = Field(
+        default_factory=list,
+        description="rozliczenie/obciazenia",
+    )
+    settlement_deductions: list[SettlementDeduction] = Field(
+        default_factory=list,
+        description="rozliczenie/odliczenia",
+    )
+    payment: InvoicePayment | None = Field(
+        default=None,
+        description="platnosc: Payment details for the invoice.",
+    )
+    margin_procedure: MarginProcedure | None = Field(
+        default=None,
+        description="adnotacje/pmarzy: Margin procedure flag.",
+    )
 
     @model_validator(mode="after")
     def validate_dates(self) -> "KsefInvoiceBody":
@@ -384,24 +426,67 @@ class KsefInvoiceBody(KSeFBaseModel):
             and self.period_start > self.period_end
         ):
             raise ValueError("period_start cannot be later than period_end")
+        self._validate_row_presence()
+        self._validate_intent_specific_data()
         return self
 
-    def _sum_net(self, predicate: Callable[[InvoiceLine], bool]) -> Money:
+    def _validate_row_presence(self) -> None:
+        if not self.lines and not self.order_lines:
+            raise ValueError("At least one invoice line or order line is required")
+
+        if self.invoice_type == InvoiceType.ZAL:
+            if self.lines:
+                raise ValueError("Advance invoices use order_lines instead of lines")
+            if not self.order_lines:
+                raise ValueError("Advance invoices require at least one order line")
+        elif self.order_lines:
+            raise ValueError("order_lines are only valid for advance invoices")
+        elif not self.lines:
+            raise ValueError("At least one invoice line is required")
+
+    def _validate_intent_specific_data(self) -> None:
+        if self.invoice_type == InvoiceType.CORRECTING and not self.corrected_invoices:
+            raise ValueError("Correcting invoices require corrected_invoices data")
+        if self.invoice_type == InvoiceType.ROZ and not self.advance_invoice_references:
+            raise ValueError(
+                "Settlement invoices require at least one advance invoice reference"
+            )
+        if self.margin_procedure is not None:
+            if not self.lines:
+                raise ValueError("Margin procedure requires invoice lines")
+            non_margin_lines = [
+                line for line in self.lines if line.sale_category != SaleCategory.MARGIN
+            ]
+            if non_margin_lines:
+                raise ValueError(
+                    "Margin procedure can only be used with MARGIN sale_category lines"
+                )
+
+    def _financial_rows(self) -> list[InvoiceLine | AdvanceOrderLine]:
+        if self.invoice_type == InvoiceType.ZAL:
+            return list(self.order_lines)
+        return list(self.lines)
+
+    def _sum_net(
+        self, predicate: Callable[[InvoiceLine | AdvanceOrderLine], bool]
+    ) -> Money:
         sum_net = Decimal("0.00")
-        for line in self.lines:
+        for line in self._financial_rows():
             assert line.net_amount is not None, (
-                "net_amount must be set for all invoice lines"
+                "net_amount must be set for all invoice rows"
             )
             if predicate(line):
                 sum_net += line.net_amount
 
         return sum_net
 
-    def _sum_vat(self, predicate: Callable[[InvoiceLine], bool]) -> Money:
+    def _sum_vat(
+        self, predicate: Callable[[InvoiceLine | AdvanceOrderLine], bool]
+    ) -> Money:
         sum_vat = Decimal("0.00")
-        for line in self.lines:
+        for line in self._financial_rows():
             assert line.vat_amount is not None, (
-                "vat_amount must be set for all invoice lines"
+                "vat_amount must be set for all invoice rows"
             )
             if predicate(line):
                 sum_vat += line.vat_amount
@@ -412,9 +497,9 @@ class KsefInvoiceBody(KSeFBaseModel):
         self,
     ) -> Annotated[Money, "Helper: total net value across all invoice lines"]:
         sum_net = Decimal("0.00")
-        for line in self.lines:
+        for line in self._financial_rows():
             assert line.net_amount is not None, (
-                "net_amount must be set for all invoice lines"
+                "net_amount must be set for all invoice rows"
             )
             sum_net += line.net_amount
         return sum_net
@@ -424,9 +509,9 @@ class KsefInvoiceBody(KSeFBaseModel):
         self,
     ) -> Annotated[Money, "Helper: total VAT amount across all invoice lines"]:
         sum_vat = Decimal("0.00")
-        for line in self.lines:
+        for line in self._financial_rows():
             assert line.vat_amount is not None, (
-                "vat_amount must be set for all invoice lines"
+                "vat_amount must be set for all invoice rows"
             )
             sum_vat += line.vat_amount
         return sum_vat
@@ -617,3 +702,33 @@ class KsefInvoiceBody(KSeFBaseModel):
         "p_13_11: Total value of sales in the margin scheme under art. 119 and 120",
     ]:
         return self._sum_net(lambda line: line.sale_category == SaleCategory.MARGIN)
+
+    @property
+    def settlement_charges_total(self) -> Money:
+        return sum(
+            (charge.amount for charge in self.settlement_charges),
+            start=Decimal("0.00"),
+        )
+
+    @property
+    def settlement_deductions_total(self) -> Money:
+        explicit_deductions = [
+            deduction.amount for deduction in self.settlement_deductions
+        ]
+        referenced_deductions = [
+            reference.deduction_amount
+            for reference in self.advance_invoice_references
+            if reference.deduction_amount is not None
+        ]
+        return sum(
+            explicit_deductions + referenced_deductions,
+            start=Decimal("0.00"),
+        )
+
+    @property
+    def settlement_balance(self) -> Money:
+        return (
+            self.total_gross
+            + self.settlement_charges_total
+            - self.settlement_deductions_total
+        )

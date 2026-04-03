@@ -5,15 +5,16 @@ from functools import singledispatch
 from typing import overload, assert_never
 
 from pydantic import BaseModel
+from ksef2.domain.models.fa3.drafts import MarginProcedure
 from ksef2.domain.models.fa3.body import (
     KsefInvoiceBody,
     InvoiceType,
-    GtuCode,
-    InvoiceProcedure,
 )
-from ksef2.domain.models.fa3 import InvoiceLine, KsefInvoice
+from ksef2.domain.models.fa3 import KsefInvoice
 from ksef2.infra.mappers.invoices.fa3.buyer import to_spec as buyer_to_spec
 from ksef2.infra.mappers.invoices.fa3.header import to_spec as header_to_spec
+from ksef2.infra.mappers.invoices.fa3.lines import to_spec as line_to_spec
+from ksef2.infra.mappers.invoices.fa3.payment import to_spec as payment_to_spec
 from ksef2.infra.mappers.invoices.fa3.seller import to_spec as seller_to_spec
 from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import (
     Twybor1,
@@ -27,12 +28,14 @@ from ksef2.infra.schema.fa3.models.schemat import (
     FakturaFaAdnotacjeNoweSrodkiTransportu,
     FakturaFaAdnotacjePmarzy,
     FakturaFaAdnotacjeZwolnienie,
-    FakturaFaFaWiersz,
+    FakturaFaDaneFaKorygowanej,
+    FakturaFaFakturaZaliczkowa,
+    FakturaFaRozliczenie,
+    FakturaFaRozliczenieObciazenia,
+    FakturaFaRozliczenieOdliczenia,
+    FakturaFaZamowienie,
     TkodWaluty,
     TrodzajFaktury,
-    TstawkaPodatku,
-    Tgtu,
-    ToznaczenieProcedury,
 )
 
 
@@ -55,69 +58,36 @@ def _map_currency(value: str) -> TkodWaluty:
         raise ValueError(f"Unsupported FA(3) currency code: {value}") from None
 
 
-def _map_vat_rate(value: str) -> TstawkaPodatku:
-    try:
-        return TstawkaPodatku(value)
-    except ValueError:
-        raise ValueError(f"Unsupported FA(3) VAT rate: {value}") from None
+def _map_margin_adnotacje(
+    margin_procedure: MarginProcedure | None,
+) -> FakturaFaAdnotacjePmarzy:
+    if margin_procedure is None:
+        return FakturaFaAdnotacjePmarzy(p_pmarzy_n=Twybor1.VALUE_1)
 
-
-def _map_gtu_code(value: GtuCode) -> Tgtu:
-    try:
-        return Tgtu(value)
-    except ValueError:
-        raise ValueError(f"Unsupported FA(3) GTU code: {value}") from None
-
-
-def _map_procedure(value: InvoiceProcedure) -> ToznaczenieProcedury:
-    try:
-        return ToznaczenieProcedury(value)
-    except ValueError:
-        raise ValueError(f"Unsupported FA(3) procedure code: {value}") from None
-
-
-def _map_line(line: InvoiceLine, row_number: int) -> FakturaFaFaWiersz:
-
-    assert line.vat_amount is not None, (
-        "VAT amount is being automatically calculated and must be set"
-    )
-    vat_amount = line.vat_amount
-
-    assert line.net_amount is not None, (
-        "Net amount is being automatically calculated and must be set"
-    )
-    net_amount = line.net_amount
-
-    return FakturaFaFaWiersz(
-        nr_wiersza_fa=row_number,
-        uu_id=line.unique_id,
-        p_7=line.name,
-        p_8_a=line.unit_of_measure,
-        p_8_b=_format_decimal(line.quantity),
-        p_9_a=_format_decimal(line.unit_price_net),
-        p_9_b=_format_decimal(line.unit_price_gross)
-        if line.unit_price_gross is not None
-        else None,
-        p_10=_format_decimal(line.discount_amount)
-        if line.discount_amount and line.discount_amount > 0
-        else None,
-        p_11=_format_decimal(net_amount),
-        p_11_vat=_format_decimal(vat_amount),
-        p_12=_map_vat_rate(line.vat_rate) if line.vat_rate else None,
-        p_12_xii=line.vat_rate_xii if line.vat_rate_xii else None,
-        indeks=line.sku,
-        gtin=line.gtin,
-        pkwi_u=line.pkwiu,
-        cn=line.cn,
-        pkob=line.pkob,
-        gtu=_map_gtu_code(line.gtu_code) if line.gtu_code else None,
-        procedura=_map_procedure(line.procedure) if line.procedure else None,
-        stan_przed=Twybor1.VALUE_1 if line.before_correction else None,
-        # kwota_akcyzy=_format_decimal(line.excise_amount) if line.excise_amount else None
+    if margin_procedure == MarginProcedure.TRAVEL_AGENCY:
+        return FakturaFaAdnotacjePmarzy(
+            p_pmarzy=Twybor1.VALUE_1,
+            p_pmarzy_2=Twybor1.VALUE_1,
+        )
+    if margin_procedure == MarginProcedure.USED_GOODS:
+        return FakturaFaAdnotacjePmarzy(
+            p_pmarzy=Twybor1.VALUE_1,
+            p_pmarzy_3_1=Twybor1.VALUE_1,
+        )
+    if margin_procedure == MarginProcedure.ARTWORKS:
+        return FakturaFaAdnotacjePmarzy(
+            p_pmarzy=Twybor1.VALUE_1,
+            p_pmarzy_3_2=Twybor1.VALUE_1,
+        )
+    return FakturaFaAdnotacjePmarzy(
+        p_pmarzy=Twybor1.VALUE_1,
+        p_pmarzy_3_3=Twybor1.VALUE_1,
     )
 
 
-def _map_adnotacje() -> FakturaFaAdnotacje:
+def _map_adnotacje(
+    margin_procedure: MarginProcedure | None = None,
+) -> FakturaFaAdnotacje:
     return FakturaFaAdnotacje(
         p_16=Twybor12.VALUE_2,
         p_17=Twybor12.VALUE_2,
@@ -128,7 +98,70 @@ def _map_adnotacje() -> FakturaFaAdnotacje:
             p_22_n=Twybor1.VALUE_1
         ),
         p_23=Twybor12.VALUE_2,
-        pmarzy=FakturaFaAdnotacjePmarzy(p_pmarzy_n=Twybor1.VALUE_1),
+        pmarzy=_map_margin_adnotacje(margin_procedure),
+    )
+
+
+def _map_corrected_invoice_reference(
+    issue_date: str, invoice_number: str, ksef_id: str | None, outside_ksef: bool
+) -> FakturaFaDaneFaKorygowanej:
+    return FakturaFaDaneFaKorygowanej(
+        data_wyst_fa_korygowanej=issue_date,
+        nr_fa_korygowanej=invoice_number,
+        nr_kse_f=Twybor1.VALUE_1 if ksef_id is not None else None,
+        nr_kse_ffa_korygowanej=ksef_id,
+        nr_kse_fn=Twybor1.VALUE_1 if outside_ksef else None,
+    )
+
+
+def _map_advance_invoice_reference(
+    *, ksef_id: str | None, invoice_number: str | None, outside_ksef: bool
+) -> FakturaFaFakturaZaliczkowa:
+    return FakturaFaFakturaZaliczkowa(
+        nr_kse_fzn=Twybor1.VALUE_1 if outside_ksef else None,
+        nr_fa_zaliczkowej=invoice_number,
+        nr_kse_ffa_zaliczkowej=ksef_id,
+    )
+
+
+def _map_rozliczenie(request: KsefInvoiceBody) -> FakturaFaRozliczenie | None:
+    charges = [
+        FakturaFaRozliczenieObciazenia(
+            kwota=_format_decimal(charge.amount),
+            powod=charge.reason,
+        )
+        for charge in request.settlement_charges
+    ]
+    deductions = [
+        FakturaFaRozliczenieOdliczenia(
+            kwota=_format_decimal(deduction.amount),
+            powod=deduction.reason,
+        )
+        for deduction in request.settlement_deductions
+    ]
+    deductions.extend(
+        FakturaFaRozliczenieOdliczenia(
+            kwota=_format_decimal(reference.deduction_amount),
+            powod=reference.deduction_reason,
+        )
+        for reference in request.advance_invoice_references
+        if reference.deduction_amount is not None
+        and reference.deduction_reason is not None
+    )
+
+    if not charges and not deductions:
+        return None
+
+    balance = request.settlement_balance
+    return FakturaFaRozliczenie(
+        obciazenia=charges,
+        suma_obciazen=_opt_dec(request.settlement_charges_total),
+        odliczenia=deductions,
+        suma_odliczen=_opt_dec(request.settlement_deductions_total),
+        do_zaplaty=_format_decimal(balance) if balance >= Decimal("0.00") else None,
+        do_rozliczenia=_format_decimal(abs(balance))
+        if balance < Decimal("0.00")
+        else None,
     )
 
 
@@ -186,6 +219,16 @@ def _(request: KsefInvoiceBody) -> FakturaFa:
             p_6_do=request.period_end.isoformat(),
         )
 
+    zamowienie = None
+    if request.order_lines:
+        zamowienie = FakturaFaZamowienie(
+            wartosc_zamowienia=_format_decimal(request.total_gross),
+            zamowienie_wiersz=[
+                line_to_spec(line, row_number)
+                for row_number, line in enumerate(request.order_lines, start=1)
+            ],
+        )
+
     return FakturaFa(
         kod_waluty=_map_currency(request.currency),
         p_1=request.issue_date.isoformat(),
@@ -217,13 +260,34 @@ def _(request: KsefInvoiceBody) -> FakturaFa:
         p_15=_format_decimal(request.total_gross),
         # TODO: Implement p_14_1_w etc. when foreign currency to PLN conversion is added to the domain model
         kurs_waluty_z=None,
-        adnotacje=_map_adnotacje(),
+        adnotacje=_map_adnotacje(request.margin_procedure),
         rodzaj_faktury=map_invoice_type(request.invoice_type),
+        przyczyna_korekty=request.correction_reason,
+        dane_fa_korygowanej=[
+            _map_corrected_invoice_reference(
+                issue_date=reference.issue_date.isoformat(),
+                invoice_number=reference.invoice_number,
+                ksef_id=reference.ksef_id,
+                outside_ksef=reference.outside_ksef,
+            )
+            for reference in request.corrected_invoices
+        ],
+        faktura_zaliczkowa=[
+            _map_advance_invoice_reference(
+                ksef_id=reference.ksef_id,
+                invoice_number=reference.invoice_number,
+                outside_ksef=reference.outside_ksef,
+            )
+            for reference in request.advance_invoice_references
+        ],
         # Finally, build the actual invoice lines
         fa_wiersz=[
-            _map_line(line, row_number)
+            line_to_spec(line, row_number)
             for row_number, line in enumerate(request.lines, start=1)
         ],
+        rozliczenie=_map_rozliczenie(request),
+        platnosc=payment_to_spec(request.payment) if request.payment else None,
+        zamowienie=zamowienie,
     )
 
 

@@ -9,6 +9,7 @@ from ksef2.domain.models.fa3 import (
     KsefInvoiceBody,
     KsefInvoice,
 )
+from ksef2.domain.models.fa3.body.payment import InvoicePayment
 from ksef2.infra.mappers.invoices.fa3.invoice import to_spec as invoice_to_spec
 from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import (
     Twybor1,
@@ -54,10 +55,18 @@ def test_invoice_to_spec_assembles_root_faktura() -> None:
                 lines=[
                     InvoiceLine(
                         name="Consulting service",
+                        supply_date=date(2026, 3, 28),
                         quantity=Decimal("10"),
                         unit_price_net=Decimal("100.00"),
+                        unit_price_gross=Decimal("123.00"),
                         net_amount=Decimal("1000.00"),
+                        gross_amount=Decimal("1230.00"),
                         vat_rate="23",
+                        annex_15_marker=True,
+                        gtu_code="GTU_12",
+                        procedure="TT_D",
+                        currency_exchange_rate=Decimal("4.123456"),
+                        before_correction=True,
                         vat_amount=Decimal("230.00"),
                     ),
                     InvoiceLine(
@@ -70,6 +79,10 @@ def test_invoice_to_spec_assembles_root_faktura() -> None:
                         vat_amount=Decimal("57.50"),
                     ),
                 ],
+                payment=InvoicePayment(
+                    paid=True,
+                    payment_form="bank_transfer",
+                ),
             ),
         )
     )
@@ -87,12 +100,22 @@ def test_invoice_to_spec_assembles_root_faktura() -> None:
     assert len(output.fa.fa_wiersz) == 2
     assert output.fa.fa_wiersz[0].nr_wiersza_fa == 1
     assert output.fa.fa_wiersz[0].p_7 == "Consulting service"
+    assert output.fa.fa_wiersz[0].p_6_a == "2026-03-28"
     assert output.fa.fa_wiersz[0].p_8_a == "szt"
     assert output.fa.fa_wiersz[0].p_8_b == "10"
     assert output.fa.fa_wiersz[0].p_9_a == "100.00"
+    assert output.fa.fa_wiersz[0].p_9_b == "123.00"
     assert output.fa.fa_wiersz[0].p_11 == "1000.00"
+    assert output.fa.fa_wiersz[0].p_11_a == "1230.00"
     assert output.fa.fa_wiersz[0].p_11_vat == "230.00"
     assert output.fa.fa_wiersz[0].p_12 == TstawkaPodatku.VALUE_23
+    assert output.fa.fa_wiersz[0].p_12_zal_15 == Twybor1.VALUE_1
+    assert output.fa.fa_wiersz[0].gtu.name == "GTU_12"
+    assert output.fa.fa_wiersz[0].procedura.name == "TT_D"
+    assert output.fa.fa_wiersz[0].kurs_waluty == "4.123456"
+    assert output.fa.fa_wiersz[0].stan_przed == Twybor1.VALUE_1
+    assert output.fa.platnosc is not None
+    assert output.fa.platnosc.zaplacono == Twybor1.VALUE_1
     assert output.fa.adnotacje.p_16 == Twybor12.VALUE_2
     assert output.fa.adnotacje.p_17 == Twybor12.VALUE_2
     assert output.fa.adnotacje.p_18 == Twybor12.VALUE_2
