@@ -6,8 +6,10 @@ from typing import overload
 from pydantic import BaseModel
 
 from ksef2.domain.models.fa3 import ContactInfo, InvoiceEntity
+from ksef2.infra.mappers.invoices.fa3.subject import _to_country_code
 from ksef2.infra.mappers.invoices.fa3.subject import to_spec as subject_to_spec
 from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import Twybor1
+from ksef2.infra.schema.fa3.models.kody_krajow_v10_0_e import TkodKraju
 from ksef2.infra.schema.fa3.models.schemat import (
     FakturaPodmiot2,
     FakturaPodmiot2DaneKontaktowe,
@@ -49,6 +51,39 @@ def _split_eu_vat_id(eu_vat_id: str | None) -> tuple[TkodyKrajowUe | None, str |
         raise ValueError(f"Unsupported FA(3) EU VAT prefix: {country_prefix}") from None
 
 
+def _map_identity_fields(
+    request: InvoiceEntity,
+) -> tuple[
+    str | None,
+    TkodyKrajowUe | None,
+    str | None,
+    TkodKraju | None,
+    str | None,
+    Twybor1 | None,
+]:
+    if request.tax_id is not None and request.address.country_code == "PL":
+        return request.tax_id, None, None, None, None, None
+
+    if request.eu_vat_id is not None:
+        kod_ue, nr_vat_ue = _split_eu_vat_id(request.eu_vat_id)
+        return None, kod_ue, nr_vat_ue, None, None, None
+
+    if request.other_id is not None:
+        return (
+            None,
+            None,
+            None,
+            _to_country_code(request.address.country_code),
+            request.other_id,
+            None,
+        )
+
+    if request.tax_id is not None:
+        return request.tax_id, None, None, None, None, None
+
+    return None, None, None, None, None, Twybor1.VALUE_1
+
+
 @overload
 def to_spec(request: InvoiceEntity) -> FakturaPodmiot2: ...
 
@@ -72,19 +107,23 @@ def _to_spec(request: BaseModel) -> object:
 
 @_to_spec.register
 def _(request: InvoiceEntity) -> FakturaPodmiot2:
-    kod_ue, nr_vat_ue = _split_eu_vat_id(request.eu_vat_id)
+    nip, kod_ue, nr_vat_ue, kod_kraju, nr_id, brak_id = _map_identity_fields(request)
 
     return FakturaPodmiot2(
         nr_eori=request.eori_number,
         dane_identyfikacyjne=Tpodmiot2(
             # Polish NIP used when the buyer has a domestic tax identifier.
-            nip=request.tax_id,
+            nip=nip,
             # EU VAT prefix extracted from a cross-border buyer VAT number.
             kod_ue=kod_ue,
             # EU VAT number body stored separately from the country prefix in FA(3).
             nr_vat_ue=nr_vat_ue,
+            # Country code used together with a non-EU or otherwise alternate tax identifier.
+            kod_kraju=kod_kraju,
+            # Alternate buyer identifier used when neither Polish NIP nor EU VAT applies.
+            nr_id=nr_id,
             # KSeF flag meaning "buyer identifier missing on the invoice".
-            brak_id=Twybor1.VALUE_1 if request.tax_id is None else None,
+            brak_id=brak_id,
             nazwa=request.name,
         ),
         adres=subject_to_spec(request.address),

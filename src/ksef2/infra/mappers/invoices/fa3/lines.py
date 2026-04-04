@@ -25,6 +25,19 @@ def _format_decimal(value: Decimal | None) -> str | None:
     return format(value, "f")
 
 
+def _format_line_vat_amount(
+    amount: Decimal | None, vat_rate: str | VatRate
+) -> str | None:
+    raw_vat_rate = vat_rate.value if isinstance(vat_rate, VatRate) else vat_rate
+    if raw_vat_rate in {
+        VatRate.EXEMPT.value,
+        VatRate.NOT_SUBJECT.value,
+        VatRate.REVERSE_CHARGE.value,
+    }:
+        return None
+    return _format_decimal(amount)
+
+
 def _map_vat_rate(
     value: str | VatRate | None, sale_category: str | SaleCategory
 ) -> TstawkaPodatku | None:
@@ -152,7 +165,7 @@ def _(request: InvoiceRow, row_number: int) -> FakturaFaFaWiersz:
         # Total gross value of the line item for gross-pricing scenarios.
         p_11_a=_format_decimal(request.gross_amount),
         # Total VAT tax amount for this line item.
-        p_11_vat=_format_decimal(request.vat_amount),
+        p_11_vat=_format_line_vat_amount(request.vat_amount, request.vat_rate),
         # VAT rate applied, e.g. "23" or "zw".
         p_12=_map_vat_rate(request.vat_rate, request.sale_category),
         # VAT-on-e-commerce percentage used for the special Title XII regime.

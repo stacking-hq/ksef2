@@ -17,11 +17,11 @@ from ksef2.domain.models.fa3.body.correction import (
 )
 from ksef2.domain.models.fa3.body import (
     AdvancePayment,
-    AdditionalDescriptionEntry,
     AdvanceOrderLine,
-    InvoiceAdvanceContext,
+    AdvancePaymentInvoiceContext,
+    AdditionalDescriptionEntry,
     InvoiceAnnotationsContext,
-    InvoiceCorrectionContext,
+    CorrectionInvoiceContext,
     InvoiceSettlement,
     InvoiceOrder,
     InvoiceOrderLine,
@@ -46,7 +46,7 @@ from ksef2.domain.models.fa3.drafts import (
 __all__ = [
     "Attachment",
     "AdvancePayment",
-    "InvoiceAdvanceContext",
+    "AdvancePaymentInvoiceContext",
     "InvoiceAnnotationsContext",
     "AdvanceInvoiceReference",
     "AdditionalDescriptionEntry",
@@ -60,7 +60,7 @@ __all__ = [
     "DraftIntent",
     "InvoiceAddress",
     "InvoiceEntity",
-    "InvoiceCorrectionContext",
+    "CorrectionInvoiceContext",
     "InvoiceRow",
     "InvoiceOrder",
     "InvoiceOrderLine",

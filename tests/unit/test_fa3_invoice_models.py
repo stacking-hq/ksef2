@@ -70,6 +70,19 @@ def test_foreign_entity_may_omit_tax_id() -> None:
     assert entity.address.country_code == "DE"
 
 
+def test_foreign_entity_accepts_other_identifier() -> None:
+    entity = InvoiceEntity(
+        other_id="US-TAX-9988",
+        name="Globex Inc.",
+        address=InvoiceAddress(
+            country_code="US",
+            address_line_1="1 Infinite Loop",
+        ),
+    )
+
+    assert entity.other_id == "US-TAX-9988"
+
+
 def test_foreign_entity_accepts_tax_id_when_eu_vat_id_is_provided() -> None:
     entity = InvoiceEntity(
         tax_id="DE123456789",

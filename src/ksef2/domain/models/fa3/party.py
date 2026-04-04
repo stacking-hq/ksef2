@@ -36,6 +36,7 @@ class InvoiceEntity(KSeFBaseModel):
 
     tax_id: str | None = None
     eu_vat_id: str | None = None
+    other_id: str | None = None
     eori_number: str | None = None
     customer_number: str | None = None
     jst_subordinate_unit: bool = False

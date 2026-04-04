@@ -57,6 +57,7 @@ def _(request: InvoiceEntity) -> FakturaPodmiot1:
         raise ValueError("Seller tax_id is required for FA(3) mapping")
 
     return FakturaPodmiot1(
+        nr_eori=request.eori_number,
         dane_identyfikacyjne=Tpodmiot1(
             nip=request.tax_id,
             nazwa=request.name,

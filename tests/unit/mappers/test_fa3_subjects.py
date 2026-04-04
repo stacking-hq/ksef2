@@ -47,6 +47,7 @@ def test_seller_to_spec_maps_invoice_entity() -> None:
     output = seller_to_spec(
         InvoiceEntity(
             tax_id="1234567890",
+            eori_number="PL123456789000000",
             name="Seller Sp. z o.o.",
             address=make_polish_address(),
             contact=ContactInfo(
@@ -57,6 +58,7 @@ def test_seller_to_spec_maps_invoice_entity() -> None:
     )
 
     assert isinstance(output, FakturaPodmiot1)
+    assert output.nr_eori == "PL123456789000000"
     assert output.dane_identyfikacyjne.nip == "1234567890"
     assert output.dane_identyfikacyjne.nazwa == "Seller Sp. z o.o."
     assert output.adres.adres_l1 == "Marszalkowska 10/5"
@@ -107,7 +109,6 @@ def test_buyer_to_spec_maps_buyer_without_tax_id_to_brak_id() -> None:
 def test_buyer_to_spec_maps_eu_vat_identifier() -> None:
     output = buyer_to_spec(
         InvoiceEntity(
-            tax_id="DE123456789",
             eu_vat_id="DE123456789",
             name="Buyer GmbH",
             address=InvoiceAddress(
@@ -117,9 +118,27 @@ def test_buyer_to_spec_maps_eu_vat_identifier() -> None:
         )
     )
 
-    assert output.dane_identyfikacyjne.nip == "DE123456789"
+    assert output.dane_identyfikacyjne.nip is None
     assert output.dane_identyfikacyjne.kod_ue == TkodyKrajowUe.DE
     assert output.dane_identyfikacyjne.nr_vat_ue == "123456789"
+    assert output.dane_identyfikacyjne.brak_id is None
+
+
+def test_buyer_to_spec_maps_other_identifier_without_brak_id() -> None:
+    output = buyer_to_spec(
+        InvoiceEntity(
+            other_id="US-TAX-9988",
+            name="Buyer Inc.",
+            address=InvoiceAddress(
+                country_code="US",
+                address_line_1="1 Infinite Loop",
+            ),
+        )
+    )
+
+    assert output.dane_identyfikacyjne.kod_kraju == TkodKraju.US
+    assert output.dane_identyfikacyjne.nr_id == "US-TAX-9988"
+    assert output.dane_identyfikacyjne.brak_id is None
 
 
 def test_buyer_to_spec_maps_eori_and_jst_gv_flags() -> None:

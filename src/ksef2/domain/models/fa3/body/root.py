@@ -7,12 +7,13 @@ from typing import Annotated
 from pydantic import Field, model_validator
 
 from ksef2.domain.models import KSeFBaseModel
+from ksef2.domain.models.fa3.body.description import AdditionalDescriptionEntry
 from ksef2.domain.models.fa3.body.advance_payment import (
-    InvoiceAdvanceContext,
+    AdvancePaymentInvoiceContext,
 )
 from ksef2.domain.models.fa3.body.annotations import InvoiceAnnotationsContext
 from ksef2.domain.models.fa3.body.correction import (
-    InvoiceCorrectionContext,
+    CorrectionInvoiceContext,
 )
 from ksef2.domain.models.fa3.body.order import InvoiceOrder, InvoiceOrderLine
 from ksef2.domain.models.fa3.body.payment import InvoicePayment
@@ -44,35 +45,6 @@ class InvoiceType(StrEnum):
 
 def get_placeholder_invoice_number() -> str:
     return f"DEMO-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-
-
-class AdditionalDescriptionEntry(KSeFBaseModel):
-    """FA(3) additional invoice description entry.
-
-    References:
-        schemat.TkluczWartosc
-
-    Maps:
-        row_number - nr_wiersza (int)
-        key - klucz (str)
-        value - wartosc (str)
-    """
-
-    row_number: int | None = Field(
-        default=None,
-        gt=0,
-        description="nr_wiersza: Optional invoice row number this entry refers to.",
-    )
-    key: str = Field(
-        min_length=1,
-        max_length=256,
-        description="klucz: Additional description key.",
-    )
-    value: str = Field(
-        min_length=1,
-        max_length=256,
-        description="wartosc: Additional description value.",
-    )
 
 
 class KsefInvoiceBody(KSeFBaseModel):
@@ -120,11 +92,11 @@ class KsefInvoiceBody(KSeFBaseModel):
     invoice_type: InvoiceType = Field(
         default=InvoiceType.VAT, description="rodzaj_faktury: Type of invoice."
     )
-    correction: InvoiceCorrectionContext | None = Field(
+    correction: CorrectionInvoiceContext | None = Field(
         default=None,
         description="Correction-specific data grouped from Fa correction fields.",
     )
-    advance: InvoiceAdvanceContext | None = Field(
+    advance: AdvancePaymentInvoiceContext | None = Field(
         default=None,
         description="Advance-invoice-specific data grouped from Fa advance fields.",
     )
@@ -295,7 +267,7 @@ class KsefInvoiceBody(KSeFBaseModel):
             return []
         return list(self.order.order_lines)
 
-    def _financial_rows(self) -> list[InvoiceRow | InvoiceOrderLine]:
+    def _financial_rows(self):
         if self.invoice_type == InvoiceType.ZAL:
             return self.order_lines
         return list(self.rows)

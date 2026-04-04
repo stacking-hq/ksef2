@@ -93,7 +93,7 @@ def test_lines_to_spec_maps_optional_fields_to_none() -> None:
     assert output.p_8_b == "10"
     assert output.p_9_a == "100.00"
     assert output.p_11 == "1000.00"
-    assert output.p_11_vat == "0.00"
+    assert output.p_11_vat is None
     assert output.p_12 == TstawkaPodatku.ZW
     assert output.uu_id is None
     assert output.p_6_a is None
