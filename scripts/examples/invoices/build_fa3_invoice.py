@@ -1,3 +1,5 @@
+"""Build an FA(3) invoice, validate the XML, and render a PDF visualization."""
+
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal

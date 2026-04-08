@@ -18,3 +18,8 @@ uv run -m scripts.examples.invoices.build_fa3_invoice
 uv run -m scripts.examples.invoices.build_fa3_invoice_builder
 uv run -m scripts.examples.scenarios.download_purchase_invoices
 ```
+
+For FA(3) builder output plus PDF visualization, start with:
+
+- `uv run -m scripts.examples.invoices.build_fa3_invoice`
+- `uv run -m scripts.examples.invoices.build_fa3_invoice_builder`

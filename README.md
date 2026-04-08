@@ -254,6 +254,14 @@ xml_text = (
 
 See [`docs/guides/fa3-builder.md`](docs/guides/fa3-builder.md) for the full builder guide and the runnable examples in [`scripts/examples/invoices`](scripts/examples/invoices).
 
+To build an invoice and generate a PDF visualization locally:
+
+```bash
+uv run -m scripts.examples.invoices.build_fa3_invoice
+```
+
+This writes both `output/fa3_invoice.xml` and `output/fa3_invoice.pdf`.
+
 ## Examples
 
 Run examples as modules with `uv run -m ...`; direct execution by file path is not supported.
@@ -264,8 +272,8 @@ Run examples as modules with `uv run -m ...`; direct execution by file path is n
 - [`scripts/examples/invoices/send_batch.py`](scripts/examples/invoices/send_batch.py) - staged batch upload with explicit session lifecycle
 - [`scripts/examples/invoices/submit_batch.py`](scripts/examples/invoices/submit_batch.py) - one-shot batch submission flow
 - [`scripts/examples/invoices/send_query_export_download.py`](scripts/examples/invoices/send_query_export_download.py) - send, inspect, export, and download invoices
-- [`scripts/examples/invoices/build_fa3_invoice.py`](scripts/examples/invoices/build_fa3_invoice.py) - build and render a minimal FA(3) invoice through the public builder
-- [`scripts/examples/invoices/build_fa3_invoice_builder.py`](scripts/examples/invoices/build_fa3_invoice_builder.py) - use the nested FA(3) builder DSL with payment and annotation sections
+- [`scripts/examples/invoices/build_fa3_invoice.py`](scripts/examples/invoices/build_fa3_invoice.py) - build an FA(3) invoice, validate the XML, and generate a PDF visualization
+- [`scripts/examples/invoices/build_fa3_invoice_builder.py`](scripts/examples/invoices/build_fa3_invoice_builder.py) - use the nested FA(3) builder DSL and generate XML plus a PDF visualization
 - [`scripts/examples/invoices/build_fa3_invoice_sample_1.py`](scripts/examples/invoices/build_fa3_invoice_sample_1.py) - recreate the first official FA(3) sample with the public builder
 - [`scripts/examples/peppol/query_providers.py`](scripts/examples/peppol/query_providers.py) - query public PEPPOL providers
 - [`scripts/examples/scenarios/download_purchase_invoices.py`](scripts/examples/scenarios/download_purchase_invoices.py) - multi-buyer purchase-invoice export scenario

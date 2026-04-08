@@ -29,6 +29,7 @@ The structure and conventions for maintaining them are documented in
 Good starting points:
 
 - [`scripts/examples/quickstart.py`](../scripts/examples/quickstart.py)
+- [`scripts/examples/invoices/build_fa3_invoice.py`](../scripts/examples/invoices/build_fa3_invoice.py)
 - [`scripts/examples/invoices/send_batch.py`](../scripts/examples/invoices/send_batch.py)
 - [`scripts/examples/invoices/submit_batch.py`](../scripts/examples/invoices/submit_batch.py)
 - [`scripts/examples/invoices/send_query_export_download.py`](../scripts/examples/invoices/send_query_export_download.py)

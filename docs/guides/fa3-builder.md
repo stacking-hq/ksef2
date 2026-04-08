@@ -141,6 +141,34 @@ spec = builder.to_spec()
 xml_text = builder.to_xml()
 ```
 
+## XML And PDF Output
+
+The SDK ships with a runnable example that:
+
+1. builds an FA(3) invoice with `FA3InvoiceBuilder`
+2. renders the invoice to XML
+3. validates the XML against the FA(3) XSD
+4. generates a PDF visualization from the XML
+
+Run it from the repository root:
+
+```bash
+uv run -m scripts.examples.invoices.build_fa3_invoice
+```
+
+The example writes:
+
+- `output/fa3_invoice.xml`
+- `output/fa3_invoice.pdf`
+
+If you want the same flow while keeping the builder object around, use:
+
+```bash
+uv run -m scripts.examples.invoices.build_fa3_invoice_builder
+```
+
+The PDF is a visualization of the generated XML, which is helpful for previewing invoice content before sending it to KSeF.
+
 ## Saving Drafts
 
 You can persist the current builder state as a `KsefInvoiceDraft` and load it back later.
