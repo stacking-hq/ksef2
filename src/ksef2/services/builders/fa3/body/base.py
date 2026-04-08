@@ -5,6 +5,7 @@ from typing import Self, TypedDict
 from pydantic import TypeAdapter
 
 from ksef2.domain.models.fa3 import KsefInvoiceBody, AdditionalDescriptionEntry
+from ksef2.domain.models.fa3.body import InvoiceSummaryOverrides
 
 
 class BodyCoreState(TypedDict):
@@ -21,6 +22,7 @@ class BodyCoreState(TypedDict):
     related_party_transaction: bool
     additional_description: list[AdditionalDescriptionEntry]
     return_of_excise: bool | None
+    summary_overrides: InvoiceSummaryOverrides | None
 
 
 adapter = TypeAdapter(BodyCoreState)
@@ -41,6 +43,7 @@ def _default_state() -> BodyCoreState:
         "related_party_transaction": False,
         "additional_description": [],
         "return_of_excise": None,
+        "summary_overrides": None,
     }
 
 
@@ -51,7 +54,7 @@ class BaseBodyBuilder:
         )
 
     def from_model(self, body: KsefInvoiceBody) -> Self:
-        self.__init__(existing_state=body)
+        self._state = adapter.validate_python(body.model_dump())
         return self
 
     def currency(self, value: str) -> Self:
@@ -127,4 +130,8 @@ class BaseBodyBuilder:
 
     def return_of_excise(self, value: bool | None) -> Self:
         self._state["return_of_excise"] = value
+        return self
+
+    def summary_overrides(self, value: InvoiceSummaryOverrides | None) -> Self:
+        self._state["summary_overrides"] = value
         return self

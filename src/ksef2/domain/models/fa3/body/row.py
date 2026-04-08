@@ -192,6 +192,20 @@ class InvoiceRow(KSeFBaseModel):
 
     @model_validator(mode="after")
     def compute_financial_field(self) -> Self:
+        rate = self._vat_percent()
+
+        if self.gross_amount is not None:
+            if self.net_amount is None:
+                if rate is None:
+                    self.net_amount = self.gross_amount
+                else:
+                    divisor = Decimal("1.00") + rate
+                    self.net_amount = round_pln(self.gross_amount / divisor)
+
+            if self.vat_amount is None:
+                assert self.net_amount is not None
+                self.vat_amount = round_pln(self.gross_amount - self.net_amount)
+
         if (
             self.net_amount is None
             and self.unit_price_net is not None
@@ -203,7 +217,6 @@ class InvoiceRow(KSeFBaseModel):
             )
 
         if self.vat_amount is None and self.net_amount is not None:
-            rate = self._vat_percent()
             if rate is None:
                 self.vat_amount = Decimal("0.00")
             else:
@@ -252,6 +265,9 @@ class InvoiceRow(KSeFBaseModel):
             self._validate_special_xii()
             return
 
+        if self._is_descriptive_only():
+            return
+
         if (
             self.vat_classification is None
             or self.sale_category is None
@@ -272,6 +288,21 @@ class InvoiceRow(KSeFBaseModel):
             raise ValueError("sale_category must match vat_classification")
         if self.vat_rate != self.vat_classification.vat_rate:
             raise ValueError("vat_rate must match vat_classification")
+
+    def _is_descriptive_only(self) -> bool:
+        return (
+            self.tax_regime is TaxRegime.STANDARD
+            and self.vat_classification is None
+            and self.sale_category is None
+            and self.vat_rate is None
+            and self.vat_rate_xii is None
+            and self.unit_price_net is None
+            and self.unit_price_gross is None
+            and self.net_amount is None
+            and self.gross_amount is None
+            and self.vat_amount is None
+            and self.discount_amount in {None, Decimal("0.00")}
+        )
 
     def _validate_margin(self) -> None:
         if (

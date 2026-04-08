@@ -7,6 +7,7 @@ from ksef2.domain.models.fa3 import KsefInvoice
 from ksef2.domain.models.fa3.body import (
     KsefInvoiceBody,
     InvoiceType,
+    InvoiceSummaryOverrides,
 )
 from ksef2.domain.models.fa3.body.advance_payment import (
     AdvancePaymentInvoiceContext,
@@ -79,6 +80,41 @@ def _from_spec(schema: object) -> object:
         f"No mapper registered for {type(schema).__name__}. "
         f"Register one with @_from_spec.register"
     )
+
+
+def _summary_overrides_from_schema(
+    schema: FakturaFa,
+) -> InvoiceSummaryOverrides | None:
+    overrides = InvoiceSummaryOverrides(
+        base_rate_net_total=schema.p_13_1,
+        base_rate_vat_total=schema.p_14_1,
+        base_rate_vat_total_pln=schema.p_14_1_w,
+        first_reduced_rate_net_total=schema.p_13_2,
+        first_reduced_rate_vat_total=schema.p_14_2,
+        first_reduced_rate_vat_total_pln=schema.p_14_2_w,
+        second_reduced_rate_net_total=schema.p_13_3,
+        second_reduced_rate_vat_total=schema.p_14_3,
+        second_reduced_rate_vat_total_pln=schema.p_14_3_w,
+        taxi_flat_rate_net_total=schema.p_13_4,
+        taxi_flat_rate_vat_total=schema.p_14_4,
+        taxi_flat_rate_vat_total_pln=schema.p_14_4_w,
+        special_procedure_xii_net_total=schema.p_13_5,
+        special_procedure_xii_vat_total=schema.p_14_5,
+        zero_rate_domestic_total=schema.p_13_6_1,
+        zero_rate_wdt_total=schema.p_13_6_2,
+        zero_rate_export_total=schema.p_13_6_3,
+        exempt_total=schema.p_13_7,
+        out_of_territory_total=schema.p_13_8,
+        article_100_services_total=schema.p_13_9,
+        reverse_charge_total=schema.p_13_10,
+        margin_total=schema.p_13_11,
+        total_gross=schema.p_15,
+    )
+    if not any(
+        value is not None for value in overrides.model_dump(mode="python").values()
+    ):
+        return None
+    return overrides
 
 
 @_from_spec.register
@@ -261,6 +297,7 @@ def _(schema: FakturaFa) -> KsefInvoiceBody:
         if schema.warunki_transakcji
         else None,
         "order": order,
+        "summary_overrides": _summary_overrides_from_schema(schema),
     }
 
     if schema.p_2 is not None:

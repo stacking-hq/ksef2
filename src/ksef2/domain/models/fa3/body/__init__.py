@@ -45,6 +45,7 @@ from ksef2.domain.models.fa3.body.transaction import (
     TransportType,
 )
 from ksef2.domain.models.fa3.body.root import (
+    InvoiceSummaryOverrides,
     InvoiceType,
     KsefInvoiceBody,
 )
@@ -80,6 +81,7 @@ __all__ = [
     "InvoicePayment",
     "InvoiceProcedure",
     "InvoiceType",
+    "InvoiceSummaryOverrides",
     "KsefInvoiceBody",
     "Decimal",
     "PartialPayment",

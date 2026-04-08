@@ -1,5 +1,6 @@
 """Mappings from FA(3) invoice line schema models to domain objects."""
 
+from datetime import date, datetime
 from decimal import Decimal
 from functools import singledispatch
 from typing import overload
@@ -28,12 +29,13 @@ def _to_decimal(value: str | Decimal | None) -> Decimal | None:
 def _tax_regime_for_line(
     *,
     margin_procedure: MarginProcedure | None = None,
+    vat_classification: VatClassification | None = None,
     vat_rate_xii: Decimal | None = None,
 ) -> TaxRegime:
-    if margin_procedure is not None:
-        return TaxRegime.MARGIN
     if vat_rate_xii is not None:
         return TaxRegime.SPECIAL_XII
+    if margin_procedure is not None and vat_classification is None:
+        return TaxRegime.MARGIN
     return TaxRegime.STANDARD
 
 
@@ -43,6 +45,20 @@ def _classification_from_schema(
     if code is None:
         return None
     return VatClassification.from_schema_code(code.value)
+
+
+def _parse_schema_date(value: str | date | datetime | None) -> date | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+
+    text = str(value)
+    if "T" in text:
+        return to_aware_datetime(text).date()
+    return date.fromisoformat(text)
 
 
 @overload
@@ -99,6 +115,7 @@ def _(
     vat_classification = _classification_from_schema(schema.p_12)
     tax_regime = _tax_regime_for_line(
         margin_procedure=margin_procedure,
+        vat_classification=vat_classification,
         vat_rate_xii=schema.p_12_xii,
     )
 
@@ -111,9 +128,7 @@ def _(
         sale_category=vat_classification.sale_category if vat_classification else None,
         vat_rate=vat_classification.vat_rate if vat_classification else None,
         tax_regime=tax_regime,
-        supply_date=to_aware_datetime(schema.p_6_a).date()
-        if schema.p_6_a is not None
-        else None,
+        supply_date=_parse_schema_date(schema.p_6_a),
         discount_amount=_to_decimal(schema.p_10),
         net_amount=_to_decimal(schema.p_11),
         gross_amount=_to_decimal(schema.p_11_a),

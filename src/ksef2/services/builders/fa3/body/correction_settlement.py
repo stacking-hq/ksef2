@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Self
 
 from ksef2.domain.models.fa3.body import InvoiceType
 from ksef2.domain.models.fa3.body.root import KsefInvoiceBody
@@ -79,6 +79,27 @@ class CorrectionSettlementBodyBuilder[TParent](
             advance=self._advance,
             settlement=self._settlement,
         )
+
+    def from_model(self, body: KsefInvoiceBody) -> Self:
+        BaseBodyBuilder.from_model(self, body)
+        self._rows = [row.model_copy(deep=True) for row in body.rows]
+        self._payment = body.payment.model_copy(deep=True) if body.payment else None
+        self._annotations = (
+            body.annotations.model_copy(deep=True) if body.annotations else None
+        )
+        self._transaction_conditions = (
+            body.transaction_conditions.model_copy(deep=True)
+            if body.transaction_conditions
+            else None
+        )
+        self._correction = (
+            body.correction.model_copy(deep=True) if body.correction else None
+        )
+        self._advance = body.advance.model_copy(deep=True) if body.advance else None
+        self._settlement = (
+            body.settlement.model_copy(deep=True) if body.settlement else None
+        )
+        return self
 
     def done(self) -> TParent:
         if self._parent is None or self._on_done is None:
