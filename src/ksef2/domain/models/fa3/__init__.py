@@ -6,10 +6,17 @@ from ksef2.domain.models.fa3.attachment import (
 from ksef2.domain.models.fa3.invoice import (
     KsefInvoice,
 )
+from ksef2.domain.models.fa3.footer import (
+    FooterRegistry,
+    InvoiceFooter,
+)
 from ksef2.domain.models.fa3.party import (
     ContactInfo,
     InvoiceAddress,
     InvoiceEntity,
+)
+from ksef2.domain.models.fa3.third_party import (
+    InvoiceThirdParty,
 )
 from ksef2.domain.models.fa3.body.correction import (
     CorrectedBuyerEntity,
@@ -31,9 +38,14 @@ from ksef2.domain.models.fa3.body import (
     PartialAdvancePayment,
     SettlementCharge,
     SettlementDeduction,
+    TaxRegime,
     TransactionConditions,
     NewTransportMeansItem,
     NewTransportSupply,
+    SaleCategory,
+    VatClassification,
+    VatRate,
+    VatTreatment,
 )
 from ksef2.domain.models.fa3.header import InvoiceHeader
 from ksef2.domain.models.fa3.drafts import (
@@ -58,8 +70,11 @@ __all__ = [
     "CorrectedInvoiceReference",
     "DataBlock",
     "DraftIntent",
+    "FooterRegistry",
     "InvoiceAddress",
     "InvoiceEntity",
+    "InvoiceFooter",
+    "InvoiceThirdParty",
     "CorrectionInvoiceContext",
     "InvoiceRow",
     "InvoiceOrder",
@@ -75,5 +90,10 @@ __all__ = [
     "PartialAdvancePayment",
     "SettlementCharge",
     "SettlementDeduction",
+    "TaxRegime",
     "TransactionConditions",
+    "SaleCategory",
+    "VatClassification",
+    "VatRate",
+    "VatTreatment",
 ]

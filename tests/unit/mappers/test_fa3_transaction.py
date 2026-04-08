@@ -10,7 +10,7 @@ from ksef2.domain.models.fa3.body.transaction import (
     TransactionOrder,
     TransactionTransport,
 )
-from ksef2.infra.mappers.invoices.fa3.transaction import from_spec, to_spec
+from ksef2.infra.mappers.invoices.fa3.domain.transaction import from_spec, to_spec
 from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import Twybor1
 from ksef2.infra.schema.fa3.models.schemat import (
     FakturaFaWarunkiTransakcji,

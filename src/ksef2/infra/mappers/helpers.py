@@ -1,18 +1,20 @@
 """Shared helpers used across request and response mappers."""
 
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from enum import Enum, StrEnum
 from zoneinfo import ZoneInfo
 from camel_converter import to_camel
 
 
-def to_aware_datetime(dt: str | datetime) -> datetime:
+def to_aware_datetime(dt: str | datetime | date) -> datetime:
     """Normalize naive Warsaw datetimes or ISO strings into UTC-aware datetimes."""
     if isinstance(dt, datetime):
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=ZoneInfo("Europe/Warsaw"))
         return dt.astimezone(timezone.utc)
+    elif isinstance(dt, date):
+        return datetime.combine(dt, datetime.min.time()).astimezone(timezone.utc)
     else:
         return to_aware_datetime(datetime.fromisoformat(dt))
 

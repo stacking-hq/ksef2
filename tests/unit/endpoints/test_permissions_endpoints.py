@@ -377,7 +377,6 @@ class TestRevokePermissionsEndpoints:
         target_path: str,
         method: Callable[[BaseModel], BaseModel],
     ):
-
         response = perm_op_resp.build()
         permission_id = "test-permission-id"
 
@@ -744,7 +743,6 @@ class TestQueryPermissionsEndpoints:
         req_factory: BaseFactory[BaseModel],
         resp_factory: BaseFactory[BaseModel],
     ):
-
         request = req_factory.build()
         response = resp_factory.build()
 

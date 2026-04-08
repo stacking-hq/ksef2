@@ -64,6 +64,14 @@ def build_invoice():
             period_start=date(2026, 3, 1),
             period_end=date(2026, 3, 31),
         )
+        .payment()
+        .via("bank_transfer")
+        .due_on(date(2026, 4, 12))
+        .to_bank_account("PL10101010101010101010101010")
+        .done()
+        .annotations()
+        .split_payment()
+        .done()
     )
 
 

@@ -8,7 +8,7 @@ from ksef2.domain.models.fa3.body.payment import (
     PaymentTerm,
     PaymentTermDescription,
 )
-from ksef2.infra.mappers.invoices.fa3.payment import from_spec, to_spec
+from ksef2.infra.mappers.invoices.fa3.domain.payment import from_spec, to_spec
 from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import (
     Twybor1,
     Twybor12,

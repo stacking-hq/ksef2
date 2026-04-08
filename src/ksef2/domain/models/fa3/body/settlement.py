@@ -27,8 +27,8 @@ class SettlementCharge(KSeFBaseModel):
     @field_validator("amount")
     @classmethod
     def validate_amount(cls, value: Decimal) -> Decimal:
-        if value <= Decimal("0.00"):
-            raise ValueError("amount must be greater than zero")
+        if value < Decimal("0.00"):
+            raise ValueError("amount must be non-negative")
         return round_pln(value)
 
 
@@ -49,8 +49,8 @@ class SettlementDeduction(KSeFBaseModel):
     @field_validator("amount")
     @classmethod
     def validate_amount(cls, value: Decimal) -> Decimal:
-        if value <= Decimal("0.00"):
-            raise ValueError("amount must be greater than zero")
+        if value < Decimal("0.00"):
+            raise ValueError("amount must be non-negative")
         return round_pln(value)
 
 

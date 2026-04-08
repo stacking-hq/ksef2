@@ -24,6 +24,8 @@ dependencies = [
     "beartype>=0.22.9",
     "camel-converter>=5.1.0",
     "pytest-cov>=7.1.0",
+    "xsdata>=26.1",
+    "erdantic>=1.2.1",
 ]
 
 [dependency-groups]
@@ -35,6 +37,7 @@ dev = [
     "lxml-stubs>=0.5.1",
     "commitizen>=4.13.9",
     "pre-commit>=4.5.1",
+    "erdantic>=1.2.1",
 ]
 codegen = [
     "datamodel-code-generator[ruff]>=0.53.0",

@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from ksef2.domain.models.fa3 import AdvanceOrderLine
 from ksef2.domain.models.fa3.body import SaleCategory, InvoiceRow
-from ksef2.infra.mappers.invoices.fa3.lines import to_spec as lines_to_spec
+from ksef2.infra.mappers.invoices.fa3.domain.lines import to_spec as lines_to_spec
 from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import Twybor1
 from ksef2.infra.schema.fa3.models.schemat import (
     FakturaFaFaWiersz,

@@ -39,8 +39,8 @@ class AttachmentTable(KSeFBaseModel):
 
     @model_validator(mode="after")
     def validate_rows_and_columns(self) -> Self:
-        if len(self.columns_format) != len(self.rows[0]):
-            raise ValueError("Column count does not match row count")
+        if any(len(row) > len(self.columns_format) for row in self.rows):
+            raise ValueError("Row has more cells than declared columns")
 
         if self.columns_names is not None and len(self.columns_names) != len(
             self.columns_format
@@ -48,6 +48,8 @@ class AttachmentTable(KSeFBaseModel):
             raise ValueError("Column names count does not match column format count")
 
         def _validate_cell(value: str, row_idx: int, col_idx: int) -> None:
+            if value in {"", "-"}:
+                return
             match self.columns_format[col_idx]:
                 case "decimal" | "integer":
                     try:
@@ -96,6 +98,8 @@ class AttachmentTable(KSeFBaseModel):
             return self
 
         if not self.rows or not self.columns_format:
+            return self
+        if any(len(row) != len(self.columns_format) for row in self.rows):
             return self
 
         summary: list[str] = []

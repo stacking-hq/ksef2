@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 from xsdata.models.datatype import XmlDateTime
 
 from ksef2.domain.models.fa3 import InvoiceHeader
-from ksef2.infra.mappers.invoices.fa3.header import to_spec as header_to_spec
+from ksef2.infra.mappers.invoices.fa3.domain.header import to_spec as header_to_spec
 from ksef2.infra.schema.fa3.models.schemat import (
     TkodFormularza,
     Tnaglowek,

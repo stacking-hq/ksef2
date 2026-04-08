@@ -1,10 +1,16 @@
 """Public FA(3) party domain models."""
 
 import re
+from typing import NamedTuple
 
 from pydantic import field_validator, model_validator
 
 from ksef2.domain.models.base import KSeFBaseModel
+
+
+class ContactInfoTuple(NamedTuple):
+    email: str
+    phone: str
 
 
 class ContactInfo(KSeFBaseModel):
@@ -39,10 +45,12 @@ class InvoiceEntity(KSeFBaseModel):
     other_id: str | None = None
     eori_number: str | None = None
     customer_number: str | None = None
+    buyer_id: str | None = None
     jst_subordinate_unit: bool = False
     vat_group_member: bool = False
-    name: str
-    address: InvoiceAddress
+    vat_prefix: str | None = None
+    name: str | None = None
+    address: InvoiceAddress | None = None
     contact: ContactInfo | None = None
 
     @field_validator("eu_vat_id")
@@ -52,8 +60,20 @@ class InvoiceEntity(KSeFBaseModel):
             return None
         return value.upper()
 
+    @field_validator("vat_prefix")
+    @classmethod
+    def _normalize_vat_prefix(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.upper()
+        if re.fullmatch(r"[A-Z]{2}", normalized) is None:
+            raise ValueError("vat_prefix must be a 2-letter country code")
+        return normalized
+
     @model_validator(mode="after")
     def _validate_polish_tax_id(self) -> "InvoiceEntity":
+        if self.address is None:
+            return self
         if self.address.country_code == "PL" and self.tax_id is not None:
             if re.fullmatch(r"\d{10}", self.tax_id) is None:
                 raise ValueError(

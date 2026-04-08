@@ -3,7 +3,7 @@ from ksef2.domain.models.fa3 import (
     CorrectedSellerEntity,
     InvoiceAddress,
 )
-from ksef2.infra.mappers.invoices.fa3.correction_party import to_spec
+from ksef2.infra.mappers.invoices.fa3.domain.correction_party import to_spec
 from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import Twybor1
 from ksef2.infra.schema.fa3.models.schemat import (
     FakturaFaPodmiot1K,

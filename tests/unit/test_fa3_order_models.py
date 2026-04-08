@@ -26,7 +26,7 @@ def test_invoice_order_rejects_total_value_mismatch() -> None:
         match="gross amount must equal the sum of order line gross amounts",
     ):
         InvoiceOrder(
-            total_value=Decimal("1000.00"),
+            total_value=Decimal("999.00"),
             order_lines=[
                 InvoiceOrderLine(
                     name="Projekt",

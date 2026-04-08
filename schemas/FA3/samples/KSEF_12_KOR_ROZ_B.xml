@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Faktura xmlns:etd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns="http://crd.gov.pl/wzor/2025/06/25/13775/">
+	<Naglowek>
+		<KodFormularza kodSystemowy="FA (3)" wersjaSchemy="1-0E">FA</KodFormularza>
+		<WariantFormularza>3</WariantFormularza>
+		<DataWytworzeniaFa>2025-12-28T15:30:00Z</DataWytworzeniaFa>
+		<SystemInfo>KSEF_TEST_SUITE</SystemInfo>
+	</Naglowek>
+	<Podmiot1>
+		<DaneIdentyfikacyjne>
+			<NIP>9999999999</NIP>
+			<Nazwa>IMMOBILIA DEVELOPMENT S.A.</Nazwa>
+		</DaneIdentyfikacyjne>
+		<Adres>
+			<KodKraju>PL</KodKraju>
+			<AdresL1>ul. Developerska 25</AdresL1>
+			<AdresL2>00-100 Warszawa</AdresL2>
+		</Adres>
+		<DaneKontaktowe>
+			<Email>biuro@immobilia.pl</Email>
+			<Telefon>+48221112233</Telefon>
+		</DaneKontaktowe>
+	</Podmiot1>
+	<Podmiot2>
+		<DaneIdentyfikacyjne>
+			<NIP>1111111111</NIP>
+			<Nazwa>Jan Kowalski</Nazwa>
+		</DaneIdentyfikacyjne>
+		<Adres>
+			<KodKraju>PL</KodKraju>
+			<AdresL1>ul. Mieszkaniowa 10/5</AdresL1>
+			<AdresL2>00-200 Warszawa</AdresL2>
+		</Adres>
+		<DaneKontaktowe>
+			<Email>j.kowalski@email.pl</Email>
+			<Telefon>+48600111222</Telefon>
+		</DaneKontaktowe>
+		<JST>2</JST>
+		<GV>2</GV>
+	</Podmiot2>
+	<Podmiot3>
+		<DaneIdentyfikacyjne>
+			<NIP>3333333333</NIP>
+			<Nazwa>FINANSE PLUS sp. z o.o.</Nazwa>
+		</DaneIdentyfikacyjne>
+		<Adres>
+			<KodKraju>PL</KodKraju>
+			<AdresL1>ul. Bankowa 5</AdresL1>
+			<AdresL2>00-300 Warszawa</AdresL2>
+		</Adres>
+		<DaneKontaktowe>
+			<Email>kontakt@finanseplus.pl</Email>
+			<Telefon>+48221234000</Telefon>
+		</DaneKontaktowe>
+		<Rola>4</Rola>
+		<Udzial>100</Udzial>
+	</Podmiot3>
+	<Fa>
+		<KodWaluty>PLN</KodWaluty>
+		<P_1>2025-12-28</P_1>
+		<P_1M>Warszawa</P_1M>
+		<P_2>FKR/2025/12/0001</P_2>
+		<P_6>2025-12-20</P_6>
+		<P_13_2>-4629.63</P_13_2>
+		<P_14_2>-370.37</P_14_2>
+		<P_15>-5000</P_15>
+		<Adnotacje>
+			<P_16>2</P_16>
+			<P_17>2</P_17>
+			<P_18>2</P_18>
+			<P_18A>2</P_18A>
+			<Zwolnienie>
+				<P_19N>1</P_19N>
+			</Zwolnienie>
+			<NoweSrodkiTransportu>
+				<P_22N>1</P_22N>
+			</NoweSrodkiTransportu>
+			<P_23>2</P_23>
+			<PMarzy>
+				<P_PMarzyN>1</P_PMarzyN>
+			</PMarzy>
+		</Adnotacje>
+		<RodzajFaktury>KOR_ROZ</RodzajFaktury>
+		<PrzyczynaKorekty>Wada wykonczenia stwierdzona przy odbiorze - rysy na parkiecie w salonie</PrzyczynaKorekty>
+		<TypKorekty>3</TypKorekty>
+		<DaneFaKorygowanej>
+			<DataWystFaKorygowanej>2025-12-20</DataWystFaKorygowanej>
+			<NrFaKorygowanej>FR/2025/12/0001</NrFaKorygowanej>
+			<NrKSeF>1</NrKSeF>
+			<NrKSeFFaKorygowanej>9999999999-20251220-A1B2C3-D4E5F6-AB</NrKSeFFaKorygowanej>
+		</DaneFaKorygowanej>
+		<P_15ZK>199000</P_15ZK>
+		<FakturaZaliczkowa>
+			<NrKSeFFaZaliczkowej>9999999999-20251001-A1B2C3-D4E5F6-AB</NrKSeFFaZaliczkowej>
+		</FakturaZaliczkowa>
+		<FakturaZaliczkowa>
+			<NrKSeFFaZaliczkowej>9999999999-20251115-A1B2C3-D4E5F6-AB</NrKSeFFaZaliczkowej>
+		</FakturaZaliczkowa>
+		<FaWiersz>
+			<NrWierszaFa>1</NrWierszaFa>
+			<UU_ID>KSEF10-LINE001</UU_ID>
+			<P_7>Mieszkanie 60m2 - Osiedle Sloneczne, budynek A, lokal 15 - ROZLICZENIE KONCOWE</P_7>
+			<P_8A>szt.</P_8A>
+			<P_8B>1</P_8B>
+			<P_9A>184259.26</P_9A>
+			<P_11>184259.26</P_11>
+			<P_12>8</P_12>
+			<GTU>GTU_10</GTU>
+			<StanPrzed>1</StanPrzed>
+		</FaWiersz>
+		<FaWiersz>
+			<NrWierszaFa>1</NrWierszaFa>
+			<UU_ID>KSEF10-LINE001</UU_ID>
+			<P_7>Mieszkanie 60m2 - Osiedle Sloneczne, budynek A, lokal 15 - ROZLICZENIE KONCOWE (po korekcie)</P_7>
+			<P_8A>szt.</P_8A>
+			<P_8B>1</P_8B>
+			<P_9A>179629.63</P_9A>
+			<P_11>179629.63</P_11>
+			<P_12>8</P_12>
+			<GTU>GTU_10</GTU>
+		</FaWiersz>
+	</Fa>
+	<Stopka>
+		<Informacje>
+			<StopkaFaktury>IMMOBILIA DEVELOPMENT S.A. - Kapital zakladowy: 10 000 000 PLN</StopkaFaktury>
+		</Informacje>
+		<Rejestry>
+			<KRS>0000654321</KRS>
+			<REGON>987654321</REGON>
+			<BDO>000054321</BDO>
+		</Rejestry>
+	</Stopka>
+</Faktura>

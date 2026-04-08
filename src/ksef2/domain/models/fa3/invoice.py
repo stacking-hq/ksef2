@@ -1,27 +1,39 @@
 """Public FA(3) invoice domain models."""
 
+from collections.abc import Sequence
 from decimal import Decimal
 from typing import Annotated
 
 from pydantic import Field, model_validator
 
 from ksef2.domain.models.base import KSeFBaseModel
+from ksef2.domain.models.fa3 import Attachment
 from ksef2.domain.models.fa3.body import KsefInvoiceBody
+from ksef2.domain.models.fa3.footer import InvoiceFooter
 from ksef2.domain.models.fa3.header import InvoiceHeader
 from ksef2.domain.models.fa3.party import InvoiceEntity
+from ksef2.domain.models.fa3.third_party import InvoiceThirdParty
 
 
 class KsefInvoice(KSeFBaseModel):
     """Root public aggregate for a minimal FA(3) invoice draft."""
 
-    invoice_header: Annotated[
-        InvoiceHeader, Field(description="Maps to Faktura.Naglowek")
-    ]
+    header: Annotated[InvoiceHeader, Field(description="Maps to Faktura.Naglowek")]
 
     seller: Annotated[InvoiceEntity, Field(description="Maps to Faktura.Podmiot1")]
     buyer: Annotated[InvoiceEntity, Field(description="Maps to Faktura.Podmiot2")]
+    third_parties: Annotated[
+        Sequence[InvoiceThirdParty], Field(description="Maps to Faktura.Podmiot3")
+    ] = Field(default_factory=tuple)
 
     body: Annotated[KsefInvoiceBody, Field(description="Maps to Faktura.Fa")]
+    footer: Annotated[
+        InvoiceFooter | None, Field(description="Maps to Faktura.Stopka")
+    ] = None
+
+    attachment: Annotated[
+        Attachment | None, Field(description="Maps to Faktura.FakturaZalacznik")
+    ] = None
 
     @property
     def total_gross(self) -> Decimal:

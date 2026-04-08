@@ -1,5 +1,5 @@
 {
-  "include": ["src"],
+  "include": ["src", "tests"],
   "exclude": [".venv","src/ksef2/infra/schema/api/spec", "src/ksef2/infra/schema/fa3/models"],
   "reportImplicitStringConcatenation": false,
   "reportUnannotatedClassAttribute": false

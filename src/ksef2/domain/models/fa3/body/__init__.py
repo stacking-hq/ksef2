@@ -49,12 +49,17 @@ from ksef2.domain.models.fa3.body.root import (
     KsefInvoiceBody,
 )
 from ksef2.domain.models.fa3.body.description import AdditionalDescriptionEntry
+from ksef2.domain.models.fa3.body.tax import (
+    SaleCategory,
+    TaxRegime,
+    VatClassification,
+    VatRate,
+    VatTreatment,
+)
 from ksef2.domain.models.fa3.body.row import (
-    Money,
+    Decimal,
     GtuCode,
     InvoiceProcedure,
-    VatRate,
-    SaleCategory,
     InvoiceRow,
 )
 
@@ -76,7 +81,7 @@ __all__ = [
     "InvoiceProcedure",
     "InvoiceType",
     "KsefInvoiceBody",
-    "Money",
+    "Decimal",
     "PartialPayment",
     "PartialPaymentStatus",
     "PaymentForm",
@@ -86,11 +91,13 @@ __all__ = [
     "AdditionalDescriptionEntry",
     "InvoiceTaxExemption",
     "InvoiceSettlement",
+    "TaxRegime",
     "SettlementCharge",
     "SettlementDeduction",
     "NewTransportMeansItem",
     "NewTransportSupply",
     "SaleCategory",
+    "VatClassification",
     "CargoType",
     "TransactionAddress",
     "TransactionConditions",
@@ -100,4 +107,5 @@ __all__ = [
     "TransactionTransport",
     "TransportType",
     "VatRate",
+    "VatTreatment",
 ]

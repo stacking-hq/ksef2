@@ -19,6 +19,7 @@ from ksef2.domain.models.fa3.body import (
     NewTransportMeansItem,
     NewTransportSupply,
     AdditionalDescriptionEntry,
+    TaxRegime,
 )
 from ksef2.domain.models.fa3.body import CorrectionInvoiceContext
 from ksef2.domain.models.fa3.body.payment import InvoicePayment
@@ -27,7 +28,7 @@ from ksef2.domain.models.fa3.body.transaction import (
     TransactionConditions,
     TransactionTransport,
 )
-from ksef2.infra.mappers.invoices.fa3.invoice import to_spec as invoice_to_spec
+from ksef2.infra.mappers.invoices.fa3.domain.invoice import to_spec as invoice_to_spec
 from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import (
     Twybor1,
     Twybor12,
@@ -50,7 +51,7 @@ def make_polish_address() -> InvoiceAddress:
 def test_invoice_to_spec_assembles_root_faktura() -> None:
     output = invoice_to_spec(
         KsefInvoice(
-            invoice_header=InvoiceHeader(
+            header=InvoiceHeader(
                 generation_timestamp=datetime(2026, 2, 1, 12, 30, 45),
                 system_info="ACME ERP",
             ),
@@ -175,7 +176,7 @@ def test_invoice_to_spec_assembles_root_faktura() -> None:
 def test_invoice_to_spec_maps_correction_party_blocks() -> None:
     output = invoice_to_spec(
         KsefInvoice(
-            invoice_header=InvoiceHeader(
+            header=InvoiceHeader(
                 generation_timestamp=datetime(2026, 2, 1, 12, 30, 45),
                 system_info="ACME ERP",
             ),
@@ -250,7 +251,7 @@ def test_invoice_to_spec_maps_correction_party_blocks() -> None:
 def test_invoice_to_spec_maps_foreign_currency_vat_and_annotations() -> None:
     output = invoice_to_spec(
         KsefInvoice(
-            invoice_header=InvoiceHeader(
+            header=InvoiceHeader(
                 generation_timestamp=datetime(2026, 2, 1, 12, 30, 45),
                 system_info="ACME ERP",
             ),
@@ -327,7 +328,7 @@ def test_invoice_to_spec_maps_foreign_currency_vat_and_annotations() -> None:
                         net_amount=Decimal("100.00"),
                         vat_rate="4",
                         vat_amount=Decimal("4.00"),
-                        sale_category="taxi_flat_rate",
+                        tax_regime=TaxRegime.TAXI_FLAT_RATE,
                     ),
                 ],
             ),
@@ -362,7 +363,7 @@ def test_invoice_to_spec_maps_foreign_currency_vat_and_annotations() -> None:
 def test_invoice_to_spec_maps_advance_before_correction_and_partial_payments() -> None:
     output = invoice_to_spec(
         KsefInvoice(
-            invoice_header=InvoiceHeader(
+            header=InvoiceHeader(
                 generation_timestamp=datetime(2026, 2, 1, 12, 30, 45),
                 system_info="ACME ERP",
             ),

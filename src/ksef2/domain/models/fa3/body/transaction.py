@@ -88,8 +88,8 @@ class TransactionIdentity(KSeFBaseModel):
     eu_vat_id: str | None = None
     country_code: str | None = None
     other_id: str | None = None
+    name: str | None = None
     no_id: bool = False
-    name: str
 
     @field_validator("eu_vat_id")
     @classmethod
@@ -248,6 +248,7 @@ class TransactionTransport(KSeFBaseModel):
     def validate_choices(self) -> Self:
         self._validate_transport_details()
         self._validate_cargo_details()
+        self._validate_carrier_details()
         if (
             self.transport_start is not None
             and self.transport_end is not None

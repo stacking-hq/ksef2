@@ -1,18 +1,25 @@
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
-from enum import StrEnum
-from typing import Literal, Self, assert_never
+from typing import Any, Literal, Self
 
 from pydantic import Field, model_validator
 
 from ksef2.domain.models import KSeFBaseModel
+from ksef2.domain.models.fa3.body.tax import (
+    SaleCategory,
+    TaxRegime,
+    VatClassification,
+    VatRate,
+    coerce_vat_classification,
+    coerce_vat_rate,
+    parse_sale_category,
+)
 
 
 def round_pln(value: Decimal) -> Decimal:
     return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
-Money = Decimal
 GtuCode = Literal[
     "GTU_01",
     "GTU_02",
@@ -40,96 +47,42 @@ InvoiceProcedure = Literal[
 ]
 
 
-class VatRate(StrEnum):
-    VAT_23 = "23"
-    VAT_22 = "22"
-    VAT_8 = "8"
-    VAT_7 = "7"
-    VAT_5 = "5"
-    VAT_4 = "4"
-    VAT_3 = "3"
-    VAT_0 = "0"
-    EXEMPT = "zw"
-    NOT_SUBJECT = "np"
-    REVERSE_CHARGE = "oo"
-
-
-class SaleCategory(StrEnum):
-    STANDARD = "standard"
-    TAXI_FLAT_RATE = "taxi_flat_rate"
-    SPECIAL_XII = "special_xii"
-    ZERO_DOMESTIC = "zero_domestic"
-    ZERO_WDT = "zero_wdt"
-    ZERO_EXPORT = "zero_export"
-    EXEMPT = "exempt"
-    OUT_OF_TERRITORY = "out_of_territory"
-    ARTICLE_100 = "article_100"
-    REVERSE_CHARGE = "reverse_charge"
-    MARGIN = "margin"
-
-
 class InvoiceRow(KSeFBaseModel):
-    name: str = Field(description="p_7: Name of good/service")
+    name: str | None = Field(default=None, description="p_7: Name of good/service")
     supply_date: date | None = Field(default=None, description="p_6_a: Date of supply")
-    unit_price_net: Money = Field(description="p_9_a: Net unit price")
+    unit_price_net: Decimal | None = Field(
+        default=None, description="p_9_a: Net unit price"
+    )
     vat_rate: VatRate | None = Field(
         default=None,
-        description="p_12: VAT rate / formal tax marker where applicable",
+        description="Legacy raw VAT rate marker used by the FA(3) schema serializer.",
+    )
+    vat_classification: VatClassification | None = Field(
+        default=None,
+        description=(
+            "Structured VAT classification separating legal treatment from numeric rate. "
+            "Prefer this over manually mixing rate and sale category values."
+        ),
     )
     unit_of_measure: str = Field(default="szt", description="p_8_a: Unit of measure")
-    quantity: Decimal = Field(description="p_8_b: Quantity")
-    discount_amount: Money | None = Field(
+    quantity: Decimal | None = Field(default=None, description="p_8_b: Quantity")
+    discount_amount: Decimal | None = Field(
         default=Decimal("0.00"), description="p_10: Discount amount"
     )
 
     # --- computed fields ---
-    unit_price_gross: Money | None = Field(
+    unit_price_gross: Decimal | None = Field(
         default=None, description="p_9_b: Price with VAT"
     )
-    gross_amount: Money | None = Field(
+    gross_amount: Decimal | None = Field(
         default=None, description="p_11_a: Gross value of the line"
     )
-    net_amount: Money | None = Field(
+    net_amount: Decimal | None = Field(
         default=None, description="p_11: Net value of the line"
     )
-    vat_amount: Money | None = Field(
+    vat_amount: Decimal | None = Field(
         default=None, description="p_11_vat: VAT amount of the line"
     )
-
-    @model_validator(mode="after")
-    def compute_financial_field(self):
-        if self.net_amount is None:
-            base_net = self.unit_price_net * self.quantity
-            self.net_amount = round_pln(base_net) - (
-                self.discount_amount or Decimal("0.00")
-            )
-
-        if self.vat_amount is None:
-            if self.vat_rate in {
-                VatRate.VAT_23,
-                VatRate.VAT_22,
-                VatRate.VAT_8,
-                VatRate.VAT_7,
-                VatRate.VAT_5,
-                VatRate.VAT_4,
-            }:
-                decimal_vat_rate = (
-                    Decimal(self.vat_rate.value) / Decimal("100")
-                    if self.vat_rate
-                    else Decimal("0.00")
-                )
-                rate_decimal = decimal_vat_rate
-                self.vat_amount = round_pln(self.net_amount * rate_decimal)
-            else:
-                # for VAT_0, EXEMPT (zw), NOT_SUBJECT (np), REVERSE_CHARGE (oo)
-                self.vat_amount = Decimal("0.00")
-
-        if self.gross_amount is None:
-            self.gross_amount = round_pln(self.net_amount + self.vat_amount)
-
-        _ = self.validate_tax_logic()
-
-        return self
 
     vat_rate_xii: Decimal | None = Field(
         default=None, description="p_12_XII: VAT rate XII"
@@ -138,15 +91,22 @@ class InvoiceRow(KSeFBaseModel):
         default=None, description="p_12_ZAL_15: Annex 15 marker"
     )
 
-    sale_category: SaleCategory = Field(
-        default=SaleCategory.STANDARD,
+    sale_category: SaleCategory | None = Field(
+        default=None,
         description=(
-            "Logical classification used to map the line into KSeF summary buckets "
-            "(e.g. standard, WDT 0%, export 0%, exempt, reverse charge, margin)."
+            "Strict classification mapped 1:1 to TstawkaPodatku values when the line uses "
+            "normal FA(3) VAT markers."
+        ),
+    )
+    tax_regime: TaxRegime = Field(
+        default=TaxRegime.STANDARD,
+        description=(
+            "Separate tax-regime context for cases that are not pure TstawkaPodatku categories, "
+            "such as taxi flat-rate, Title XII, or margin invoices."
         ),
     )
 
-    excise_amount: Money | None = Field(
+    excise_amount: Decimal | None = Field(
         default=None, description="kwota_akcyzy: Excise amount"
     )
     unique_id: str | None = Field(default=None, description="uu_id: Unique ID")
@@ -174,127 +134,160 @@ class InvoiceRow(KSeFBaseModel):
         description="stan_przed: Marks the row as representing state before correction",
     )
 
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_tax_fields(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+
+        raw_vat_classification = data.get("vat_classification")
+        raw_vat_rate = data.get("vat_rate")
+        raw_sale_category = data.get("sale_category")
+        raw_tax_regime = data.get("tax_regime")
+
+        vat_classification = coerce_vat_classification(raw_vat_classification)
+        vat_rate = coerce_vat_rate(raw_vat_rate)
+        sale_category, inferred_tax_regime = parse_sale_category(
+            raw_sale_category,
+            vat_rate=vat_rate,
+        )
+
+        if isinstance(raw_tax_regime, TaxRegime):
+            tax_regime = raw_tax_regime
+        elif raw_tax_regime is None:
+            tax_regime = inferred_tax_regime or TaxRegime.STANDARD
+        else:
+            tax_regime = TaxRegime(str(raw_tax_regime))
+
+        if vat_classification is None:
+            if sale_category is not None:
+                vat_classification = VatClassification.from_sale_category(sale_category)
+            elif vat_rate is not None and tax_regime is not TaxRegime.MARGIN:
+                vat_classification = VatClassification.from_vat_rate(vat_rate)
+        else:
+            if sale_category is None:
+                sale_category = vat_classification.sale_category
+            elif sale_category != vat_classification.sale_category:
+                raise ValueError(
+                    "sale_category does not match the supplied vat_classification"
+                )
+
+            if vat_rate is None:
+                vat_rate = vat_classification.vat_rate
+            elif vat_rate != vat_classification.vat_rate:
+                raise ValueError(
+                    "vat_rate does not match the supplied vat_classification"
+                )
+
+        if sale_category is None and vat_classification is not None:
+            sale_category = vat_classification.sale_category
+        if vat_rate is None and vat_classification is not None:
+            vat_rate = vat_classification.vat_rate
+
+        data["vat_classification"] = vat_classification
+        data["vat_rate"] = vat_rate
+        data["sale_category"] = sale_category
+        data["tax_regime"] = tax_regime
+        return data
+
+    @model_validator(mode="after")
+    def compute_financial_field(self) -> Self:
+        if (
+            self.net_amount is None
+            and self.unit_price_net is not None
+            and self.quantity is not None
+        ):
+            base_net = self.unit_price_net * self.quantity
+            self.net_amount = round_pln(base_net) - (
+                self.discount_amount or Decimal("0.00")
+            )
+
+        if self.vat_amount is None and self.net_amount is not None:
+            rate = self._vat_percent()
+            if rate is None:
+                self.vat_amount = Decimal("0.00")
+            else:
+                self.vat_amount = round_pln(self.net_amount * rate)
+
+        if (
+            self.gross_amount is None
+            and self.net_amount is not None
+            and self.vat_amount is not None
+        ):
+            self.gross_amount = round_pln(self.net_amount + self.vat_amount)
+
+        _ = self.validate_tax_logic()
+        return self
+
     def validate_tax_logic(self) -> Self:
         self._validate_quantity()
-        self._validate_sale_category_rules()
+        self._validate_tax_classification_rules()
         self._validate_gross_amount_consistency()
         return self
+
+    def _vat_percent(self) -> Decimal | None:
+        if self.tax_regime is TaxRegime.SPECIAL_XII:
+            if self.vat_rate_xii is None:
+                return None
+            return self.vat_rate_xii / Decimal("100")
+
+        if (
+            self.vat_classification is None
+            or self.vat_classification.numeric_rate is None
+        ):
+            return None
+
+        return self.vat_classification.numeric_rate / Decimal("100")
 
     def _validate_quantity(self) -> None:
         if self.quantity == 0:
             raise ValueError("quantity cannot be zero")
 
-    def _validate_sale_category_rules(self) -> None:
-        match self.sale_category:
-            case SaleCategory.STANDARD:
-                self._validate_standard_sale()
-            case SaleCategory.TAXI_FLAT_RATE:
-                self._validate_taxi_flat_rate()
-            case SaleCategory.ZERO_DOMESTIC:
-                self._validate_zero_domestic()
-            case SaleCategory.ZERO_WDT:
-                self._validate_zero_wdt()
-            case SaleCategory.ZERO_EXPORT:
-                self._validate_zero_export()
-            case SaleCategory.EXEMPT:
-                self._validate_exempt()
-            case SaleCategory.OUT_OF_TERRITORY:
-                self._validate_out_of_territory()
-            case SaleCategory.ARTICLE_100:
-                self._validate_article_100()
-            case SaleCategory.REVERSE_CHARGE:
-                self._validate_reverse_charge()
-            case SaleCategory.MARGIN:
-                self._validate_margin()
-            case SaleCategory.SPECIAL_XII:
-                self._validate_special_xii()
-            case _ as unreachable:  # pyright: ignore[reportUnnecessaryComparison]
-                assert_never(unreachable)
+    def _validate_tax_classification_rules(self) -> None:
+        if self.tax_regime is TaxRegime.MARGIN:
+            self._validate_margin()
+            return
 
-    def _validate_standard_sale(self) -> None:
-        # Standard domestic taxable sale using ordinary VAT rate buckets.
-        # This category maps to the classic KSeF summary fields such as p_13_1..p_13_3 and p_14_1..p_14_3.
-        if self.vat_rate not in {
-            VatRate.VAT_23,
-            VatRate.VAT_22,
-            VatRate.VAT_8,
-            VatRate.VAT_7,
-            VatRate.VAT_5,
-        }:
+        if self.tax_regime is TaxRegime.SPECIAL_XII:
+            self._validate_special_xii()
+            return
+
+        if (
+            self.vat_classification is None
+            or self.sale_category is None
+            or self.vat_rate is None
+        ):
             raise ValueError(
-                "STANDARD sale_category requires vat_rate equal to 23, 22, 8, 7, or 5"
+                "vat classification is required unless the line uses a margin or Title XII regime"
             )
 
-    def _validate_taxi_flat_rate(self) -> None:
-        # Taxi flat-rate sale is a special tax regime.
-        # It should be represented only with the dedicated 4% bucket.
-        if self.vat_rate != VatRate.VAT_4:
-            raise ValueError("TAXI_FLAT_RATE requires vat_rate='4'")
+        if self.tax_regime is TaxRegime.TAXI_FLAT_RATE:
+            if self.sale_category != SaleCategory.RATE_4:
+                raise ValueError("taxi flat-rate lines must use sale_category='rate_4'")
+            if self.vat_rate != VatRate.VAT_4:
+                raise ValueError("taxi flat-rate lines must use vat_rate='4'")
+            return
 
-    def _validate_zero_domestic(self) -> None:
-        # Domestic 0% sale, excluding intra-EU supply and export.
-        # This maps to p_13_6_1.
-        if self.vat_rate != VatRate.VAT_0:
-            raise ValueError("ZERO_DOMESTIC requires vat_rate='0'")
-
-    def _validate_zero_wdt(self) -> None:
-        # Intra-EU supply of goods taxed at 0%.
-        # This maps to p_13_6_2.
-        if self.vat_rate != VatRate.VAT_0:
-            raise ValueError("ZERO_WDT requires vat_rate='0'")
-
-    def _validate_zero_export(self) -> None:
-        # Export sale taxed at 0%.
-        # This maps to p_13_6_3.
-        if self.vat_rate != VatRate.VAT_0:
-            raise ValueError("ZERO_EXPORT requires vat_rate='0'")
-
-    def _validate_exempt(self) -> None:
-        # VAT-exempt sale.
-        # This maps to p_13_7 and must not be treated as a taxable rate bucket.
-        if self.vat_rate != VatRate.EXEMPT:
-            raise ValueError("EXEMPT category requires vat_rate='zw'")
-
-    def _validate_out_of_territory(self) -> None:
-        # Sale outside the territory of Poland.
-        # Usually represented as not subject to Polish VAT and maps to p_13_8.
-        if self.vat_rate not in {VatRate.NOT_SUBJECT, None}:
-            raise ValueError("OUT_OF_TERRITORY requires vat_rate='np' or None")
-
-    def _validate_article_100(self) -> None:
-        # Services reported under Article 100(1)(4).
-        # This is a reporting-specific bucket and should be marked as not subject in Poland.
-        if self.vat_rate not in {VatRate.NOT_SUBJECT, None}:
-            raise ValueError("ARTICLE_100 requires vat_rate='np' or None")
-
-    def _validate_reverse_charge(self) -> None:
-        # Reverse-charge sale where the buyer accounts for VAT.
-        # This maps to p_13_10 and should not use ordinary VAT sale buckets.
-        if self.vat_rate not in {VatRate.REVERSE_CHARGE, None}:
-            raise ValueError("REVERSE_CHARGE requires vat_rate='oo' or None")
+        if self.sale_category != self.vat_classification.sale_category:
+            raise ValueError("sale_category must match vat_classification")
+        if self.vat_rate != self.vat_classification.vat_rate:
+            raise ValueError("vat_rate must match vat_classification")
 
     def _validate_margin(self) -> None:
-        # Margin scheme sale under the dedicated margin procedure.
-        # It maps to p_13_11 and must not be represented as a normal VAT rate bucket.
-        if self.vat_rate in {
-            VatRate.VAT_23,
-            VatRate.VAT_22,
-            VatRate.VAT_8,
-            VatRate.VAT_7,
-            VatRate.VAT_5,
-            VatRate.VAT_4,
-            VatRate.VAT_0,
-        }:
-            raise ValueError("MARGIN category should not use standard VAT rates")
+        if (
+            self.vat_classification is not None
+            or self.vat_rate is not None
+            or self.sale_category is not None
+        ):
+            raise ValueError(
+                "margin lines must not define vat_classification, vat_rate, or sale_category"
+            )
 
     def _validate_special_xii(self) -> None:
-        # Special Title XII procedure.
-        # This category requires the dedicated vat_rate_xii field instead of ordinary VAT rate handling.
         if self.vat_rate_xii is None:
-            raise ValueError("SPECIAL_XII requires vat_rate_xii")
+            raise ValueError("special_xii tax_regime requires vat_rate_xii")
 
     def _validate_gross_amount_consistency(self) -> None:
-        # Gross amount, when provided, must equal net amount plus VAT amount.
         if self.gross_amount is not None:
             assert self.net_amount is not None and self.vat_amount is not None, (
                 "net_amount and vat_amount must be set when gross_amount is provided"

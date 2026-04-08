@@ -16,6 +16,7 @@ from ksef2.domain.models.fa3 import (
     KsefInvoice,
 )
 from ksef2.domain.models.fa3.body import InvoiceType, InvoiceRow
+from ksef2.domain.models.fa3.body import SaleCategory, TaxRegime, VatTreatment
 
 
 def make_polish_address() -> InvoiceAddress:
@@ -113,7 +114,7 @@ def test_foreign_entity_rejects_tax_id_without_eu_vat_id() -> None:
 def test_ksef_invoice_rejects_seller_without_tax_id() -> None:
     with pytest.raises(ValidationError, match="seller tax_id is required"):
         KsefInvoice(
-            invoice_header=InvoiceHeader(
+            header=InvoiceHeader(
                 generation_timestamp=datetime(2026, 2, 1, 12, 30, 45),
                 system_info="ACME ERP",
             ),
@@ -199,6 +200,42 @@ def test_invoice_line_accepts_full_fa3_shape() -> None:
     assert line.before_correction is False
 
 
+def test_invoice_line_derives_structured_vat_classification_from_legacy_inputs() -> (
+    None
+):
+    line = InvoiceRow(
+        name="WDT service",
+        quantity=Decimal("1"),
+        unit_price_net=Decimal("100.00"),
+        net_amount=Decimal("100.00"),
+        vat_rate="0",
+        sale_category=SaleCategory.ZERO_WDT,
+    )
+
+    assert line.vat_classification is not None
+    assert line.vat_classification.treatment is VatTreatment.ZERO_WDT
+    assert line.vat_classification.rate == Decimal("0")
+    assert line.tax_regime is TaxRegime.STANDARD
+
+
+def test_invoice_line_derives_legacy_fields_from_structured_vat_classification() -> (
+    None
+):
+    line = InvoiceRow(
+        name="Consulting service",
+        quantity=Decimal("1"),
+        unit_price_net=Decimal("100.00"),
+        net_amount=Decimal("100.00"),
+        vat_classification={
+            "treatment": VatTreatment.TAXABLE,
+            "rate": Decimal("23"),
+        },
+    )
+
+    assert line.sale_category is SaleCategory.RATE_23
+    assert line.vat_rate == "23"
+
+
 def test_invoice_entity_accepts_contact_and_customer_number() -> None:
     entity = InvoiceEntity(
         tax_id="1234567890",
@@ -216,7 +253,7 @@ def test_invoice_entity_accepts_contact_and_customer_number() -> None:
 
 def test_ksef_invoice_accepts_lines_collection() -> None:
     invoice = KsefInvoice(
-        invoice_header=InvoiceHeader(
+        header=InvoiceHeader(
             generation_timestamp=datetime(2026, 2, 1, 12, 30, 45),
             system_info="ACME ERP",
         ),
@@ -251,7 +288,7 @@ def test_ksef_invoice_rejects_empty_lines_collection() -> None:
         ValidationError, match="At least one invoice line or order is required"
     ):
         KsefInvoice(
-            invoice_header=InvoiceHeader(
+            header=InvoiceHeader(
                 generation_timestamp=datetime(2026, 2, 1, 12, 30, 45),
                 system_info="ACME ERP",
             ),

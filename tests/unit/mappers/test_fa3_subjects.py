@@ -1,7 +1,7 @@
 from ksef2.domain.models.fa3 import ContactInfo, InvoiceAddress, InvoiceEntity
-from ksef2.infra.mappers.invoices.fa3.buyer import to_spec as buyer_to_spec
-from ksef2.infra.mappers.invoices.fa3.seller import to_spec as seller_to_spec
-from ksef2.infra.mappers.invoices.fa3.subject import to_spec as subject_to_spec
+from ksef2.infra.mappers.invoices.fa3.domain.buyer import to_spec as buyer_to_spec
+from ksef2.infra.mappers.invoices.fa3.domain.seller import to_spec as seller_to_spec
+from ksef2.infra.mappers.invoices.fa3.domain.subject import to_spec as subject_to_spec
 from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import Twybor1
 from ksef2.infra.schema.fa3.models.kody_krajow_v10_0_e import TkodKraju
 from ksef2.infra.schema.fa3.models.schemat import (

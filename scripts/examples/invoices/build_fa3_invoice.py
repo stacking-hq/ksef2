@@ -9,7 +9,7 @@ from xsdata.formats.dataclass.serializers.config import SerializerConfig
 
 from ksef2.domain.models.fa3 import KsefInvoice
 from ksef2.domain.models.fa3.body import VatRate
-from ksef2.infra.mappers.invoices.fa3.invoice import to_spec as invoice_to_spec
+from ksef2.infra.mappers.invoices.fa3.domain.invoice import to_spec as invoice_to_spec
 from ksef2.infra.schema.fa3.models.schemat import __NAMESPACE__
 from ksef2.services import FA3InvoiceBuilder
 from ksef2.services.renderers import InvoicePDFExporter
