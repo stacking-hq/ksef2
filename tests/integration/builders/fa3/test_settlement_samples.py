@@ -350,8 +350,7 @@ def _assert_sample(builder: StandardInvoiceBuilder, sample_name: str) -> None:
 
     assert actual_spec.fa.p_2 == expected_spec.fa.p_2
     assert len(actual_spec.fa.fa_wiersz) == len(expected_spec.fa.fa_wiersz)
-    if actual_spec.fa.p_15 is not None and expected_spec.fa.p_15 is not None:
-        assert Decimal(actual_spec.fa.p_15) == Decimal(expected_spec.fa.p_15)
+    assert Decimal(actual_spec.fa.p_15) == Decimal(expected_spec.fa.p_15)
     assert actual_invoice == expected_invoice
     assert xml_invoice == expected_invoice
 
