@@ -2,9 +2,8 @@
 
 from collections.abc import Sequence
 from datetime import datetime, timezone, date
-from enum import Enum, StrEnum
+from enum import StrEnum
 from zoneinfo import ZoneInfo
-from camel_converter import to_camel
 
 
 def to_aware_datetime(dt: str | datetime | date) -> datetime:
@@ -45,11 +44,3 @@ def get_matching_enum(
             "Pass the explicit StrEnum value instead of a string."
         )
     return None
-
-
-def to_camel_enum[_V: str, _T: Enum](value: _V, enum: type[_T]) -> _T:
-    """Convert a snake_case literal into an enum whose values use camel-style names."""
-    try:
-        return enum(to_camel(value))
-    except ValueError:
-        raise ValueError(f"{value} is not a valid {enum.__name__}") from None
