@@ -39,6 +39,10 @@ def to_spec(request: TokenPermission) -> spec.TokenPermissionType: ...
 def to_spec(request: TokenStatus) -> spec.AuthenticationTokenStatus: ...
 
 
+@overload
+def to_spec(request: str) -> object: ...
+
+
 def to_spec(request: BaseModel | Enum | str) -> object:
     """Convert a domain token object or literal into its schema counterpart.
 

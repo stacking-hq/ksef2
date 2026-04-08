@@ -25,6 +25,7 @@ class TestInvoiceSessionsClient:
         assert isinstance(result, ListSessionsResponse)
         assert fake_transport.calls[0].method == "GET"
         assert fake_transport.calls[0].path == SessionRoutes.LIST_SESSIONS
+        assert fake_transport.calls[0].params is not None
         assert dict(fake_transport.calls[0].params) == {
             "pageSize": "10",
             "sessionType": "Online",
@@ -41,6 +42,7 @@ class TestInvoiceSessionsClient:
 
         _ = invoice_sessions_client.query(session_type="online", params=params)
 
+        assert fake_transport.calls[0].params is not None
         assert dict(fake_transport.calls[0].params) == {
             "pageSize": "25",
             "sessionType": "Online",

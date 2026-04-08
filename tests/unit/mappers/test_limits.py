@@ -30,10 +30,12 @@ class TestLimitRequestMappers:
 
         assert isinstance(result, spec.SetSubjectLimitsRequest)
         assert result.certificate is not None
+        assert request.certificate is not None
         assert (
             result.certificate.maxCertificates == request.certificate.max_certificates
         )
         assert result.enrollment is not None
+        assert request.enrollment is not None
         assert result.enrollment.maxEnrollments == request.enrollment.max_enrollments
 
     def test_to_spec_api_rate_limits(
@@ -80,10 +82,12 @@ class TestLimitResponseMappers:
 
         assert isinstance(result, SubjectLimits)
         assert result.certificate is not None
+        assert response.certificate is not None
         assert (
             result.certificate.max_certificates == response.certificate.maxCertificates
         )
         assert result.enrollment is not None
+        assert response.enrollment is not None
         assert result.enrollment.max_enrollments == response.enrollment.maxEnrollments
 
     def test_from_spec_api_rate_limits(

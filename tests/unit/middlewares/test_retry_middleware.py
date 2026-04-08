@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from unittest.mock import patch
 
 import httpx
@@ -18,7 +19,7 @@ class FailingThenSucceedingTransport(FakeTransport):
         path: str,
         *,
         headers: dict[str, str] | None = None,
-        params: httpx.QueryParams | None = None,
+        params: Mapping[str, object] | None = None,
         json: dict[str, object] | None = None,
         content: bytes | None = None,
     ) -> httpx.Response:

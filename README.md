@@ -87,6 +87,7 @@ for path in auth.invoices.fetch_package(
 ## Features
 
 - **Typed public API** for authentication, sessions, invoices, tokens, permissions, limits, certificates, and PEPPOL
+- **FA(3) invoice builder** exposed through `ksef2.fa3` for typed invoice construction and XML rendering
 - **XAdES and KSeF token authentication** through a single `Client.authentication` entry point
 - **Online and batch sessions** with resumable session state for long-running jobs
 - **Built-in encryption helpers** for invoice sending and export package decryption
@@ -210,6 +211,57 @@ print(len(metadata.invoices))
 
 For the full API surface, see the guide docs below.
 
+## FA(3) Builder
+
+If you want to generate FA(3) invoices inside the SDK, use the public `ksef2.fa3` namespace:
+
+```python
+from datetime import date
+from decimal import Decimal
+
+from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+
+xml_text = (
+    FA3InvoiceBuilder()
+    .header(system_info="my app")
+    .seller(
+        name="ACME S.A.",
+        tax_id="1234567890",
+        country_code="PL",
+        address_line_1="ul. Przykladowa 123",
+    )
+    .buyer(
+        name="XYZ GmbH",
+        country_code="DE",
+        address_line_1="Unter den Linden 1",
+    )
+    .standard()
+        .issue_date(date(2026, 3, 29))
+        .invoice_number("FV/2026/03/0001")
+        .rows()
+            .add_line(
+                name="Consulting service",
+                quantity=Decimal("1"),
+                unit_of_measure="h",
+                unit_price_net=Decimal("100.00"),
+                vat_rate=VatRate.VAT_23,
+            )
+        .done()
+    .done()
+    .to_xml()
+)
+```
+
+See [`docs/guides/fa3-builder.md`](docs/guides/fa3-builder.md) for the full builder guide and the runnable examples in [`scripts/examples/invoices`](scripts/examples/invoices).
+
+To build an invoice and generate a PDF visualization locally:
+
+```bash
+uv run -m scripts.examples.invoices.build_fa3_invoice
+```
+
+This writes both `output/fa3_invoice.xml` and `output/fa3_invoice.pdf`.
+
 ## Examples
 
 Run examples as modules with `uv run -m ...`; direct execution by file path is not supported.
@@ -220,6 +272,9 @@ Run examples as modules with `uv run -m ...`; direct execution by file path is n
 - [`scripts/examples/invoices/send_batch.py`](scripts/examples/invoices/send_batch.py) - staged batch upload with explicit session lifecycle
 - [`scripts/examples/invoices/submit_batch.py`](scripts/examples/invoices/submit_batch.py) - one-shot batch submission flow
 - [`scripts/examples/invoices/send_query_export_download.py`](scripts/examples/invoices/send_query_export_download.py) - send, inspect, export, and download invoices
+- [`scripts/examples/invoices/build_fa3_invoice.py`](scripts/examples/invoices/build_fa3_invoice.py) - build an FA(3) invoice, validate the XML, and generate a PDF visualization
+- [`scripts/examples/invoices/build_fa3_invoice_builder.py`](scripts/examples/invoices/build_fa3_invoice_builder.py) - use the nested FA(3) builder DSL and generate XML plus a PDF visualization
+- [`scripts/examples/invoices/build_fa3_invoice_sample_1.py`](scripts/examples/invoices/build_fa3_invoice_sample_1.py) - recreate the first official FA(3) sample with the public builder
 - [`scripts/examples/peppol/query_providers.py`](scripts/examples/peppol/query_providers.py) - query public PEPPOL providers
 - [`scripts/examples/scenarios/download_purchase_invoices.py`](scripts/examples/scenarios/download_purchase_invoices.py) - multi-buyer purchase-invoice export scenario
 - [`scripts/examples/session/session_resume.py`](scripts/examples/session/session_resume.py) - persist and resume an online session

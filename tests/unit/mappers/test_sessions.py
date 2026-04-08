@@ -86,9 +86,9 @@ class TestSessionRequestMapper:
 
         assert request is not None
         assert isinstance(request, dict)
-        assert request["pageSize"] == 25
-        assert request["sessionType"] == "Online"
-        assert request["dateCreatedFrom"] == "2026-03-05T10:00:00Z"
+        assert request.get("pageSize") == 25
+        assert request.get("sessionType") == "Online"
+        assert request.get("dateCreatedFrom") == "2026-03-05T10:00:00Z"
 
 
 class TestSessionResponseMapper:

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Faktura xmlns:etd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns="http://crd.gov.pl/wzor/2025/06/25/13775/">
+	<Naglowek>
+		<KodFormularza kodSystemowy="FA (3)" wersjaSchemy="1-0E">FA</KodFormularza>
+		<WariantFormularza>3</WariantFormularza>
+		<DataWytworzeniaFa>2025-12-15T10:30:00Z</DataWytworzeniaFa>
+		<SystemInfo>KSEF_TEST_SUITE</SystemInfo>
+	</Naglowek>
+	<Podmiot1>
+		<DaneIdentyfikacyjne>
+			<NIP>9999999999</NIP>
+			<Nazwa>TECH-SOLUTIONS sp. z o.o.</Nazwa>
+		</DaneIdentyfikacyjne>
+		<Adres>
+			<KodKraju>PL</KodKraju>
+			<AdresL1>ul. Marszalkowska 100</AdresL1>
+			<AdresL2>00-001 Warszawa</AdresL2>
+		</Adres>
+		<DaneKontaktowe>
+			<Email>biuro@tech-solutions.pl</Email>
+			<Telefon>+48221234567</Telefon>
+		</DaneKontaktowe>
+	</Podmiot1>
+	<Podmiot2>
+		<DaneIdentyfikacyjne>
+			<NIP>1111111111</NIP>
+			<Nazwa>ABC HANDEL sp. z o.o.</Nazwa>
+		</DaneIdentyfikacyjne>
+		<Adres>
+			<KodKraju>PL</KodKraju>
+			<AdresL1>ul. Poznanska 50</AdresL1>
+			<AdresL2>60-001 Poznan</AdresL2>
+		</Adres>
+		<DaneKontaktowe>
+			<Email>kontakt@abc-handel.pl</Email>
+			<Telefon>+48617654321</Telefon>
+		</DaneKontaktowe>
+		<NrKlienta>ABC-001</NrKlienta>
+		<JST>2</JST>
+		<GV>2</GV>
+	</Podmiot2>
+	<Fa>
+		<KodWaluty>PLN</KodWaluty>
+		<P_1>2025-12-15</P_1>
+		<P_1M>Warszawa</P_1M>
+		<P_2>FV/2025/12/0001</P_2>
+		<P_6>2025-12-10</P_6>
+		<P_13_1>4065.04</P_13_1>
+		<P_14_1>934.96</P_14_1>
+		<P_15>5000</P_15>
+		<Adnotacje>
+			<P_16>2</P_16>
+			<P_17>2</P_17>
+			<P_18>2</P_18>
+			<P_18A>2</P_18A>
+			<Zwolnienie>
+				<P_19N>1</P_19N>
+			</Zwolnienie>
+			<NoweSrodkiTransportu>
+				<P_22N>1</P_22N>
+			</NoweSrodkiTransportu>
+			<P_23>2</P_23>
+			<PMarzy>
+				<P_PMarzyN>1</P_PMarzyN>
+			</PMarzy>
+		</Adnotacje>
+		<RodzajFaktury>VAT</RodzajFaktury>
+		<FaWiersz>
+			<NrWierszaFa>1</NrWierszaFa>
+			<UU_ID>KSEF01-LINE001</UU_ID>
+			<P_7>Laptop Dell XPS 15</P_7>
+			<P_8A>szt.</P_8A>
+			<P_8B>2</P_8B>
+			<P_9A>2032.52</P_9A>
+			<P_11>4065.04</P_11>
+			<P_12>23</P_12>
+		</FaWiersz>
+		<Platnosc>
+			<TerminPlatnosci>
+				<Termin>2026-01-15</Termin>
+			</TerminPlatnosci>
+			<FormaPlatnosci>6</FormaPlatnosci>
+			<RachunekBankowy>
+				<NrRB>PL61109010140000071219812874</NrRB>
+				<NazwaBanku>Santander Bank Polska S.A.</NazwaBanku>
+				<OpisRachunku>PLN</OpisRachunku>
+			</RachunekBankowy>
+		</Platnosc>
+	</Fa>
+	<Stopka>
+		<Informacje>
+			<StopkaFaktury>TECH-SOLUTIONS sp. z o.o. - Kapital zakladowy: 500 000 PLN</StopkaFaktury>
+		</Informacje>
+		<Rejestry>
+			<KRS>0000123456</KRS>
+			<REGON>146025969</REGON>
+			<BDO>000012345</BDO>
+		</Rejestry>
+	</Stopka>
+</Faktura>

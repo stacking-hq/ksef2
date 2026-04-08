@@ -26,6 +26,7 @@ class TestTestDataMapper:
         assert result.subjectNip == request.subject_nip
         assert result.subjectType == "EnforcementAuthority"
         assert result.subunits is not None
+        assert request.subunits is not None
         assert result.subunits[0].subjectNip == request.subunits[0].subject_nip
 
     def test_to_spec_delete_subject_request(

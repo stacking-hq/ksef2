@@ -131,6 +131,10 @@ def to_spec(request: AuthContextIdentifier) -> supp.AuthContextIdentifierInput: 
 def to_spec(request: Permission) -> supp.PermissionInput: ...
 
 
+@overload
+def to_spec(request: str) -> object: ...
+
+
 def to_spec(request: BaseModel | Enum | str) -> object:
     """Convert a testdata domain object or literal into its schema counterpart.
 

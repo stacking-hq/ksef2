@@ -172,5 +172,6 @@ print(len(zip_parts))
 
 ## Related
 
+- [FA(3) Builder](fa3-builder.md)
 - [Sessions](sessions.md)
 - [Authentication](authentication.md)

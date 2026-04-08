@@ -250,11 +250,11 @@ class PersonPermissionFactory(ModelFactory[spec.PersonPermission]):
 class EntityAuthorizationGrantFactory(ModelFactory[spec.EntityAuthorizationGrant]):
     id = _UUID
     authorIdentifier = spec.EntityAuthorizationsAuthorIdentifier(
-        type=spec.CertificateSubjectIdentifierType.Nip,
+        type=spec.EntityAuthorizationsAuthorIdentifierType.Nip,
         value="1234567890",
     )
     authorizedEntityIdentifier = spec.EntityAuthorizationsAuthorizedEntityIdentifier(
-        type=spec.EntityAuthorizationPermissionsSubjectIdentifierType.Nip,
+        type=spec.EntityAuthorizationsAuthorizedEntityIdentifierType.Nip,
         value="1234567890",
     )
     authorizingEntityIdentifier = spec.EntityAuthorizationsAuthorizingEntityIdentifier(
@@ -300,7 +300,7 @@ class PersonalPermissionFactory(ModelFactory[spec.PersonalPermission]):
 class EuEntityPermissionFactory(ModelFactory[spec.EuEntityPermission]):
     id = _UUID
     authorIdentifier = spec.EuEntityPermissionsAuthorIdentifier(
-        type=spec.CertificateSubjectIdentifierType.Nip,
+        type=spec.EuEntityPermissionsAuthorIdentifierType.Nip,
         value="1234567890",
     )
     vatUeIdentifier = "PL1234567890"
@@ -314,7 +314,7 @@ class EuEntityPermissionFactory(ModelFactory[spec.EuEntityPermission]):
 @register_fixture(name="perm_subordinate_role_item")
 class SubordinateEntityRoleFactory(ModelFactory[spec.SubordinateEntityRole]):
     subordinateEntityIdentifier = spec.SubordinateRoleSubordinateEntityIdentifier(
-        type=spec.EntityAuthorizationsAuthorizingEntityIdentifierType.Nip,
+        type=spec.SubordinateRoleSubordinateEntityIdentifierType.Nip,
         value="1234567890",
     )
     role = spec.SubordinateEntityRoleType.LocalGovernmentSubUnit
@@ -326,15 +326,15 @@ class SubordinateEntityRoleFactory(ModelFactory[spec.SubordinateEntityRole]):
 class SubunitPermissionFactory(ModelFactory[spec.SubunitPermission]):
     id = _UUID
     authorizedIdentifier = spec.SubunitPermissionsAuthorizedIdentifier(
-        type=spec.CertificateSubjectIdentifierType.Nip,
+        type=spec.SubunitPermissionsSubjectIdentifierType.Nip,
         value="1234567890",
     )
     subunitIdentifier = spec.SubunitPermissionsSubunitIdentifier(
-        type=spec.SubunitPermissionsContextIdentifierType.InternalId,
+        type=spec.SubunitPermissionsSubunitIdentifierType.InternalId,
         value="1234567890-12345",
     )
     authorIdentifier = spec.SubunitPermissionsAuthorIdentifier(
-        type=spec.CertificateSubjectIdentifierType.Pesel,
+        type=spec.SubunitPermissionsAuthorIdentifierType.Pesel,
         value="12345678901",
     )
     permissionScope = spec.SubunitPermissionScope.CredentialsManage

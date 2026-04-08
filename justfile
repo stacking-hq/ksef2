@@ -76,12 +76,9 @@ regenerate-models:
 
 regenerate-fa3-models:
     xsdata generate schemas/FA3/schemat.xsd \
-      --output pydantic \
+      --output dataclasses \
       --unnest-classes \
       --relative-imports \
-      --package src.ksef2.infra.schema.fa3.models \
+      --package ksef2.infra.schema.fa3.models \
       --structure-style filenames \
-      --generic-collections \
-      --docstring-style Google \
-      --no-wrapper-fields \
-      --ignore-patterns
+      --docstring-style Google
