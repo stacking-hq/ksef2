@@ -25,9 +25,12 @@ def builder_param(
     schema_ref: str | None = None,
     prefer_omit_when_null: bool = True,
 ) -> FieldInfo:
-    json_schema_extra: JsonDict = {
-        "x-builder-prefer-omit-when-null": prefer_omit_when_null,
-    }
+    json_schema_extra = cast(
+        JsonDict,
+        {
+            "x-builder-prefer-omit-when-null": prefer_omit_when_null,
+        },
+    )
     if format is not None:
         json_schema_extra["x-builder-format"] = format
     if priority is not None:
