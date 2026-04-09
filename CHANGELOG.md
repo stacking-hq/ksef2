@@ -1,3 +1,9 @@
+## v0.11.2 (2026-04-09)
+
+### Fix
+
+- **fa3**: avoid beartype JsonDict forward refs
+
 ## v0.11.1 (2026-04-09)
 
 ### Feat
