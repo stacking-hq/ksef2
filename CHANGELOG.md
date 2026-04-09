@@ -1,3 +1,9 @@
+## v0.11.1 (2026-04-09)
+
+### Feat
+
+- **fa3**: annotate builder parameter metadata
+
 ## v0.11.0 (2026-04-08)
 
 ### Feat
