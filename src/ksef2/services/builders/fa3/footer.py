@@ -1,8 +1,9 @@
-from typing import Callable, Self, TypedDict
+from typing import Annotated, Callable, Self, TypedDict
 
 from pydantic import TypeAdapter
 
 from ksef2.domain.models.fa3 import FooterRegistry, InvoiceFooter
+from ksef2.services.builders.fa3.metadata import builder_param
 
 
 class InvoiceFooterState(TypedDict):
@@ -37,7 +38,17 @@ class FooterBuilder[TParent]:
         self._state = adapter.validate_python(footer.model_dump())
         return self
 
-    def add_information(self, information: str) -> Self:
+    def add_information(
+        self,
+        information: Annotated[
+            str,
+            builder_param(
+                "Additional footer information shown below the invoice body.",
+                examples=["Invoice generated electronically."],
+                priority="advanced",
+            ),
+        ],
+    ) -> Self:
         self._state["additional_informations"].append(information)
         return self
 
@@ -48,10 +59,38 @@ class FooterBuilder[TParent]:
     def add_registry(
         self,
         *,
-        full_name: str | None = None,
-        krs: str | None = None,
-        regon: str | None = None,
-        bdo: str | None = None,
+        full_name: Annotated[
+            str | None,
+            builder_param(
+                "Full registry name shown in the footer.",
+                examples=["District Court in Warsaw, 13th Commercial Division"],
+                priority="advanced",
+            ),
+        ] = None,
+        krs: Annotated[
+            str | None,
+            builder_param(
+                "KRS number shown in the footer registry block.",
+                examples=["0000123456"],
+                priority="advanced",
+            ),
+        ] = None,
+        regon: Annotated[
+            str | None,
+            builder_param(
+                "REGON number shown in the footer registry block.",
+                examples=["123456789"],
+                priority="advanced",
+            ),
+        ] = None,
+        bdo: Annotated[
+            str | None,
+            builder_param(
+                "BDO number shown in the footer registry block.",
+                examples=["000123456"],
+                priority="advanced",
+            ),
+        ] = None,
     ) -> Self:
         self._state["registries"].append(
             FooterRegistry(

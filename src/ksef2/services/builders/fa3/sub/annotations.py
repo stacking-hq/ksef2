@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Callable, Self, TypedDict
+from typing import Annotated, Callable, Self, TypedDict
 
 from pydantic import TypeAdapter
 
@@ -10,6 +10,7 @@ from ksef2.domain.models.fa3 import (
     NewTransportMeansItem,
     NewTransportSupply,
 )
+from ksef2.services.builders.fa3.metadata import builder_param
 
 
 class InvoiceAnnotationsState(TypedDict):
@@ -87,27 +88,88 @@ class AnnotationsBuilder[TParent]:
         self._new_transport_items = list(new_transport.items) if new_transport else []
         return self
 
-    def cash_accounting(self, enabled: bool = True) -> Self:
+    def cash_accounting(
+        self,
+        enabled: Annotated[
+            bool,
+            builder_param(
+                "Marks the invoice with the cash accounting annotation.",
+                examples=[True],
+                priority="advanced",
+            ),
+        ] = True,
+    ) -> Self:
         self._state["cash_accounting"] = enabled
         return self
 
-    def self_billing(self, enabled: bool = True) -> Self:
+    def self_billing(
+        self,
+        enabled: Annotated[
+            bool,
+            builder_param(
+                "Marks the invoice as self-billing.",
+                examples=[True],
+                priority="advanced",
+            ),
+        ] = True,
+    ) -> Self:
         self._state["self_billing"] = enabled
         return self
 
-    def reverse_charge_annotation(self, enabled: bool = True) -> Self:
+    def reverse_charge_annotation(
+        self,
+        enabled: Annotated[
+            bool,
+            builder_param(
+                "Marks the invoice with the reverse charge annotation.",
+                examples=[True],
+                priority="advanced",
+            ),
+        ] = True,
+    ) -> Self:
         self._state["reverse_charge_annotation"] = enabled
         return self
 
-    def split_payment(self, enabled: bool = True) -> Self:
+    def split_payment(
+        self,
+        enabled: Annotated[
+            bool,
+            builder_param(
+                "Marks the invoice with the split payment annotation.",
+                examples=[True],
+                priority="advanced",
+            ),
+        ] = True,
+    ) -> Self:
         self._state["split_payment"] = enabled
         return self
 
-    def simplified_procedure(self, enabled: bool = True) -> Self:
+    def simplified_procedure(
+        self,
+        enabled: Annotated[
+            bool,
+            builder_param(
+                "Marks the invoice with the simplified procedure annotation.",
+                examples=[True],
+                priority="advanced",
+            ),
+        ] = True,
+    ) -> Self:
         self._state["simplified_procedure"] = enabled
         return self
 
-    def margin_procedure(self, procedure: MarginProcedure | str | None) -> Self:
+    def margin_procedure(
+        self,
+        procedure: Annotated[
+            MarginProcedure | str | None,
+            builder_param(
+                "Margin procedure applied to the invoice when the invoice uses margin taxation.",
+                examples=["travel_agency", "used_goods"],
+                format="enum-string",
+                priority="advanced",
+            ),
+        ],
+    ) -> Self:
         if procedure is None or isinstance(procedure, MarginProcedure):
             self._state["margin_procedure"] = procedure
         else:
@@ -117,9 +179,30 @@ class AnnotationsBuilder[TParent]:
     def tax_exemption(
         self,
         *,
-        legal_basis_act: str | None = None,
-        legal_basis_eu_directive: str | None = None,
-        legal_basis_other: str | None = None,
+        legal_basis_act: Annotated[
+            str | None,
+            builder_param(
+                "Legal basis from a domestic act used to justify the tax exemption.",
+                examples=["art. 43 ust. 1 pkt 10 ustawy o VAT"],
+                priority="advanced",
+            ),
+        ] = None,
+        legal_basis_eu_directive: Annotated[
+            str | None,
+            builder_param(
+                "Legal basis from an EU directive used to justify the tax exemption.",
+                examples=["art. 132 Dyrektywy 2006/112/WE"],
+                priority="advanced",
+            ),
+        ] = None,
+        legal_basis_other: Annotated[
+            str | None,
+            builder_param(
+                "Other legal basis used to justify the tax exemption.",
+                examples=["International agreement"],
+                priority="advanced",
+            ),
+        ] = None,
     ) -> Self:
         if (
             legal_basis_act is None
@@ -140,7 +223,16 @@ class AnnotationsBuilder[TParent]:
         return self
 
     def new_transport_supply(
-        self, *, article_42_5_required: bool | None = None
+        self,
+        *,
+        article_42_5_required: Annotated[
+            bool | None,
+            builder_param(
+                "Set when the new means of transport supply requires the Article 42(5) marker.",
+                examples=[True],
+                priority="advanced",
+            ),
+        ] = None,
     ) -> Self:
         self._article_42_5_required = article_42_5_required
         return self
@@ -148,23 +240,143 @@ class AnnotationsBuilder[TParent]:
     def add_new_transport_item(
         self,
         *,
-        available_from: date,
-        row_number: int = 1,
-        brand: str | None = None,
-        model: str | None = None,
-        color: str | None = None,
-        registration_number: str | None = None,
-        production_year: str | None = None,
-        land_vehicle_mileage: str | None = None,
-        vin: str | None = None,
-        body_number: str | None = None,
-        chassis_number: str | None = None,
-        frame_number: str | None = None,
-        land_vehicle_type: str | None = None,
-        vessel_working_hours: str | None = None,
-        hull_number: str | None = None,
-        aircraft_working_hours: str | None = None,
-        aircraft_serial_number: str | None = None,
+        available_from: Annotated[
+            date,
+            builder_param(
+                "Date from which the transport item was made available.",
+                examples=["2026-04-01"],
+                format="date",
+                priority="advanced",
+            ),
+        ],
+        row_number: Annotated[
+            int,
+            builder_param(
+                "Row number used to identify the transport item inside the annotation block.",
+                examples=[1],
+                priority="advanced",
+            ),
+        ] = 1,
+        brand: Annotated[
+            str | None,
+            builder_param(
+                "Brand of the new means of transport.",
+                examples=["Tesla"],
+                priority="advanced",
+            ),
+        ] = None,
+        model: Annotated[
+            str | None,
+            builder_param(
+                "Model of the new means of transport.",
+                examples=["Model Y"],
+                priority="advanced",
+            ),
+        ] = None,
+        color: Annotated[
+            str | None,
+            builder_param(
+                "Color of the new means of transport.",
+                examples=["black"],
+                priority="advanced",
+            ),
+        ] = None,
+        registration_number: Annotated[
+            str | None,
+            builder_param(
+                "Registration number of the new means of transport.",
+                examples=["WX12345"],
+                priority="advanced",
+            ),
+        ] = None,
+        production_year: Annotated[
+            str | None,
+            builder_param(
+                "Production year of the new means of transport.",
+                examples=["2026"],
+                priority="advanced",
+            ),
+        ] = None,
+        land_vehicle_mileage: Annotated[
+            str | None,
+            builder_param(
+                "Mileage for a land vehicle.",
+                examples=["1200"],
+                priority="advanced",
+            ),
+        ] = None,
+        vin: Annotated[
+            str | None,
+            builder_param(
+                "VIN of the transport item.",
+                examples=["5YJYGDEE0MF123456"],
+                priority="advanced",
+            ),
+        ] = None,
+        body_number: Annotated[
+            str | None,
+            builder_param(
+                "Body number of the transport item.",
+                examples=["BODY-123"],
+                priority="advanced",
+            ),
+        ] = None,
+        chassis_number: Annotated[
+            str | None,
+            builder_param(
+                "Chassis number of the transport item.",
+                examples=["CHASSIS-123"],
+                priority="advanced",
+            ),
+        ] = None,
+        frame_number: Annotated[
+            str | None,
+            builder_param(
+                "Frame number of the transport item.",
+                examples=["FRAME-123"],
+                priority="advanced",
+            ),
+        ] = None,
+        land_vehicle_type: Annotated[
+            str | None,
+            builder_param(
+                "Type of land vehicle.",
+                examples=["passenger car"],
+                priority="advanced",
+            ),
+        ] = None,
+        vessel_working_hours: Annotated[
+            str | None,
+            builder_param(
+                "Working hours for a vessel.",
+                examples=["25"],
+                priority="advanced",
+            ),
+        ] = None,
+        hull_number: Annotated[
+            str | None,
+            builder_param(
+                "Hull number for a vessel.",
+                examples=["HULL-123"],
+                priority="advanced",
+            ),
+        ] = None,
+        aircraft_working_hours: Annotated[
+            str | None,
+            builder_param(
+                "Working hours for an aircraft.",
+                examples=["40"],
+                priority="advanced",
+            ),
+        ] = None,
+        aircraft_serial_number: Annotated[
+            str | None,
+            builder_param(
+                "Serial number for an aircraft.",
+                examples=["AIR-123"],
+                priority="advanced",
+            ),
+        ] = None,
     ) -> Self:
         self._new_transport_items.append(
             NewTransportMeansItem(

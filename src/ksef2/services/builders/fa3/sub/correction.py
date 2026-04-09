@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Callable, Self, TypedDict
+from typing import Annotated, Callable, Self, TypedDict
 
 from pydantic import TypeAdapter
 
@@ -11,6 +11,7 @@ from ksef2.domain.models.fa3.body.correction import (
     CorrectionInvoiceContext,
 )
 from ksef2.domain.models.fa3.party import InvoiceAddress
+from ksef2.services.builders.fa3.metadata import builder_param
 
 
 class InvoiceCorrectionState(TypedDict):
@@ -69,21 +70,68 @@ class CorrectionBuilder[TParent]:
         self._state = adapter.validate_python(correction.model_dump())
         return self
 
-    def reason(self, value: str | None) -> Self:
+    def reason(
+        self,
+        value: Annotated[
+            str | None,
+            builder_param(
+                "Reason for issuing the correction invoice.",
+                examples=["Price reduction after complaint"],
+            ),
+        ],
+    ) -> Self:
         self._state["correction_reason"] = value
         return self
 
-    def effect_type(self, value: CorrectionEffectType | None) -> Self:
+    def effect_type(
+        self,
+        value: Annotated[
+            CorrectionEffectType | None,
+            builder_param(
+                "Correction effect type required by the FA(3) correction section.",
+                examples=["increase", "decrease"],
+                format="enum-string",
+                priority="advanced",
+            ),
+        ],
+    ) -> Self:
         self._state["correction_effect_type"] = value
         return self
 
     def add_corrected_invoice(
         self,
         *,
-        issue_date: date,
-        invoice_number: str,
-        ksef_id: str | None = None,
-        outside_ksef: bool = False,
+        issue_date: Annotated[
+            date,
+            builder_param(
+                "Issue date of the corrected invoice.",
+                examples=["2026-03-15"],
+                format="date",
+            ),
+        ],
+        invoice_number: Annotated[
+            str,
+            builder_param(
+                "Number of the corrected invoice.",
+                examples=["FV/2026/03/0015"],
+            ),
+        ],
+        ksef_id: Annotated[
+            str | None,
+            builder_param(
+                "KSeF identifier of the corrected invoice.",
+                examples=["20260315-1234567890-ABCDEF1234567890"],
+                priority="advanced",
+            ),
+        ] = None,
+        outside_ksef: Annotated[
+            bool,
+            builder_param(
+                "Set to true when the corrected invoice was issued outside KSeF.",
+                examples=[False],
+                priority="advanced",
+            ),
+        ] = False,
     ) -> Self:
         self._state["corrected_invoices"].append(
             CorrectedInvoiceReference(
@@ -105,24 +153,89 @@ class CorrectionBuilder[TParent]:
         self._state["corrected_invoices"].clear()
         return self
 
-    def corrected_invoice_period(self, value: str | None) -> Self:
+    def corrected_invoice_period(
+        self,
+        value: Annotated[
+            str | None,
+            builder_param(
+                "Accounting period covered by the corrected invoice, when the correction refers to a period instead of a single document.",
+                examples=["2026-03"],
+                priority="advanced",
+            ),
+        ],
+    ) -> Self:
         self._state["corrected_invoice_period"] = value
         return self
 
-    def corrected_invoice_number_override(self, value: str | None) -> Self:
+    def corrected_invoice_number_override(
+        self,
+        value: Annotated[
+            str | None,
+            builder_param(
+                "Manual corrected invoice number used when it must differ from the referenced invoice number.",
+                examples=["KOR/2026/04/0001"],
+                priority="advanced",
+            ),
+        ],
+    ) -> Self:
         self._state["corrected_invoice_number_override"] = value
         return self
 
     def corrected_seller(
         self,
         *,
-        name: str,
-        tax_id: str,
-        country_code: str,
-        address_line_1: str,
-        address_line_2: str | None = None,
-        gln: str | None = None,
-        vat_prefix: str | None = None,
+        name: Annotated[
+            str,
+            builder_param(
+                "Seller name from the corrected invoice.",
+                examples=["ACME sp. z o.o."],
+            ),
+        ],
+        tax_id: Annotated[
+            str,
+            builder_param(
+                "Seller tax identifier from the corrected invoice.",
+                examples=["1234567890"],
+            ),
+        ],
+        country_code: Annotated[
+            str,
+            builder_param(
+                "Country code from the corrected seller address.",
+                examples=["PL"],
+                format="country-code",
+            ),
+        ],
+        address_line_1: Annotated[
+            str,
+            builder_param(
+                "First address line from the corrected seller details.",
+                examples=["ul. Przykladowa 10"],
+            ),
+        ],
+        address_line_2: Annotated[
+            str | None,
+            builder_param(
+                "Second address line from the corrected seller details.",
+                examples=["00-001 Warszawa"],
+            ),
+        ] = None,
+        gln: Annotated[
+            str | None,
+            builder_param(
+                "GLN from the corrected seller address.",
+                examples=["5901234123457"],
+                priority="advanced",
+            ),
+        ] = None,
+        vat_prefix: Annotated[
+            str | None,
+            builder_param(
+                "VAT prefix from the corrected seller identity.",
+                examples=["PL"],
+                priority="advanced",
+            ),
+        ] = None,
     ) -> Self:
         self._state["corrected_seller"] = CorrectedSellerEntity(
             vat_prefix=vat_prefix,
@@ -146,17 +259,94 @@ class CorrectionBuilder[TParent]:
     def add_corrected_buyer(
         self,
         *,
-        name: str,
-        tax_id: str | None = None,
-        eu_vat_id: str | None = None,
-        country_code: str | None = None,
-        address_country_code: str | None = None,
-        other_id: str | None = None,
-        no_id: bool = False,
-        address_line_1: str | None = None,
-        address_line_2: str | None = None,
-        gln: str | None = None,
-        buyer_id: str | None = None,
+        name: Annotated[
+            str,
+            builder_param(
+                "Buyer name from the corrected invoice.",
+                examples=["XYZ GmbH"],
+            ),
+        ],
+        tax_id: Annotated[
+            str | None,
+            builder_param(
+                "Buyer tax identifier from the corrected invoice.",
+                examples=["9876543210"],
+            ),
+        ] = None,
+        eu_vat_id: Annotated[
+            str | None,
+            builder_param(
+                "Buyer EU VAT identifier from the corrected invoice.",
+                examples=["DE123456789"],
+                priority="advanced",
+            ),
+        ] = None,
+        country_code: Annotated[
+            str | None,
+            builder_param(
+                "Buyer identity country code from the corrected invoice.",
+                examples=["DE"],
+                format="country-code",
+                priority="advanced",
+            ),
+        ] = None,
+        address_country_code: Annotated[
+            str | None,
+            builder_param(
+                "Country code for the corrected buyer address.",
+                examples=["DE"],
+                format="country-code",
+                priority="advanced",
+            ),
+        ] = None,
+        other_id: Annotated[
+            str | None,
+            builder_param(
+                "Alternative buyer identifier from the corrected invoice.",
+                examples=["CUST-4455"],
+                priority="advanced",
+            ),
+        ] = None,
+        no_id: Annotated[
+            bool,
+            builder_param(
+                "Set to true when the corrected buyer should be recorded without an identifier.",
+                examples=[False],
+                priority="advanced",
+            ),
+        ] = False,
+        address_line_1: Annotated[
+            str | None,
+            builder_param(
+                "First address line from the corrected buyer details.",
+                examples=["Unter den Linden 1"],
+                priority="advanced",
+            ),
+        ] = None,
+        address_line_2: Annotated[
+            str | None,
+            builder_param(
+                "Second address line from the corrected buyer details.",
+                examples=["10117 Berlin"],
+                priority="advanced",
+            ),
+        ] = None,
+        gln: Annotated[
+            str | None,
+            builder_param(
+                "GLN from the corrected buyer address.",
+                examples=["4012345678901"],
+                priority="advanced",
+            ),
+        ] = None,
+        buyer_id: Annotated[
+            str | None,
+            builder_param(
+                "Buyer identifier stored on the corrected invoice.",
+                examples=["buyer-42"],
+                priority="advanced",
+            ),
+        ] = None,
     ) -> Self:
         address = None
         address_code = address_country_code or country_code

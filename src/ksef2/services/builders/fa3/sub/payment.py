@@ -1,6 +1,6 @@
 from datetime import date
 from decimal import Decimal
-from typing import Callable, Self, TypedDict
+from typing import Annotated, Callable, Self, TypedDict
 
 from pydantic import TypeAdapter
 
@@ -14,6 +14,7 @@ from ksef2.domain.models.fa3.body import (
     PaymentTerm,
     PaymentTermDescription,
 )
+from ksef2.services.builders.fa3.metadata import builder_param
 
 
 class InvoicePaymentState(TypedDict):
@@ -34,6 +35,55 @@ class InvoicePaymentState(TypedDict):
 
 
 adapter = TypeAdapter(InvoicePaymentState)
+
+PaymentDateParam = Annotated[
+    date | None,
+    builder_param(
+        "Payment date linked to the invoice or a partial payment entry.",
+        examples=["2026-04-15"],
+        format="date",
+    ),
+]
+PaymentFormParam = Annotated[
+    PaymentForm | None,
+    builder_param(
+        "Payment form used for the invoice or the partial payment entry.",
+        examples=["bank_transfer", "cash"],
+        format="enum-string",
+    ),
+]
+PartialPaymentStatusParam = Annotated[
+    PartialPaymentStatus | None,
+    builder_param(
+        "Partial payment status recorded on the invoice.",
+        examples=["partial", "final"],
+        format="enum-string",
+        priority="advanced",
+    ),
+]
+PaymentDescriptionParam = Annotated[
+    str | None,
+    builder_param(
+        "Free-text payment description shown with the payment details.",
+        examples=["Card payment at delivery"],
+        priority="advanced",
+    ),
+]
+PaymentAmountParam = Annotated[
+    Decimal,
+    builder_param(
+        "Monetary amount used for payment entries.",
+        examples=["500.00"],
+        format="decimal-string",
+    ),
+]
+BankAccountNumberParam = Annotated[
+    str,
+    builder_param(
+        "Bank account number used for invoice payment.",
+        examples=["98102055580000123456789012"],
+    ),
+]
 
 
 def _default_state() -> InvoicePaymentState:
@@ -72,11 +122,11 @@ class PaymentBuilder[TParent]:
         self._state = adapter.validate_python(payment.model_dump())
         return self
 
-    def via(self, payment_form: PaymentForm | None) -> Self:
+    def via(self, payment_form: PaymentFormParam) -> Self:
         self._state["payment_form"] = payment_form
         return self
 
-    def already_paid(self, payment_date: date | None = None) -> Self:
+    def already_paid(self, payment_date: PaymentDateParam = None) -> Self:
         self._state["paid"] = True
         self._state["payment_date"] = payment_date
         return self
@@ -86,19 +136,29 @@ class PaymentBuilder[TParent]:
         self._state["payment_date"] = None
         return self
 
-    def payment_date(self, payment_date: date | None) -> Self:
+    def payment_date(self, payment_date: PaymentDateParam) -> Self:
         self._state["payment_date"] = payment_date
         return self
 
-    def partial_payment_status(self, status: PartialPaymentStatus | None) -> Self:
+    def partial_payment_status(self, status: PartialPaymentStatusParam) -> Self:
         self._state["partial_payment_status"] = status
         return self
 
-    def other_form(self, enabled: bool = True) -> Self:
+    def other_form(
+        self,
+        enabled: Annotated[
+            bool,
+            builder_param(
+                "Marks the payment form as a custom form outside the standard enum.",
+                examples=[True],
+                priority="advanced",
+            ),
+        ] = True,
+    ) -> Self:
         self._state["other_payment_form"] = enabled
         return self
 
-    def description(self, description: str | None) -> Self:
+    def description(self, description: PaymentDescriptionParam) -> Self:
         self._state["payment_description"] = description
         return self
 
@@ -113,16 +173,47 @@ class PaymentBuilder[TParent]:
         )
         return self
 
-    def due_on(self, due_date: date) -> Self:
+    def due_on(
+        self,
+        due_date: Annotated[
+            date,
+            builder_param(
+                "Invoice payment due date.",
+                examples=["2026-04-30"],
+                format="date",
+            ),
+        ],
+    ) -> Self:
         return self._add_term(due_on=due_date)
 
     def due_with_description(
         self,
         *,
-        quantity: int,
-        unit: str,
-        starting_event: str,
-        due_date: date | None = None,
+        quantity: Annotated[
+            int,
+            builder_param(
+                "Quantity used in the textual payment deadline description.",
+                examples=[14],
+                priority="advanced",
+            ),
+        ],
+        unit: Annotated[
+            str,
+            builder_param(
+                "Unit used in the textual payment deadline description.",
+                examples=["days", "months"],
+                priority="advanced",
+            ),
+        ],
+        starting_event: Annotated[
+            str,
+            builder_param(
+                "Event from which the payment deadline is counted.",
+                examples=["from invoice issue date", "from delivery"],
+                priority="advanced",
+            ),
+        ],
+        due_date: PaymentDateParam = None,
     ) -> Self:
         return self._add_term(
             due_on=due_date,
@@ -144,11 +235,25 @@ class PaymentBuilder[TParent]:
     def add_partial_payment(
         self,
         *,
-        amount: Decimal,
-        payment_date: date,
-        payment_form: PaymentForm | None = None,
-        other_payment_form: bool = False,
-        payment_description: str | None = None,
+        amount: PaymentAmountParam,
+        payment_date: Annotated[
+            date,
+            builder_param(
+                "Date of the partial payment.",
+                examples=["2026-04-10"],
+                format="date",
+            ),
+        ],
+        payment_form: PaymentFormParam = None,
+        other_payment_form: Annotated[
+            bool,
+            builder_param(
+                "Set to true when the partial payment uses a non-standard payment form.",
+                examples=[False],
+                priority="advanced",
+            ),
+        ] = False,
+        payment_description: PaymentDescriptionParam = None,
     ) -> Self:
         self._state["partial_payments"].append(
             PartialPayment(
@@ -172,12 +277,41 @@ class PaymentBuilder[TParent]:
     def _append_bank_account(
         self,
         target: list[BankAccount],
-        account_number: str,
-        swift: str | None = None,
+        account_number: BankAccountNumberParam,
+        swift: Annotated[
+            str | None,
+            builder_param(
+                "SWIFT or BIC code for the bank account.",
+                examples=["BREXPLPW"],
+                priority="advanced",
+            ),
+        ] = None,
         *,
-        bank_name: str | None = None,
-        account_description: str | None = None,
-        own_bank_account_type: BankOwnAccountType | None = None,
+        bank_name: Annotated[
+            str | None,
+            builder_param(
+                "Name of the bank for the account.",
+                examples=["PKO Bank Polski"],
+                priority="advanced",
+            ),
+        ] = None,
+        account_description: Annotated[
+            str | None,
+            builder_param(
+                "Description shown next to the bank account.",
+                examples=["Main settlement account"],
+                priority="advanced",
+            ),
+        ] = None,
+        own_bank_account_type: Annotated[
+            BankOwnAccountType | None,
+            builder_param(
+                "Own-account marker used by FA(3) for the bank account entry.",
+                examples=["purchased_receivables"],
+                format="enum-string",
+                priority="advanced",
+            ),
+        ] = None,
     ) -> None:
         target.append(
             BankAccount(
@@ -191,12 +325,41 @@ class PaymentBuilder[TParent]:
 
     def bank_account(
         self,
-        account_number: str,
-        swift: str | None = None,
+        account_number: BankAccountNumberParam,
+        swift: Annotated[
+            str | None,
+            builder_param(
+                "SWIFT or BIC code for the factor bank account.",
+                examples=["BREXPLPW"],
+                priority="advanced",
+            ),
+        ] = None,
         *,
-        bank_name: str | None = None,
-        account_description: str | None = None,
-        own_bank_account_type: BankOwnAccountType | None = None,
+        bank_name: Annotated[
+            str | None,
+            builder_param(
+                "Name of the bank operating the factor account.",
+                examples=["Bank Pekao"],
+                priority="advanced",
+            ),
+        ] = None,
+        account_description: Annotated[
+            str | None,
+            builder_param(
+                "Description shown next to the factor bank account.",
+                examples=["Factoring account"],
+                priority="advanced",
+            ),
+        ] = None,
+        own_bank_account_type: Annotated[
+            BankOwnAccountType | None,
+            builder_param(
+                "Own-account marker used by FA(3) for the factor bank account entry.",
+                examples=["factor_collection"],
+                format="enum-string",
+                priority="advanced",
+            ),
+        ] = None,
     ) -> Self:
         self._append_bank_account(
             self._state["bank_accounts"],
@@ -243,19 +406,77 @@ class PaymentBuilder[TParent]:
         self._state["factor_bank_accounts"].clear()
         return self
 
-    def discount(self, *, terms: str | None = None, amount: str | None = None) -> Self:
+    def discount(
+        self,
+        *,
+        terms: Annotated[
+            str | None,
+            builder_param(
+                "Description of discount terms attached to the payment.",
+                examples=["2% within 7 days"],
+                priority="advanced",
+            ),
+        ] = None,
+        amount: Annotated[
+            str | None,
+            builder_param(
+                "Discount amount or value description stored with the payment terms.",
+                examples=["20.00"],
+                priority="advanced",
+            ),
+        ] = None,
+    ) -> Self:
         self._state["discount_terms"] = terms
         self._state["discount_amount"] = amount
         return self
 
-    def skonto(self, *, terms: str | None = None, amount: str | None = None) -> Self:
+    def skonto(
+        self,
+        *,
+        terms: Annotated[
+            str | None,
+            builder_param(
+                "Description of skonto terms attached to the payment.",
+                examples=["2% within 7 days"],
+                priority="advanced",
+            ),
+        ] = None,
+        amount: Annotated[
+            str | None,
+            builder_param(
+                "Skonto amount or value description stored with the payment terms.",
+                examples=["20.00"],
+                priority="advanced",
+            ),
+        ] = None,
+    ) -> Self:
         return self.discount(terms=terms, amount=amount)
 
-    def payment_link(self, link: str | None) -> Self:
+    def payment_link(
+        self,
+        link: Annotated[
+            str | None,
+            builder_param(
+                "Link leading to an online payment page for the invoice.",
+                examples=["https://payments.example.com/invoice/123"],
+                priority="advanced",
+            ),
+        ],
+    ) -> Self:
         self._state["payment_link"] = link
         return self
 
-    def ipksef(self, value: str | None) -> Self:
+    def ipksef(
+        self,
+        value: Annotated[
+            str | None,
+            builder_param(
+                "IPKSeF payment identifier linked to the invoice.",
+                examples=["IPKSEF-123456789"],
+                priority="advanced",
+            ),
+        ],
+    ) -> Self:
         self._state["ipksef"] = value
         return self
 

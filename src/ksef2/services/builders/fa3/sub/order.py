@@ -1,6 +1,6 @@
 from decimal import Decimal
 from collections.abc import Sequence
-from typing import Callable, Self, TypedDict
+from typing import Annotated, Callable, Self, TypedDict
 
 from pydantic import TypeAdapter
 
@@ -12,6 +12,7 @@ from ksef2.domain.models.fa3.body import (
 )
 from ksef2.domain.models.fa3.body.order import InvoiceOrder, InvoiceOrderLine
 from ksef2.domain.models.fa3.body.tax import coerce_vat_classification
+from ksef2.services.builders.fa3.metadata import builder_param
 
 
 class OrderState(TypedDict):
@@ -20,6 +21,15 @@ class OrderState(TypedDict):
 
 
 adapter = TypeAdapter(OrderState)
+
+OrderAmountParam = Annotated[
+    Decimal | None,
+    builder_param(
+        "Monetary value used in the order section.",
+        examples=["1000.00"],
+        format="decimal-string",
+    ),
+]
 
 
 def _default_state() -> OrderState:
@@ -75,34 +85,185 @@ class OrderBuilder[TParent]:
         self._state = adapter.validate_python(order.model_dump())
         return self
 
-    def total_value(self, amount: Decimal | None) -> Self:
+    def total_value(self, amount: OrderAmountParam) -> Self:
         self._state["total_value"] = amount
         return self
 
     def add_line(
         self,
         *,
-        gross_amount: Decimal,
-        vat_rate: VatRate | str | None,
-        vat_classification: VatClassification | dict[str, object] | None = None,
-        name: str | None = None,
-        quantity: Decimal | None = None,
-        unit_of_measure: str | None = None,
-        unit_price_net: Decimal | None = None,
-        sale_category: SaleCategory | str | None = None,
-        tax_regime: TaxRegime | str = TaxRegime.STANDARD,
-        vat_rate_xii: Decimal | None = None,
-        annex_15_marker: bool | None = None,
-        unique_id: str | None = None,
-        sku: str | None = None,
-        gtin: str | None = None,
-        pkwiu: str | None = None,
-        cn: str | None = None,
-        pkob: str | None = None,
-        gtu_code: str | None = None,
-        procedure: str | None = None,
-        excise_amount: Decimal | None = None,
-        before_correction: bool = False,
+        gross_amount: Annotated[
+            Decimal,
+            builder_param(
+                "Gross amount for the order line.",
+                examples=["123.00"],
+                format="decimal-string",
+            ),
+        ],
+        vat_rate: Annotated[
+            VatRate | str | None,
+            builder_param(
+                "VAT rate used for the order line.",
+                examples=["23", "8", "0", "zw"],
+                format="enum-string",
+            ),
+        ],
+        vat_classification: Annotated[
+            VatClassification | dict[str, object] | None,
+            builder_param(
+                "Detailed VAT classification for non-standard order line cases.",
+                examples=[{"treatment": "zero_export", "rate": "0"}],
+                format="object",
+                priority="advanced",
+                schema_ref="ksef2.domain.models.fa3.body.tax.VatClassification",
+            ),
+        ] = None,
+        name: Annotated[
+            str | None,
+            builder_param(
+                "Order line description.",
+                examples=["Prepayment for consulting service"],
+            ),
+        ] = None,
+        quantity: Annotated[
+            Decimal | None,
+            builder_param(
+                "Quantity recorded on the order line.",
+                examples=["1", "2.5"],
+                format="decimal-string",
+            ),
+        ] = None,
+        unit_of_measure: Annotated[
+            str | None,
+            builder_param(
+                "Unit of measure recorded on the order line.",
+                examples=["szt", "h"],
+            ),
+        ] = None,
+        unit_price_net: Annotated[
+            Decimal | None,
+            builder_param(
+                "Net unit price recorded on the order line.",
+                examples=["100.00"],
+                format="decimal-string",
+            ),
+        ] = None,
+        sale_category: Annotated[
+            SaleCategory | str | None,
+            builder_param(
+                "Sale category used for the order line when a more detailed sales context is needed.",
+                examples=["rate_23", "zero_wdt"],
+                format="enum-string",
+                priority="advanced",
+            ),
+        ] = None,
+        tax_regime: Annotated[
+            TaxRegime | str,
+            builder_param(
+                "Tax regime used for the order line.",
+                examples=["standard", "margin"],
+                format="enum-string",
+                priority="advanced",
+            ),
+        ] = TaxRegime.STANDARD,
+        vat_rate_xii: Annotated[
+            Decimal | None,
+            builder_param(
+                "VAT rate for Title XII order lines.",
+                examples=["8.50"],
+                format="decimal-string",
+                priority="advanced",
+            ),
+        ] = None,
+        annex_15_marker: Annotated[
+            bool | None,
+            builder_param(
+                "Set when the order line is covered by Annex 15 reporting.",
+                examples=[True],
+                priority="advanced",
+            ),
+        ] = None,
+        unique_id: Annotated[
+            str | None,
+            builder_param(
+                "Unique identifier of the order line.",
+                examples=["ORDER-LINE-1"],
+                priority="advanced",
+            ),
+        ] = None,
+        sku: Annotated[
+            str | None,
+            builder_param(
+                "Stock keeping unit stored on the order line.",
+                examples=["SKU-001"],
+                priority="advanced",
+            ),
+        ] = None,
+        gtin: Annotated[
+            str | None,
+            builder_param(
+                "GTIN stored on the order line.",
+                examples=["05901234123457"],
+                priority="advanced",
+            ),
+        ] = None,
+        pkwiu: Annotated[
+            str | None,
+            builder_param(
+                "PKWiU classification stored on the order line.",
+                examples=["62.02.30.0"],
+                priority="advanced",
+            ),
+        ] = None,
+        cn: Annotated[
+            str | None,
+            builder_param(
+                "CN code stored on the order line.",
+                examples=["84713000"],
+                priority="advanced",
+            ),
+        ] = None,
+        pkob: Annotated[
+            str | None,
+            builder_param(
+                "PKOB code stored on the order line.",
+                examples=["1122"],
+                priority="advanced",
+            ),
+        ] = None,
+        gtu_code: Annotated[
+            str | None,
+            builder_param(
+                "GTU code stored on the order line.",
+                examples=["GTU_06"],
+                priority="advanced",
+            ),
+        ] = None,
+        procedure: Annotated[
+            str | None,
+            builder_param(
+                "Special procedure marker stored on the order line.",
+                examples=["I_42"],
+                priority="advanced",
+            ),
+        ] = None,
+        excise_amount: Annotated[
+            Decimal | None,
+            builder_param(
+                "Excise amount stored on the order line when required.",
+                examples=["12.30"],
+                format="decimal-string",
+                priority="advanced",
+            ),
+        ] = None,
+        before_correction: Annotated[
+            bool,
+            builder_param(
+                "Marks the order line as a before-correction value.",
+                examples=[False],
+                priority="advanced",
+            ),
+        ] = False,
     ) -> Self:
         self._state["order_lines"].append(
             InvoiceOrderLine(

@@ -1,4 +1,4 @@
-from typing import Callable, Self
+from typing import Annotated, Callable, Self
 
 from ksef2.domain.models.fa3.attachment import (
     Attachment,
@@ -6,6 +6,7 @@ from ksef2.domain.models.fa3.attachment import (
     DataBlock,
     ValueType,
 )
+from ksef2.services.builders.fa3.metadata import builder_param
 
 
 class AttachmentTableBuilder:
@@ -50,11 +51,39 @@ class AttachmentTableBuilder:
         self._summary = list(table.summary) if table and table.summary else None
         return self
 
-    def set_description(self, description: str | None) -> Self:
+    def set_description(
+        self,
+        description: Annotated[
+            str | None,
+            builder_param(
+                "Description of the attachment table.",
+                examples=["Specification of delivered items"],
+                priority="advanced",
+            ),
+        ],
+    ) -> Self:
         self._description = description
         return self
 
-    def add_meta_data(self, key: str, value: str) -> Self:
+    def add_meta_data(
+        self,
+        key: Annotated[
+            str,
+            builder_param(
+                "Metadata key stored next to the attachment table.",
+                examples=["document_type"],
+                priority="advanced",
+            ),
+        ],
+        value: Annotated[
+            str,
+            builder_param(
+                "Metadata value stored next to the attachment table.",
+                examples=["technical_specification"],
+                priority="advanced",
+            ),
+        ],
+    ) -> Self:
         self._meta_data.append({key: value})
         return self
 
@@ -63,17 +92,55 @@ class AttachmentTableBuilder:
         return self
 
     def set_columns(
-        self, formats: list[ValueType], names: list[str] | None = None
+        self,
+        formats: Annotated[
+            list[ValueType],
+            builder_param(
+                "Column value types for the attachment table.",
+                examples=[],
+                format="object",
+                priority="advanced",
+                schema_ref="ksef2.domain.models.fa3.attachment.ValueType",
+            ),
+        ],
+        names: Annotated[
+            list[str] | None,
+            builder_param(
+                "Column names shown in the attachment table.",
+                examples=[["Item", "Quantity", "Net value"]],
+                priority="advanced",
+            ),
+        ] = None,
     ) -> Self:
         self._columns_format = list(formats)
         self._columns_names = list(names) if names is not None else None
         return self
 
-    def add_row(self, row: list[str]) -> Self:
+    def add_row(
+        self,
+        row: Annotated[
+            list[str],
+            builder_param(
+                "Single row added to the attachment table.",
+                examples=[["Keyboard", "2", "199.00"]],
+                priority="advanced",
+            ),
+        ],
+    ) -> Self:
         self._rows.append([str(value) for value in row])
         return self
 
-    def add_rows(self, rows: list[list[str]]) -> Self:
+    def add_rows(
+        self,
+        rows: Annotated[
+            list[list[str]],
+            builder_param(
+                "Multiple rows added to the attachment table.",
+                examples=[[["Keyboard", "2", "199.00"], ["Mouse", "1", "99.00"]]],
+                priority="advanced",
+            ),
+        ],
+    ) -> Self:
         self._rows.extend([[str(value) for value in row] for row in rows])
         return self
 
@@ -81,7 +148,17 @@ class AttachmentTableBuilder:
         self._rows = []
         return self
 
-    def set_summary(self, summary: list[str] | None) -> Self:
+    def set_summary(
+        self,
+        summary: Annotated[
+            list[str] | None,
+            builder_param(
+                "Summary lines shown below the attachment table.",
+                examples=[["Total net: 298.00"]],
+                priority="advanced",
+            ),
+        ],
+    ) -> Self:
         self._summary = list(summary) if summary is not None else None
         return self
 
@@ -150,11 +227,39 @@ class DataBlockBuilder:
         self._tables = list(block.tables) if block and block.tables else []
         return self
 
-    def set_header(self, header: str | None) -> Self:
+    def set_header(
+        self,
+        header: Annotated[
+            str | None,
+            builder_param(
+                "Header shown above the attachment data block.",
+                examples=["Technical specification"],
+                priority="advanced",
+            ),
+        ],
+    ) -> Self:
         self._header = header
         return self
 
-    def add_meta_data(self, key: str, value: str) -> Self:
+    def add_meta_data(
+        self,
+        key: Annotated[
+            str,
+            builder_param(
+                "Metadata key stored next to the data block.",
+                examples=["source"],
+                priority="advanced",
+            ),
+        ],
+        value: Annotated[
+            str,
+            builder_param(
+                "Metadata value stored next to the data block.",
+                examples=["warehouse_system"],
+                priority="advanced",
+            ),
+        ],
+    ) -> Self:
         self._meta_data.append({key: value})
         return self
 
@@ -162,7 +267,17 @@ class DataBlockBuilder:
         self._meta_data = []
         return self
 
-    def add_paragraph(self, text: str) -> Self:
+    def add_paragraph(
+        self,
+        text: Annotated[
+            str,
+            builder_param(
+                "Paragraph text added to the attachment data block.",
+                examples=["The goods were inspected before dispatch."],
+                priority="advanced",
+            ),
+        ],
+    ) -> Self:
         self._paragraphs.append(text)
         return self
 

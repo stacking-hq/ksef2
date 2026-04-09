@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Callable, Self, TypedDict
+from typing import Annotated, Callable, Self, TypedDict
 
 from pydantic import TypeAdapter
 
@@ -8,6 +8,7 @@ from ksef2.domain.models.fa3 import (
     SettlementCharge,
     SettlementDeduction,
 )
+from ksef2.services.builders.fa3.metadata import builder_param
 
 
 class SettlementState(TypedDict):
@@ -50,7 +51,25 @@ class SettlementBuilder[TParent]:
         self._state = adapter.validate_python(settlement.model_dump())
         return self
 
-    def add_charge(self, *, amount: Decimal, reason: str) -> Self:
+    def add_charge(
+        self,
+        *,
+        amount: Annotated[
+            Decimal,
+            builder_param(
+                "Additional charge amount included in the settlement.",
+                examples=["50.00"],
+                format="decimal-string",
+            ),
+        ],
+        reason: Annotated[
+            str,
+            builder_param(
+                "Reason for the settlement charge.",
+                examples=["Delivery surcharge"],
+            ),
+        ],
+    ) -> Self:
         self._state["charges"].append(SettlementCharge(amount=amount, reason=reason))
         return self
 
@@ -63,11 +82,40 @@ class SettlementBuilder[TParent]:
         self._state["charges_total"] = None
         return self
 
-    def charges_total(self, amount: Decimal | None) -> Self:
+    def charges_total(
+        self,
+        amount: Annotated[
+            Decimal | None,
+            builder_param(
+                "Explicit total of settlement charges when it should be preserved instead of recomputed.",
+                examples=["50.00"],
+                format="decimal-string",
+                priority="override",
+            ),
+        ],
+    ) -> Self:
         self._state["charges_total"] = amount
         return self
 
-    def add_deduction(self, *, amount: Decimal, reason: str) -> Self:
+    def add_deduction(
+        self,
+        *,
+        amount: Annotated[
+            Decimal,
+            builder_param(
+                "Deduction amount included in the settlement.",
+                examples=["100.00"],
+                format="decimal-string",
+            ),
+        ],
+        reason: Annotated[
+            str,
+            builder_param(
+                "Reason for the settlement deduction.",
+                examples=["Advance paid earlier"],
+            ),
+        ],
+    ) -> Self:
         self._state["deductions"].append(
             SettlementDeduction(amount=amount, reason=reason)
         )
@@ -82,15 +130,48 @@ class SettlementBuilder[TParent]:
         self._state["deductions_total"] = None
         return self
 
-    def deductions_total(self, amount: Decimal | None) -> Self:
+    def deductions_total(
+        self,
+        amount: Annotated[
+            Decimal | None,
+            builder_param(
+                "Explicit total of settlement deductions when it should be preserved instead of recomputed.",
+                examples=["100.00"],
+                format="decimal-string",
+                priority="override",
+            ),
+        ],
+    ) -> Self:
         self._state["deductions_total"] = amount
         return self
 
-    def amount_due(self, amount: Decimal | None) -> Self:
+    def amount_due(
+        self,
+        amount: Annotated[
+            Decimal | None,
+            builder_param(
+                "Amount due after charges and deductions are applied.",
+                examples=["950.00"],
+                format="decimal-string",
+                priority="override",
+            ),
+        ],
+    ) -> Self:
         self._state["amount_due"] = amount
         return self
 
-    def amount_to_settle(self, amount: Decimal | None) -> Self:
+    def amount_to_settle(
+        self,
+        amount: Annotated[
+            Decimal | None,
+            builder_param(
+                "Remaining amount to settle after taking the settlement context into account.",
+                examples=["450.00"],
+                format="decimal-string",
+                priority="override",
+            ),
+        ],
+    ) -> Self:
         self._state["amount_to_settle"] = amount
         return self
 

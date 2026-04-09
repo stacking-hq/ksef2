@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from collections.abc import Sequence
-from typing import Callable, Self, TypedDict
+from typing import Annotated, Callable, Self, TypedDict
 
 from pydantic import TypeAdapter
 
@@ -15,6 +15,7 @@ from ksef2.domain.models.fa3.body import (
     TransactionTransport,
     TransportType,
 )
+from ksef2.services.builders.fa3.metadata import builder_param
 
 
 class TransactionState(TypedDict):
@@ -61,23 +62,79 @@ class TransactionBuilder[TParent]:
         self._state = adapter.validate_python(transaction.model_dump())
         return self
 
-    def delivery_terms(self, value: str | None) -> Self:
+    def delivery_terms(
+        self,
+        value: Annotated[
+            str | None,
+            builder_param(
+                "Delivery terms agreed for the transaction.",
+                examples=["DAP Berlin", "EXW warehouse"],
+                priority="advanced",
+            ),
+        ],
+    ) -> Self:
         self._state["delivery_terms"] = value
         return self
 
     def contract_exchange(
-        self, *, rate: Decimal | None = None, currency: str | None = None
+        self,
+        *,
+        rate: Annotated[
+            Decimal | None,
+            builder_param(
+                "Contract exchange rate used in the transaction section.",
+                examples=["4.2512"],
+                format="decimal-string",
+                priority="advanced",
+            ),
+        ] = None,
+        currency: Annotated[
+            str | None,
+            builder_param(
+                "Contract currency used in the transaction section.",
+                examples=["EUR", "USD"],
+                priority="advanced",
+            ),
+        ] = None,
     ) -> Self:
         self._state["contract_exchange_rate"] = rate
         self._state["contract_currency"] = currency
         return self
 
-    def intermediary_entity(self, enabled: bool = True) -> Self:
+    def intermediary_entity(
+        self,
+        enabled: Annotated[
+            bool,
+            builder_param(
+                "Marks the transaction as involving an intermediary entity.",
+                examples=[True],
+                priority="advanced",
+            ),
+        ] = True,
+    ) -> Self:
         self._state["intermediary_entity"] = enabled
         return self
 
     def add_contract(
-        self, *, contract_date: date | None = None, contract_number: str | None = None
+        self,
+        *,
+        contract_date: Annotated[
+            date | None,
+            builder_param(
+                "Date of the related contract.",
+                examples=["2026-04-01"],
+                format="date",
+                priority="advanced",
+            ),
+        ] = None,
+        contract_number: Annotated[
+            str | None,
+            builder_param(
+                "Number of the related contract.",
+                examples=["CTR/2026/04/01"],
+                priority="advanced",
+            ),
+        ] = None,
     ) -> Self:
         self._state["contracts"].append(
             TransactionContract(
@@ -96,7 +153,25 @@ class TransactionBuilder[TParent]:
         return self
 
     def add_order(
-        self, *, order_date: date | None = None, order_number: str | None = None
+        self,
+        *,
+        order_date: Annotated[
+            date | None,
+            builder_param(
+                "Date of the related order.",
+                examples=["2026-04-02"],
+                format="date",
+                priority="advanced",
+            ),
+        ] = None,
+        order_number: Annotated[
+            str | None,
+            builder_param(
+                "Number of the related order.",
+                examples=["ORD/2026/04/15"],
+                priority="advanced",
+            ),
+        ] = None,
     ) -> Self:
         self._state["orders"].append(
             TransactionOrder(
@@ -114,7 +189,17 @@ class TransactionBuilder[TParent]:
         self._state["orders"].clear()
         return self
 
-    def add_lot_number(self, value: str) -> Self:
+    def add_lot_number(
+        self,
+        value: Annotated[
+            str,
+            builder_param(
+                "Lot or batch number linked to the transaction.",
+                examples=["LOT-2026-04-01"],
+                priority="advanced",
+            ),
+        ],
+    ) -> Self:
         self._state["lot_numbers"].append(value)
         return self
 
@@ -125,21 +210,140 @@ class TransactionBuilder[TParent]:
     def add_transport(
         self,
         *,
-        transport_type: TransportType | None = None,
-        other_transport: bool = False,
-        other_transport_description: str | None = None,
-        carrier_identity: TransactionIdentity | None = None,
-        carrier_address: TransactionAddress | None = None,
-        transport_order_number: str | None = None,
-        cargo_type: CargoType | None = None,
-        other_cargo: bool = False,
-        other_cargo_description: str | None = None,
-        packaging_unit: str | None = None,
-        transport_start: datetime | None = None,
-        transport_end: datetime | None = None,
-        shipping_from: TransactionAddress | None = None,
-        shipping_via: Sequence[TransactionAddress] | None = None,
-        shipping_to: TransactionAddress | None = None,
+        transport_type: Annotated[
+            TransportType | None,
+            builder_param(
+                "Transport type used for the shipment.",
+                examples=["road", "sea"],
+                format="enum-string",
+                priority="advanced",
+            ),
+        ] = None,
+        other_transport: Annotated[
+            bool,
+            builder_param(
+                "Set to true when the shipment uses a transport type outside the predefined enum.",
+                examples=[False],
+                priority="advanced",
+            ),
+        ] = False,
+        other_transport_description: Annotated[
+            str | None,
+            builder_param(
+                "Free-text description of the transport type when other_transport is enabled.",
+                examples=["Courier locker delivery"],
+                priority="advanced",
+            ),
+        ] = None,
+        carrier_identity: Annotated[
+            TransactionIdentity | None,
+            builder_param(
+                "Carrier identity information stored in the transaction section.",
+                examples=[],
+                format="object",
+                priority="advanced",
+                schema_ref="ksef2.domain.models.fa3.body.TransactionIdentity",
+            ),
+        ] = None,
+        carrier_address: Annotated[
+            TransactionAddress | None,
+            builder_param(
+                "Carrier address stored in the transaction section.",
+                examples=[],
+                format="object",
+                priority="advanced",
+                schema_ref="ksef2.domain.models.fa3.body.TransactionAddress",
+            ),
+        ] = None,
+        transport_order_number: Annotated[
+            str | None,
+            builder_param(
+                "Transport order number linked to the shipment.",
+                examples=["TRN/2026/04/22"],
+                priority="advanced",
+            ),
+        ] = None,
+        cargo_type: Annotated[
+            CargoType | None,
+            builder_param(
+                "Cargo type used for the shipment.",
+                examples=["parcel", "bulk"],
+                format="enum-string",
+                priority="advanced",
+            ),
+        ] = None,
+        other_cargo: Annotated[
+            bool,
+            builder_param(
+                "Set to true when the cargo type is described manually instead of using the predefined enum.",
+                examples=[False],
+                priority="advanced",
+            ),
+        ] = False,
+        other_cargo_description: Annotated[
+            str | None,
+            builder_param(
+                "Free-text description of the cargo type when other_cargo is enabled.",
+                examples=["Mixed electronics"],
+                priority="advanced",
+            ),
+        ] = None,
+        packaging_unit: Annotated[
+            str | None,
+            builder_param(
+                "Packaging unit used for the shipment.",
+                examples=["pallet", "box"],
+                priority="advanced",
+            ),
+        ] = None,
+        transport_start: Annotated[
+            datetime | None,
+            builder_param(
+                "Start timestamp of the transport.",
+                examples=["2026-04-08T08:00:00+02:00"],
+                format="date-time",
+                priority="advanced",
+            ),
+        ] = None,
+        transport_end: Annotated[
+            datetime | None,
+            builder_param(
+                "End timestamp of the transport.",
+                examples=["2026-04-09T14:30:00+02:00"],
+                format="date-time",
+                priority="advanced",
+            ),
+        ] = None,
+        shipping_from: Annotated[
+            TransactionAddress | None,
+            builder_param(
+                "Shipping origin address.",
+                examples=[],
+                format="object",
+                priority="advanced",
+                schema_ref="ksef2.domain.models.fa3.body.TransactionAddress",
+            ),
+        ] = None,
+        shipping_via: Annotated[
+            Sequence[TransactionAddress] | None,
+            builder_param(
+                "Intermediate shipping locations.",
+                examples=[],
+                format="object",
+                priority="advanced",
+                schema_ref="ksef2.domain.models.fa3.body.TransactionAddress",
+            ),
+        ] = None,
+        shipping_to: Annotated[
+            TransactionAddress | None,
+            builder_param(
+                "Final shipping destination address.",
+                examples=[],
+                format="object",
+                priority="advanced",
+                schema_ref="ksef2.domain.models.fa3.body.TransactionAddress",
+            ),
+        ] = None,
     ) -> Self:
         self._state["transports"].append(
             TransactionTransport(
