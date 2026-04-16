@@ -1,5 +1,7 @@
 """Tests for ProblemDetails (application/problem+json) error handling."""
 
+from typing import Any
+
 import pytest
 
 import httpx
@@ -13,7 +15,7 @@ _CONTENT_TYPE_PROBLEM = "application/problem+json"
 
 def _make_problem_response(
     status_code: int,
-    body: dict,
+    body: dict[str, Any],
     headers: dict[str, str] | None = None,
 ) -> httpx.Response:
     merged_headers = {"content-type": _CONTENT_TYPE_PROBLEM}
