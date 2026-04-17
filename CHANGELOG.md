@@ -1,3 +1,15 @@
+## v0.12.0 (2026-04-17)
+
+### Feat
+
+- handle ProblemDetails (application/problem+json) error responses
+
+### Fix
+
+- preserve ProblemDetails error semantics
+- **type**: add type arguments for generic dict container
+- correct AllowedIps list constraints from ge/le to max_length
+
 ## v0.11.2 (2026-04-09)
 
 ### Fix
