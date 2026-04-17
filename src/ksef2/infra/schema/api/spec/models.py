@@ -35,15 +35,15 @@ class Ip4Mask(RootModel[str]):
 
 
 class AllowedIps(BaseModel):
-    ip4Addresses: list[Ip4Address] | None = None
+    ip4Addresses: Annotated[list[Ip4Address] | None, Field(ge=0, le=10)] = None
     """
     Lista adresów IPv4 w notacji dziesiętnej kropkowanej, np. `192.168.0.10`.
     """
-    ip4Ranges: list[Ip4Range] | None = None
+    ip4Ranges: Annotated[list[Ip4Range] | None, Field(ge=0, le=10)] = None
     """
     Lista adresów IPv4 podana w formie zakresu początek–koniec, oddzielonego pojedynczym myślnikiem, np. `10.0.0.1–10.0.0.254`.
     """
-    ip4Masks: list[Ip4Mask] | None = None
+    ip4Masks: Annotated[list[Ip4Mask] | None, Field(ge=0, le=10)] = None
     """
     Lista adresów IPv4 w notacji CIDR, np. `172.16.0.0/16`.
     """
@@ -53,6 +53,22 @@ class AmountType(StrEnum):
     Brutto = "Brutto"
     Netto = "Netto"
     Vat = "Vat"
+
+
+class ApiError(BaseModel):
+    code: int
+    """
+    Kod błędu.
+    """
+    description: str
+    """
+    Ogólny opis błędu odpowiadający danemu kodowi.
+    """
+    details: list[str] | None = None
+    """
+    Lista szczegółowych komunikatów opisujących konkretny błąd.
+    Może zawierać wiele wpisów dla jednego kodu błędu.
+    """
 
 
 class ApiRateLimitValuesOverride(BaseModel):
@@ -214,6 +230,37 @@ class AuthorizationPolicy(BaseModel):
     allowedIps: AllowedIps | None = None
     """
     Lista dozwolonych adresów IP.
+    """
+
+
+class BadRequestProblemDetails(BaseModel):
+    title: str
+    """
+    Bad Request
+    """
+    status: int
+    """
+    400
+    """
+    instance: str
+    """
+    URI identyfikujące konkretne wystąpienie błędu.
+    """
+    detail: str
+    """
+    Ogólny opis problemu.
+    """
+    errors: list[ApiError]
+    """
+    Lista błędów powiązanych z żądaniem.
+    """
+    timestamp: AwareDatetime
+    """
+    Data i czas wystąpienia błędu w UTC.
+    """
+    traceId: str
+    """
+    Identyfikator śledzenia błędu.
     """
 
 
@@ -919,6 +966,10 @@ class ForbiddenProblemDetails(BaseModel):
     """
     Identyfikator śledzenia błędu.
     """
+    timestamp: AwareDatetime
+    """
+    Data i czas wystąpienia błędu w UTC.
+    """
 
 
 class FormCode(BaseModel):
@@ -933,6 +984,33 @@ class FormCode(BaseModel):
     value: str
     """
     Wartość
+    """
+
+
+class GoneProblemDetails(BaseModel):
+    title: str
+    """
+    Gone
+    """
+    status: int
+    """
+    410
+    """
+    instance: str
+    """
+    URI identyfikujące konkretne wystąpienie błędu.
+    """
+    detail: str
+    """
+    Ogólny opis problemu.
+    """
+    timestamp: AwareDatetime
+    """
+    Data i czas wystąpienia błędu w UTC.
+    """
+    traceId: str
+    """
+    Identyfikator śledzenia błędu.
     """
 
 
@@ -1953,6 +2031,33 @@ class TokenStatusResponse(BaseModel):
     """
 
 
+class TooManyRequestsProblemDetails(BaseModel):
+    title: str
+    """
+    Too Many Requests
+    """
+    status: int
+    """
+    429
+    """
+    instance: str
+    """
+    URI identyfikujące konkretne wystąpienie błędu.
+    """
+    detail: str
+    """
+    Informacja o przyczynie przekroczenia limitu żądań oraz wskazówki dotyczące ponowienia żądania.
+    """
+    timestamp: AwareDatetime
+    """
+    Data i czas wystąpienia błędu w UTC.
+    """
+    traceId: str
+    """
+    Identyfikator śledzenia błędu.
+    """
+
+
 class Status(BaseModel):
     """
     Informacje o błędzie związanym z przekroczeniem limitu żądań.
@@ -1999,6 +2104,10 @@ class UnauthorizedProblemDetails(BaseModel):
     traceId: str | None = None
     """
     Identyfikator śledzenia błędu.
+    """
+    timestamp: AwareDatetime
+    """
+    Data i czas wystąpienia błędu w UTC.
     """
 
 
