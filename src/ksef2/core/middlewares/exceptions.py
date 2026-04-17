@@ -6,8 +6,18 @@ from pydantic import BaseModel, ValidationError
 
 from ksef2.core import protocols
 from ksef2.core.middlewares.base import BaseMiddleware
-from ksef2.infra.mappers.exceptions import ExceptionsMapper
+from ksef2.infra.mappers import exceptions as mapper
 from ksef2.infra.schema.api import spec
+
+_PROBLEM_DETAILS_CONTENT_TYPE = "application/problem+json"
+
+_PROBLEM_MODELS: dict[int, type[BaseModel]] = {
+    400: spec.BadRequestProblemDetails,
+    401: spec.UnauthorizedProblemDetails,
+    403: spec.ForbiddenProblemDetails,
+    410: spec.GoneProblemDetails,
+    429: spec.TooManyRequestsProblemDetails,
+}
 
 
 @final
@@ -33,27 +43,54 @@ class KSeFExceptionMiddleware(BaseMiddleware):
             return None
 
     @classmethod
-    def _raise_for_status(cls, response: httpx.Response) -> None:
-        if response.is_success:
-            return
+    def _is_problem_details(cls, response: httpx.Response) -> bool:
+        content_type = response.headers.get("content-type", "")
+        return _PROBLEM_DETAILS_CONTENT_TYPE in content_type
 
+    @classmethod
+    def _raise_for_problem_details(cls, response: httpx.Response) -> None:
+        raw_body = response.text
+        status = response.status_code
+        model_cls = _PROBLEM_MODELS.get(status)
+
+        if model_cls is not None:
+            model = cls._try_parse(raw_body, model_cls)
+            if model is not None:
+                retry_after = cls._parse_retry_after(response.headers)
+                raise mapper.from_problem_spec(model, retry_after)
+
+        cls._raise_for_legacy_error(response)
+
+    @classmethod
+    def _raise_for_legacy_error(cls, response: httpx.Response) -> None:
         status = response.status_code
         raw_body = response.text
 
         if status == 429:
             model = cls._try_parse(raw_body, spec.TooManyRequestsResponse)
             retry_after = cls._parse_retry_after(response.headers)
-            raise ExceptionsMapper.from_too_many_requests(model, retry_after, raw_body)
+            raise mapper.from_too_many_requests(model, retry_after, raw_body)
 
         model = cls._try_parse(raw_body, spec.ExceptionResponse)
 
         if status in (401, 403):
-            raise ExceptionsMapper.from_auth_error(status, model, raw_body)
+            raise mapper.from_auth_error(status, model, raw_body)
 
         if status == 400:
-            raise ExceptionsMapper.from_bad_request(model, raw_body)
+            raise mapper.from_bad_request(model, raw_body)
 
-        raise ExceptionsMapper.from_api_error(status, model, raw_body)
+        raise mapper.from_api_error(status, model, raw_body)
+
+    @classmethod
+    def _raise_for_status(cls, response: httpx.Response) -> None:
+        if response.is_success:
+            return
+
+        if cls._is_problem_details(response):
+            cls._raise_for_problem_details(response)
+            return
+
+        cls._raise_for_legacy_error(response)
 
     def _handle(self, response: httpx.Response) -> httpx.Response:
         self._raise_for_status(response)
