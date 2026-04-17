@@ -41,7 +41,7 @@ class TestProblemDetailsMiddleware:
             "detail": "Invalid invoice data",
             "errors": [
                 {
-                    "code": 100,
+                    "code": 21405,
                     "description": "Missing field",
                     "details": ["invoiceNumber is required"],
                 },
@@ -60,7 +60,8 @@ class TestProblemDetailsMiddleware:
         assert isinstance(err.response, spec.BadRequestProblemDetails)
         assert err.response.detail == "Invalid invoice data"
         assert len(err.response.errors) == 2
-        assert err.response.errors[0].code == 100
+        assert err.response.errors[0].code == 21405
+        assert err.exception_code == exceptions.ExceptionCode.VALIDATION_ERROR
         assert "Missing field" in str(err)
 
     def test_401_problem_details(
@@ -177,6 +178,38 @@ class TestProblemDetailsMiddleware:
 
         err = exc_info.value
         assert err.status_code == 400
+
+    @pytest.mark.parametrize(
+        ("status_code", "expected_exception"),
+        [
+            (401, exceptions.KSeFAuthError),
+            (403, exceptions.KSeFAuthError),
+            (429, exceptions.KSeFRateLimitError),
+        ],
+    )
+    def test_problem_details_parse_failure_preserves_status_specific_errors(
+        self,
+        fake_transport: FakeTransport,
+        exceptions_middleware: middlewares.KSeFExceptionMiddleware,
+        status_code: int,
+        expected_exception: type[exceptions.KSeFApiError],
+    ):
+        headers = {"Retry-After": "30"} if status_code == 429 else None
+        fake_transport.responses.append(
+            _make_problem_response(
+                status_code,
+                {"garbage": "not a valid problem details"},
+                headers=headers,
+            )
+        )
+
+        with pytest.raises(expected_exception) as exc_info:
+            exceptions_middleware.request("GET", "/invoice")
+
+        err = exc_info.value
+        assert err.status_code == status_code
+        if isinstance(err, exceptions.KSeFRateLimitError):
+            assert err.retry_after == 30
 
     def test_problem_details_unrecognized_status_falls_back(
         self,

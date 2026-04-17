@@ -159,9 +159,11 @@ def _(
     _retry_after: int | None = None,
 ) -> exceptions.KSeFApiError:
     message = _problem_details_message(model.title, model.detail, model.errors)
+    primary = model.errors[0] if model.errors else None
+    code = ExceptionCode.from_code(primary.code if primary else None)
     return exceptions.KSeFApiError(
         status_code=model.status,
-        exception_code=ExceptionCode.UNKNOWN_ERROR,
+        exception_code=code,
         message=message,
         response=model,
     )

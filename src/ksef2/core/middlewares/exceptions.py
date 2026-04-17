@@ -59,18 +59,10 @@ class KSeFExceptionMiddleware(BaseMiddleware):
                 retry_after = cls._parse_retry_after(response.headers)
                 raise mapper.from_problem_spec(model, retry_after)
 
-        model = cls._try_parse(raw_body, spec.ExceptionResponse)
-        raise mapper.from_api_error(status, model, raw_body)
+        cls._raise_for_legacy_error(response)
 
     @classmethod
-    def _raise_for_status(cls, response: httpx.Response) -> None:
-        if response.is_success:
-            return
-
-        if cls._is_problem_details(response):
-            cls._raise_for_problem_details(response)
-            return
-
+    def _raise_for_legacy_error(cls, response: httpx.Response) -> None:
         status = response.status_code
         raw_body = response.text
 
@@ -88,6 +80,17 @@ class KSeFExceptionMiddleware(BaseMiddleware):
             raise mapper.from_bad_request(model, raw_body)
 
         raise mapper.from_api_error(status, model, raw_body)
+
+    @classmethod
+    def _raise_for_status(cls, response: httpx.Response) -> None:
+        if response.is_success:
+            return
+
+        if cls._is_problem_details(response):
+            cls._raise_for_problem_details(response)
+            return
+
+        cls._raise_for_legacy_error(response)
 
     def _handle(self, response: httpx.Response) -> httpx.Response:
         self._raise_for_status(response)
