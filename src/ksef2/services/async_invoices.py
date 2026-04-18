@@ -107,7 +107,11 @@ class AsyncInvoicesService:
 
             sanitized_part_name = Path(part.part_name.replace("\\", "/")).name
             output_filename = sanitized_part_name.removesuffix(".aes")
-            if output_filename in {"", ".", ".."}:
+            if (
+                "\x00" in output_filename
+                or output_filename.startswith(".")
+                or output_filename in {"", ".", ".."}
+            ):
                 raise ValueError(
                     f"Invalid export package part name: {part.part_name!r}"
                 )
