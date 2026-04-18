@@ -1,6 +1,9 @@
 import asyncio
 from datetime import datetime, timezone
+from pathlib import Path
+from unittest.mock import patch
 
+import httpx
 import pytest
 from polyfactory import BaseFactory
 
@@ -44,6 +47,59 @@ def _ready_export_package() -> spec.InvoicePackage:
 
 
 class TestAsyncInvoicesService:
+    @patch("ksef2.services.async_invoices.decrypt_aes_cbc", return_value=b"decrypted")
+    def test_fetch_package_sanitizes_part_name_and_removes_aes_suffix(
+        self,
+        _: object,
+        async_fake_transport: AsyncFakeTransport,
+        tmp_path: Path,
+    ) -> None:
+        service = _build_service(async_fake_transport)
+        package = invoices.InvoicePackage.model_validate(
+            {
+                "invoice_count": 1,
+                "size": 128,
+                "parts": [
+                    {
+                        "ordinal_number": 1,
+                        "part_name": "../unsafe/subdir/part-1.zip.aes",
+                        "method": "GET",
+                        "url": "https://example.com/export/part-1",
+                        "part_size": 64,
+                        "part_hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+                        "encrypted_part_size": 128,
+                        "encrypted_part_hash": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=",
+                        "expiration_date": datetime.now(timezone.utc),
+                    }
+                ],
+                "is_truncated": False,
+            }
+        )
+        handle = invoices.ExportHandle(
+            reference_number="ref",
+            aes_key=b"0" * 32,
+            iv=b"1" * 16,
+        )
+        async_fake_transport.responses.append(
+            httpx.Response(
+                status_code=200,
+                content=b"encrypted",
+                request=httpx.Request("GET", "https://example.com/export/part-1"),
+            )
+        )
+
+        saved_files = asyncio.run(
+            service.fetch_package(
+                package=package,
+                export=handle,
+                target_directory=tmp_path,
+            )
+        )
+
+        assert saved_files == [tmp_path / "part-1.zip"]
+        assert saved_files[0].read_bytes() == b"decrypted"
+        assert not (tmp_path.parent / "part-1.zip").exists()
+
     def test_wait_for_invoices_returns_when_metadata_appears(
         self,
         async_fake_transport: AsyncFakeTransport,

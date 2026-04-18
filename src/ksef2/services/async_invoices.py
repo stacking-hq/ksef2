@@ -105,7 +105,13 @@ class AsyncInvoicesService:
                 iv=export.iv,
             )
 
-            output_file = target_path / part.part_name.replace(".aes", "")
+            sanitized_part_name = Path(part.part_name.replace("\\", "/")).name
+            output_filename = sanitized_part_name.removesuffix(".aes")
+            if output_filename in {"", ".", ".."}:
+                raise ValueError(
+                    f"Invalid export package part name: {part.part_name!r}"
+                )
+            output_file = target_path / output_filename
             await asyncio.to_thread(output_file.write_bytes, zip_data)
 
             logger.info(
