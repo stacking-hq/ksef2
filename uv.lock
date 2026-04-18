@@ -764,7 +764,7 @@ wheels = [
 
 [[package]]
 name = "ksef2"
-version = "0.10.0"
+version = "0.12.0"
 source = { editable = "." }
 dependencies = [
     { name = "beartype" },
@@ -780,6 +780,7 @@ dependencies = [
     { name = "structlog" },
     { name = "tenacity" },
     { name = "weasyprint" },
+    { name = "xsdata" },
     { name = "xsdata-pydantic" },
 ]
 
@@ -814,6 +815,7 @@ requires-dist = [
     { name = "structlog", specifier = ">=25.5.0" },
     { name = "tenacity", specifier = ">=9.0" },
     { name = "weasyprint", specifier = ">=63.0" },
+    { name = "xsdata", specifier = ">=26.1" },
     { name = "xsdata-pydantic", specifier = ">=24.5" },
 ]
 

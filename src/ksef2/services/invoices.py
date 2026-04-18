@@ -152,7 +152,6 @@ class InvoicesService:
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> QueryInvoicesMetadataResponse:
-
         retry_predicate: Callable[[QueryInvoicesMetadataResponse], bool] = lambda s: (
             not s.invoices
         )
@@ -178,7 +177,6 @@ class InvoicesService:
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> InvoicePackage:
-
         retry_predicate: Callable[[InvoiceExportStatusResponse], bool] = lambda s: (
             not (s.package and s.package.parts)
         )

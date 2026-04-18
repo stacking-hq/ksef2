@@ -35,15 +35,15 @@ class Ip4Mask(RootModel[str]):
 
 
 class AllowedIps(BaseModel):
-    ip4Addresses: list[Ip4Address] | None = None
+    ip4Addresses: Annotated[list[Ip4Address] | None, Field(max_length=10)] = None
     """
     Lista adresów IPv4 w notacji dziesiętnej kropkowanej, np. `192.168.0.10`.
     """
-    ip4Ranges: list[Ip4Range] | None = None
+    ip4Ranges: Annotated[list[Ip4Range] | None, Field(max_length=10)] = None
     """
     Lista adresów IPv4 podana w formie zakresu początek–koniec, oddzielonego pojedynczym myślnikiem, np. `10.0.0.1–10.0.0.254`.
     """
-    ip4Masks: list[Ip4Mask] | None = None
+    ip4Masks: Annotated[list[Ip4Mask] | None, Field(max_length=10)] = None
     """
     Lista adresów IPv4 w notacji CIDR, np. `172.16.0.0/16`.
     """
@@ -53,6 +53,22 @@ class AmountType(StrEnum):
     Brutto = "Brutto"
     Netto = "Netto"
     Vat = "Vat"
+
+
+class ApiError(BaseModel):
+    code: int
+    """
+    Kod błędu.
+    """
+    description: str
+    """
+    Ogólny opis błędu odpowiadający danemu kodowi.
+    """
+    details: list[str] | None = None
+    """
+    Lista szczegółowych komunikatów opisujących konkretny błąd.
+    Może zawierać wiele wpisów dla jednego kodu błędu.
+    """
 
 
 class ApiRateLimitValuesOverride(BaseModel):
@@ -214,6 +230,37 @@ class AuthorizationPolicy(BaseModel):
     allowedIps: AllowedIps | None = None
     """
     Lista dozwolonych adresów IP.
+    """
+
+
+class BadRequestProblemDetails(BaseModel):
+    title: str
+    """
+    Bad Request
+    """
+    status: int
+    """
+    400
+    """
+    instance: str
+    """
+    URI identyfikujące konkretne wystąpienie błędu.
+    """
+    detail: str
+    """
+    Ogólny opis problemu.
+    """
+    errors: list[ApiError]
+    """
+    Lista błędów powiązanych z żądaniem.
+    """
+    timestamp: AwareDatetime
+    """
+    Data i czas wystąpienia błędu w UTC.
+    """
+    traceId: str
+    """
+    Identyfikator śledzenia błędu.
     """
 
 
@@ -894,13 +941,13 @@ class ForbiddenProblemDetails(BaseModel):
     reasonCode: str
     """
      Kod przyczyny odmowy dostępu.
-    | Code | Opis |  
+    | Code | Opis |
     |------|-------------|
-    | missing-permissions | Brak wymaganych uprawnień do wykonania operacji w bieżącym kontekście. | 
-    | ip-not-allowed | Żądanie pochodzi z adresu IP innego niż wskazany podczas uwierzytelnienia. | 
-    | insufficient-resource-access | Brak dostępu do wskazanego zasobu. | 
-    | auth-method-not-allowed | Ta operacja nie jest dostępna dla użytej metody uwierzytelnienia. | 
-    | security-service-blocked | Żądanie zostało zablokowane przez mechanizmy bezpieczeństwa. | 
+    | missing-permissions | Brak wymaganych uprawnień do wykonania operacji w bieżącym kontekście. |
+    | ip-not-allowed | Żądanie pochodzi z adresu IP innego niż wskazany podczas uwierzytelnienia. |
+    | insufficient-resource-access | Brak dostępu do wskazanego zasobu. |
+    | auth-method-not-allowed | Ta operacja nie jest dostępna dla użytej metody uwierzytelnienia. |
+    | security-service-blocked | Żądanie zostało zablokowane przez mechanizmy bezpieczeństwa. |
     | context-type-not-allowed | Operacja nie jest dostępna dla uwierzytelnionego typu kontekstu. |
     """
     security: dict[str, Any] | None = None
@@ -919,6 +966,10 @@ class ForbiddenProblemDetails(BaseModel):
     """
     Identyfikator śledzenia błędu.
     """
+    timestamp: AwareDatetime
+    """
+    Data i czas wystąpienia błędu w UTC.
+    """
 
 
 class FormCode(BaseModel):
@@ -933,6 +984,33 @@ class FormCode(BaseModel):
     value: str
     """
     Wartość
+    """
+
+
+class GoneProblemDetails(BaseModel):
+    title: str
+    """
+    Gone
+    """
+    status: int
+    """
+    410
+    """
+    instance: str
+    """
+    URI identyfikujące konkretne wystąpienie błędu.
+    """
+    detail: str
+    """
+    Ogólny opis problemu.
+    """
+    timestamp: AwareDatetime
+    """
+    Data i czas wystąpienia błędu w UTC.
+    """
+    traceId: str
+    """
+    Identyfikator śledzenia błędu.
     """
 
 
@@ -1953,6 +2031,33 @@ class TokenStatusResponse(BaseModel):
     """
 
 
+class TooManyRequestsProblemDetails(BaseModel):
+    title: str
+    """
+    Too Many Requests
+    """
+    status: int
+    """
+    429
+    """
+    instance: str
+    """
+    URI identyfikujące konkretne wystąpienie błędu.
+    """
+    detail: str
+    """
+    Informacja o przyczynie przekroczenia limitu żądań oraz wskazówki dotyczące ponowienia żądania.
+    """
+    timestamp: AwareDatetime
+    """
+    Data i czas wystąpienia błędu w UTC.
+    """
+    traceId: str
+    """
+    Identyfikator śledzenia błędu.
+    """
+
+
 class Status(BaseModel):
     """
     Informacje o błędzie związanym z przekroczeniem limitu żądań.
@@ -2000,6 +2105,10 @@ class UnauthorizedProblemDetails(BaseModel):
     """
     Identyfikator śledzenia błędu.
     """
+    timestamp: AwareDatetime
+    """
+    Data i czas wystąpienia błędu w UTC.
+    """
 
 
 class UpoPageResponse(BaseModel):
@@ -2009,8 +2118,8 @@ class UpoPageResponse(BaseModel):
     """
     downloadUrl: AnyUrl
     """
-    Adres do pobrania strony UPO. Link generowany jest przy każdym odpytaniu o status. 
-    Dostęp odbywa się metodą `HTTP GET` i <b>nie należy</b> wysyłać tokenu dostępowego. 
+    Adres do pobrania strony UPO. Link generowany jest przy każdym odpytaniu o status.
+    Dostęp odbywa się metodą `HTTP GET` i <b>nie należy</b> wysyłać tokenu dostępowego.
     Link nie podlega limitom API i wygasa po określonym czasie w `DownloadUrlExpirationDate`.
 
     Odpowiedź HTTP zawiera dodatkowe nagłówki:
@@ -2295,7 +2404,7 @@ class CertificateEnrollmentStatusResponse(BaseModel):
     """
     certificateSerialNumber: str | None = None
     """
-    Numer seryjny wygenerowanego certyfikatu (w formacie szesnastkowym). 
+    Numer seryjny wygenerowanego certyfikatu (w formacie szesnastkowym).
     Zwracany w przypadku prawidłowego przeprocesowania wniosku certyfikacyjnego.
     """
 
@@ -2873,8 +2982,8 @@ class InvoiceQueryDateRange(BaseModel):
     """
     Określa, czy system ma ograniczyć filtrowanie (zakres dateRange.to) do wartości `PermanentStorageHwmDate`.
 
-    * Dotyczy wyłącznie zapytań z `dateType = PermanentStorage`,  
-    * Gdy `true`, system ogranicza filtrowanie tak, aby wartość `dateRange.to` nie przekraczała wartości `PermanentStorageHwmDate`,  
+    * Dotyczy wyłącznie zapytań z `dateType = PermanentStorage`,
+    * Gdy `true`, system ogranicza filtrowanie tak, aby wartość `dateRange.to` nie przekraczała wartości `PermanentStorageHwmDate`,
     * Gdy `null` lub `false`, filtrowanie może wykraczać poza `PermanentStorageHwmDate`.
     """
 
@@ -2896,7 +3005,7 @@ class InvoiceQueryFilters(BaseModel):
     """
     Typ i zakres dat, według którego filtrowane są faktury.
     Maksymalny dozwolony okres wynosi 3 miesiące w strefie UTC lub w strefie Europe/Warsaw (WAW).
-                
+
     Format daty:
      * Daty muszą być przekazane w formacie ISO 8601, np. `yyyy-MM-ddTHH:mm:ss`.
      * Dopuszczalne są następujące warianty:
@@ -3009,7 +3118,7 @@ class OpenBatchSessionResponse(BaseModel):
     * dołączyć treść części pliku w korpusie żądania.
 
     `Uwaga: nie należy dodawać do nagłówków token dostępu (accessToken).`
-     
+
     Każdą część przesyła się oddzielnym żądaniem HTTP.Zwracane kody odpowiedzi:
      * <b>201</b> – poprawne przyjęcie pliku,
      * <b>400</b> – błędne dane,
@@ -3403,8 +3512,8 @@ class SessionInvoiceStatusResponse(BaseModel):
     """
     upoDownloadUrl: AnyUrl | None = None
     """
-    Adres do pobrania UPO. Link generowany jest przy każdym odpytaniu o status. 
-    Dostęp odbywa się metodą `HTTP GET` i <b>nie należy</b> wysyłać tokenu dostępowego. 
+    Adres do pobrania UPO. Link generowany jest przy każdym odpytaniu o status.
+    Dostęp odbywa się metodą `HTTP GET` i <b>nie należy</b> wysyłać tokenu dostępowego.
     Link nie podlega limitom API i wygasa po określonym czasie w `UpoDownloadUrlExpirationDate`.
 
     Odpowiedź HTTP zawiera dodatkowe nagłówki:
@@ -3454,7 +3563,7 @@ class SessionStatusResponse(BaseModel):
     status: StatusInfo
     """
     Informacje o aktualnym statusie.
-                
+
     Sesja wsadowa:
     | Code | Description | Details |
     | --- | --- | --- |
@@ -4061,10 +4170,10 @@ class InvoicePackage(BaseModel):
     """
     Dotyczy wyłącznie zapytań filtrowanych po typie daty <b>PermanentStorage</b>.
     Jeśli zapytanie dotyczyło najnowszego okresu, wartość ta może być wartością nieznacznie skorygowaną względem górnej granicy podanej w warunkach zapytania.
-    Dla okresów starszych, będzie to zgodne z warunkami zapytania. 
+    Dla okresów starszych, będzie to zgodne z warunkami zapytania.
 
     System gwarantuje, że dane poniżej tej wartości są spójne i kompletne.
-    Ponowne zapytania obejmujące zakresem dane poniżej tego kroczącego znacznika czasu nie zwrócą w przyszłości innych wyników (np.dodatkowych faktur). 
+    Ponowne zapytania obejmujące zakresem dane poniżej tego kroczącego znacznika czasu nie zwrócą w przyszłości innych wyników (np.dodatkowych faktur).
 
     Dla dateType = Issue lub Invoicing – null.
     """
@@ -4345,7 +4454,7 @@ class PersonPermissionsQueryRequest(BaseModel):
     """
     permissionState: PermissionState | None = None
     """
-    Stan uprawnienia. 
+    Stan uprawnienia.
     | Type | Value |
     | --- | --- |
     | Active | Uprawnienia aktywne |
@@ -4444,7 +4553,7 @@ class PersonalPermissionsQueryRequest(BaseModel):
     """
     permissionState: PermissionState | None = None
     """
-    Stan uprawnienia. 
+    Stan uprawnienia.
     | Type | Value |
     | --- | --- |
     | Active | Uprawnienia aktywne |
@@ -4970,13 +5079,13 @@ class QueryInvoicesMetadataResponse(BaseModel):
     """
     Dotyczy wyłącznie zapytań filtrowanych po typie daty <b>PermanentStorage</b>.
     Jeśli zapytanie dotyczyło najnowszego okresu, wartość ta może być wartością nieznacznie skorygowaną względem górnej granicy podanej w warunkach zapytania.
-    Dla okresów starszych, będzie to zgodne z warunkami zapytania. 
+    Dla okresów starszych, będzie to zgodne z warunkami zapytania.
 
     Wartość jest stała dla wszystkich stron tego samego zapytania
     i nie zależy od paginacji ani sortowania.
 
     System gwarantuje, że dane poniżej tej wartości są spójne i kompletne.
-    Ponowne zapytania obejmujące zakresem dane poniżej tego kroczącego znacznika czasu nie zwrócą w przyszłości innych wyników (np.dodatkowych faktur). 
+    Ponowne zapytania obejmujące zakresem dane poniżej tego kroczącego znacznika czasu nie zwrócą w przyszłości innych wyników (np.dodatkowych faktur).
 
     Dla dateType = Issue lub Invoicing – null.
     """
@@ -5029,7 +5138,7 @@ class EuEntityAdministrationPermissionsGrantRequest(BaseModel):
     """
     euEntityName: Annotated[str, Field(max_length=256, min_length=5)]
     """
-    Nazwa i adres podmiotu unijnego w formacie: 
+    Nazwa i adres podmiotu unijnego w formacie:
     `{euSubjectName}, {euSubjectAddress}`
     """
     subjectDetails: EuEntityPermissionSubjectDetails

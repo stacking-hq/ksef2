@@ -35,6 +35,12 @@ class InvalidContent(BaseModel):
     invalid_field: str
 
 
+def _build_request(req_factory: object) -> BaseModel:
+    if hasattr(req_factory, "build"):
+        return cast(BaseFactory[BaseModel], req_factory).build()
+    return cast(BaseModel, req_factory)
+
+
 @pytest.fixture
 def req_factory(request: pytest.FixtureRequest) -> object:
     return request.getfixturevalue(request.param)
@@ -102,7 +108,7 @@ class TestInvoiceEndpoints:
         resp_factory: BaseFactory[BaseModel],
         prefix_args: list[str],
     ):
-        request = req_factory.build() if hasattr(req_factory, "build") else req_factory
+        request = _build_request(req_factory)
         request_dump = request.model_dump(mode="json", by_alias=True)
         expected = resp_factory.build()
 
@@ -137,7 +143,7 @@ class TestInvoiceEndpoints:
         req_factory: object,
         prefix_args: list[str],
     ):
-        request = req_factory.build() if hasattr(req_factory, "build") else req_factory
+        request = _build_request(req_factory)
         invalid_response = InvalidContent(invalid_field="invalid")
 
         with pytest.raises(exceptions.KSeFValidationError):
@@ -183,7 +189,7 @@ class TestInvoiceEndpoints:
         resp_factory: BaseFactory[BaseModel],
         prefix_args: list[str],
     ):
-        request = req_factory.build() if hasattr(req_factory, "build") else req_factory
+        request = _build_request(req_factory)
         response = resp_factory.build()
 
         for exc, code in _TRANSPORT_ERRORS:

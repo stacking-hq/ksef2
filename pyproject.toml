@@ -4,10 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ksef2"
-version = "0.10.0"
+version = "0.12.0"
 description = "Python SDK and Tools for Poland's KSeF (Krajowy System e-Faktur) API"
 readme = "README.md"
 requires-python = ">=3.12"
+pythonpath = "src"
 dependencies = [
     "pydantic>=2.12.5",
     "cryptography>=44.0.0",
@@ -23,6 +24,7 @@ dependencies = [
     "beartype>=0.22.9",
     "camel-converter>=5.1.0",
     "pytest-cov>=7.1.0",
+    "xsdata>=26.1",
 ]
 
 [dependency-groups]
@@ -50,7 +52,7 @@ markers = [
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.10.0"
+version = "0.12.0"
 tag_format = "v$version"
 version_files = [
     "pyproject.toml:version",

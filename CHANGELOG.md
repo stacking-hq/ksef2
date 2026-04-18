@@ -1,3 +1,60 @@
+## v0.12.0 (2026-04-17)
+
+### Feat
+
+- handle ProblemDetails (application/problem+json) error responses
+
+### Fix
+
+- preserve ProblemDetails error semantics
+- **type**: add type arguments for generic dict container
+- correct AllowedIps list constraints from ge/le to max_length
+
+## v0.11.2 (2026-04-09)
+
+### Fix
+
+- **fa3**: avoid beartype JsonDict forward refs
+
+## v0.11.1 (2026-04-09)
+
+### Feat
+
+- **fa3**: annotate builder parameter metadata
+
+## v0.11.0 (2026-04-08)
+
+### Feat
+
+- add public FA3 builder drafts
+- rework FA3 builders and invoice mapping
+- **new-fa3**: add builder and sample test
+- **fa3**: finish correction and advance fields
+- **fa3**: model invoice body contexts
+- **fa3**: add correction party models
+- **fa3**: add transaction conditions mapper
+- **fa3**: add payment mappers and brochure tests
+- **fa3**: add attachment spec mappers and tests
+- refine attachment models and add validation logic
+- introduce invoice footer models
+- refine header model fields and docstring
+- **fa3**: add invoice builder and fa3 body validation
+- **fa3**: introduce invoice body model
+- **examples**: add fa3 invoice export example
+- **fa3**: add invoice models and mappers
+
+### Fix
+
+- clean up basedpyright typing
+- stabilize FA3 mapper roundtrips
+- restore fa3 builder entrypoint
+- **fa3**: correct buyer identifier mapping
+
+### Refactor
+
+- **fa3**: align builder context names
+- **fa3**: regenerate schema models as dataclasses
+
 ## v0.10.0 (2026-03-19)
 
 ### Feat

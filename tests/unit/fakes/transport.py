@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from collections.abc import Mapping
 from typing import Any, final
 
 import httpx
@@ -17,7 +18,6 @@ class RecordedCall:
     content: bytes | None = None
 
 
-@final
 @dataclass()
 class FakeTransport(protocols.Middleware):
     calls: list[RecordedCall] = field(default_factory=list)
@@ -29,7 +29,7 @@ class FakeTransport(protocols.Middleware):
         path: str,
         *,
         headers: dict[str, str] | None = None,
-        params: httpx.QueryParams | None = None,
+        params: Mapping[str, Any] | None = None,
         json: dict[str, Any] | None = None,
         content: bytes | None = None,
     ) -> httpx.Response:
@@ -38,7 +38,7 @@ class FakeTransport(protocols.Middleware):
                 method=method,
                 path=path,
                 headers=headers,
-                params=params,
+                params=httpx.QueryParams(params) if params is not None else None,
                 json=json,
                 content=content,
             )
@@ -51,7 +51,7 @@ class FakeTransport(protocols.Middleware):
         path: str,
         *,
         headers: dict[str, str] | None = None,
-        params: httpx.QueryParams | None = None,
+        params: Mapping[str, Any] | None = None,
     ) -> httpx.Response:
         return self.request("GET", path, headers=headers, params=params)
 
@@ -60,7 +60,7 @@ class FakeTransport(protocols.Middleware):
         path: str,
         *,
         headers: dict[str, str] | None = None,
-        params: httpx.QueryParams | None = None,
+        params: Mapping[str, Any] | None = None,
         json: dict[str, Any] | None = None,
         content: bytes | None = None,
     ) -> httpx.Response:
@@ -73,7 +73,7 @@ class FakeTransport(protocols.Middleware):
         path: str,
         *,
         headers: dict[str, str] | None = None,
-        params: httpx.QueryParams | None = None,
+        params: Mapping[str, Any] | None = None,
     ) -> httpx.Response:
         return self.request("DELETE", path, headers=headers, params=params)
 

@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Faktura xmlns:etd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns="http://crd.gov.pl/wzor/2025/06/25/13775/">
+	<Naglowek>
+		<KodFormularza kodSystemowy="FA (3)" wersjaSchemy="1-0E">FA</KodFormularza>
+		<WariantFormularza>3</WariantFormularza>
+		<DataWytworzeniaFa>2025-12-10T08:00:00Z</DataWytworzeniaFa>
+		<SystemInfo>KSEF_TEST_SUITE</SystemInfo>
+	</Naglowek>
+	<Podmiot1>
+		<DaneIdentyfikacyjne>
+			<NIP>9999999999</NIP>
+			<Nazwa>EXPORT-TECH sp. z o.o.</Nazwa>
+		</DaneIdentyfikacyjne>
+		<Adres>
+			<KodKraju>PL</KodKraju>
+			<AdresL1>ul. Eksportowa 50</AdresL1>
+			<AdresL2>00-500 Warszawa</AdresL2>
+		</Adres>
+		<DaneKontaktowe>
+			<Email>export@export-tech.pl</Email>
+			<Telefon>+48225556677</Telefon>
+		</DaneKontaktowe>
+	</Podmiot1>
+	<Podmiot2>
+		<DaneIdentyfikacyjne>
+			<KodUE>DE</KodUE>
+			<NrVatUE>999888777</NrVatUE>
+			<Nazwa>GERMAN ELECTRONICS GmbH</Nazwa>
+		</DaneIdentyfikacyjne>
+		<Adres>
+			<KodKraju>DE</KodKraju>
+			<AdresL1>Industriestrasse 100</AdresL1>
+			<AdresL2>10117 Berlin</AdresL2>
+		</Adres>
+		<DaneKontaktowe>
+			<Email>kontakt@german-electronics.de</Email>
+			<Telefon>+49301234567</Telefon>
+		</DaneKontaktowe>
+		<JST>2</JST>
+		<GV>2</GV>
+	</Podmiot2>
+	<Fa>
+		<KodWaluty>EUR</KodWaluty>
+		<P_1>2025-12-10</P_1>
+		<P_1M>Warszawa</P_1M>
+		<P_2>FW/2025/12/0001</P_2>
+		<P_13_6_2>10000</P_13_6_2>
+		<P_15>10000</P_15>
+		<Adnotacje>
+			<P_16>2</P_16>
+			<P_17>2</P_17>
+			<P_18>2</P_18>
+			<P_18A>2</P_18A>
+			<Zwolnienie>
+				<P_19N>1</P_19N>
+			</Zwolnienie>
+			<NoweSrodkiTransportu>
+				<P_22N>1</P_22N>
+			</NoweSrodkiTransportu>
+			<P_23>2</P_23>
+			<PMarzy>
+				<P_PMarzyN>1</P_PMarzyN>
+			</PMarzy>
+		</Adnotacje>
+		<RodzajFaktury>VAT</RodzajFaktury>
+		<FaWiersz>
+			<NrWierszaFa>1</NrWierszaFa>
+			<UU_ID>KSEF05-LINE001</UU_ID>
+			<P_6A>2025-12-08</P_6A>
+			<P_7>Industrial Control Systems - Model ICS-500</P_7>
+			<P_8A>szt.</P_8A>
+			<P_8B>20</P_8B>
+			<P_9A>500</P_9A>
+			<P_11>10000</P_11>
+			<P_12>0 WDT</P_12>
+		</FaWiersz>
+		<Platnosc>
+			<TerminPlatnosci>
+				<Termin>2026-01-10</Termin>
+			</TerminPlatnosci>
+			<FormaPlatnosci>6</FormaPlatnosci>
+			<RachunekBankowy>
+				<NrRB>PL61109010140000071219812874</NrRB>
+				<SWIFT>WBKPPLPP</SWIFT>
+				<NazwaBanku>Santander Bank Polska S.A.</NazwaBanku>
+				<OpisRachunku>EUR</OpisRachunku>
+			</RachunekBankowy>
+		</Platnosc>
+		<WarunkiTransakcji>
+			<WarunkiDostawy>DAP Berlin</WarunkiDostawy>
+			<Transport>
+				<RodzajTransportu>3</RodzajTransportu>
+				<Przewoznik>
+					<DaneIdentyfikacyjne>
+						<NIP>6666666666</NIP>
+						<Nazwa>EU TRANSPORT sp. z o.o.</Nazwa>
+					</DaneIdentyfikacyjne>
+					<AdresPrzewoznika>
+						<KodKraju>PL</KodKraju>
+						<AdresL1>ul. Logistyczna 10</AdresL1>
+						<AdresL2>00-500 Warszawa</AdresL2>
+					</AdresPrzewoznika>
+				</Przewoznik>
+				<OpisLadunku>11</OpisLadunku>
+				<WysylkaZ>
+					<KodKraju>PL</KodKraju>
+					<AdresL1>ul. Eksportowa 50</AdresL1>
+					<AdresL2>00-500 Warszawa</AdresL2>
+				</WysylkaZ>
+				<WysylkaDo>
+					<KodKraju>DE</KodKraju>
+					<AdresL1>Industriestrasse 100</AdresL1>
+					<AdresL2>10117 Berlin</AdresL2>
+				</WysylkaDo>
+			</Transport>
+		</WarunkiTransakcji>
+	</Fa>
+	<Stopka>
+		<Informacje>
+			<StopkaFaktury>EXPORT-TECH sp. z o.o. - Kapital zakladowy: 1 000 000 PLN</StopkaFaktury>
+		</Informacje>
+		<Rejestry>
+			<KRS>0000777888</KRS>
+			<REGON>444555666</REGON>
+			<BDO>000077788</BDO>
+		</Rejestry>
+	</Stopka>
+</Faktura>

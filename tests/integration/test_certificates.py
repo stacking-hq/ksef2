@@ -25,7 +25,7 @@ _OID_SERIAL_NUMBER = ObjectIdentifier("2.5.4.5")
 def _build_certificate_csr(data: CertificateEnrollmentData) -> str:
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
-    attributes: list[x509.NameAttribute] = []
+    attributes: list[x509.NameAttribute[str]] = []
     if data.organization_name:
         attributes.append(
             x509.NameAttribute(NameOID.ORGANIZATION_NAME, data.organization_name)

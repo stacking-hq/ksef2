@@ -1,6 +1,7 @@
 from beartype.claw import beartype_this_package
 from warnings import filterwarnings
 from beartype.roar import BeartypeClawDecorWarning
+from beartype import BeartypeConf
 
 # silences beartype warning caused by unsupported TypeAdapter type annotation
 filterwarnings(
@@ -9,7 +10,11 @@ filterwarnings(
     module=r"ksef2\.endpoints\.(base|async_base)",
 )
 
-beartype_this_package()
+beartype_this_package(
+    conf=BeartypeConf(
+        claw_skip_package_names=("ksef2.infra.schema.fa3",),
+    ),
+)
 
 from ksef2.clients.async_base import AsyncClient
 from ksef2.clients.base import Client

@@ -92,12 +92,14 @@ class DomainTokenInfoFactory(ModelFactory[domain_tokens.TokenInfo]):
     reference_number: str = "ref-12345678-1234-1234-1234-123456789012"
     author_identifier: domain_tokens.TokenAuthorIdentifier = (
         domain_tokens.TokenAuthorIdentifier(
-            type=domain_tokens.TokenAuthorIdentifierTypeEnum.NIP, value="1234567890"
+            type=domain_tokens.TokenAuthorIdentifierTypeEnum.NIP.value,
+            value="1234567890",
         )
     )
     context_identifier: domain_tokens.TokenContextIdentifier = (
         domain_tokens.TokenContextIdentifier(
-            type=domain_tokens.TokenContextIdentifierTypeEnum.NIP, value="1234567890"
+            type=domain_tokens.TokenContextIdentifierTypeEnum.NIP.value,
+            value="1234567890",
         )
     )
     description: str = "Test token"

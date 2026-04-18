@@ -19,7 +19,6 @@ class TestCertificatesMapper:
     def test_map_limits_response(
         self, cert_limits_resp: BaseFactory[spec.CertificateLimitsResponse]
     ):
-
         mapped_input = cert_limits_resp.build()
         output = from_spec(mapped_input)
 

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Faktura xmlns:etd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns="http://crd.gov.pl/wzor/2025/06/25/13775/">
+	<Naglowek>
+		<KodFormularza kodSystemowy="FA (3)" wersjaSchemy="1-0E">FA</KodFormularza>
+		<WariantFormularza>3</WariantFormularza>
+		<DataWytworzeniaFa>2025-12-05T11:30:00Z</DataWytworzeniaFa>
+		<SystemInfo>KSEF_TEST_SUITE</SystemInfo>
+	</Naglowek>
+	<Podmiot1>
+		<DaneIdentyfikacyjne>
+			<NIP>9999999999</NIP>
+			<Nazwa>SKLEP NAROZNY sp. z o.o.</Nazwa>
+		</DaneIdentyfikacyjne>
+		<Adres>
+			<KodKraju>PL</KodKraju>
+			<AdresL1>ul. Handlowa 15</AdresL1>
+			<AdresL2>00-400 Warszawa</AdresL2>
+		</Adres>
+		<DaneKontaktowe>
+			<Email>sklep@narozny.pl</Email>
+			<Telefon>+48223334455</Telefon>
+		</DaneKontaktowe>
+	</Podmiot1>
+	<Podmiot2>
+		<DaneIdentyfikacyjne>
+			<NIP>1111111111</NIP>
+		</DaneIdentyfikacyjne>
+		<JST>2</JST>
+		<GV>2</GV>
+	</Podmiot2>
+	<Fa>
+		<KodWaluty>PLN</KodWaluty>
+		<P_1>2025-12-05</P_1>
+		<P_2>FU/2025/12/0001</P_2>
+		<P_6>2025-12-05</P_6>
+		<P_13_1>300.00</P_13_1>
+		<P_14_1>69.00</P_14_1>
+		<P_15>369</P_15>
+		<Adnotacje>
+			<P_16>2</P_16>
+			<P_17>2</P_17>
+			<P_18>2</P_18>
+			<P_18A>2</P_18A>
+			<Zwolnienie>
+				<P_19N>1</P_19N>
+			</Zwolnienie>
+			<NoweSrodkiTransportu>
+				<P_22N>1</P_22N>
+			</NoweSrodkiTransportu>
+			<P_23>2</P_23>
+			<PMarzy>
+				<P_PMarzyN>1</P_PMarzyN>
+			</PMarzy>
+		</Adnotacje>
+		<RodzajFaktury>UPR</RodzajFaktury>
+		<FaWiersz>
+			<NrWierszaFa>1</NrWierszaFa>
+			<P_7>Artykuly biurowe (zestaw)</P_7>
+		</FaWiersz>
+	</Fa>
+	<Stopka>
+		<Informacje>
+			<StopkaFaktury>SKLEP NAROZNY sp. z o.o.</StopkaFaktury>
+		</Informacje>
+		<Rejestry>
+			<REGON>111222333</REGON>
+		</Rejestry>
+	</Stopka>
+</Faktura>

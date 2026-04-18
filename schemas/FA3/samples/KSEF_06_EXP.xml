@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Faktura xmlns:etd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns="http://crd.gov.pl/wzor/2025/06/25/13775/">
+	<Naglowek>
+		<KodFormularza kodSystemowy="FA (3)" wersjaSchemy="1-0E">FA</KodFormularza>
+		<WariantFormularza>3</WariantFormularza>
+		<DataWytworzeniaFa>2025-12-12T12:00:00Z</DataWytworzeniaFa>
+		<SystemInfo>KSEF_TEST_SUITE</SystemInfo>
+	</Naglowek>
+	<Podmiot1>
+		<DaneIdentyfikacyjne>
+			<NIP>9999999999</NIP>
+			<Nazwa>GLOBAL EXPORT sp. z o.o.</Nazwa>
+		</DaneIdentyfikacyjne>
+		<Adres>
+			<KodKraju>PL</KodKraju>
+			<AdresL1>ul. Portowa 100</AdresL1>
+			<AdresL2>80-001 Gdansk</AdresL2>
+		</Adres>
+		<DaneKontaktowe>
+			<Email>export@global-export.pl</Email>
+			<Telefon>+48585551234</Telefon>
+		</DaneKontaktowe>
+	</Podmiot1>
+	<Podmiot2>
+		<DaneIdentyfikacyjne>
+			<NIP>1111111111</NIP>
+			<Nazwa>EXPORT PARTNER sp. z o.o.</Nazwa>
+		</DaneIdentyfikacyjne>
+		<Adres>
+			<KodKraju>PL</KodKraju>
+			<AdresL1>ul. Handlowa 25</AdresL1>
+			<AdresL2>80-001 Gdansk</AdresL2>
+		</Adres>
+		<DaneKontaktowe>
+			<Email>export@partner.pl</Email>
+			<Telefon>+48585559999</Telefon>
+		</DaneKontaktowe>
+		<JST>2</JST>
+		<GV>2</GV>
+	</Podmiot2>
+	<Fa>
+		<KodWaluty>USD</KodWaluty>
+		<P_1>2025-12-12</P_1>
+		<P_1M>Gdansk</P_1M>
+		<P_2>FE/2025/12/0001</P_2>
+		<P_13_6_2>15000</P_13_6_2>
+		<P_15>15000</P_15>
+		<Adnotacje>
+			<P_16>2</P_16>
+			<P_17>2</P_17>
+			<P_18>2</P_18>
+			<P_18A>2</P_18A>
+			<Zwolnienie>
+				<P_19N>1</P_19N>
+			</Zwolnienie>
+			<NoweSrodkiTransportu>
+				<P_22N>1</P_22N>
+			</NoweSrodkiTransportu>
+			<P_23>2</P_23>
+			<PMarzy>
+				<P_PMarzyN>1</P_PMarzyN>
+			</PMarzy>
+		</Adnotacje>
+		<RodzajFaktury>VAT</RodzajFaktury>
+		<FaWiersz>
+			<NrWierszaFa>1</NrWierszaFa>
+			<UU_ID>KSEF06-LINE001</UU_ID>
+			<P_6A>2025-12-10</P_6A>
+			<P_7>Premium Industrial Equipment - Model PIE-2000</P_7>
+			<P_8A>szt.</P_8A>
+			<P_8B>5</P_8B>
+			<P_9A>3000</P_9A>
+			<P_11>15000</P_11>
+			<P_12>0 EX</P_12>
+		</FaWiersz>
+		<Platnosc>
+			<TerminPlatnosci>
+				<Termin>2026-01-12</Termin>
+			</TerminPlatnosci>
+			<FormaPlatnosci>6</FormaPlatnosci>
+			<RachunekBankowy>
+				<NrRB>PL61109010140000071219812874</NrRB>
+				<SWIFT>WBKPPLPP</SWIFT>
+				<NazwaBanku>Santander Bank Polska S.A.</NazwaBanku>
+				<OpisRachunku>USD</OpisRachunku>
+			</RachunekBankowy>
+		</Platnosc>
+		<WarunkiTransakcji>
+			<WarunkiDostawy>FOB Gdansk</WarunkiDostawy>
+			<Transport>
+				<RodzajTransportu>4</RodzajTransportu>
+				<Przewoznik>
+					<DaneIdentyfikacyjne>
+						<NIP>6666666666</NIP>
+						<Nazwa>SEA CARGO sp. z o.o.</Nazwa>
+					</DaneIdentyfikacyjne>
+					<AdresPrzewoznika>
+						<KodKraju>PL</KodKraju>
+						<AdresL1>ul. Portowa 1</AdresL1>
+						<AdresL2>80-001 Gdansk</AdresL2>
+					</AdresPrzewoznika>
+				</Przewoznik>
+				<OpisLadunku>11</OpisLadunku>
+				<WysylkaZ>
+					<KodKraju>PL</KodKraju>
+					<AdresL1>ul. Portowa 100</AdresL1>
+					<AdresL2>80-001 Gdansk</AdresL2>
+				</WysylkaZ>
+				<WysylkaDo>
+					<KodKraju>US</KodKraju>
+					<AdresL1>1234 Business Boulevard</AdresL1>
+					<AdresL2>New York, NY 10001</AdresL2>
+				</WysylkaDo>
+			</Transport>
+		</WarunkiTransakcji>
+	</Fa>
+	<Stopka>
+		<Informacje>
+			<StopkaFaktury>GLOBAL EXPORT sp. z o.o. - Kapital zakladowy: 2 000 000 PLN</StopkaFaktury>
+		</Informacje>
+		<Rejestry>
+			<KRS>0000888999</KRS>
+			<REGON>555666777</REGON>
+			<BDO>000088899</BDO>
+		</Rejestry>
+	</Stopka>
+</Faktura>

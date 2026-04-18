@@ -33,6 +33,10 @@ def to_spec(
 ) -> spec.AuthenticationContextIdentifierType: ...
 
 
+@overload
+def to_spec(request: str) -> object: ...
+
+
 def to_spec(request: BaseModel | Enum | str) -> object:
     """Convert an auth domain object or literal into its schema counterpart.
 
