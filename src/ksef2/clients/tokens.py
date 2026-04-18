@@ -1,8 +1,8 @@
-import time
 from collections.abc import Iterator
 from typing import final
 
 from ksef2.core import exceptions
+from ksef2.core.polling import poll_until
 from ksef2.core.protocols import Middleware
 from ksef2.domain.models.pagination import TokenListParams
 from ksef2.domain.models.tokens import (
@@ -32,22 +32,28 @@ class TokensClient:
         max_attempts: int,
     ) -> TokenStatusResponse:
         """Poll token status until it becomes active or reaches a terminal state."""
-        for _ in range(max_attempts):
-            result = self.status(reference_number=reference_number)
-            if result.status == "active":
-                return result
+        reference_number_local = reference_number
+
+        def _poll() -> TokenStatusResponse:
+            result = self.status(reference_number=reference_number_local)
             if result.status in ("failed", "revoked"):
                 raise exceptions.KSeFApiError(
                     0,
                     exceptions.ExceptionCode.UNKNOWN_ERROR,
                     f"Token activation failed: status={result.status}",
                 )
-            time.sleep(poll_interval)
+            return result
 
-        raise exceptions.KSeFApiError(
-            0,
-            exceptions.ExceptionCode.UNKNOWN_ERROR,
-            f"Token activation polling timed out after {max_attempts} attempts",
+        return poll_until(
+            operation=_poll,
+            retry_predicate=lambda result: result.status != "active",
+            poll_interval=poll_interval,
+            max_attempts=max_attempts,
+            timeout_error_factory=lambda: exceptions.KSeFApiError(
+                0,
+                exceptions.ExceptionCode.UNKNOWN_ERROR,
+                f"Token activation polling timed out after {max_attempts} attempts",
+            ),
         )
 
     def generate(

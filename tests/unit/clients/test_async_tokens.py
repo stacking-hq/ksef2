@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import AsyncIterator
 
 import pytest
 from polyfactory import BaseFactory
@@ -8,12 +9,17 @@ from ksef2.core import exceptions
 from ksef2.core.routes import TokenRoutes
 from ksef2.domain.models import tokens
 from ksef2.infra.schema.api import spec
-from tests.unit.factories.tokens import QueryTokensResponseItemFactory, TokenStatusResponseFactory
+from tests.unit.factories.tokens import (
+    QueryTokensResponseItemFactory,
+    TokenStatusResponseFactory,
+)
 from tests.unit.fakes.transport import AsyncFakeTransport
 
 
-async def _collect_async_pages(iterator):
-    pages = []
+async def _collect_async_pages(
+    iterator: AsyncIterator[tokens.QueryTokensResponse],
+) -> list[tokens.QueryTokensResponse]:
+    pages: list[tokens.QueryTokensResponse] = []
     async for item in iterator:
         pages.append(item)
     return pages
@@ -92,7 +98,7 @@ class TestAsyncTokensClient:
         async_fake_transport.enqueue(failed_resp.model_dump(mode="json"))
 
         with pytest.raises(exceptions.KSeFApiError, match="Token activation failed"):
-            asyncio.run(
+            _ = asyncio.run(
                 tokens_client.generate(
                     permissions=["invoice_read"],
                     description="Test token",
@@ -114,7 +120,7 @@ class TestAsyncTokensClient:
             async_fake_transport.enqueue(pending_resp.model_dump(mode="json"))
 
         with pytest.raises(exceptions.KSeFApiError, match="polling timed out"):
-            asyncio.run(
+            _ = asyncio.run(
                 tokens_client.generate(
                     permissions=["invoice_read"],
                     description="Test token",
@@ -122,6 +128,28 @@ class TestAsyncTokensClient:
                     max_poll_attempts=3,
                 )
             )
+
+    def test_generate_zero_max_poll_attempts_does_not_poll_status(
+        self,
+        async_fake_transport: AsyncFakeTransport,
+        token_generate_resp: BaseFactory[spec.GenerateTokenResponse],
+    ):
+        tokens_client = AsyncTokensClient(async_fake_transport)
+        gen_resp = token_generate_resp.build()
+        async_fake_transport.enqueue(gen_resp.model_dump(mode="json"))
+
+        with pytest.raises(exceptions.KSeFApiError, match="polling timed out"):
+            _ = asyncio.run(
+                tokens_client.generate(
+                    permissions=["invoice_read"],
+                    description="Test token",
+                    poll_interval=0.0,
+                    max_poll_attempts=0,
+                )
+            )
+
+        assert len(async_fake_transport.calls) == 1
+        assert async_fake_transport.calls[0].method == "POST"
 
     def test_list_page(
         self,

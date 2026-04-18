@@ -116,7 +116,7 @@ class AsyncFakeTransport(AsyncMiddleware):
         path: str,
         *,
         headers: dict[str, str] | None = None,
-        params: httpx.QueryParams | None = None,
+        params: Mapping[str, Any] | None = None,
         json: dict[str, Any] | None = None,
         content: bytes | None = None,
     ) -> httpx.Response:
@@ -125,7 +125,7 @@ class AsyncFakeTransport(AsyncMiddleware):
                 method=method,
                 path=path,
                 headers=headers,
-                params=params,
+                params=httpx.QueryParams(params) if params is not None else None,
                 json=json,
                 content=content,
             )
@@ -138,7 +138,7 @@ class AsyncFakeTransport(AsyncMiddleware):
         path: str,
         *,
         headers: dict[str, str] | None = None,
-        params: httpx.QueryParams | None = None,
+        params: Mapping[str, Any] | None = None,
     ) -> httpx.Response:
         return await self.request("GET", path, headers=headers, params=params)
 
@@ -147,7 +147,7 @@ class AsyncFakeTransport(AsyncMiddleware):
         path: str,
         *,
         headers: dict[str, str] | None = None,
-        params: httpx.QueryParams | None = None,
+        params: Mapping[str, Any] | None = None,
         json: dict[str, Any] | None = None,
         content: bytes | None = None,
     ) -> httpx.Response:
@@ -160,7 +160,7 @@ class AsyncFakeTransport(AsyncMiddleware):
         path: str,
         *,
         headers: dict[str, str] | None = None,
-        params: httpx.QueryParams | None = None,
+        params: Mapping[str, Any] | None = None,
     ) -> httpx.Response:
         return await self.request("DELETE", path, headers=headers, params=params)
 

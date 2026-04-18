@@ -1,9 +1,9 @@
-import asyncio
 from collections.abc import AsyncIterator
 from typing import final
 
 from ksef2.core import exceptions
 from ksef2.core.async_protocols import AsyncMiddleware
+from ksef2.core.polling import async_poll_until
 from ksef2.domain.models.pagination import TokenListParams
 from ksef2.domain.models.tokens import (
     GenerateTokenRequest,
@@ -30,23 +30,28 @@ class AsyncTokensClient:
         poll_interval: float,
         max_attempts: int,
     ) -> TokenStatusResponse:
-        for attempt in range(max_attempts):
-            result = await self.status(reference_number=reference_number)
-            if result.status == "active":
-                return result
+        reference_number_local = reference_number
+
+        async def _poll() -> TokenStatusResponse:
+            result = await self.status(reference_number=reference_number_local)
             if result.status in ("failed", "revoked"):
                 raise exceptions.KSeFApiError(
                     0,
                     exceptions.ExceptionCode.UNKNOWN_ERROR,
                     f"Token activation failed: status={result.status}",
                 )
-            if attempt < max_attempts - 1:
-                await asyncio.sleep(poll_interval)
+            return result
 
-        raise exceptions.KSeFApiError(
-            0,
-            exceptions.ExceptionCode.UNKNOWN_ERROR,
-            f"Token activation polling timed out after {max_attempts} attempts",
+        return await async_poll_until(
+            operation=_poll,
+            retry_predicate=lambda result: result.status != "active",
+            poll_interval=poll_interval,
+            max_attempts=max_attempts,
+            timeout_error_factory=lambda: exceptions.KSeFApiError(
+                0,
+                exceptions.ExceptionCode.UNKNOWN_ERROR,
+                f"Token activation polling timed out after {max_attempts} attempts",
+            ),
         )
 
     async def generate(
@@ -100,7 +105,9 @@ class AsyncTokensClient:
         *,
         reference_number: str,
     ) -> TokenStatusResponse:
-        spec_resp = await self._endpoints.token_status(reference_number=reference_number)
+        spec_resp = await self._endpoints.token_status(
+            reference_number=reference_number
+        )
         return from_spec(spec_resp)
 
     async def revoke(

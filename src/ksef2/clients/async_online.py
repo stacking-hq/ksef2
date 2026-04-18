@@ -1,4 +1,3 @@
-import asyncio
 import base64
 from types import TracebackType
 from typing import final
@@ -8,6 +7,7 @@ import httpx
 from ksef2.core import exceptions
 from ksef2.core.async_protocols import AsyncMiddleware
 from ksef2.core.crypto import encrypt_invoice
+from ksef2.core.polling import async_poll_until
 from ksef2.domain.models import invoices
 from ksef2.domain.models.invoices import SendInvoicePayload
 from ksef2.domain.models.session import (
@@ -118,25 +118,28 @@ class AsyncOnlineSessionClient:
         poll_interval: float = 2.0,
     ) -> SessionInvoiceStatusResponse:
         self._ensure_open()
-        deadline = asyncio.get_running_loop().time() + timeout
 
-        while True:
+        async def _poll() -> SessionInvoiceStatusResponse:
             status = await self.get_invoice_status(
                 invoice_reference_number=invoice_reference_number
             )
-            if status.ksef_number:
-                return status
             if status.status.code >= 400:
                 raise exceptions.KSeFSessionError(
                     "Invoice processing failed: "
                     f"{invoice_reference_number} ({status.status.code}: {status.status.description})"
                 )
-            if asyncio.get_running_loop().time() >= deadline:
-                raise exceptions.KSeFInvoiceProcessingTimeoutError(
-                    invoice_reference_number=invoice_reference_number,
-                    timeout=timeout,
-                )
-            await asyncio.sleep(poll_interval)
+            return status
+
+        return await async_poll_until(
+            operation=_poll,
+            retry_predicate=lambda status: not status.ksef_number,
+            poll_interval=poll_interval,
+            timeout_seconds=timeout,
+            timeout_error_factory=lambda: exceptions.KSeFInvoiceProcessingTimeoutError(
+                invoice_reference_number=invoice_reference_number,
+                timeout=timeout,
+            ),
+        )
 
     async def list_failed_invoices(
         self,

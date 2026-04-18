@@ -7,6 +7,7 @@ from ksef2.clients.async_invoices import AsyncInvoicesClient
 from ksef2.core import exceptions
 from ksef2.core.async_protocols import AsyncMiddleware
 from ksef2.core.crypto import decrypt_aes_cbc
+from ksef2.core.polling import async_poll_until
 from ksef2.core.stores import CertificateStore
 from ksef2.domain.models.invoices import (
     ExportHandle,
@@ -30,7 +31,8 @@ class AsyncInvoicesService:
         certificate_store: CertificateStore,
         *,
         client: AsyncInvoicesClient | None = None,
-        ensure_encryption_certificates_loaded: Callable[[], Awaitable[None]] | None = None,
+        ensure_encryption_certificates_loaded: Callable[[], Awaitable[None]]
+        | None = None,
     ) -> None:
         self._transport = transport
         self._download_transport = download_transport
@@ -147,15 +149,15 @@ class AsyncInvoicesService:
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> QueryInvoicesMetadataResponse:
-        deadline = asyncio.get_running_loop().time() + timeout
-
-        while True:
-            result = await self.query_metadata(filters=filters)
-            if result.invoices:
-                return result
-            if asyncio.get_running_loop().time() >= deadline:
-                raise exceptions.KSeFInvoiceQueryTimeoutError(timeout=timeout)
-            await asyncio.sleep(poll_interval)
+        return await async_poll_until(
+            operation=lambda: self.query_metadata(filters=filters),
+            retry_predicate=lambda result: not result.invoices,
+            poll_interval=poll_interval,
+            timeout_seconds=timeout,
+            timeout_error_factory=lambda: exceptions.KSeFInvoiceQueryTimeoutError(
+                timeout=timeout
+            ),
+        )
 
     async def wait_for_export_package(
         self,
@@ -164,18 +166,20 @@ class AsyncInvoicesService:
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> InvoicePackage:
-        deadline = asyncio.get_running_loop().time() + timeout
-
-        while True:
-            status = await self.get_export_status(reference_number=reference_number)
-            if status.package and status.package.parts:
-                return status.package
-            if asyncio.get_running_loop().time() >= deadline:
-                raise exceptions.KSeFExportTimeoutError(
-                    reference_number=reference_number,
-                    timeout=timeout,
-                )
-            await asyncio.sleep(poll_interval)
+        status = await async_poll_until(
+            operation=lambda: self.get_export_status(reference_number=reference_number),
+            retry_predicate=lambda status: (
+                not (status.package and status.package.parts)
+            ),
+            poll_interval=poll_interval,
+            timeout_seconds=timeout,
+            timeout_error_factory=lambda: exceptions.KSeFExportTimeoutError(
+                reference_number=reference_number,
+                timeout=timeout,
+            ),
+        )
+        assert status.package is not None
+        return status.package
 
     async def export_and_download(
         self,

@@ -10,9 +10,11 @@ from ksef2.core import exceptions
 from ksef2.core.async_protocols import AsyncMiddleware
 from ksef2.core.crypto import encrypt_token
 from ksef2.core.exceptions import KSeFAuthError
+from ksef2.core.polling import async_poll_until
 from ksef2.core.stores import CertificateStore
 from ksef2.core.xades import XAdESPrivateKey, generate_test_certificate
 from ksef2.domain.models.auth import (
+    AuthOperationStatus,
     AuthTokens,
     ContextIdentifierType,
     InitTokenAuthenticationRequest,
@@ -20,6 +22,19 @@ from ksef2.domain.models.auth import (
 )
 from ksef2.endpoints.async_auth import AsyncAuthEndpoints
 from ksef2.infra.mappers.auth import from_spec, to_spec
+
+
+def _build_signed_xades(
+    *,
+    challenge: str,
+    nip: str,
+    cert: Certificate,
+    private_key: XAdESPrivateKey,
+) -> bytes:
+    from ksef2.core.xades import build_auth_token_request_xml, sign_xades
+
+    xml_bytes = build_auth_token_request_xml(challenge, nip)
+    return sign_xades(xml_bytes, cert, private_key)
 
 
 @final
@@ -89,13 +104,14 @@ class AsyncAuthClient:
         poll_interval: float = 1.0,
         max_poll_attempts: int = 60,
     ) -> AsyncAuthenticatedClient:
-        from ksef2.core.xades import build_auth_token_request_xml, sign_xades
-
         challenge = from_spec(await self._auth_ep.challenge())
-        # [TODO] Consider offloading XAdES XML construction and signing to a worker
-        # thread if async callers need this path to avoid blocking the event loop.
-        xml_bytes = build_auth_token_request_xml(challenge.challenge, nip)
-        signed_xml = sign_xades(xml_bytes, cert, private_key)
+        signed_xml = await asyncio.to_thread(
+            _build_signed_xades,
+            challenge=challenge.challenge,
+            nip=nip,
+            cert=cert,
+            private_key=private_key,
+        )
 
         init_resp = from_spec(
             await self._auth_ep.xades_auth(signed_xml, verify_chain=verify_chain)
@@ -125,7 +141,7 @@ class AsyncAuthClient:
                 "with_test_certificate() is only available for Environment.TEST"
             )
 
-        cert, private_key = generate_test_certificate(nip)
+        cert, private_key = await asyncio.to_thread(generate_test_certificate, nip)
         return await self.with_xades(
             nip=nip,
             cert=cert,
@@ -164,11 +180,14 @@ class AsyncAuthClient:
         poll_interval: float,
         max_attempts: int,
     ) -> None:
-        for attempt in range(1, max_attempts + 1):
+        auth_token_local = auth_token
+        reference_number_local = reference_number
+
+        async def _poll() -> AuthOperationStatus:
             status = from_spec(
                 await self._auth_ep.auth_status(
-                    bearer_token=auth_token,
-                    reference_number=reference_number,
+                    bearer_token=auth_token_local,
+                    reference_number=reference_number_local,
                 )
             )
             if status.status_code >= 400:
@@ -176,12 +195,15 @@ class AsyncAuthClient:
                     status_code=status.status_code,
                     message=f"Authentication failed: {status.status_description}",
                 )
-            if status.status_code >= 200:
-                return
-            if attempt < max_attempts:
-                await asyncio.sleep(poll_interval)
+            return status
 
-        raise KSeFAuthError(
-            status_code=408,
-            message="Authentication polling timed out.",
+        _ = await async_poll_until(
+            operation=_poll,
+            retry_predicate=lambda status: status.status_code < 200,
+            poll_interval=poll_interval,
+            max_attempts=max_attempts,
+            timeout_error_factory=lambda: KSeFAuthError(
+                status_code=408,
+                message="Authentication polling timed out.",
+            ),
         )

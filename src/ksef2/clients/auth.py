@@ -1,16 +1,8 @@
-from collections.abc import Callable
 from typing import final
 
 from cryptography.x509 import Certificate
-from httpx import Response
-from tenacity import (
-    RetryError,
-    retry,
-    retry_if_result,
-    stop_after_attempt,
-    wait_fixed,
-)
 
+from ksef2.core.polling import poll_until
 from ksef2.core.xades import XAdESPrivateKey, generate_test_certificate
 from ksef2.clients.authenticated import AuthenticatedClient
 from ksef2.clients.encryption import EncryptionClient
@@ -201,22 +193,14 @@ class AuthClient:
         max_attempts: int,
     ) -> None:
         """Poll authentication status until the operation succeeds or fails."""
+        auth_token_local = auth_token
+        reference_number_local = reference_number
 
-        retry_predicate: Callable[[Response], bool] = lambda resp: (
-            resp.status_code < 200
-        )
-
-        @retry(
-            stop=stop_after_attempt(max_attempts),
-            wait=wait_fixed(poll_interval),
-            retry=retry_if_result(retry_predicate),
-            reraise=True,
-        )
         def _poll() -> AuthOperationStatus:
             status = from_spec(
                 self._auth_ep.auth_status(
-                    bearer_token=auth_token,
-                    reference_number=reference_number,
+                    bearer_token=auth_token_local,
+                    reference_number=reference_number_local,
                 )
             )
             if status.status_code >= 400:
@@ -226,13 +210,16 @@ class AuthClient:
                 )
             return status
 
-        try:
-            _ = _poll()
-        except RetryError as exc:
-            raise KSeFAuthError(
+        _ = poll_until(
+            operation=_poll,
+            retry_predicate=lambda status: status.status_code < 200,
+            poll_interval=poll_interval,
+            max_attempts=max_attempts,
+            timeout_error_factory=lambda: KSeFAuthError(
                 status_code=408,
                 message="Authentication polling timed out.",
-            ) from exc
+            ),
+        )
 
     def _redeem(self, auth_token: str) -> AuthTokens:
         """Redeem the temporary authentication token for access and refresh tokens."""

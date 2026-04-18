@@ -2,29 +2,26 @@
 
 import abc
 from collections.abc import Mapping
-from typing import Any, ClassVar, NotRequired, TypedDict
-from urllib.parse import urlencode
+from typing import ClassVar
 
 import httpx
-from pydantic import BaseModel, TypeAdapter, ValidationError
-from ksef2.core import codecs, exceptions
-from ksef2.core.protocols import Middleware
+from pydantic import BaseModel
 
-OffsetPaginationQueryParams = TypedDict(
-    "OffsetPaginationQueryParams",
-    {
-        "pageOffset": NotRequired[int | None],
-        "pageSize": NotRequired[int | None],
-    },
+from ksef2.core.protocols import Middleware
+from ksef2.endpoints.shared import (
+    DEFAULT_PARAMS_ADAPTER,
+    OffsetPaginationQueryParams as OffsetPaginationQueryParams,
+    QueryParamsAdapter,
+    build_params as build_query_params,
+    parse_response,
+    parse_response_list,
 )
 
 
 class BaseEndpoints(abc.ABC):
     """Base class for endpoint wrappers around the transport middleware chain."""
 
-    _PARAMS_ADAPTER: ClassVar[TypeAdapter[OffsetPaginationQueryParams]] = TypeAdapter(
-        OffsetPaginationQueryParams
-    )
+    _PARAMS_ADAPTER: ClassVar[QueryParamsAdapter] = DEFAULT_PARAMS_ADAPTER
 
     def __init__(self, transport: Middleware):
         """Bind the endpoint wrapper to a transport implementation."""
@@ -35,27 +32,19 @@ class BaseEndpoints(abc.ABC):
         cls, response: httpx.Response, response_type: type[T]
     ) -> T:
         """Parse a JSON response body into one generated schema model."""
-        try:
-            return codecs.JsonResponseCodec.parse(response, response_type)
-        except ValidationError as e:
-            raise exceptions.KSeFValidationError("Invalid response payload") from e
+        return parse_response(response, response_type)
 
     @classmethod
     def _parse_list[T: BaseModel](
         cls, response: httpx.Response, response_type: type[T]
     ) -> list[T]:
         """Parse a JSON response body into a list of generated schema models."""
-        try:
-            return codecs.JsonResponseCodec.parse_list(response, response_type)
-        except ValidationError as e:
-            raise exceptions.KSeFValidationError("Invalid response payload") from e
+        return parse_response_list(response, response_type)
 
-    def build_params[T: Mapping[str, Any]](
+    def build_params(
         self,
-        params: T,
-        adapter: TypeAdapter[T] | None = None,
+        params: Mapping[str, object],
+        adapter: QueryParamsAdapter | None = None,
     ) -> httpx.QueryParams:
         """Validate, drop ``None`` values, and encode query parameters."""
-        validated = (adapter or self._PARAMS_ADAPTER).validate_python(params)
-        filtered = {k: v for k, v in validated.items() if v is not None}
-        return httpx.QueryParams(urlencode(filtered, doseq=True))
+        return build_query_params(params, adapter or self._PARAMS_ADAPTER)

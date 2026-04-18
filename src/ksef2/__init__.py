@@ -3,11 +3,11 @@ from warnings import filterwarnings
 from beartype.roar import BeartypeClawDecorWarning
 from beartype import BeartypeConf
 
-# silences beartype warning caused by unsupported TypeAdapter type annotation
+# silences beartype warning caused by endpoint TypeAdapter annotations
 filterwarnings(
     "ignore",
     category=BeartypeClawDecorWarning,
-    module=r"ksef2\.endpoints\.(base|async_base)",
+    module=r"ksef2\.endpoints\.(base|async_base|shared)",
 )
 
 beartype_this_package(

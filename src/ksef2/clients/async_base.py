@@ -10,14 +10,9 @@ from ksef2.clients.async_auth import AsyncAuthClient
 from ksef2.clients.async_encryption import AsyncEncryptionClient
 from ksef2.clients.async_peppol import AsyncPeppolClient
 from ksef2.clients.async_testdata import AsyncTestDataClient
-from ksef2.config import (
-    ConnectionPoolConfig,
-    Environment,
-    TimeoutConfig,
-    TlsConfig,
-    TransportConfig,
-)
+from ksef2.config import Environment, TransportConfig
 from ksef2.core import exceptions, stores
+from ksef2.core.http_config import build_http_client_kwargs
 from ksef2.core.async_http import AsyncHttpTransport
 from ksef2.core.middlewares.async_exceptions import AsyncKSeFExceptionMiddleware
 from ksef2.core.middlewares.async_lifecycle import (
@@ -63,33 +58,8 @@ class AsyncClient:
         environment: Environment,
         config: TransportConfig,
     ) -> httpx.AsyncClient:
-        timeout_cfg: TimeoutConfig = config.timeouts
-        pool_cfg: ConnectionPoolConfig = config.pool
-        tls_cfg: TlsConfig = config.tls
-
-        verify: bool | str = (
-            tls_cfg.ca_bundle_path
-            if tls_cfg.ca_bundle_path is not None
-            else tls_cfg.verify
-        )
-
         return httpx.AsyncClient(
-            base_url=environment.base_url,
-            timeout=httpx.Timeout(
-                connect=timeout_cfg.connect,
-                read=timeout_cfg.read,
-                write=timeout_cfg.write,
-                pool=timeout_cfg.pool,
-            ),
-            limits=httpx.Limits(
-                max_connections=pool_cfg.max_connections,
-                max_keepalive_connections=pool_cfg.max_keepalive_connections,
-                keepalive_expiry=pool_cfg.keepalive_expiry,
-            ),
-            verify=verify,
-            proxy=config.proxy_url,
-            trust_env=config.trust_env,
-            http2=config.http2,
+            **build_http_client_kwargs(environment=environment, config=config)
         )
 
     def _ensure_open(self) -> None:
