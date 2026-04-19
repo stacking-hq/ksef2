@@ -1,6 +1,6 @@
 """Mappings from generated encryption schema models to domain models."""
 
-from typing import assert_never, overload
+from typing import assert_never
 
 from ksef2.domain.models.encryption import (
     CertUsage,
@@ -9,26 +9,8 @@ from ksef2.domain.models.encryption import (
 from ksef2.infra.schema.api import spec
 
 
-@overload
-def from_spec(response: spec.PublicKeyCertificateUsage) -> CertUsage: ...
-
-
-@overload
-def from_spec(response: spec.PublicKeyCertificate) -> PublicKeyCertificate: ...
-
-
-def from_spec(
-    response: spec.PublicKeyCertificateUsage | spec.PublicKeyCertificate,
-) -> object:
-    """Convert a generated encryption schema object into its domain counterpart."""
-    if isinstance(response, spec.PublicKeyCertificate):
-        return PublicKeyCertificate(
-            certificate=response.certificate,
-            valid_from=response.validFrom,
-            valid_to=response.validTo,
-            usage=[from_spec(usage) for usage in response.usage],
-        )
-
+def usage_from_spec(response: spec.PublicKeyCertificateUsage) -> CertUsage:
+    """Convert a generated public certificate usage into its domain value."""
     match response:
         case spec.PublicKeyCertificateUsage.KsefTokenEncryption:
             return "ksef_token_encryption"
@@ -36,3 +18,15 @@ def from_spec(
             return "symmetric_key_encryption"
         case _ as unreachable:  # pyright: ignore[reportUnnecessaryComparison]
             assert_never(unreachable)
+
+
+def from_spec(
+    response: spec.PublicKeyCertificate,
+) -> PublicKeyCertificate:
+    """Convert a generated public key certificate into its domain model."""
+    return PublicKeyCertificate(
+        certificate=response.certificate,
+        valid_from=response.validFrom,
+        valid_to=response.validTo,
+        usage=[usage_from_spec(usage) for usage in response.usage],
+    )
