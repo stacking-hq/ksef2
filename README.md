@@ -84,9 +84,65 @@ for path in auth.invoices.fetch_package(
 > [`scripts/examples/quickstart.py`](scripts/examples/quickstart.py) and
 > [`scripts/examples/invoices/send_query_export_download.py`](scripts/examples/invoices/send_query_export_download.py)
 
+## Async Quick Start
+
+Use `AsyncClient` when your application already runs inside an event loop.
+The async API mirrors the sync client shape: authenticate through
+`client.authentication`, then use the returned authenticated client for
+sessions, invoices, tokens, permissions, limits, certificates, and batch work.
+
+```python
+import asyncio
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+from ksef2 import AsyncClient, Environment, FormSchema
+from ksef2.domain.models import InvoicesFilter
+
+NIP = "5261040828"
+
+
+async def main() -> None:
+    async with AsyncClient(Environment.TEST) as client:
+        auth = await client.authentication.with_test_certificate(nip=NIP)
+
+        async with await auth.online_session(form_code=FormSchema.FA3) as session:
+            result = await session.send_invoice(
+                invoice_xml=Path("invoice.xml").read_bytes()
+            )
+            status = await session.wait_for_invoice_ready(
+                invoice_reference_number=result.reference_number
+            )
+            print(status.status.description)
+
+        export = await auth.invoices.schedule_export(
+            filters=InvoicesFilter(
+                role="seller",
+                date_type="issue_date",
+                date_from=datetime.now(tz=timezone.utc) - timedelta(days=1),
+                date_to=datetime.now(tz=timezone.utc),
+                amount_type="brutto",
+            ),
+        )
+        package = await auth.invoices.wait_for_export_package(
+            reference_number=export.reference_number
+        )
+        zip_parts = await auth.invoices.fetch_package_bytes(
+            package=package,
+            export=export,
+        )
+        print(len(zip_parts))
+
+
+asyncio.run(main())
+```
+
+See [`docs/guides/async-client.md`](docs/guides/async-client.md) for async usage patterns.
+
 ## Features
 
 - **Typed public API** for authentication, sessions, invoices, tokens, permissions, limits, certificates, and PEPPOL
+- **Sync and async clients** with matching high-level entry points through `Client` and `AsyncClient`
 - **FA(3) invoice builder** exposed through `ksef2.fa3` for typed invoice construction and XML rendering
 - **XAdES and KSeF token authentication** through a single `Client.authentication` entry point
 - **Online and batch sessions** with resumable session state for long-running jobs
@@ -96,12 +152,17 @@ for path in auth.invoices.fetch_package(
 
 ## Root Client
 
-`Client` exposes both authenticated and public entry points:
+`Client` and `AsyncClient` expose both authenticated and public entry points:
 
 - `client.authentication` for XAdES and KSeF-token authentication
 - `client.encryption` for public KSeF encryption certificates
 - `client.peppol` for public PEPPOL provider queries
 - `client.testdata` for TEST-only data setup and cleanup helpers
+
+Async methods are awaited, and async session/testdata helpers are used with
+`async with`. For example, `client.authentication.with_token(...)` becomes
+`await client.authentication.with_token(...)`, and
+`auth.online_session(...)` becomes `async with await auth.online_session(...)`.
 
 ## Logging
 
@@ -302,6 +363,7 @@ just fetch-spec     # Fetch latest OpenAPI spec from KSeF
 The SDK covers **73 of 73** KSeF API endpoints (100%). See feature docs for details:
 
 - [Authentication](docs/guides/authentication.md) — XAdES, token auth, session management
+- [Async Client](docs/guides/async-client.md) — async authentication, sessions, exports, batch, and testdata
 - [Encryption](docs/guides/encryption.md) — public KSeF encryption certificates
 - [Invoices](docs/guides/invoices.md) — send, download, query, export
 - [Sessions](docs/guides/sessions.md) — online/batch sessions, resume support

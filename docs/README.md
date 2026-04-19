@@ -7,6 +7,7 @@ This directory contains the maintained human-facing documentation for the curren
 | Area | What it covers |
 |------|----------------|
 | [Authentication](guides/authentication.md) | XAdES auth, KSeF token auth, refresh, auth-session management |
+| [Async Client](guides/async-client.md) | Async authentication, sessions, invoice exports, batch work, pagination, and testdata |
 | [Encryption](guides/encryption.md) | Public KSeF encryption certificates used for token and session encryption |
 | [Invoices](guides/invoices.md) | Sending invoices, session invoice status, metadata queries, exports, downloads |
 | [FA(3) Builder](guides/fa3-builder.md) | Building typed FA(3) invoices and rendering XML through `ksef2.fa3` |
