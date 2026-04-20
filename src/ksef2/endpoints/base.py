@@ -2,7 +2,7 @@
 
 import abc
 from collections.abc import Mapping
-from typing import Any, ClassVar, NotRequired, TypedDict
+from typing import ClassVar, NotRequired, TypedDict
 from urllib.parse import urlencode
 
 import httpx
@@ -50,7 +50,7 @@ class BaseEndpoints(abc.ABC):
         except ValidationError as e:
             raise exceptions.KSeFValidationError("Invalid response payload") from e
 
-    def build_params[T: Mapping[str, Any]](
+    def build_params[T: Mapping[str, object]](
         self,
         params: T,
         adapter: TypeAdapter[T] | None = None,

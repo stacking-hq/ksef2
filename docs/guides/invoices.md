@@ -2,6 +2,10 @@
 
 Use online sessions to send invoices and `auth.invoices` for metadata queries, exports, and downloads.
 
+Async applications use the same entry points on `AsyncClient`; await network
+operations and use `async with await auth.online_session(...)` for session
+lifecycle management.
+
 ## Send an Invoice
 
 ```python
@@ -32,6 +36,22 @@ with auth.online_session(form_code=FormSchema.FA3) as session:
 ```
 
 SDK endpoint: `POST /sessions/online/{referenceNumber}/invoices`
+
+Async version:
+
+```python
+from pathlib import Path
+
+from ksef2 import FormSchema
+
+
+async with await auth.online_session(form_code=FormSchema.FA3) as session:
+    result = await session.send_invoice(invoice_xml=Path("invoice.xml").read_bytes())
+    status = await session.wait_for_invoice_ready(
+        invoice_reference_number=result.reference_number,
+    )
+    print(status.ksef_number)
+```
 
 ## Session Invoice Operations
 
@@ -161,6 +181,17 @@ zip_parts = auth.invoices.export_and_download(filters=filters)
 print(len(zip_parts))
 ```
 
+Async export:
+
+```python
+export = await auth.invoices.schedule_export(filters=filters)
+package = await auth.invoices.wait_for_export_package(
+    reference_number=export.reference_number,
+)
+zip_parts = await auth.invoices.fetch_package_bytes(package=package, export=export)
+print(len(zip_parts))
+```
+
 ## Examples
 
 - [`scripts/examples/invoices/send_invoice.py`](../../scripts/examples/invoices/send_invoice.py)
@@ -175,3 +206,4 @@ print(len(zip_parts))
 - [FA(3) Builder](fa3-builder.md)
 - [Sessions](sessions.md)
 - [Authentication](authentication.md)
+- [Async Client](async-client.md)

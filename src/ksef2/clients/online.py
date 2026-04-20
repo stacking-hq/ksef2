@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import base64
-from collections.abc import Callable
 from typing import final
 
 import httpx
-from tenacity import RetryError, retry, retry_if_result, stop_after_delay, wait_fixed
 
 from ksef2.core import exceptions
 from ksef2.core.crypto import encrypt_invoice
+from ksef2.core.polling import poll_until
 from ksef2.logging import get_logger
 from ksef2.core.protocols import Middleware
 from ksef2.domain.models import invoices
@@ -132,35 +131,26 @@ class OnlineSessionClient:
         """Poll invoice status until it succeeds, fails, or times out."""
         self._ensure_open()
 
-        retry_predicate: Callable[[SessionInvoiceStatusResponse], bool] = lambda s: (
-            not s.ksef_number and s.status.code < 400
-        )
-
-        @retry(
-            stop=stop_after_delay(timeout),
-            wait=wait_fixed(poll_interval),
-            retry=retry_if_result(retry_predicate),
-            reraise=True,
-        )
         def _poll() -> SessionInvoiceStatusResponse:
-            return self.get_invoice_status(
+            status = self.get_invoice_status(
                 invoice_reference_number=invoice_reference_number
             )
-
-        try:
-            status = _poll()
-        except RetryError as exc:
-            raise exceptions.KSeFInvoiceProcessingTimeoutError(
-                invoice_reference_number=invoice_reference_number,
-                timeout=timeout,
-            ) from exc
-
-        if status.ksef_number:
+            if status.status.code >= 400:
+                raise exceptions.KSeFSessionError(
+                    "Invoice processing failed: "
+                    f"{invoice_reference_number} ({status.status.code}: {status.status.description})"
+                )
             return status
 
-        raise exceptions.KSeFSessionError(
-            "Invoice processing failed: "
-            f"{invoice_reference_number} ({status.status.code}: {status.status.description})"
+        return poll_until(
+            operation=_poll,
+            retry_predicate=lambda status: not status.ksef_number,
+            poll_interval=poll_interval,
+            timeout_seconds=timeout,
+            timeout_error_factory=lambda: exceptions.KSeFInvoiceProcessingTimeoutError(
+                invoice_reference_number=invoice_reference_number,
+                timeout=timeout,
+            ),
         )
 
     def list_failed_invoices(

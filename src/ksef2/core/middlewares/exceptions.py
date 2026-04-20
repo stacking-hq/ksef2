@@ -1,11 +1,12 @@
 from collections.abc import Mapping
-from typing import final, Any, override
+from typing import final, override
 
 import httpx
 from pydantic import BaseModel, ValidationError
 
 from ksef2.core import protocols
 from ksef2.core.middlewares.base import BaseMiddleware
+from ksef2.core.types import Headers, JsonObject, QueryParamsInput
 from ksef2.infra.mappers import exceptions as mapper
 from ksef2.infra.schema.api import spec
 
@@ -102,9 +103,9 @@ class KSeFExceptionMiddleware(BaseMiddleware):
         method: str,
         path: str,
         *,
-        headers: dict[str, str] | None = None,
-        params: Mapping[str, Any] | None = None,
-        json: dict[str, Any] | None = None,
+        headers: Headers | None = None,
+        params: QueryParamsInput | None = None,
+        json: JsonObject | None = None,
         content: bytes | None = None,
     ) -> httpx.Response:
         return self._handle(

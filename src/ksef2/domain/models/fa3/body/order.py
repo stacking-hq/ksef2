@@ -1,5 +1,5 @@
 from decimal import Decimal, ROUND_HALF_UP
-from typing import Any, Self
+from typing import Self
 
 from pydantic import Field, field_validator, model_validator
 
@@ -56,7 +56,7 @@ class InvoiceOrderLine(KSeFBaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def normalize_tax_fields(cls, data: Any) -> Any:
+    def normalize_tax_fields(cls, data: object) -> object:
         if not isinstance(data, dict):
             return data
 

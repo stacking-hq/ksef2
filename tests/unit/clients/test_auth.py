@@ -22,6 +22,7 @@ from ksef2.core.routes import AuthRoutes
 from ksef2.core.stores import CertificateStore
 from ksef2.domain.models import auth as domain_auth
 from ksef2.domain.models.encryption import PublicKeyCertificate
+from ksef2.infra.schema.api.supp.auth import InitTokenAuthenticationRequest
 from ksef2.infra.schema.api import spec
 from tests.unit.fakes.transport import FakeTransport
 from tests.unit.helpers import VALID_BASE64
@@ -108,10 +109,11 @@ class TestAuthClient:
         assert token_call.method == "POST"
         assert token_call.path == AuthRoutes.TOKEN_AUTH
         assert token_call.json is not None
-        assert token_call.json["challenge"] == challenge.challenge
-        assert token_call.json["contextIdentifier"]["type"] == "Nip"
-        assert token_call.json["contextIdentifier"]["value"] == "1234567890"
-        assert token_call.json["encryptedToken"] == VALID_BASE64
+        token_request = InitTokenAuthenticationRequest.model_validate(token_call.json)
+        assert token_request.challenge == challenge.challenge
+        assert token_request.contextIdentifier.type == "Nip"
+        assert token_request.contextIdentifier.value == "1234567890"
+        assert token_request.encryptedToken == VALID_BASE64
         assert status_call.method == "GET"
         assert status_call.path == AuthRoutes.AUTH_STATUS.format(
             referenceNumber=init_response.referenceNumber

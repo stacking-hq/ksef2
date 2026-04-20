@@ -26,3 +26,8 @@ def fake_token_bearer() -> str:
 @pytest.fixture
 def fake_transport() -> transport.FakeTransport:
     return transport.FakeTransport()
+
+
+@pytest.fixture
+def async_fake_transport() -> transport.AsyncFakeTransport:
+    return transport.AsyncFakeTransport()

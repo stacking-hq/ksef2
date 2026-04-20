@@ -3,6 +3,7 @@ from polyfactory import BaseFactory
 from ksef2.clients.certificates import CertificatesClient
 from ksef2.core.routes import CertificateRoutes
 from ksef2.domain.models import certificates
+from ksef2.infra.mappers.certificates import to_spec
 from ksef2.infra.schema.api import spec
 from tests.unit.factories.certificates import (
     CertificateListItemFactory,
@@ -64,6 +65,13 @@ class TestCertificatesClient:
             certificate_type="authentication",
             csr="dGVzdA==",
         )
+        expected_request = to_spec(
+            certificates.EnrollCertificateRequest(
+                certificate_name="Test Cert",
+                certificate_type="authentication",
+                csr="dGVzdA==",
+            )
+        )
 
         assert isinstance(result, certificates.CertificateEnrollmentResponse)
         assert result.reference_number == expected.referenceNumber
@@ -72,6 +80,8 @@ class TestCertificatesClient:
         assert call.method == "POST"
         assert str(call.path) == CertificateRoutes.ENROLLMENT
         assert call.json is not None
+        actual_request = type(expected_request).model_validate(call.json)
+        assert actual_request == expected_request
 
     def test_enroll_with_valid_from(
         self,
@@ -88,11 +98,21 @@ class TestCertificatesClient:
             csr="dGVzdA==",
             valid_from="2025-06-01T12:00:00+00:00",
         )
+        expected_request = to_spec(
+            certificates.EnrollCertificateRequest(
+                certificate_name="Test Cert",
+                certificate_type="offline",
+                csr="dGVzdA==",
+                valid_from="2025-06-01T12:00:00+00:00",
+            )
+        )
 
         assert isinstance(result, certificates.CertificateEnrollmentResponse)
         call = fake_transport.calls[0]
         assert call.json is not None
-        assert call.json["validFrom"] is not None
+        actual_request = type(expected_request).model_validate(call.json)
+        assert actual_request == expected_request
+        assert actual_request.validFrom is not None
 
     def test_get_enrollment_status(
         self,
@@ -128,6 +148,11 @@ class TestCertificatesClient:
         result = certificates_client.retrieve(
             certificate_serial_numbers=["SN123", "SN456"],
         )
+        expected_request = to_spec(
+            certificates.RetrieveCertificatesRequest(
+                certificate_serial_numbers=["SN123", "SN456"],
+            )
+        )
 
         assert isinstance(result, certificates.RetrievedCertificatesList)
         assert len(result.certificates) == len(expected.certificates)
@@ -135,6 +160,9 @@ class TestCertificatesClient:
         call = fake_transport.calls[0]
         assert call.method == "POST"
         assert str(call.path) == CertificateRoutes.RETRIEVE
+        assert call.json is not None
+        actual_request = type(expected_request).model_validate(call.json)
+        assert actual_request == expected_request
 
     def test_revoke(
         self,
@@ -202,12 +230,20 @@ class TestCertificatesClient:
             certificate_type="authentication",
             status="active",
         )
+        expected_request = to_spec(
+            certificates.QueryCertificatesRequest(
+                name="Test",
+                certificate_serial_number="SN123",
+                certificate_type="authentication",
+                status="active",
+            )
+        )
 
         assert isinstance(result, certificates.CertificatesInfoList)
         call = fake_transport.calls[0]
         assert call.json is not None
-        assert call.json["certificateSerialNumber"] == "SN123"
-        assert call.json["name"] == "Test"
+        actual_request = type(expected_request).model_validate(call.json)
+        assert actual_request == expected_request
 
     def test_all_single_page(
         self,
@@ -288,9 +324,15 @@ class TestCertificatesClient:
                 certificate_type="authentication",
             )
         )
+        expected_request = to_spec(
+            certificates.QueryCertificatesRequest(
+                status="active",
+                certificate_type="authentication",
+            )
+        )
 
         assert len(items) == 1
         call = fake_transport.calls[0]
         assert call.json is not None
-        assert call.json["status"] == "Active"
-        assert call.json["type"] == "Authentication"
+        actual_request = type(expected_request).model_validate(call.json)
+        assert actual_request == expected_request

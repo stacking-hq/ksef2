@@ -1,7 +1,8 @@
-from collections.abc import Mapping
-from typing import Protocol, Any, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 import httpx
+
+from ksef2.core.types import Headers, JsonObject, QueryParamsInput
 
 
 @runtime_checkable
@@ -11,9 +12,9 @@ class Middleware(Protocol):
         method: str,
         path: str,
         *,
-        headers: dict[str, str] | None = None,
-        params: Mapping[str, Any] | None = None,
-        json: dict[str, Any] | None = None,
+        headers: Headers | None = None,
+        params: QueryParamsInput | None = None,
+        json: JsonObject | None = None,
         content: bytes | None = None,
     ) -> httpx.Response: ...
 
@@ -21,17 +22,17 @@ class Middleware(Protocol):
         self,
         path: str,
         *,
-        headers: dict[str, str] | None = None,
-        params: Mapping[str, Any] | None = None,
+        headers: Headers | None = None,
+        params: QueryParamsInput | None = None,
     ) -> httpx.Response: ...
 
     def post(
         self,
         path: str,
         *,
-        headers: dict[str, str] | None = None,
-        params: Mapping[str, Any] | None = None,
-        json: dict[str, Any] | None = None,
+        headers: Headers | None = None,
+        params: QueryParamsInput | None = None,
+        json: JsonObject | None = None,
         content: bytes | None = None,
     ) -> httpx.Response: ...
 
@@ -39,6 +40,6 @@ class Middleware(Protocol):
         self,
         path: str,
         *,
-        headers: dict[str, str] | None = None,
-        params: Mapping[str, Any] | None = None,
+        headers: Headers | None = None,
+        params: QueryParamsInput | None = None,
     ) -> httpx.Response: ...

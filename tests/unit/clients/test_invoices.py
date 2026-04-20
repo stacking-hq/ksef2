@@ -7,6 +7,7 @@ from ksef2.core.routes import InvoiceRoutes
 from ksef2.domain.models import invoices
 from ksef2.domain.models.session import FormSchema
 from ksef2.domain.models.pagination import InvoiceMetadataParams
+from ksef2.infra.mappers.invoices import to_spec
 from ksef2.infra.schema.api import spec
 from tests.unit.fakes.transport import FakeTransport
 
@@ -25,24 +26,24 @@ class TestInvoicesClient:
         expected = inv_query_metadata_resp.build()
         fake_transport.enqueue(expected.model_dump(mode="json"))
 
+        filters = inv_export_filters.build(invoice_schema=FormSchema.FA_RR1)
         result = invoices_client.query_metadata(
-            filters=inv_export_filters.build(invoice_schema=FormSchema.FA_RR1),
+            filters=filters,
             params=InvoiceMetadataParams(
                 page_size=20,
                 page_offset=1,
                 sort_order="asc",
             ),
         )
+        expected_request = to_spec(filters)
 
         assert isinstance(result, invoices.QueryInvoicesMetadataResponse)
         call = fake_transport.calls[0]
         assert call.method == "POST"
         assert str(call.path) == InvoiceRoutes.QUERY_METADATA
         assert call.json is not None
-        assert "subjectType" in call.json
-        assert "dateRange" in call.json
-        assert call.json["formType"] == "FA_RR"
-        assert "filters" not in call.json
+        actual_request = type(expected_request).model_validate(call.json)
+        assert actual_request == expected_request
         assert call.params is not None
         assert call.params["pageSize"] == "20"
         assert call.params["pageOffset"] == "1"
@@ -79,10 +80,19 @@ class TestInvoicesClient:
         expected = inv_export_resp.build()
         fake_transport.enqueue(expected.model_dump(mode="json"))
 
+        filters = inv_export_filters.build()
         result = invoices_client.schedule_export(
-            filters=inv_export_filters.build(),
+            filters=filters,
             encryption_certificate="ZmFrZS1jZXJ0",
             only_metadata=True,
+        )
+        expected_request = to_spec(
+            invoices.ExportInvoicesPayload(
+                filter=filters,
+                encrypted_symmetric_key="ZW5jLWtleQ==",
+                initialization_vector="dnZ2dnZ2dnZ2dnZ2dnZ2dg==",
+                only_metadata=True,
+            )
         )
 
         assert isinstance(result, invoices.ExportHandle)
@@ -93,9 +103,8 @@ class TestInvoicesClient:
         assert call.method == "POST"
         assert str(call.path) == InvoiceRoutes.EXPORT
         assert call.json is not None
-        assert "encryption" in call.json
-        assert call.json["onlyMetadata"] is True
-        assert "filters" in call.json
+        actual_request = type(expected_request).model_validate(call.json)
+        assert actual_request == expected_request
 
     def test_get_export_status(
         self,

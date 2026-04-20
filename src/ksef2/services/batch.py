@@ -1,25 +1,12 @@
 from collections.abc import Callable, Iterable
-from io import BytesIO
 from pathlib import Path
 from typing import final
-from zipfile import ZIP_DEFLATED, ZipFile
-
-from tenacity import RetryError, retry, retry_if_result, stop_after_delay, wait_fixed
 
 from ksef2.clients.batch import BatchSessionClient
 from ksef2.core import exceptions
-from ksef2.core.crypto import encrypt_invoice, sha256_b64
+from ksef2.core.polling import poll_until
 from ksef2.core.protocols import Middleware
-from ksef2.domain.models.batch import (
-    BatchEncryptionData,
-    BatchFileInfo,
-    BatchFilePart,
-    BatchInvoice,
-    BatchInvoiceHash,
-    BatchPreparedPart,
-    BatchSessionState,
-    PreparedBatch,
-)
+from ksef2.domain.models.batch import BatchInvoice, BatchSessionState, PreparedBatch
 from ksef2.domain.models.session import (
     FormSchema,
     SessionInvoicesResponse,
@@ -28,8 +15,11 @@ from ksef2.domain.models.session import (
 from ksef2.endpoints.invoices import InvoicesEndpoints
 from ksef2.endpoints.session import SessionEndpoints
 from ksef2.infra.mappers.sessions import from_spec as session_from_spec
-
-MAX_BATCH_PART_SIZE = 100_000_000
+from ksef2.services.batch_preparation import (
+    MAX_BATCH_PART_SIZE,
+    load_batch_invoices,
+    prepare_batch_package,
+)
 
 
 @final
@@ -70,61 +60,15 @@ class BatchService:
             A prepared batch with encrypted part payloads and the metadata required
             to open a batch session.
         """
-        normalized = list(invoices)
-        self._validate_invoices(normalized)
-        self._validate_max_part_size(max_part_size)
-
         aes_key, iv, encrypted_key = self._get_encryption_key()
-        zip_bytes = self._build_zip(normalized)
-        raw_parts = self._split_bytes(zip_bytes, max_part_size=max_part_size)
-
-        prepared_parts: list[BatchPreparedPart] = []
-        declared_parts: list[BatchFilePart] = []
-
-        for ordinal_number, raw_part in enumerate(raw_parts, start=1):
-            encrypted_part = self._encrypt_batch_part(
-                payload=raw_part,
-                aes_key=aes_key,
-                iv=iv,
-            )
-            part_hash = sha256_b64(encrypted_part)
-            prepared_parts.append(
-                BatchPreparedPart(
-                    ordinal_number=ordinal_number,
-                    content=encrypted_part,
-                    file_size=len(encrypted_part),
-                    file_hash=part_hash,
-                )
-            )
-            declared_parts.append(
-                BatchFilePart(
-                    ordinal_number=ordinal_number,
-                    file_size=len(encrypted_part),
-                    file_hash=part_hash,
-                )
-            )
-
-        return PreparedBatch(
+        return prepare_batch_package(
+            invoices=invoices,
+            aes_key=aes_key,
+            iv=iv,
+            encrypted_key=encrypted_key,
             form_code=form_code,
             offline_mode=offline_mode,
-            batch_file=BatchFileInfo(
-                file_size=len(zip_bytes),
-                file_hash=sha256_b64(zip_bytes),
-                parts=declared_parts,
-            ),
-            parts=prepared_parts,
-            encryption=BatchEncryptionData.from_bytes(
-                aes_key=aes_key,
-                iv=iv,
-                encrypted_key=encrypted_key,
-            ),
-            invoices=[
-                BatchInvoiceHash(
-                    file_name=invoice.file_name,
-                    invoice_hash=sha256_b64(invoice.content),
-                )
-                for invoice in normalized
-            ],
+            max_part_size=max_part_size,
         )
 
     def prepare_batch_from_paths(
@@ -146,10 +90,7 @@ class BatchService:
         Returns:
             A prepared batch with encrypted parts ready to be uploaded.
         """
-        invoices = [
-            BatchInvoice(file_name=Path(path).name, content=Path(path).read_bytes())
-            for path in invoice_paths
-        ]
+        invoices = load_batch_invoices(invoice_paths)
         return self.prepare_batch(
             invoices=invoices,
             form_code=form_code,
@@ -349,87 +290,25 @@ class BatchService:
         """
         reference_number = self._resolve_reference_number(session)
 
-        retry_predicate: Callable[[SessionStatusResponse], bool] = lambda status: (
-            status.status.code < 200
-        )
-
-        @retry(
-            stop=stop_after_delay(timeout),
-            wait=wait_fixed(poll_interval),
-            retry=retry_if_result(retry_predicate),
-            reraise=True,
-        )
         def _poll() -> SessionStatusResponse:
-            return self.get_status(session=reference_number)
+            status = self.get_status(session=reference_number)
+            if status.status.code >= 400:
+                raise exceptions.KSeFSessionError(
+                    "Batch session processing failed: "
+                    f"{reference_number} ({status.status.code}: {status.status.description})"
+                )
+            return status
 
-        try:
-            status = _poll()
-        except RetryError as exc:
-            raise exceptions.KSeFBatchSessionTimeoutError(
+        return poll_until(
+            operation=_poll,
+            retry_predicate=lambda status: status.status.code < 200,
+            poll_interval=poll_interval,
+            timeout_seconds=timeout,
+            timeout_error_factory=lambda: exceptions.KSeFBatchSessionTimeoutError(
                 reference_number=reference_number,
                 timeout=timeout,
-            ) from exc
-
-        if status.status.code >= 400:
-            raise exceptions.KSeFSessionError(
-                "Batch session processing failed: "
-                f"{reference_number} ({status.status.code}: {status.status.description})"
-            )
-
-        return status
-
-    @staticmethod
-    def _validate_invoices(invoices: list[BatchInvoice]) -> None:
-        if not invoices:
-            raise exceptions.KSeFValidationError(
-                "At least one invoice is required to build a batch package."
-            )
-
-        file_names = [invoice.file_name for invoice in invoices]
-        if any(not name for name in file_names):
-            raise exceptions.KSeFValidationError(
-                "Every batch invoice must define a non-empty file name."
-            )
-
-        if len(file_names) != len(set(file_names)):
-            raise exceptions.KSeFValidationError(
-                "Batch invoice file names must be unique.",
-                duplicate_file_names=sorted(
-                    {name for name in file_names if file_names.count(name) > 1}
-                ),
-            )
-
-    @staticmethod
-    def _validate_max_part_size(max_part_size: int) -> None:
-        if max_part_size < 1 or max_part_size > MAX_BATCH_PART_SIZE:
-            raise exceptions.KSeFValidationError(
-                "max_part_size must be between 1 and 100000000 bytes.",
-                max_part_size=max_part_size,
-            )
-
-    @staticmethod
-    def _build_zip(invoices: list[BatchInvoice]) -> bytes:
-        zip_buffer = BytesIO()
-        with ZipFile(zip_buffer, mode="w", compression=ZIP_DEFLATED) as archive:
-            for invoice in invoices:
-                archive.writestr(invoice.file_name, invoice.content)
-        return zip_buffer.getvalue()
-
-    @staticmethod
-    def _split_bytes(payload: bytes, *, max_part_size: int) -> list[bytes]:
-        return [
-            payload[offset : offset + max_part_size]
-            for offset in range(0, len(payload), max_part_size)
-        ]
-
-    @staticmethod
-    def _encrypt_batch_part(
-        *,
-        payload: bytes,
-        aes_key: bytes,
-        iv: bytes,
-    ) -> bytes:
-        return encrypt_invoice(payload, key=aes_key, iv=iv)
+            ),
+        )
 
     @staticmethod
     def _resolve_reference_number(

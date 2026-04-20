@@ -1,23 +1,23 @@
-from collections.abc import Mapping
-from typing import Any, final, Literal, override
+from typing import final, Literal, override
 
 import httpx
 
 from ksef2.core.middlewares.base import BaseMiddleware
+from ksef2.core.types import Headers, JsonObject, QueryParamsInput
 
 HttpMethod = Literal["POST", "GET", "DELETE"]
 
 
 @final
 class HttpTransport(BaseMiddleware):
-    def __init__(self, client: httpx.Client, headers: dict[str, Any]) -> None:
+    def __init__(self, client: httpx.Client, headers: Headers) -> None:
         self._client = client
         self._headers = headers
 
-    def _merge(self, extra: dict[str, str] | None) -> dict[str, Any]:
+    def _merge(self, extra: Headers | None) -> Headers:
         if not extra:
             return self._headers
-        return {**self._headers, **extra}
+        return self._headers | extra
 
     @override
     def request(
@@ -25,9 +25,9 @@ class HttpTransport(BaseMiddleware):
         method: str,
         path: str,
         *,
-        headers: dict[str, str] | None = None,
-        params: Mapping[str, Any] | None = None,
-        json: dict[str, Any] | None = None,
+        headers: Headers | None = None,
+        params: QueryParamsInput | None = None,
+        json: JsonObject | None = None,
         content: bytes | None = None,
     ) -> httpx.Response:
         return self._client.request(
@@ -39,6 +39,6 @@ class HttpTransport(BaseMiddleware):
             params=params,
         )
 
-    def with_headers(self, headers: dict[str, str]):
+    def with_headers(self, headers: Headers) -> "HttpTransport":
         merged_headers = self._headers | headers
         return HttpTransport(self._client, headers=merged_headers)

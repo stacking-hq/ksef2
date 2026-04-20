@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Literal
+from typing import Any, Literal, Protocol
 
 import structlog
 
@@ -15,9 +15,17 @@ _SHARED_PROCESSORS: list[Any] = [
 ]
 
 
-def get_logger(name: str | None = None, **initial_values: Any) -> Any:
+class LoggerProtocol(Protocol):
+    def info(self, event: str | None = None, **kw: object) -> object: ...
+    def warning(self, event: str | None = None, **kw: object) -> object: ...
+    def error(self, event: str | None = None, **kw: object) -> object: ...
+    def exception(self, event: str | None = None, **kw: object) -> object: ...
+    def bind(self, **new_values: object) -> "LoggerProtocol": ...
+
+
+def get_logger(name: str | None = None, **initial_values: object) -> LoggerProtocol:
     """Return a package logger without configuring global logging on import."""
-    return structlog.get_logger(name or DEFAULT_LOGGER_NAME, **initial_values)
+    return structlog.get_logger(name or DEFAULT_LOGGER_NAME, **initial_values)  # type: ignore[return-value]
 
 
 def configure_logging(

@@ -1,5 +1,3 @@
-from unittest.mock import patch, MagicMock
-
 import pytest
 from polyfactory import BaseFactory
 
@@ -19,10 +17,8 @@ class TestTokensClient:
     def test_initialization(self, tokens_client: TokensClient):
         assert tokens_client is not None
 
-    @patch("ksef2.clients.tokens.time.sleep")
     def test_generate(
         self,
-        _mock_sleep: MagicMock,
         tokens_client: TokensClient,
         fake_transport: FakeTransport,
         token_generate_resp: BaseFactory[spec.GenerateTokenResponse],
@@ -47,10 +43,8 @@ class TestTokensClient:
         assert call.method == "POST"
         assert str(call.path) == TokenRoutes.GENERATE_TOKEN
 
-    @patch("ksef2.clients.tokens.time.sleep")
     def test_generate_polls_until_active(
         self,
-        _mock_sleep: MagicMock,
         tokens_client: TokensClient,
         fake_transport: FakeTransport,
         token_generate_resp: BaseFactory[spec.GenerateTokenResponse],
@@ -69,16 +63,14 @@ class TestTokensClient:
         result = tokens_client.generate(
             permissions=["invoice_read"],
             description="Test token",
+            poll_interval=0.0,
         )
 
         assert isinstance(result, tokens.GenerateTokenResponse)
         assert len(fake_transport.calls) == 3
-        assert _mock_sleep.call_count == 1
 
-    @patch("ksef2.clients.tokens.time.sleep")
     def test_generate_raises_on_failed_status(
         self,
-        _mock_sleep: MagicMock,
         tokens_client: TokensClient,
         fake_transport: FakeTransport,
         token_generate_resp: BaseFactory[spec.GenerateTokenResponse],
@@ -96,10 +88,8 @@ class TestTokensClient:
                 description="Test token",
             )
 
-    @patch("ksef2.clients.tokens.time.sleep")
     def test_generate_raises_on_timeout(
         self,
-        _mock_sleep: MagicMock,
         tokens_client: TokensClient,
         fake_transport: FakeTransport,
         token_generate_resp: BaseFactory[spec.GenerateTokenResponse],
@@ -116,8 +106,29 @@ class TestTokensClient:
             _ = tokens_client.generate(
                 permissions=["invoice_read"],
                 description="Test token",
+                poll_interval=0.0,
                 max_poll_attempts=3,
             )
+
+    def test_generate_zero_max_poll_attempts_does_not_poll_status(
+        self,
+        tokens_client: TokensClient,
+        fake_transport: FakeTransport,
+        token_generate_resp: BaseFactory[spec.GenerateTokenResponse],
+    ):
+        gen_resp = token_generate_resp.build()
+        fake_transport.enqueue(gen_resp.model_dump(mode="json"))
+
+        with pytest.raises(exceptions.KSeFApiError, match="polling timed out"):
+            _ = tokens_client.generate(
+                permissions=["invoice_read"],
+                description="Test token",
+                poll_interval=0.0,
+                max_poll_attempts=0,
+            )
+
+        assert len(fake_transport.calls) == 1
+        assert fake_transport.calls[0].method == "POST"
 
     def test_list_page(
         self,

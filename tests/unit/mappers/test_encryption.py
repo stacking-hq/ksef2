@@ -1,20 +1,20 @@
 from polyfactory import BaseFactory
 
 from ksef2.domain.models.encryption import PublicKeyCertificate
-from ksef2.infra.mappers.encryption import from_spec, to_spec
+from ksef2.infra.mappers.encryption import from_spec, to_spec, usage_from_spec
 from ksef2.infra.schema.api import spec
 
 
 class TestEncryptionResponseMapper:
     def test_map_usage_ksef_token_encryption(self):
         assert (
-            from_spec(spec.PublicKeyCertificateUsage.KsefTokenEncryption)
+            usage_from_spec(spec.PublicKeyCertificateUsage.KsefTokenEncryption)
             == "ksef_token_encryption"
         )
 
     def test_map_usage_symmetric_key_encryption(self):
         assert (
-            from_spec(spec.PublicKeyCertificateUsage.SymmetricKeyEncryption)
+            usage_from_spec(spec.PublicKeyCertificateUsage.SymmetricKeyEncryption)
             == "symmetric_key_encryption"
         )
 
@@ -73,4 +73,4 @@ class TestEncryptionRequestMapper:
         import pytest
 
         with pytest.raises(NotImplementedError, match="No mapper for string value"):
-            _ = to_spec("unknown_usage")  # pyright: ignore[reportArgumentType]
+            _ = to_spec("unknown_usage")

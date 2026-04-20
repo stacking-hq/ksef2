@@ -1,10 +1,10 @@
-from collections.abc import Mapping
-from typing import final, Any
+from typing import final
 
 import httpx
 
 from ksef2.core.middlewares.base import BaseMiddleware
 from ksef2.core.protocols import Middleware
+from ksef2.core.types import Headers, JsonObject, QueryParamsInput
 
 
 @final
@@ -22,11 +22,11 @@ class BearerTokenMiddleware(BaseMiddleware):
         method: str,
         path: str,
         *,
-        headers: dict[str, str] | None = None,
-        params: Mapping[str, Any] | None = None,
-        json: dict[str, Any] | None = None,
+        headers: Headers | None = None,
+        params: QueryParamsInput | None = None,
+        json: JsonObject | None = None,
         content: bytes | None = None,
-        **kwargs,
+        **kwargs: object,
     ) -> httpx.Response:
         return self._next.request(
             method,

@@ -4,6 +4,7 @@ from ksef2.clients.permissions import PermissionsClient
 from ksef2.core.routes import GrantPermissionsRoutes, QueryPermissionsRoutes
 from ksef2.domain.models import permissions as domain_permissions
 from ksef2.domain.models.pagination import OffsetPaginationParams
+from ksef2.infra.mappers.permissions import grant_to_spec, query_to_spec
 from ksef2.infra.schema.api import spec
 from tests.unit.factories.permissions import (
     DomainAuthorizationPermissionsQueryFactory,
@@ -43,15 +44,15 @@ class TestPermissionsClient:
             first_name=request.first_name,
             last_name=request.last_name,
         )
+        expected_request = grant_to_spec(request)
 
         assert isinstance(result, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "POST"
         assert str(call.path) == GrantPermissionsRoutes.GRANT_PERSON
         assert call.json is not None
-        assert call.json["subjectIdentifier"]["type"] == "Nip"
-        assert call.json["subjectIdentifier"]["value"] == request.subject_value
-        assert call.json["description"] == request.description
+        actual_request = type(expected_request).model_validate(call.json)
+        assert actual_request == expected_request
 
     def test_grant_entity(
         self,
@@ -118,14 +119,17 @@ class TestPermissionsClient:
             target_type=request.target_type,
             target_value="1234567890-12345",
         )
+        expected_request = grant_to_spec(
+            request.model_copy(update={"target_value": "1234567890-12345"})
+        )
 
         assert isinstance(result, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "POST"
         assert str(call.path) == GrantPermissionsRoutes.GRANT_INDIRECT
         assert call.json is not None
-        if request.target_type and request.target_value:
-            assert call.json["targetIdentifier"]["value"] == "1234567890-12345"
+        actual_request = type(expected_request).model_validate(call.json)
+        assert actual_request == expected_request
 
     def test_grant_subunit(
         self,
@@ -437,6 +441,7 @@ class TestPermissionsClient:
             query=query,
             params=OffsetPaginationParams(page_offset=1, page_size=20),
         )
+        expected_request = query_to_spec(query)
 
         assert isinstance(result, domain_permissions.PersonPermissionsQueryResponse)
         call = fake_transport.calls[0]
@@ -444,7 +449,5 @@ class TestPermissionsClient:
         assert call.params["pageOffset"] == "1"
         assert call.params["pageSize"] == "20"
         assert call.json is not None
-        assert call.json["queryType"] in {
-            "PermissionsInCurrentContext",
-            "PermissionsGrantedInCurrentContext",
-        }
+        actual_request = type(expected_request).model_validate(call.json)
+        assert actual_request == expected_request

@@ -9,14 +9,9 @@ import httpx
 from ksef2.clients.auth import AuthClient
 from ksef2.clients import encryption, peppol
 from ksef2.clients.testdata import TestDataClient
-from ksef2.config import (
-    ConnectionPoolConfig,
-    Environment,
-    TimeoutConfig,
-    TlsConfig,
-    TransportConfig,
-)
+from ksef2.config import Environment, TransportConfig
 from ksef2.core import exceptions, middlewares, stores
+from ksef2.core.http_config import build_http_client_kwargs
 from ksef2.core.http import HttpTransport
 
 
@@ -57,33 +52,8 @@ class Client:
         config: TransportConfig,
     ) -> httpx.Client:
         """Create the underlying ``httpx.Client`` from transport configuration."""
-        timeout_cfg: TimeoutConfig = config.timeouts
-        pool_cfg: ConnectionPoolConfig = config.pool
-        tls_cfg: TlsConfig = config.tls
-
-        verify: bool | str = (
-            tls_cfg.ca_bundle_path
-            if tls_cfg.ca_bundle_path is not None
-            else tls_cfg.verify
-        )
-
         return httpx.Client(
-            base_url=environment.base_url,
-            timeout=httpx.Timeout(
-                connect=timeout_cfg.connect,
-                read=timeout_cfg.read,
-                write=timeout_cfg.write,
-                pool=timeout_cfg.pool,
-            ),
-            limits=httpx.Limits(
-                max_connections=pool_cfg.max_connections,
-                max_keepalive_connections=pool_cfg.max_keepalive_connections,
-                keepalive_expiry=pool_cfg.keepalive_expiry,
-            ),
-            verify=verify,
-            proxy=config.proxy_url,
-            trust_env=config.trust_env,
-            http2=config.http2,
+            **build_http_client_kwargs(environment=environment, config=config)
         )
 
     def _ensure_open(self) -> None:

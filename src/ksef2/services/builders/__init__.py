@@ -1,21 +1,15 @@
-from importlib import import_module
+from typing import TYPE_CHECKING
 
-__all__ = [
-    "AdvanceInvoiceBuilder",
-    "BaseFA3Builder",
-    "CorrectionAdvanceInvoiceBuilder",
-    "CorrectionInvoiceBuilder",
-    "CorrectionSettlementInvoiceBuilder",
-    "FA3InvoiceBuilder",
-    "MarginInvoiceBuilder",
-    "SettlementInvoiceBuilder",
-    "SimplifiedInvoiceBuilder",
-    "StandardInvoiceBuilder",
-]
+if TYPE_CHECKING:
+    from ksef2.fa3 import FA3InvoiceBuilder
+
+__all__ = ["FA3InvoiceBuilder"]
 
 
 def __getattr__(name: str) -> object:
-    if name in __all__:
-        return getattr(import_module("ksef2.services.builders.fa3"), name)
+    if name == "FA3InvoiceBuilder":
+        from ksef2.fa3 import FA3InvoiceBuilder
+
+        return FA3InvoiceBuilder
 
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

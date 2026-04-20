@@ -38,3 +38,10 @@ def test_fa3_public_builder_builds_invoice() -> None:
     assert isinstance(invoice, KsefInvoice)
     assert invoice.body.invoice_number == "FV/2026/03/0001"
     assert invoice.body.rows[0].vat_rate is VatRate.VAT_23
+
+
+def test_services_builders_exports_only_canonical_builder() -> None:
+    import ksef2.services.builders as builders
+
+    assert builders.__all__ == ["FA3InvoiceBuilder"]
+    assert builders.FA3InvoiceBuilder is FA3InvoiceBuilder

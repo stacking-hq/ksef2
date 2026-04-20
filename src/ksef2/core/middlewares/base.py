@@ -1,8 +1,8 @@
 import abc
-from collections.abc import Mapping
-from typing import Any
 
 import httpx
+
+from ksef2.core.types import Headers, JsonObject, QueryParamsInput
 
 
 class BaseMiddleware(abc.ABC):
@@ -12,9 +12,9 @@ class BaseMiddleware(abc.ABC):
         method: str,
         path: str,
         *,
-        headers: dict[str, str] | None = None,
-        params: Mapping[str, Any] | None = None,
-        json: dict[str, Any] | None = None,
+        headers: Headers | None = None,
+        params: QueryParamsInput | None = None,
+        json: JsonObject | None = None,
         content: bytes | None = None,
     ) -> httpx.Response: ...
 
@@ -22,8 +22,8 @@ class BaseMiddleware(abc.ABC):
         self,
         path: str,
         *,
-        headers: dict[str, str] | None = None,
-        params: Mapping[str, Any] | None = None,
+        headers: Headers | None = None,
+        params: QueryParamsInput | None = None,
     ) -> httpx.Response:
         return self.request("GET", path, headers=headers, params=params)
 
@@ -31,9 +31,9 @@ class BaseMiddleware(abc.ABC):
         self,
         path: str,
         *,
-        headers: dict[str, str] | None = None,
-        params: Mapping[str, Any] | None = None,
-        json: dict[str, Any] | None = None,
+        headers: Headers | None = None,
+        params: QueryParamsInput | None = None,
+        json: JsonObject | None = None,
         content: bytes | None = None,
     ) -> httpx.Response:
         return self.request(
@@ -44,7 +44,7 @@ class BaseMiddleware(abc.ABC):
         self,
         path: str,
         *,
-        headers: dict[str, str] | None = None,
-        params: Mapping[str, Any] | None = None,
+        headers: Headers | None = None,
+        params: QueryParamsInput | None = None,
     ) -> httpx.Response:
         return self.request("DELETE", path, headers=headers, params=params)

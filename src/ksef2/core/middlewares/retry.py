@@ -1,12 +1,12 @@
 import time
-from collections.abc import Mapping
-from typing import Any, final, override
+from typing import final, override
 
 import httpx
 
 from ksef2.config import RetryConfig
 from ksef2.core import protocols, routes
 from ksef2.core.middlewares.base import BaseMiddleware
+from ksef2.core.types import Headers, JsonObject, QueryParamsInput
 
 _RETRYABLE_POST_PATHS = frozenset(
     {
@@ -77,9 +77,9 @@ class RetryMiddleware(BaseMiddleware):
         method: str,
         path: str,
         *,
-        headers: dict[str, str] | None = None,
-        params: Mapping[str, Any] | None = None,
-        json: dict[str, Any] | None = None,
+        headers: Headers | None = None,
+        params: QueryParamsInput | None = None,
+        json: JsonObject | None = None,
         content: bytes | None = None,
     ) -> httpx.Response:
         if self._config.max_attempts <= 1 or not self._is_retryable_request(

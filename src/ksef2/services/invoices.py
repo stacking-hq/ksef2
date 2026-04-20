@@ -2,12 +2,11 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import final
 
-from tenacity import RetryError, retry, retry_if_result, stop_after_delay, wait_fixed
-
 from ksef2.clients.invoices import InvoicesClient
 from ksef2.core import exceptions
 from ksef2.core.crypto import decrypt_aes_cbc
 from ksef2.core.middlewares.auth import BearerTokenMiddleware
+from ksef2.core.polling import poll_until
 from ksef2.core.protocols import Middleware
 from ksef2.core.stores import CertificateStore
 from ksef2.logging import get_logger
@@ -152,23 +151,15 @@ class InvoicesService:
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> QueryInvoicesMetadataResponse:
-        retry_predicate: Callable[[QueryInvoicesMetadataResponse], bool] = lambda s: (
-            not s.invoices
+        return poll_until(
+            operation=lambda: self.query_metadata(filters=filters),
+            retry_predicate=lambda result: not result.invoices,
+            poll_interval=poll_interval,
+            timeout_seconds=timeout,
+            timeout_error_factory=lambda: exceptions.KSeFInvoiceQueryTimeoutError(
+                timeout=timeout
+            ),
         )
-
-        @retry(
-            stop=stop_after_delay(timeout),
-            wait=wait_fixed(poll_interval),
-            retry=retry_if_result(retry_predicate),
-            reraise=True,
-        )
-        def _poll() -> QueryInvoicesMetadataResponse:
-            return self.query_metadata(filters=filters)
-
-        try:
-            return _poll()
-        except RetryError:
-            raise exceptions.KSeFInvoiceQueryTimeoutError(timeout=timeout)
 
     def wait_for_export_package(
         self,
@@ -177,26 +168,18 @@ class InvoicesService:
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> InvoicePackage:
-        retry_predicate: Callable[[InvoiceExportStatusResponse], bool] = lambda s: (
-            not (s.package and s.package.parts)
-        )
-
-        @retry(
-            stop=stop_after_delay(timeout),
-            wait=wait_fixed(poll_interval),
-            retry=retry_if_result(retry_predicate),
-            reraise=True,
-        )
-        def _poll() -> InvoiceExportStatusResponse:
-            return self.get_export_status(reference_number=reference_number)
-
-        try:
-            status = _poll()
-        except RetryError:
-            raise exceptions.KSeFExportTimeoutError(
+        status = poll_until(
+            operation=lambda: self.get_export_status(reference_number=reference_number),
+            retry_predicate=lambda status: (
+                not (status.package and status.package.parts)
+            ),
+            poll_interval=poll_interval,
+            timeout_seconds=timeout,
+            timeout_error_factory=lambda: exceptions.KSeFExportTimeoutError(
                 reference_number=reference_number,
                 timeout=timeout,
-            )
+            ),
+        )
         assert status.package is not None  # guaranteed by retry condition
         return status.package
 

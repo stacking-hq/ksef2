@@ -2,6 +2,9 @@
 
 The SDK exposes authentication through `Client.authentication`.
 
+Async applications use `AsyncClient.authentication` with the same method names;
+await the methods that perform network calls.
+
 ## XAdES Authentication
 
 TEST accepts SDK-generated self-signed certificates:
@@ -67,6 +70,32 @@ print(auth.refresh_token)
 Example:
 - [`scripts/examples/auth/auth_token.py`](../../scripts/examples/auth/auth_token.py)
 
+## Async Authentication
+
+```python
+from ksef2 import AsyncClient, Environment
+
+
+async with AsyncClient(Environment.TEST) as client:
+    auth = await client.authentication.with_test_certificate(nip="5261040828")
+    print(auth.access_token)
+
+    refreshed = await client.authentication.refresh(
+        refresh_token=auth.refresh_token,
+    )
+    print(refreshed.access_token.token)
+```
+
+Token authentication follows the same shape:
+
+```python
+async with AsyncClient() as client:
+    auth = await client.authentication.with_token(
+        ksef_token="your-ksef-token",
+        nip="5261040828",
+    )
+```
+
 ## Refreshing Access Tokens
 
 Refreshing returns a `RefreshedToken`, not a new `AuthenticatedClient`:
@@ -113,5 +142,6 @@ Example:
 ## Related
 
 - [Sessions](sessions.md)
+- [Async Client](async-client.md)
 - [Tokens](tokens.md)
 - [Test Data](testdata.md)
