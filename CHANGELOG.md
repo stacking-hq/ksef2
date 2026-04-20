@@ -1,3 +1,21 @@
+## v0.13.0 (2026-04-20)
+
+### Feat
+
+- **async**: restore _async core support
+
+### Fix
+
+- **async-invoices**: sanitize export part filename before writing
+
+### Refactor
+
+- **async**: consolidate async client implementation
+- **builders**: simplify builders __init__ with lazy import via __getattr__
+- **mappers**: rewrite permissions query_entity mapper to use spec enum matching
+- **mappers**: split encryption response mapper into dedicated functions
+- **async**: share client internals
+
 ## v0.12.0 (2026-04-17)
 
 ### Feat
