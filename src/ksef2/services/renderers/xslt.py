@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import final, Any
+from typing import final
 
 from lxml import etree
 
@@ -23,8 +23,8 @@ class InvoiceXSLTRenderer:
         self._enable_code_lookups = enable_code_lookups
         self._transform: etree.XSLT | None = None
 
-    def _get_params(self) -> dict[str, Any]:
-        xslt_params = {}
+    def _get_params(self) -> dict[str, str]:
+        xslt_params: dict[str, str] = {}
         if not self._enable_code_lookups:
             xslt_params["nazwy-dla-kodow"] = "false()"
         return xslt_params
@@ -61,7 +61,7 @@ class InvoiceXSLTRenderer:
         transform = self._get_transform()
 
         try:
-            html_result = transform(xml_doc, **self._get_params())
+            html_result = transform(xml_doc, **self._get_params())  # pyright: ignore[reportArgumentType]
         except etree.XSLTApplyError as e:
             raise KSeFInvoiceRenderingError(
                 "XSLT transformation failed while rendering invoice."

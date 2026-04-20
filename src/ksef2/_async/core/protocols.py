@@ -1,13 +1,13 @@
-import abc
+from typing import Protocol, runtime_checkable
 
 import httpx
 
 from ksef2.core.types import Headers, JsonObject, QueryParamsInput
 
 
-class BaseMiddleware(abc.ABC):
-    @abc.abstractmethod
-    def request(
+@runtime_checkable
+class AsyncMiddleware(Protocol):
+    async def request(
         self,
         method: str,
         path: str,
@@ -18,16 +18,15 @@ class BaseMiddleware(abc.ABC):
         content: bytes | None = None,
     ) -> httpx.Response: ...
 
-    def get(
+    async def get(
         self,
         path: str,
         *,
         headers: Headers | None = None,
         params: QueryParamsInput | None = None,
-    ) -> httpx.Response:
-        return self.request("GET", path, headers=headers, params=params)
+    ) -> httpx.Response: ...
 
-    def post(
+    async def post(
         self,
         path: str,
         *,
@@ -35,16 +34,12 @@ class BaseMiddleware(abc.ABC):
         params: QueryParamsInput | None = None,
         json: JsonObject | None = None,
         content: bytes | None = None,
-    ) -> httpx.Response:
-        return self.request(
-            "POST", path, headers=headers, json=json, params=params, content=content
-        )
+    ) -> httpx.Response: ...
 
-    def delete(
+    async def delete(
         self,
         path: str,
         *,
         headers: Headers | None = None,
         params: QueryParamsInput | None = None,
-    ) -> httpx.Response:
-        return self.request("DELETE", path, headers=headers, params=params)
+    ) -> httpx.Response: ...

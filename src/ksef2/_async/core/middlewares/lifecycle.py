@@ -3,28 +3,29 @@ from typing import final, override
 
 import httpx
 
-from ksef2.core import exceptions, protocols
-from ksef2.core.middlewares.base import BaseMiddleware
+from ksef2._async.core.protocols import AsyncMiddleware
+from ksef2._async.core.middlewares.base import AsyncBaseMiddleware
+from ksef2.core import exceptions
 from ksef2.core.types import Headers, JsonObject, QueryParamsInput
 
 
 @dataclass(slots=True)
-class ClientLifecycleState:
+class AsyncClientLifecycleState:
     closed: bool = False
 
 
 @final
-class ClientLifecycleMiddleware(BaseMiddleware):
+class AsyncClientLifecycleMiddleware(AsyncBaseMiddleware):
     def __init__(
         self,
-        transport: protocols.Middleware,
-        state: ClientLifecycleState,
+        transport: AsyncMiddleware,
+        state: AsyncClientLifecycleState,
     ) -> None:
         self._next = transport
         self._state = state
 
     @override
-    def request(
+    async def request(
         self,
         method: str,
         path: str,
@@ -33,15 +34,17 @@ class ClientLifecycleMiddleware(BaseMiddleware):
         params: QueryParamsInput | None = None,
         json: JsonObject | None = None,
         content: bytes | None = None,
+        **kwargs: object,
     ) -> httpx.Response:
         if self._state.closed:
             raise exceptions.KSeFClientClosedError("Client is closed.")
 
-        return self._next.request(
+        return await self._next.request(
             method,
             path,
             headers=headers,
             params=params,
             json=json,
             content=content,
+            **kwargs,
         )

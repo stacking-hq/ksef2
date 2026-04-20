@@ -5,9 +5,9 @@ import httpx
 from ksef2.core.types import Headers, JsonObject, QueryParamsInput
 
 
-class BaseMiddleware(abc.ABC):
+class AsyncBaseMiddleware(abc.ABC):
     @abc.abstractmethod
-    def request(
+    async def request(
         self,
         method: str,
         path: str,
@@ -18,16 +18,16 @@ class BaseMiddleware(abc.ABC):
         content: bytes | None = None,
     ) -> httpx.Response: ...
 
-    def get(
+    async def get(
         self,
         path: str,
         *,
         headers: Headers | None = None,
         params: QueryParamsInput | None = None,
     ) -> httpx.Response:
-        return self.request("GET", path, headers=headers, params=params)
+        return await self.request("GET", path, headers=headers, params=params)
 
-    def post(
+    async def post(
         self,
         path: str,
         *,
@@ -36,15 +36,15 @@ class BaseMiddleware(abc.ABC):
         json: JsonObject | None = None,
         content: bytes | None = None,
     ) -> httpx.Response:
-        return self.request(
+        return await self.request(
             "POST", path, headers=headers, json=json, params=params, content=content
         )
 
-    def delete(
+    async def delete(
         self,
         path: str,
         *,
         headers: Headers | None = None,
         params: QueryParamsInput | None = None,
     ) -> httpx.Response:
-        return self.request("DELETE", path, headers=headers, params=params)
+        return await self.request("DELETE", path, headers=headers, params=params)

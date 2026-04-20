@@ -36,6 +36,7 @@ dev = [
     "lxml-stubs>=0.5.1",
     "commitizen>=4.13.9",
     "pre-commit>=4.5.1",
+    "pytest-asyncio>=1.3.0",
 ]
 codegen = [
     "datamodel-code-generator[ruff]>=0.53.0",
@@ -46,6 +47,7 @@ codegen = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-m 'not integration'"
+asyncio_mode = "auto"
 markers = [
     "integration: tests that hit the real KSeF TEST environment",
 ]

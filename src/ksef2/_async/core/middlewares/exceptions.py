@@ -4,8 +4,8 @@ from typing import final, override
 import httpx
 from pydantic import BaseModel, ValidationError
 
-from ksef2.core import protocols
-from ksef2.core.middlewares.base import BaseMiddleware
+from ksef2._async.core.protocols import AsyncMiddleware
+from ksef2._async.core.middlewares.base import AsyncBaseMiddleware
 from ksef2.core.types import Headers, JsonObject, QueryParamsInput
 from ksef2.infra.mappers import exceptions as mapper
 from ksef2.infra.schema.api import spec
@@ -22,8 +22,8 @@ _PROBLEM_MODELS: dict[int, type[BaseModel]] = {
 
 
 @final
-class KSeFExceptionMiddleware(BaseMiddleware):
-    def __init__(self, transport: protocols.Middleware) -> None:
+class AsyncKSeFExceptionMiddleware(AsyncBaseMiddleware):
+    def __init__(self, transport: AsyncMiddleware) -> None:
         self._next = transport
 
     @staticmethod
@@ -98,7 +98,7 @@ class KSeFExceptionMiddleware(BaseMiddleware):
         return response
 
     @override
-    def request(
+    async def request(
         self,
         method: str,
         path: str,
@@ -107,14 +107,15 @@ class KSeFExceptionMiddleware(BaseMiddleware):
         params: QueryParamsInput | None = None,
         json: JsonObject | None = None,
         content: bytes | None = None,
+        **kwargs: object,
     ) -> httpx.Response:
-        return self._handle(
-            self._next.request(
-                method,
-                path,
-                headers=headers,
-                params=params,
-                json=json,
-                content=content,
-            )
+        response = await self._next.request(
+            method,
+            path,
+            headers=headers,
+            params=params,
+            json=json,
+            content=content,
+            **kwargs,
         )
+        return self._handle(response)

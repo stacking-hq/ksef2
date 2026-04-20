@@ -1,11 +1,12 @@
-import time
-from typing import final, override
+import asyncio
+from typing import Any, final, override
 
 import httpx
 
+from ksef2._async.core.protocols import AsyncMiddleware
+from ksef2._async.core.middlewares.base import AsyncBaseMiddleware
 from ksef2.config import RetryConfig
-from ksef2.core import protocols, routes
-from ksef2.core.middlewares.base import BaseMiddleware
+from ksef2.core import routes
 from ksef2.core.types import Headers, JsonObject, QueryParamsInput
 
 _RETRYABLE_POST_PATHS = frozenset(
@@ -27,10 +28,10 @@ _RETRYABLE_POST_PATHS = frozenset(
 
 
 @final
-class RetryMiddleware(BaseMiddleware):
+class AsyncRetryMiddleware(AsyncBaseMiddleware):
     def __init__(
         self,
-        transport: protocols.Middleware,
+        transport: AsyncMiddleware,
         config: RetryConfig,
     ) -> None:
         self._next = transport
@@ -62,17 +63,25 @@ class RetryMiddleware(BaseMiddleware):
         )
         return min(delay, self._config.max_delay)
 
-    def _sleep_for(self, attempt: int, response: httpx.Response | None = None) -> None:
+    async def _sleep_for(
+        self,
+        attempt: int,
+        response: httpx.Response | None = None,
+        *,
+        _sleep_fn: Any = None,
+    ) -> None:
+        sleep_fn = _sleep_fn or asyncio.sleep
+
         if response is not None:
             retry_after = self._parse_retry_after(response)
             if retry_after is not None:
-                time.sleep(retry_after)
+                await sleep_fn(retry_after)
                 return
 
-        time.sleep(self._backoff_delay(attempt))
+        await sleep_fn(self._backoff_delay(attempt))
 
     @override
-    def request(
+    async def request(
         self,
         method: str,
         path: str,
@@ -81,11 +90,12 @@ class RetryMiddleware(BaseMiddleware):
         params: QueryParamsInput | None = None,
         json: JsonObject | None = None,
         content: bytes | None = None,
+        _sleep_fn: Any = None,
     ) -> httpx.Response:
         if self._config.max_attempts <= 1 or not self._is_retryable_request(
             method, path
         ):
-            return self._next.request(
+            return await self._next.request(
                 method,
                 path,
                 headers=headers,
@@ -98,7 +108,7 @@ class RetryMiddleware(BaseMiddleware):
 
         for attempt in range(1, self._config.max_attempts + 1):
             try:
-                response = self._next.request(
+                response = await self._next.request(
                     method,
                     path,
                     headers=headers,
@@ -109,7 +119,7 @@ class RetryMiddleware(BaseMiddleware):
             except httpx.TransportError:
                 if attempt >= self._config.max_attempts:
                     raise
-                self._sleep_for(attempt)
+                await self._sleep_for(attempt, _sleep_fn=_sleep_fn)
                 continue
 
             last_response = response
@@ -120,7 +130,7 @@ class RetryMiddleware(BaseMiddleware):
             ):
                 return response
 
-            self._sleep_for(attempt, response)
+            await self._sleep_for(attempt, response, _sleep_fn=_sleep_fn)
 
         assert last_response is not None
         return last_response

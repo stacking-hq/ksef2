@@ -1,6 +1,6 @@
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
-from typing import Any, Literal, Self
+from typing import Literal, Self
 
 from pydantic import Field, model_validator
 
@@ -136,7 +136,7 @@ class InvoiceRow(KSeFBaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def normalize_tax_fields(cls, data: Any) -> Any:
+    def normalize_tax_fields(cls, data: object) -> object:
         if not isinstance(data, dict):
             return data
 

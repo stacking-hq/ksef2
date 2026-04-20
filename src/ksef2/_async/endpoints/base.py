@@ -1,4 +1,4 @@
-"""Shared parsing and query-parameter helpers for endpoint wrappers."""
+"""Shared async parsing and query-parameter helpers for endpoint wrappers."""
 
 import abc
 from collections.abc import Mapping
@@ -7,27 +7,25 @@ from urllib.parse import urlencode
 
 import httpx
 from pydantic import BaseModel, TypeAdapter, ValidationError
+
+from ksef2._async.core.protocols import AsyncMiddleware
 from ksef2.core import codecs, exceptions
-from ksef2.core.protocols import Middleware
-
-OffsetPaginationQueryParams = TypedDict(
-    "OffsetPaginationQueryParams",
-    {
-        "pageOffset": NotRequired[int | None],
-        "pageSize": NotRequired[int | None],
-    },
-)
 
 
-class BaseEndpoints(abc.ABC):
-    """Base class for endpoint wrappers around the transport middleware chain."""
+class OffsetPaginationQueryParams(TypedDict):
+    pageOffset: NotRequired[int | None]
+    pageSize: NotRequired[int | None]
+
+
+class AsyncBaseEndpoints(abc.ABC):
+    """Base class for async endpoint wrappers around the transport middleware chain."""
 
     _PARAMS_ADAPTER: ClassVar[TypeAdapter[OffsetPaginationQueryParams]] = TypeAdapter(
         OffsetPaginationQueryParams
     )
 
-    def __init__(self, transport: Middleware):
-        """Bind the endpoint wrapper to a transport implementation."""
+    def __init__(self, transport: AsyncMiddleware) -> None:
+        """Bind the endpoint wrapper to an async transport implementation."""
         self._transport = transport
 
     @classmethod

@@ -2,17 +2,24 @@ from typing import final, Literal, override
 
 import httpx
 
-from ksef2.core.middlewares.base import BaseMiddleware
+from ksef2._async.core.middlewares.base import AsyncBaseMiddleware
 from ksef2.core.types import Headers, JsonObject, QueryParamsInput
 
 HttpMethod = Literal["POST", "GET", "DELETE"]
 
 
 @final
-class HttpTransport(BaseMiddleware):
-    def __init__(self, client: httpx.Client, headers: Headers) -> None:
+class AsyncHttpTransport(AsyncBaseMiddleware):
+    def __init__(
+        self,
+        client: httpx.AsyncClient,
+        headers: Headers,
+        *,
+        _owns_client: bool = True,
+    ) -> None:
         self._client = client
         self._headers = headers
+        self._owns_client = _owns_client
 
     def _merge(self, extra: Headers | None) -> Headers:
         if not extra:
@@ -20,7 +27,7 @@ class HttpTransport(BaseMiddleware):
         return self._headers | extra
 
     @override
-    def request(
+    async def request(
         self,
         method: str,
         path: str,
@@ -30,7 +37,7 @@ class HttpTransport(BaseMiddleware):
         json: JsonObject | None = None,
         content: bytes | None = None,
     ) -> httpx.Response:
-        return self._client.request(
+        return await self._client.request(
             method,
             path,
             headers=self._merge(headers),
@@ -39,6 +46,13 @@ class HttpTransport(BaseMiddleware):
             params=params,
         )
 
-    def with_headers(self, headers: Headers) -> "HttpTransport":
+    async def aclose(self) -> None:
+        """Close the internal AsyncClient if it was created internally."""
+        if self._owns_client:
+            await self._client.aclose()
+
+    def with_headers(self, headers: Headers) -> "AsyncHttpTransport":
         merged_headers = self._headers | headers
-        return HttpTransport(self._client, headers=merged_headers)
+        return AsyncHttpTransport(
+            self._client, headers=merged_headers, _owns_client=self._owns_client
+        )
