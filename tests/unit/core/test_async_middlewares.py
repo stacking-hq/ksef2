@@ -12,10 +12,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ksef2._async.core.middlewares.auth import AsyncBearerTokenMiddleware
-from ksef2._async.core.middlewares.retry import AsyncRetryMiddleware
-from ksef2._async.core.middlewares.exceptions import AsyncKSeFExceptionMiddleware
-from ksef2._async.core.middlewares.lifecycle import (
+from ksef2.core.middlewares.async_auth import AsyncBearerTokenMiddleware
+from ksef2.core.middlewares.async_retry import AsyncRetryMiddleware
+from ksef2.core.middlewares.async_exceptions import AsyncKSeFExceptionMiddleware
+from ksef2.core.middlewares.async_lifecycle import (
     AsyncClientLifecycleMiddleware,
     AsyncClientLifecycleState,
 )
@@ -26,7 +26,7 @@ from ksef2.core.exceptions import (
     KSeFClientClosedError,
     KSeFRateLimitError,
 )
-from tests.unit.fakes.async_transport import AsyncFakeTransport
+from tests.unit.fakes.transport import AsyncFakeTransport
 
 
 # ---------------------------------------------------------------------------

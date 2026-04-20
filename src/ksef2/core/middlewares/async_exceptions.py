@@ -1,11 +1,11 @@
-from collections.abc import Mapping
 from typing import final, override
 
 import httpx
 
 from ksef2.core.async_protocols import AsyncMiddleware
-from ksef2.core.response_errors import raise_for_ksef_status
 from ksef2.core.middlewares.async_base import AsyncBaseMiddleware
+from ksef2.core.response_errors import raise_for_ksef_status
+from ksef2.core.types import Headers, JsonObject, QueryParamsInput
 
 
 @final
@@ -23,10 +23,11 @@ class AsyncKSeFExceptionMiddleware(AsyncBaseMiddleware):
         method: str,
         path: str,
         *,
-        headers: dict[str, str] | None = None,
-        params: Mapping[str, object] | None = None,
-        json: dict[str, object] | None = None,
+        headers: Headers | None = None,
+        params: QueryParamsInput | None = None,
+        json: JsonObject | None = None,
         content: bytes | None = None,
+        **kwargs: object,
     ) -> httpx.Response:
         return self._handle(
             await self._next.request(
@@ -36,5 +37,6 @@ class AsyncKSeFExceptionMiddleware(AsyncBaseMiddleware):
                 params=params,
                 json=json,
                 content=content,
+                **kwargs,
             )
         )

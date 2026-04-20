@@ -1,6 +1,6 @@
 import asyncio
-from collections.abc import Mapping
-from typing import Any, final, override
+from collections.abc import Awaitable, Callable
+from typing import cast, final, override
 
 import httpx
 
@@ -8,6 +8,9 @@ from ksef2.config import RetryConfig
 from ksef2.core import routes
 from ksef2.core.async_protocols import AsyncMiddleware
 from ksef2.core.middlewares.async_base import AsyncBaseMiddleware
+from ksef2.core.types import Headers, JsonObject, QueryParamsInput
+
+AsyncSleep = Callable[[float], Awaitable[object]]
 
 _RETRYABLE_POST_PATHS = frozenset(
     {
@@ -46,7 +49,7 @@ class AsyncRetryMiddleware(AsyncBaseMiddleware):
         return status_code in self._config.retryable_status_codes
 
     def _parse_retry_after(self, response: httpx.Response) -> float | None:
-        value = response.headers.get("Retry-After")
+        value = cast(str | None, response.headers.get("Retry-After"))
         if value is None:
             return None
 
@@ -67,14 +70,18 @@ class AsyncRetryMiddleware(AsyncBaseMiddleware):
         self,
         attempt: int,
         response: httpx.Response | None = None,
+        *,
+        _sleep_fn: AsyncSleep | None = None,
     ) -> None:
+        sleep_fn = _sleep_fn or asyncio.sleep
+
         if response is not None:
             retry_after = self._parse_retry_after(response)
             if retry_after is not None:
-                await asyncio.sleep(retry_after)
+                _ = await sleep_fn(retry_after)
                 return
 
-        await asyncio.sleep(self._backoff_delay(attempt))
+        _ = await sleep_fn(self._backoff_delay(attempt))
 
     @override
     async def request(
@@ -82,10 +89,11 @@ class AsyncRetryMiddleware(AsyncBaseMiddleware):
         method: str,
         path: str,
         *,
-        headers: dict[str, str] | None = None,
-        params: Mapping[str, Any] | None = None,
-        json: dict[str, Any] | None = None,
+        headers: Headers | None = None,
+        params: QueryParamsInput | None = None,
+        json: JsonObject | None = None,
         content: bytes | None = None,
+        _sleep_fn: AsyncSleep | None = None,
     ) -> httpx.Response:
         if self._config.max_attempts <= 1 or not self._is_retryable_request(
             method, path
@@ -114,7 +122,7 @@ class AsyncRetryMiddleware(AsyncBaseMiddleware):
             except httpx.TransportError:
                 if attempt >= self._config.max_attempts:
                     raise
-                await self._sleep_for(attempt)
+                await self._sleep_for(attempt, _sleep_fn=_sleep_fn)
                 continue
 
             last_response = response
@@ -125,7 +133,7 @@ class AsyncRetryMiddleware(AsyncBaseMiddleware):
             ):
                 return response
 
-            await self._sleep_for(attempt, response)
+            await self._sleep_for(attempt, response, _sleep_fn=_sleep_fn)
 
         assert last_response is not None
         return last_response

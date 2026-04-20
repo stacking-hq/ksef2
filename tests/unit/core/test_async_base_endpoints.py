@@ -7,9 +7,9 @@ Covers validation contract assertion:
 import pytest
 from pydantic import BaseModel
 
-from ksef2._async.endpoints.base import AsyncBaseEndpoints
+from ksef2.endpoints.async_base import AsyncBaseEndpoints
 from ksef2.core.exceptions import KSeFValidationError
-from tests.unit.fakes.async_transport import AsyncFakeTransport
+from tests.unit.fakes.transport import AsyncFakeTransport
 
 
 class _SampleModel(BaseModel):

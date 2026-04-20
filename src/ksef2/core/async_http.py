@@ -1,23 +1,30 @@
-from collections.abc import Mapping
-from typing import Any, Literal, final, override
+from typing import Literal, final, override
 
 import httpx
 
 from ksef2.core.middlewares.async_base import AsyncBaseMiddleware
+from ksef2.core.types import Headers, JsonObject, QueryParamsInput
 
 HttpMethod = Literal["POST", "GET", "DELETE"]
 
 
 @final
 class AsyncHttpTransport(AsyncBaseMiddleware):
-    def __init__(self, client: httpx.AsyncClient, headers: dict[str, Any]) -> None:
+    def __init__(
+        self,
+        client: httpx.AsyncClient,
+        headers: Headers,
+        *,
+        _owns_client: bool = True,
+    ) -> None:
         self._client = client
         self._headers = headers
+        self._owns_client = _owns_client
 
-    def _merge(self, extra: dict[str, str] | None) -> dict[str, Any]:
+    def _merge(self, extra: Headers | None) -> Headers:
         if not extra:
             return self._headers
-        return {**self._headers, **extra}
+        return self._headers | extra
 
     @override
     async def request(
@@ -25,9 +32,9 @@ class AsyncHttpTransport(AsyncBaseMiddleware):
         method: str,
         path: str,
         *,
-        headers: dict[str, str] | None = None,
-        params: Mapping[str, Any] | None = None,
-        json: dict[str, Any] | None = None,
+        headers: Headers | None = None,
+        params: QueryParamsInput | None = None,
+        json: JsonObject | None = None,
         content: bytes | None = None,
     ) -> httpx.Response:
         return await self._client.request(
@@ -39,6 +46,14 @@ class AsyncHttpTransport(AsyncBaseMiddleware):
             params=params,
         )
 
-    def with_headers(self, headers: dict[str, str]):
+    async def aclose(self) -> None:
+        if self._owns_client:
+            await self._client.aclose()
+
+    def with_headers(self, headers: Headers) -> "AsyncHttpTransport":
         merged_headers = self._headers | headers
-        return AsyncHttpTransport(self._client, headers=merged_headers)
+        return AsyncHttpTransport(
+            self._client,
+            headers=merged_headers,
+            _owns_client=self._owns_client,
+        )

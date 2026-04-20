@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock
 
 import httpx
 
-from ksef2._async.core.http import AsyncHttpTransport
-from ksef2._async.core.protocols import AsyncMiddleware
+from ksef2.core.async_http import AsyncHttpTransport
+from ksef2.core.async_protocols import AsyncMiddleware
 
 
 class TestAsyncHttpTransportProtocol:

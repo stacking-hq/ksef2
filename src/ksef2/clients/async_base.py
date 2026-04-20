@@ -41,10 +41,15 @@ class AsyncClient:
         )
         self._owns_http_client = http_client is None
         self._lifecycle_state = AsyncClientLifecycleState()
+        self._http_transport = AsyncHttpTransport(
+            client=self._http_client,
+            headers={},
+            _owns_client=self._owns_http_client,
+        )
         self._transport = AsyncKSeFExceptionMiddleware(
             AsyncRetryMiddleware(
                 AsyncClientLifecycleMiddleware(
-                    AsyncHttpTransport(client=self._http_client, headers={}),
+                    self._http_transport,
                     self._lifecycle_state,
                 ),
                 self._transport_config.retry,
@@ -103,8 +108,7 @@ class AsyncClient:
         for name in ("authentication", "encryption", "peppol", "testdata"):
             self.__dict__.pop(name, None)
 
-        if self._owns_http_client:
-            await self._http_client.aclose()
+        await self._http_transport.aclose()
 
     async def __aenter__(self) -> Self:
         self._ensure_open()

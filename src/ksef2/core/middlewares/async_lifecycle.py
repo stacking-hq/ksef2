@@ -1,12 +1,12 @@
 from dataclasses import dataclass
-from collections.abc import Mapping
-from typing import Any, final, override
+from typing import final, override
 
 import httpx
 
 from ksef2.core import exceptions
 from ksef2.core.async_protocols import AsyncMiddleware
 from ksef2.core.middlewares.async_base import AsyncBaseMiddleware
+from ksef2.core.types import Headers, JsonObject, QueryParamsInput
 
 
 @dataclass(slots=True)
@@ -30,10 +30,11 @@ class AsyncClientLifecycleMiddleware(AsyncBaseMiddleware):
         method: str,
         path: str,
         *,
-        headers: dict[str, str] | None = None,
-        params: Mapping[str, Any] | None = None,
-        json: dict[str, Any] | None = None,
+        headers: Headers | None = None,
+        params: QueryParamsInput | None = None,
+        json: JsonObject | None = None,
         content: bytes | None = None,
+        **kwargs: object,
     ) -> httpx.Response:
         if self._state.closed:
             raise exceptions.KSeFClientClosedError("Client is closed.")
@@ -45,4 +46,5 @@ class AsyncClientLifecycleMiddleware(AsyncBaseMiddleware):
             params=params,
             json=json,
             content=content,
+            **kwargs,
         )
