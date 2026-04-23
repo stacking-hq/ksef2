@@ -9,6 +9,7 @@ from ksef2.domain.models.certificates import (
     CertificateEnrollmentStatusResponse,
     CertificateInfo,
     CertificateLimitsResponse,
+    CertificateSerialNumber,
     CertificatesInfoList,
     CertificateStatusValue,
     CertificateTypeValue,
@@ -18,6 +19,7 @@ from ksef2.domain.models.certificates import (
     RetrievedCertificatesList,
     RevocationReason,
     RevokeCertificateRequest,
+    validate_certificate_serial_number,
 )
 from ksef2.domain.models.pagination import OffsetPaginationParams
 from ksef2.endpoints.async_certificates import AsyncCertificatesEndpoints
@@ -68,7 +70,7 @@ class AsyncCertificatesClient:
     async def retrieve(
         self,
         *,
-        certificate_serial_numbers: list[str],
+        certificate_serial_numbers: list[CertificateSerialNumber],
     ) -> RetrievedCertificatesList:
         request = RetrieveCertificatesRequest(
             certificate_serial_numbers=certificate_serial_numbers,
@@ -79,13 +81,16 @@ class AsyncCertificatesClient:
     async def revoke(
         self,
         *,
-        certificate_serial_number: str,
+        certificate_serial_number: CertificateSerialNumber,
         reason: RevocationReason | None = None,
     ) -> None:
+        validated_serial_number = validate_certificate_serial_number(
+            certificate_serial_number
+        )
         request = RevokeCertificateRequest(revocation_reason=reason)
         body = to_spec(request)
         await self._endpoints.revoke(
-            certificate_serial_number=certificate_serial_number,
+            certificate_serial_number=validated_serial_number,
             body=body,
         )
 
@@ -93,7 +98,7 @@ class AsyncCertificatesClient:
         self,
         *,
         name: str | None = None,
-        certificate_serial_number: str | None = None,
+        certificate_serial_number: CertificateSerialNumber | None = None,
         certificate_type: CertificateTypeValue | None = None,
         status: CertificateStatusValue | None = None,
         expires_after: datetime | str | None = None,
@@ -116,7 +121,7 @@ class AsyncCertificatesClient:
     async def all(
         self,
         *,
-        certificate_serial_number: str | None = None,
+        certificate_serial_number: CertificateSerialNumber | None = None,
         name: str | None = None,
         certificate_type: CertificateTypeValue | None = None,
         status: CertificateStatusValue | None = None,

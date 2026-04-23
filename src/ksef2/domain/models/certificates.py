@@ -2,7 +2,9 @@
 
 from datetime import datetime
 from enum import StrEnum
-from typing import Literal
+from typing import Annotated, Literal
+
+from pydantic import Field, TypeAdapter
 
 from ksef2.domain.models.base import KSeFBaseModel
 
@@ -10,6 +12,15 @@ type IdentifierType = Literal["nip", "pesel", "fingerprint"]
 type RevocationReason = Literal["unspecified", "superseded", "key_compromise"]
 type CertificateTypeValue = Literal["authentication", "offline"]
 type CertificateStatusValue = Literal["active", "blocked", "revoked", "expired"]
+type CertificateSerialNumber = Annotated[
+    str, Field(max_length=16, min_length=16, pattern="^[0-9A-F]{16}$")
+]
+
+_CERTIFICATE_SERIAL_NUMBER_ADAPTER = TypeAdapter(CertificateSerialNumber)
+
+
+def validate_certificate_serial_number(value: str) -> CertificateSerialNumber:
+    return _CERTIFICATE_SERIAL_NUMBER_ADAPTER.validate_python(value)
 
 
 class CertificateTypeEnum(StrEnum):
@@ -46,7 +57,7 @@ class SubjectIdentifier(KSeFBaseModel):
 class Certificate(KSeFBaseModel):
     base64_encoded_certificate: str
     name: str
-    serial_number: str
+    serial_number: CertificateSerialNumber
     certificate_type: CertificateTypeValue
 
 
@@ -65,7 +76,7 @@ class CertificateInfo(KSeFBaseModel):
     """Metadata for one certificate visible in certificate queries."""
 
     # certificate
-    serial_number: str
+    serial_number: CertificateSerialNumber
     name: str
     common_name: str
     type: CertificateTypeValue
@@ -117,7 +128,7 @@ class CertificateEnrollmentStatusResponse(KSeFBaseModel):
     status_code: int
     status_description: str
     status_details: list[str] | None = None
-    certificate_serial_number: str | None = None
+    certificate_serial_number: CertificateSerialNumber | None = None
 
 
 class CertificateLimitsResponse(KSeFBaseModel):
@@ -159,7 +170,7 @@ class EnrollCertificateRequest(KSeFBaseModel):
 class RetrieveCertificatesRequest(KSeFBaseModel):
     """Payload used to download issued certificates by serial number."""
 
-    certificate_serial_numbers: list[str]
+    certificate_serial_numbers: list[CertificateSerialNumber]
 
 
 class RevokeCertificateRequest(KSeFBaseModel):
@@ -171,7 +182,7 @@ class RevokeCertificateRequest(KSeFBaseModel):
 class QueryCertificatesRequest(KSeFBaseModel):
     """Optional filters for certificate search."""
 
-    certificate_serial_number: str | None = None
+    certificate_serial_number: CertificateSerialNumber | None = None
     name: str | None = None
     certificate_type: CertificateTypeValue | None = None
     status: CertificateStatusValue | None = None

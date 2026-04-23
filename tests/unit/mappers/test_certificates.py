@@ -263,7 +263,9 @@ class TestCertificatesRequestMapper:
         output = to_spec(request)
 
         assert isinstance(output, spec.RetrieveCertificatesRequest)
-        assert output.certificateSerialNumbers == request.certificate_serial_numbers
+        assert output.model_dump(mode="json")["certificateSerialNumbers"] == (
+            request.certificate_serial_numbers
+        )
 
     def test_to_spec_query_certificates_request_minimal(self):
         request = DomainQueryCertificatesRequestFactory.build(

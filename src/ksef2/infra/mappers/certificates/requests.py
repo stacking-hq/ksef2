@@ -156,7 +156,10 @@ def _(
     request: RetrieveCertificatesRequest,
 ) -> spec.RetrieveCertificatesRequest:
     return spec.RetrieveCertificatesRequest(
-        certificateSerialNumbers=request.certificate_serial_numbers,
+        certificateSerialNumbers=[
+            spec.CertificateSerialNumber.model_validate(serial_number)
+            for serial_number in request.certificate_serial_numbers
+        ],
     )
 
 

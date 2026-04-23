@@ -9,6 +9,7 @@ from ksef2.domain.models.certificates import (
     CertificateEnrollmentStatusResponse,
     CertificateInfo,
     CertificateLimitsResponse,
+    CertificateSerialNumber,
     CertificatesInfoList,
     CertificateStatusValue,
     CertificateTypeValue,
@@ -18,6 +19,7 @@ from ksef2.domain.models.certificates import (
     RetrievedCertificatesList,
     RevocationReason,
     RevokeCertificateRequest,
+    validate_certificate_serial_number,
 )
 from ksef2.domain.models.pagination import OffsetPaginationParams
 from ksef2.endpoints.certificates import CertificatesEndpoints
@@ -73,7 +75,7 @@ class CertificatesClient:
     def retrieve(
         self,
         *,
-        certificate_serial_numbers: list[str],
+        certificate_serial_numbers: list[CertificateSerialNumber],
     ) -> RetrievedCertificatesList:
         """Download issued certificates by serial number."""
         request = RetrieveCertificatesRequest(
@@ -85,15 +87,18 @@ class CertificatesClient:
     def revoke(
         self,
         *,
-        certificate_serial_number: str,
+        certificate_serial_number: CertificateSerialNumber,
         reason: RevocationReason | None = None,
     ) -> None:
         """Revoke a certificate, optionally providing a revocation reason."""
 
+        validated_serial_number = validate_certificate_serial_number(
+            certificate_serial_number
+        )
         request = RevokeCertificateRequest(revocation_reason=reason)
         body = to_spec(request)
         self._endpoints.revoke(
-            certificate_serial_number=certificate_serial_number,
+            certificate_serial_number=validated_serial_number,
             body=body,
         )
 
@@ -101,7 +106,7 @@ class CertificatesClient:
         self,
         *,
         name: str | None = None,
-        certificate_serial_number: str | None = None,
+        certificate_serial_number: CertificateSerialNumber | None = None,
         certificate_type: CertificateTypeValue | None = None,
         status: CertificateStatusValue | None = None,
         expires_after: datetime | str | None = None,
@@ -124,7 +129,7 @@ class CertificatesClient:
     def all(
         self,
         *,
-        certificate_serial_number: str | None = None,
+        certificate_serial_number: CertificateSerialNumber | None = None,
         name: str | None = None,
         certificate_type: CertificateTypeValue | None = None,
         status: CertificateStatusValue | None = None,
