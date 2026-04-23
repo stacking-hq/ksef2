@@ -1,3 +1,9 @@
+## v0.13.1 (2026-04-23)
+
+### Fix
+
+- adapt certificate SDK to updated spec
+
 ## v0.13.0 (2026-04-20)
 
 ### Feat
