@@ -419,7 +419,7 @@ class TestCertificateEndpoints:
         cert_revoke_req: RevokeCertificateRequestFactory,
     ):
         request = cert_revoke_req.build()
-        certificate_serial_number = "ABC123DEF456"
+        certificate_serial_number = "ABC123DEF4567890"
 
         fake_transport.enqueue(json_body={})
         cert_eps.revoke(certificate_serial_number, request)
@@ -440,7 +440,7 @@ class TestCertificateEndpoints:
         cert_eps: CertificatesEndpoints,
         fake_transport: transport.FakeTransport,
     ):
-        certificate_serial_number = "ABC123DEF456"
+        certificate_serial_number = "ABC123DEF4567890"
 
         fake_transport.enqueue(json_body={})
         cert_eps.revoke(certificate_serial_number)
@@ -459,7 +459,7 @@ class TestCertificateEndpoints:
         handled_cert_eps: CertificatesEndpoints,
         fake_transport: transport.FakeTransport,
     ):
-        certificate_serial_number = "ABC123DEF456"
+        certificate_serial_number = "ABC123DEF4567890"
 
         responses_to_try = [
             (exceptions.KSeFApiError, 500),

@@ -1134,14 +1134,12 @@ class InvoiceQueryFormType(StrEnum):
     | --- | --- |
     | FA | Faktura VAT |
     | PEF | Faktura PEF |
-    | RR ![Deprecated](https://img.shields.io/badge/Deprecated-orange) | Faktura RR |
     | FA_RR | Faktura RR |
 
     """
 
     FA = "FA"
     PEF = "PEF"
-    RR = "RR"
     FA_RR = "FA_RR"
 
 
@@ -1281,15 +1279,13 @@ class OpenOnlineSessionRequest(BaseModel):
     Schemat faktur wysyłanych w ramach sesji.
 
     Obsługiwane schematy:
-    | SystemCode | SchemaVersion | Value | ValidFrom | ValidTo |
-    | --- | --- | --- | --- | --- |
-    | [FA (2)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/FA/schemat_FA(2)_v1-0E.xsd) | 1-0E | FA |  |  |
-    | [FA (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/FA/schemat_FA(3)_v1-0E.xsd) | 1-0E | FA |  |  |
-    | [PEF (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/PEF/Schemat_PEF(3)_v2-1.xsd) | 2-1 | PEF |  |  |
-    | [PEF_KOR (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/PEF/Schemat_PEF_KOR(3)_v2-1.xsd) | 2-1 | PEF |  |  |
-    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_RR(1)_v1-0E.xsd) | 1-0E | RR |  | 23.03.2026 |
-    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_RR(1)_v1-1E.xsd) | 1-1E | RR |  | 30.03.2026 |
-    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_FA_RR(1)_v1-1E.xsd) | 1-1E | FA_RR |  |  |
+    | SystemCode | SchemaVersion | Value |
+    | --- | --- | --- |
+    | [FA (2)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/FA/schemat_FA(2)_v1-0E.xsd) | 1-0E | FA |
+    | [FA (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/FA/schemat_FA(3)_v1-0E.xsd) | 1-0E | FA |
+    | [PEF (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/PEF/Schemat_PEF(3)_v2-1.xsd) | 2-1 | PEF |
+    | [PEF_KOR (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/PEF/Schemat_PEF_KOR(3)_v2-1.xsd) | 2-1 | PEF |
+    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_FA_RR(1)_v1-1E.xsd) | 1-1E | FA_RR |
 
     """
     encryption: EncryptionInfo
@@ -1604,7 +1600,9 @@ class PublicKeyCertificateUsage(StrEnum):
 
 
 class QueryCertificatesRequest(BaseModel):
-    certificateSerialNumber: str | None = None
+    certificateSerialNumber: Annotated[
+        str | None, Field(max_length=16, min_length=16, pattern="^[0-9A-F]{16}$")
+    ] = None
     """
     Numer seryjny certyfikatu. Wyszukiwanie odbywa się na zasadzie dokładnego dopasowania (exact match).
     """
@@ -1663,7 +1661,9 @@ class RetrieveCertificatesListItem(BaseModel):
     """
     Nazwa własna certyfikatu.
     """
-    certificateSerialNumber: str
+    certificateSerialNumber: Annotated[
+        str, Field(max_length=16, min_length=16, pattern="^[0-9A-F]{16}$")
+    ]
     """
     Numer seryjny certyfikatu.
     """
@@ -1678,8 +1678,14 @@ class RetrieveCertificatesListItem(BaseModel):
     """
 
 
+class CertificateSerialNumber(RootModel[str]):
+    root: Annotated[str, Field(max_length=16, min_length=16, pattern="^[0-9A-F]{16}$")]
+
+
 class RetrieveCertificatesRequest(BaseModel):
-    certificateSerialNumbers: Annotated[list[str], Field(max_length=10, min_length=1)]
+    certificateSerialNumbers: Annotated[
+        list[CertificateSerialNumber], Field(max_length=10, min_length=1)
+    ]
     """
     Numery seryjne certyfikatów do pobrania.
     """
@@ -2402,7 +2408,9 @@ class CertificateEnrollmentStatusResponse(BaseModel):
     | 500 | Nieznany błąd | - |
     | 550 | Operacja została anulowana przez system | Przetwarzanie zostało przerwane z przyczyn wewnętrznych systemu. Spróbuj ponownie |
     """
-    certificateSerialNumber: str | None = None
+    certificateSerialNumber: Annotated[
+        str | None, Field(max_length=16, min_length=16, pattern="^[0-9A-F]{16}$")
+    ] = None
     """
     Numer seryjny wygenerowanego certyfikatu (w formacie szesnastkowym). 
     Zwracany w przypadku prawidłowego przeprocesowania wniosku certyfikacyjnego.
@@ -3070,7 +3078,6 @@ class InvoiceQueryFilters(BaseModel):
     | --- | --- |
     | FA | Faktura VAT |
     | PEF | Faktura PEF |
-    | RR ![Deprecated](https://img.shields.io/badge/Deprecated-orange) | Faktura RR |
     | FA_RR | Faktura RR |
 
     """
@@ -3864,7 +3871,9 @@ class BlockContextAuthenticationRequest(BaseModel):
 
 
 class CertificateListItem(BaseModel):
-    certificateSerialNumber: str
+    certificateSerialNumber: Annotated[
+        str, Field(max_length=16, min_length=16, pattern="^[0-9A-F]{16}$")
+    ]
     """
     Numer seryjny certyfikatu (w formacie szesnastkowym).
     """
@@ -4185,13 +4194,11 @@ class OpenBatchSessionRequest(BaseModel):
     Schemat faktur wysyłanych w ramach sesji.
 
     Obsługiwane schematy:
-    | SystemCode | SchemaVersion | Value | ValidFrom | ValidTo |
-    | --- | --- | --- | --- | --- |
-    | [FA (2)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/FA/schemat_FA(2)_v1-0E.xsd) | 1-0E | FA |  |  |
-    | [FA (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/FA/schemat_FA(3)_v1-0E.xsd) | 1-0E | FA |  |  |
-    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_RR(1)_v1-0E.xsd) | 1-0E | RR |  | 23.03.2026 |
-    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_RR(1)_v1-1E.xsd) | 1-1E | RR |  | 30.03.2026 |
-    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_FA_RR(1)_v1-1E.xsd) | 1-1E | FA_RR |  |  |
+    | SystemCode | SchemaVersion | Value |
+    | --- | --- | --- |
+    | [FA (2)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/FA/schemat_FA(2)_v1-0E.xsd) | 1-0E | FA |
+    | [FA (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/FA/schemat_FA(3)_v1-0E.xsd) | 1-0E | FA |
+    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_FA_RR(1)_v1-1E.xsd) | 1-1E | FA_RR |
 
     """
     batchFile: BatchFileInfo
@@ -5016,15 +5023,13 @@ class InvoiceMetadata(BaseModel):
     Struktura dokumentu faktury.
 
     Obsługiwane schematy:
-    | SystemCode | SchemaVersion | Value | ValidFrom | ValidTo |
-    | --- | --- | --- | --- | --- |
-    | [FA (2)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/FA/schemat_FA(2)_v1-0E.xsd) | 1-0E | FA |  |  |
-    | [FA (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/FA/schemat_FA(3)_v1-0E.xsd) | 1-0E | FA |  |  |
-    | [PEF (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/PEF/Schemat_PEF(3)_v2-1.xsd) | 2-1 | PEF |  |  |
-    | [PEF_KOR (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/PEF/Schemat_PEF_KOR(3)_v2-1.xsd) | 2-1 | PEF |  |  |
-    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_RR(1)_v1-0E.xsd) | 1-0E | RR |  | 23.03.2026 |
-    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_RR(1)_v1-1E.xsd) | 1-1E | RR |  | 30.03.2026 |
-    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_FA_RR(1)_v1-1E.xsd) | 1-1E | FA_RR |  |  |
+    | SystemCode | SchemaVersion | Value |
+    | --- | --- | --- |
+    | [FA (2)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/FA/schemat_FA(2)_v1-0E.xsd) | 1-0E | FA |
+    | [FA (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/FA/schemat_FA(3)_v1-0E.xsd) | 1-0E | FA |
+    | [PEF (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/PEF/Schemat_PEF(3)_v2-1.xsd) | 2-1 | PEF |
+    | [PEF_KOR (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/PEF/Schemat_PEF_KOR(3)_v2-1.xsd) | 2-1 | PEF |
+    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_FA_RR(1)_v1-1E.xsd) | 1-1E | FA_RR |
 
     """
     isSelfInvoicing: bool

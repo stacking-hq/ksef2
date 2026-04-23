@@ -7,6 +7,9 @@ from ksef2.infra.mappers.certificates import to_spec
 from ksef2.infra.schema.api import spec
 from tests.unit.factories.certificates import (
     CertificateListItemFactory,
+    VALID_CERTIFICATE_SERIAL_NUMBER,
+    VALID_CERTIFICATE_SERIAL_NUMBER_2,
+    VALID_CERTIFICATE_SERIAL_NUMBER_3,
 )
 from tests.unit.fakes.transport import FakeTransport
 
@@ -146,11 +149,17 @@ class TestCertificatesClient:
         fake_transport.enqueue(expected.model_dump(mode="json"))
 
         result = certificates_client.retrieve(
-            certificate_serial_numbers=["SN123", "SN456"],
+            certificate_serial_numbers=[
+                VALID_CERTIFICATE_SERIAL_NUMBER,
+                VALID_CERTIFICATE_SERIAL_NUMBER_2,
+            ],
         )
         expected_request = to_spec(
             certificates.RetrieveCertificatesRequest(
-                certificate_serial_numbers=["SN123", "SN456"],
+                certificate_serial_numbers=[
+                    VALID_CERTIFICATE_SERIAL_NUMBER,
+                    VALID_CERTIFICATE_SERIAL_NUMBER_2,
+                ],
             )
         )
 
@@ -172,14 +181,14 @@ class TestCertificatesClient:
         fake_transport.enqueue()  # status 200 by default
 
         certificates_client.revoke(
-            certificate_serial_number="SN123",
+            certificate_serial_number=VALID_CERTIFICATE_SERIAL_NUMBER,
             reason="superseded",
         )
 
         assert len(fake_transport.calls) == 1
         call = fake_transport.calls[0]
         assert call.method == "POST"
-        assert "SN123" in str(call.path)
+        assert VALID_CERTIFICATE_SERIAL_NUMBER in str(call.path)
 
     def test_revoke_without_reason(
         self,
@@ -189,7 +198,7 @@ class TestCertificatesClient:
         fake_transport.enqueue()  # status 200 by default
 
         certificates_client.revoke(
-            certificate_serial_number="SN123",
+            certificate_serial_number=VALID_CERTIFICATE_SERIAL_NUMBER,
         )
 
         assert len(fake_transport.calls) == 1
@@ -226,14 +235,14 @@ class TestCertificatesClient:
 
         result = certificates_client.query(
             name="Test",
-            certificate_serial_number="SN123",
+            certificate_serial_number=VALID_CERTIFICATE_SERIAL_NUMBER,
             certificate_type="authentication",
             status="active",
         )
         expected_request = to_spec(
             certificates.QueryCertificatesRequest(
                 name="Test",
-                certificate_serial_number="SN123",
+                certificate_serial_number=VALID_CERTIFICATE_SERIAL_NUMBER,
                 certificate_type="authentication",
                 status="active",
             )
@@ -270,14 +279,20 @@ class TestCertificatesClient:
     ):
         page1 = cert_query_resp.build(
             certificates=[
-                CertificateListItemFactory.build(certificateSerialNumber="SN001"),
-                CertificateListItemFactory.build(certificateSerialNumber="SN002"),
+                CertificateListItemFactory.build(
+                    certificateSerialNumber=VALID_CERTIFICATE_SERIAL_NUMBER
+                ),
+                CertificateListItemFactory.build(
+                    certificateSerialNumber=VALID_CERTIFICATE_SERIAL_NUMBER_2
+                ),
             ],
             hasMore=True,
         )
         page2 = cert_query_resp.build(
             certificates=[
-                CertificateListItemFactory.build(certificateSerialNumber="SN003"),
+                CertificateListItemFactory.build(
+                    certificateSerialNumber=VALID_CERTIFICATE_SERIAL_NUMBER_3
+                ),
             ],
             hasMore=False,
         )
@@ -287,9 +302,9 @@ class TestCertificatesClient:
         items = list(certificates_client.all())
 
         assert len(items) == 3
-        assert items[0].serial_number == "SN001"
-        assert items[1].serial_number == "SN002"
-        assert items[2].serial_number == "SN003"
+        assert items[0].serial_number == VALID_CERTIFICATE_SERIAL_NUMBER
+        assert items[1].serial_number == VALID_CERTIFICATE_SERIAL_NUMBER_2
+        assert items[2].serial_number == VALID_CERTIFICATE_SERIAL_NUMBER_3
         assert len(fake_transport.calls) == 2
 
     def test_all_empty(

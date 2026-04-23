@@ -6,7 +6,12 @@ from ksef2.clients.async_certificates import AsyncCertificatesClient
 from ksef2.core.routes import CertificateRoutes
 from ksef2.domain.models import certificates
 from ksef2.infra.schema.api import spec
-from tests.unit.factories.certificates import CertificateListItemFactory
+from tests.unit.factories.certificates import (
+    CertificateListItemFactory,
+    VALID_CERTIFICATE_SERIAL_NUMBER,
+    VALID_CERTIFICATE_SERIAL_NUMBER_2,
+    VALID_CERTIFICATE_SERIAL_NUMBER_3,
+)
 from tests.unit.fakes.transport import AsyncFakeTransport
 
 
@@ -62,14 +67,20 @@ class TestAsyncCertificatesClient:
         client = AsyncCertificatesClient(async_fake_transport)
         page1 = cert_query_resp.build(
             certificates=[
-                CertificateListItemFactory.build(certificateSerialNumber="SN001"),
-                CertificateListItemFactory.build(certificateSerialNumber="SN002"),
+                CertificateListItemFactory.build(
+                    certificateSerialNumber=VALID_CERTIFICATE_SERIAL_NUMBER
+                ),
+                CertificateListItemFactory.build(
+                    certificateSerialNumber=VALID_CERTIFICATE_SERIAL_NUMBER_2
+                ),
             ],
             hasMore=True,
         )
         page2 = cert_query_resp.build(
             certificates=[
-                CertificateListItemFactory.build(certificateSerialNumber="SN003")
+                CertificateListItemFactory.build(
+                    certificateSerialNumber=VALID_CERTIFICATE_SERIAL_NUMBER_3
+                )
             ],
             hasMore=False,
         )
@@ -79,4 +90,4 @@ class TestAsyncCertificatesClient:
         items = asyncio.run(_collect_async_items(client.all()))
 
         assert len(items) == 3
-        assert items[2].serial_number == "SN003"
+        assert items[2].serial_number == VALID_CERTIFICATE_SERIAL_NUMBER_3

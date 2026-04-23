@@ -6,6 +6,10 @@ from polyfactory.pytest_plugin import register_fixture
 
 from tests.unit.helpers import VALID_BASE64
 
+VALID_CERTIFICATE_SERIAL_NUMBER = "0123456789ABCDEF"
+VALID_CERTIFICATE_SERIAL_NUMBER_2 = "FEDCBA9876543210"
+VALID_CERTIFICATE_SERIAL_NUMBER_3 = "ABCDEF1234567890"
+
 # --- factories for spec models ---
 
 
@@ -36,19 +40,24 @@ class EnrollCertificateResponseFactory(
 @register_fixture(name="cert_enrollment_status_resp")
 class CertificateEnrollmentStatusResponseFactory(
     ModelFactory[spec.CertificateEnrollmentStatusResponse]
-): ...
+):
+    certificateSerialNumber: str = VALID_CERTIFICATE_SERIAL_NUMBER
 
 
 @register_fixture(name="cert_retrieve_req")
 class RetrieveCertificatesRequestFactory(
     ModelFactory[spec.RetrieveCertificatesRequest]
-): ...
+):
+    certificateSerialNumbers: list[str] = [VALID_CERTIFICATE_SERIAL_NUMBER]
 
 
 class RetrieveCertificatesListItemFactory(
     ModelFactory[spec.RetrieveCertificatesListItem]
 ):
     certificate: str = VALID_BASE64
+    certificateName: str = "Test Cert"
+    certificateSerialNumber: str = VALID_CERTIFICATE_SERIAL_NUMBER
+    certificateType: spec.KsefCertificateType = spec.KsefCertificateType.Authentication
 
 
 @register_fixture(name="cert_retrieve_resp")
@@ -65,7 +74,8 @@ class RevokeCertificateRequestFactory(ModelFactory[spec.RevokeCertificateRequest
 
 
 @register_fixture(name="cert_query_req")
-class QueryCertificatesRequestFactory(ModelFactory[spec.QueryCertificatesRequest]): ...
+class QueryCertificatesRequestFactory(ModelFactory[spec.QueryCertificatesRequest]):
+    certificateSerialNumber: str | None = VALID_CERTIFICATE_SERIAL_NUMBER
 
 
 @register_fixture(name="cert_query_resp")
@@ -75,7 +85,7 @@ class QueryCertificatesResponseFactory(
 
 
 class CertificateListItemFactory(ModelFactory[spec.CertificateListItem]):
-    certificateSerialNumber: str = "SN123"
+    certificateSerialNumber: str = VALID_CERTIFICATE_SERIAL_NUMBER
     name: str = "Test Cert"
     commonName: str = "CN=Test"
     type: spec.KsefCertificateType = spec.KsefCertificateType.Authentication
@@ -118,13 +128,15 @@ class DomainRevokeCertificateRequestFactory(
 @register_fixture(name="domain_retrieve_certs_req")
 class DomainRetrieveCertificatesRequestFactory(
     ModelFactory[certificates.RetrieveCertificatesRequest]
-): ...
+):
+    certificate_serial_numbers: list[str] = [VALID_CERTIFICATE_SERIAL_NUMBER]
 
 
 @register_fixture(name="domain_query_certs_req")
 class DomainQueryCertificatesRequestFactory(
     ModelFactory[certificates.QueryCertificatesRequest]
 ):
+    certificate_serial_number: str | None = VALID_CERTIFICATE_SERIAL_NUMBER
     certificate_type: str = "authentication"
     status: str = "active"
     expires_after: str = "2025-12-31T23:59:59+00:00"
