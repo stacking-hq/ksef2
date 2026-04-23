@@ -120,6 +120,7 @@ def test_example_send_invoice() -> None:
 
 
 @pytest.mark.integration
+@pytest.mark.flaky(reruns=2, reruns_delay=10)
 def test_example_send_query_export_download() -> None:
     """Full invoice lifecycle: send, query status, schedule export, download.
 

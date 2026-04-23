@@ -37,6 +37,7 @@ dev = [
     "commitizen>=4.13.9",
     "pre-commit>=4.5.1",
     "pytest-asyncio>=1.3.0",
+    "pytest-rerunfailures>=15.0",
 ]
 codegen = [
     "datamodel-code-generator[ruff]>=0.53.0",
@@ -50,6 +51,7 @@ addopts = "-m 'not integration'"
 asyncio_mode = "auto"
 markers = [
     "integration: tests that hit the real KSeF TEST environment",
+    "flaky: tests that may fail due to external service latency; auto-rerun",
 ]
 
 [tool.commitizen]

@@ -25,7 +25,7 @@ class ExampleConfig:
     environment: Environment = Environment.TEST
     poll_interval: float = 2.0
     status_timeout: float = 60.0
-    export_timeout: float = 120.0
+    export_timeout: float = 240.0
     template_path: Path = field(
         default_factory=lambda: (
             repo_root()
