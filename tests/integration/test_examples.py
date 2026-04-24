@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 from ksef2 import Client
+from ksef2.core.exceptions import KSeFExportTimeoutError
 import scripts.examples.auth.auth_refresh as auth_refresh_example
 import scripts.examples.auth.auth_xades as auth_xades_example
 import scripts.examples.auth.token_management as token_management_example
@@ -120,13 +121,21 @@ def test_example_send_invoice() -> None:
 
 
 @pytest.mark.integration
-def test_example_send_query_export_download() -> None:
+def test_example_send_query_export_download(capsys: pytest.CaptureFixture[str]) -> None:
     """Full invoice lifecycle: send, query status, schedule export, download.
 
     Covers: testdata setup → XAdES auth → open session → send invoice →
     poll status → schedule export → fetch package → cleanup.
     """
-    send_example.main()
+    try:
+        send_example.main()
+    except KSeFExportTimeoutError as exc:
+        captured = capsys.readouterr()
+        assert "Export scheduled:" in captured.out
+        pytest.skip(
+            f"KSeF TEST export package {exc.reference_number} "
+            f"was not ready after {exc.timeout}s"
+        )
 
 
 @pytest.mark.integration

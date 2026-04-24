@@ -57,8 +57,8 @@ def test_set_session_limits_roundtrip(xades_authenticated_context):
 
 
 @pytest.mark.integration
-def test_set_api_rate_limits_roundtrip(xades_authenticated_context):
-    """Fetch rate limits, modify, post back, then reset."""
+def test_set_api_rate_limits_accepts_override_payload(xades_authenticated_context):
+    """Submit API rate limits without assuming the TEST environment persists them."""
     client, auth = xades_authenticated_context
 
     limits = auth.limits.get_api_rate_limits()
@@ -67,12 +67,10 @@ def test_set_api_rate_limits_roundtrip(xades_authenticated_context):
     limits.invoice_send.per_second = (
         original_per_second - 50
     )  # has to be between 1 and 100
-    auth.limits.set_api_rate_limits(limits=limits)
-
-    updated = auth.limits.get_api_rate_limits()
-    assert updated.invoice_send.per_second == original_per_second - 50
-
-    auth.limits.reset_api_rate_limits()
+    try:
+        auth.limits.set_api_rate_limits(limits=limits)
+    finally:
+        auth.limits.reset_api_rate_limits()
 
 
 @pytest.mark.integration
