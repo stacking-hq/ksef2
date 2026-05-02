@@ -32,9 +32,8 @@ class InvoiceHeader(KSeFBaseModel):
         default_factory=datetime.now, description="Maps to Tnaglowek.DataWytworzeniaFA"
     )
 
-    system_info: str = Field(
-        default_factory=_default_system_info,
-        min_length=1,
+    system_info: str | None = Field(
+        default=None,
         max_length=256,
-        description="Maps to Tnaglowek.SystemInfo",
+        description="Maps to Tnaglowek.SystemInfo. Leave empty to omit from the header.",
     )

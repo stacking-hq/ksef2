@@ -23,14 +23,16 @@ class ContactInfo(KSeFBaseModel):
 class InvoiceAddress(KSeFBaseModel):
     """Address shape aligned with FA(3) ``schemat.Tadres``."""
 
-    country_code: str
+    country_code: str | None = None
     address_line_1: str
     address_line_2: str | None = None
     gln: str | None = None
 
     @field_validator("country_code")
     @classmethod
-    def _validate_country_code(cls, value: str) -> str:
+    def _validate_country_code(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
         normalized = value.upper()
         if re.fullmatch(r"[A-Z]{2}", normalized) is None:
             raise ValueError("country_code must be a 2-letter ISO code")
@@ -80,7 +82,8 @@ class InvoiceEntity(KSeFBaseModel):
                     "tax_id must be exactly 10 digits when country_code is PL"
                 )
         if (
-            self.address.country_code != "PL"
+            self.address.country_code is not None
+            and self.address.country_code != "PL"
             and self.tax_id is not None
             and self.eu_vat_id is None
         ):

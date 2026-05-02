@@ -40,7 +40,7 @@ def _default_state() -> InvoiceCorrectionState:
 
 
 def _build_address(
-    country_code: str,
+    country_code: str | None,
     address_line_1: str,
     address_line_2: str | None = None,
     gln: str | None = None,

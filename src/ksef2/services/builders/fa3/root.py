@@ -64,12 +64,12 @@ class StandardInvoiceBuilder(
             ),
         ] = None,
         system_info: Annotated[
-            str,
+            str | None,
             builder_param(
-                "Name of the application or service that generated the invoice.",
+                "Name of the application or service that generated the invoice. Leave empty to omit from the header.",
                 examples=["my-erp", "billing-service"],
             ),
-        ],
+        ] = None,
     ) -> Self:
         self._header = InvoiceHeader(
             generation_timestamp=to_aware_datetime(
@@ -556,12 +556,9 @@ class StandardInvoiceBuilder(
         ] = None,
     ) -> Self:
         address = None
-        if (
-            address_country_code is not None
-            and address_line_1 is not None
-            and address_line_2 is not None
-            and gln is not None
-        ):
+        if address_line_1 is not None:
+            # Allow building address with just address_line_1 and optionally address_line_2
+            # country_code and gln are not required
             address = self._build_address(
                 country_code=address_country_code,
                 address_line_1=address_line_1,
@@ -578,12 +575,9 @@ class StandardInvoiceBuilder(
                 correspondence_gln,
             )
         ):
-            if (
-                correspondence_country_code is None
-                or correspondence_address_line_1 is None
-            ):
+            if correspondence_address_line_1 is None:
                 raise ValueError(
-                    "correspondence_country_code and correspondence_address_line_1 are required when providing a correspondence address."
+                    "correspondence_address_line_1 is required when providing a correspondence address."
                 )
             correspondence_address = self._build_address(
                 country_code=correspondence_country_code,
@@ -779,7 +773,7 @@ class StandardInvoiceBuilder(
     ) -> InvoiceEntity:
         contact = ContactInfo(email=email, phone=phone) if email or phone else None
         address = None
-        if country_code and address_line_1:
+        if address_line_1:
             address = StandardInvoiceBuilder._build_address(
                 country_code=country_code,
                 address_line_1=address_line_1,
@@ -804,7 +798,7 @@ class StandardInvoiceBuilder(
     @staticmethod
     def _build_address(
         *,
-        country_code: str,
+        country_code: str | None,
         address_line_1: str,
         address_line_2: str | None = None,
         gln: str | None = None,
