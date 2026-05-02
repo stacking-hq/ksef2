@@ -66,7 +66,7 @@ class StandardInvoiceBuilder(
         system_info: Annotated[
             str | None,
             builder_param(
-                "Name of the application or service that generated the invoice. Leave empty to omit from the header.",
+                "Name of the application or service that generated the invoice.",
                 examples=["my-erp", "billing-service"],
             ),
         ] = None,
@@ -557,8 +557,10 @@ class StandardInvoiceBuilder(
     ) -> Self:
         address = None
         if address_line_1 is not None:
-            # Allow building address with just address_line_1 and optionally address_line_2
-            # country_code and gln are not required
+            if address_country_code is None:
+                raise ValueError(
+                    "address_country_code is required when providing a third-party address."
+                )
             address = self._build_address(
                 country_code=address_country_code,
                 address_line_1=address_line_1,
@@ -578,6 +580,10 @@ class StandardInvoiceBuilder(
             if correspondence_address_line_1 is None:
                 raise ValueError(
                     "correspondence_address_line_1 is required when providing a correspondence address."
+                )
+            if correspondence_country_code is None:
+                raise ValueError(
+                    "correspondence_country_code is required when providing a correspondence address."
                 )
             correspondence_address = self._build_address(
                 country_code=correspondence_country_code,
@@ -774,6 +780,8 @@ class StandardInvoiceBuilder(
         contact = ContactInfo(email=email, phone=phone) if email or phone else None
         address = None
         if address_line_1:
+            if country_code is None:
+                raise ValueError("country_code is required when providing an address.")
             address = StandardInvoiceBuilder._build_address(
                 country_code=country_code,
                 address_line_1=address_line_1,
@@ -798,7 +806,7 @@ class StandardInvoiceBuilder(
     @staticmethod
     def _build_address(
         *,
-        country_code: str | None,
+        country_code: str,
         address_line_1: str,
         address_line_2: str | None = None,
         gln: str | None = None,

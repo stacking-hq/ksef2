@@ -10,9 +10,7 @@ from ksef2.infra.schema.fa3.models.kody_krajow_v10_0_e import TkodKraju
 from ksef2.infra.schema.fa3.models.schemat import Tadres
 
 
-def _to_country_code(value: str | None) -> TkodKraju | None:
-    if value is None:
-        return None
+def _to_country_code(value: str) -> TkodKraju:
     try:
         return TkodKraju[value.upper()]
     except KeyError:

@@ -35,5 +35,5 @@ class InvoiceHeader(KSeFBaseModel):
     system_info: str | None = Field(
         default=None,
         max_length=256,
-        description="Maps to Tnaglowek.SystemInfo. Leave empty to omit from the header.",
+        description="Maps to Tnaglowek.SystemInfo",
     )
