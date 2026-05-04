@@ -1,4 +1,5 @@
-from typing import Callable, Self
+from typing import Self
+from collections.abc import Callable
 
 from ksef2.domain.models.fa3.body import InvoiceType
 from ksef2.domain.models.fa3.body.root import KsefInvoiceBody

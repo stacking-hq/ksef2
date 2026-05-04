@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, runtime_checkable
 
 import structlog
 
@@ -15,6 +15,7 @@ _SHARED_PROCESSORS: list[Any] = [
 ]
 
 
+@runtime_checkable
 class LoggerProtocol(Protocol):
     def info(self, event: str | None = None, **kw: object) -> object: ...
     def warning(self, event: str | None = None, **kw: object) -> object: ...
@@ -23,9 +24,14 @@ class LoggerProtocol(Protocol):
     def bind(self, **new_values: object) -> "LoggerProtocol": ...
 
 
-def get_logger(name: str | None = None, **initial_values: object) -> LoggerProtocol:
-    """Return a package logger without configuring global logging on import."""
-    return structlog.get_logger(name or DEFAULT_LOGGER_NAME, **initial_values)  # type: ignore[return-value]
+def get_logger(name: str | None = None, **initial_values: object) -> Any:
+    """Return a package logger without configuring global logging on import.
+
+    The return type mirrors structlog.get_logger(), which returns Any because
+    its lazy-proxy wrapper (BoundLoggerLazyProxy) does not satisfy any static
+    protocol.
+    """
+    return structlog.get_logger(name or DEFAULT_LOGGER_NAME, **initial_values)
 
 
 def configure_logging(

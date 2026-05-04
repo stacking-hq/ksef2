@@ -1,4 +1,5 @@
-from typing import Annotated, Callable, Self, TypedDict
+from typing import Annotated, Self, TypedDict
+from collections.abc import Callable
 
 from pydantic import TypeAdapter
 

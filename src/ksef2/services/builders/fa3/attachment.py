@@ -1,4 +1,5 @@
-from typing import Annotated, Callable, Self
+from typing import Annotated, Self
+from collections.abc import Callable
 
 from ksef2.domain.models.fa3.attachment import (
     Attachment,
