@@ -713,6 +713,10 @@ class EncryptionInfo(BaseModel):
     """
     Wektor inicjalizujący (IV) o długości 16 bajtów, używany do szyfrowania symetrycznego, zakodowany w formacie Base64.
     """
+    publicKeyId: Annotated[Base64Str | None, Field(max_length=44, min_length=44)] = None
+    """
+    Identyfikator klucza publicznego użytego do szyfrowania.
+    """
 
 
 class EnrollmentEffectiveSubjectLimits(BaseModel):
@@ -2839,6 +2843,10 @@ class InitTokenAuthenticationRequest(BaseModel):
     """
     Zaszyfrowany token wraz z timestampem z challenge'a, w postaci `token|timestamp`, zakodowany w formacie Base64.
     """
+    publicKeyId: Annotated[Base64Str | None, Field(max_length=44, min_length=44)] = None
+    """
+    Identyfikator klucza publicznego użytego do szyfrowania tokena.
+    """
     authorizationPolicy: AuthorizationPolicy | None = None
     """
     Polityka autoryzacji żądań przy każdym użyciu tokena dostępu.
@@ -3373,6 +3381,14 @@ class PublicKeyCertificate(BaseModel):
     certificate: Base64Str
     """
     Certyfikat klucza publicznego w formacie DER, zakodowany w formacie Base64.
+    """
+    certificateId: Base64Str
+    """
+    Identyfikator certyfikatu.
+    """
+    publicKeyId: Base64Str
+    """
+    Identyfikator klucza, używany jako selektor w wywołaniach, w których klient wskazuje, jakiego klucza publicznego użył do szyfrowania.
     """
     validFrom: AwareDatetime
     """
