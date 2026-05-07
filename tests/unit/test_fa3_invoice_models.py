@@ -80,7 +80,7 @@ def test_foreign_entity_may_omit_tax_id() -> None:
 
 def test_invoice_address_requires_country_code() -> None:
     with pytest.raises(ValidationError, match="country_code"):
-        InvoiceAddress(address_line_1="Unter den Linden 1")
+        InvoiceAddress(country_code="", address_line_1="Unter den Linden 1")
 
 
 def test_foreign_entity_accepts_other_identifier() -> None:
