@@ -26,6 +26,8 @@ def from_spec(
     """Convert a generated public key certificate into its domain model."""
     return PublicKeyCertificate(
         certificate=response.certificate,
+        certificate_id=response.certificateId,
+        public_key_id=response.publicKeyId,
         valid_from=response.validFrom,
         valid_to=response.validTo,
         usage=[usage_from_spec(usage) for usage in response.usage],

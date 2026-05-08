@@ -71,12 +71,23 @@ class AsyncAuthenticatedClient:
             return
         self._certificate_store.load(await self._encryption_client.get_certificates())
 
-    async def get_encryption_key(self) -> tuple[bytes, bytes, bytes]:
+    async def _get_encryption_material(
+        self,
+    ) -> tuple[bytes, bytes, bytes, str | None]:
         await self._ensure_encryption_certificates_loaded()
 
         cert = self._certificate_store.get_valid("symmetric_key_encryption")
         aes_key, iv = generate_session_key()
         encrypted_key = encrypt_symmetric_key(key=aes_key, cert_b64=cert.certificate)
+        return aes_key, iv, encrypted_key, cert.public_key_id
+
+    async def get_encryption_key(self) -> tuple[bytes, bytes, bytes]:
+        (
+            aes_key,
+            iv,
+            encrypted_key,
+            _public_key_id,
+        ) = await self._get_encryption_material()
         return aes_key, iv, encrypted_key
 
     async def online_session(
@@ -84,11 +95,17 @@ class AsyncAuthenticatedClient:
         *,
         form_code: FormSchema,
     ) -> AsyncOnlineSessionClient:
-        aes_key, iv, encrypted_key = await self.get_encryption_key()
+        (
+            aes_key,
+            iv,
+            encrypted_key,
+            public_key_id,
+        ) = await self._get_encryption_material()
 
         request = OpenOnlineSessionRequest(
             encrypted_key=encrypted_key,
             iv=iv,
+            public_key_id=public_key_id,
             form_code=form_code,
         )
         session_data = session_from_spec(
@@ -131,6 +148,7 @@ class AsyncAuthenticatedClient:
                 aes_key=encryption.get_aes_key_bytes(),
                 iv=encryption.get_iv_bytes(),
                 encrypted_key=encryption.get_encrypted_key_bytes(),
+                public_key_id=encryption.public_key_id,
                 form_code=prepared_batch.form_code,
                 offline_mode=prepared_batch.offline_mode,
                 prepared_batch=prepared_batch,
@@ -141,12 +159,18 @@ class AsyncAuthenticatedClient:
                 "prepared_batch or batch_file is required when opening a batch session."
             )
 
-        aes_key, iv, encrypted_key = await self.get_encryption_key()
+        (
+            aes_key,
+            iv,
+            encrypted_key,
+            public_key_id,
+        ) = await self._get_encryption_material()
         return await self.open_batch_session(
             batch_file=batch_file,
             aes_key=aes_key,
             iv=iv,
             encrypted_key=encrypted_key,
+            public_key_id=public_key_id,
             form_code=form_code,
             offline_mode=offline_mode,
         )
@@ -158,6 +182,7 @@ class AsyncAuthenticatedClient:
         aes_key: bytes,
         iv: bytes,
         encrypted_key: bytes,
+        public_key_id: str | None = None,
         form_code: FormSchema = FormSchema.FA3,
         offline_mode: bool = False,
         prepared_batch: PreparedBatch | None = None,
@@ -165,6 +190,7 @@ class AsyncAuthenticatedClient:
         request = OpenBatchSessionRequest(
             encrypted_key=encrypted_key,
             iv=iv,
+            public_key_id=public_key_id,
             batch_file=batch_file,
             form_code=form_code,
             offline_mode=offline_mode,
@@ -215,7 +241,7 @@ class AsyncAuthenticatedClient:
         return AsyncBatchService(
             authed_transport=self._authed_transport,
             upload_transport=self._transport,
-            get_encryption_key=self.get_encryption_key,
+            get_encryption_key=self._get_encryption_material,
             open_batch_session=self.open_batch_session,
         )
 

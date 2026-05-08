@@ -89,5 +89,6 @@ def _(request: InitTokenAuthenticationRequest) -> supp:
             value=request.context_value,
         ),
         encryptedToken=request.encrypted_token,
+        publicKeyId=request.public_key_id,
         authorizationPolicy=None,
     )

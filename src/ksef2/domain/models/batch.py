@@ -55,6 +55,7 @@ class BatchEncryptionData(KSeFBaseModel):
     aes_key: str
     iv: str
     encrypted_key: str
+    public_key_id: str | None = None
 
     @classmethod
     def from_bytes(
@@ -63,11 +64,13 @@ class BatchEncryptionData(KSeFBaseModel):
         aes_key: bytes,
         iv: bytes,
         encrypted_key: bytes,
+        public_key_id: str | None = None,
     ) -> Self:
         return cls(
             aes_key=base64.b64encode(aes_key).decode(),
             iv=base64.b64encode(iv).decode(),
             encrypted_key=base64.b64encode(encrypted_key).decode(),
+            public_key_id=public_key_id,
         )
 
     def get_aes_key_bytes(self) -> bytes:
@@ -105,6 +108,7 @@ class OpenBatchSessionRequest(KSeFBaseModel):
 
     encrypted_key: bytes
     iv: bytes
+    public_key_id: str | None = None
     batch_file: BatchFileInfo
     form_code: FormSchema = FormSchema.FA3
     offline_mode: bool = False

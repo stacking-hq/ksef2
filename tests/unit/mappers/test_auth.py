@@ -185,6 +185,7 @@ class TestAuthRequestMapper:
         assert output.contextIdentifier.type == to_spec(request.context_type)
         assert output.contextIdentifier.value == request.context_value
         assert output.encryptedToken == request.encrypted_token
+        assert output.publicKeyId == request.public_key_id
         assert output.authorizationPolicy is None
 
     def test_to_spec_unknown_string_raises(self) -> None:

@@ -26,9 +26,23 @@ class TestEncryptionResponseMapper:
 
         assert isinstance(output, PublicKeyCertificate)
         assert output.certificate == mapped_input.certificate
+        assert output.certificate_id == mapped_input.certificateId
+        assert output.public_key_id == mapped_input.publicKeyId
         assert output.valid_from == mapped_input.validFrom
         assert output.valid_to == mapped_input.validTo
         assert output.usage == ["ksef_token_encryption"]
+
+    def test_map_public_key_certificate_ignores_future_response_fields(
+        self, public_key_cert: BaseFactory[spec.PublicKeyCertificate]
+    ):
+        payload = public_key_cert.build().model_dump(mode="json")
+        payload["futureField"] = "ignored"
+
+        parsed = spec.PublicKeyCertificate.model_validate(payload)
+        output = from_spec(parsed)
+
+        assert isinstance(output, PublicKeyCertificate)
+        assert output.public_key_id == parsed.publicKeyId
 
     def test_map_public_key_certificate_multiple_usages(
         self, public_key_cert: BaseFactory[spec.PublicKeyCertificate]

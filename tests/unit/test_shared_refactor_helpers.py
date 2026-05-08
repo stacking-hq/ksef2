@@ -17,6 +17,7 @@ from ksef2.endpoints.base import BaseEndpoints
 from ksef2.services.async_batch import AsyncBatchService
 from ksef2.services.batch import BatchService
 from tests.unit.fakes.transport import AsyncFakeTransport, FakeTransport
+from tests.unit.helpers import VALID_PUBLIC_KEY_ID
 
 HTTPX_CLIENT_CLASS = httpx.Client
 HTTPX_ASYNC_CLIENT_CLASS = httpx.AsyncClient
@@ -93,12 +94,17 @@ def test_sync_and_async_batch_preparation_share_metadata_logic() -> None:
     sync_service = BatchService(
         authed_transport=FakeTransport(),
         upload_transport=FakeTransport(),
-        get_encryption_key=lambda: (b"k" * 32, b"v" * 16, b"enc-key"),
+        get_encryption_key=lambda: (
+            b"k" * 32,
+            b"v" * 16,
+            b"enc-key",
+            VALID_PUBLIC_KEY_ID,
+        ),
         open_batch_session=_sync_open_batch_session,
     )
 
-    async def _get_encryption_key() -> tuple[bytes, bytes, bytes]:
-        return b"k" * 32, b"v" * 16, b"enc-key"
+    async def _get_encryption_key() -> tuple[bytes, bytes, bytes, str | None]:
+        return b"k" * 32, b"v" * 16, b"enc-key", VALID_PUBLIC_KEY_ID
 
     async_service = AsyncBatchService(
         authed_transport=AsyncFakeTransport(),

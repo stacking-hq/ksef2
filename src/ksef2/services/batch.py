@@ -31,7 +31,7 @@ class BatchService:
         *,
         authed_transport: Middleware,
         upload_transport: Middleware,
-        get_encryption_key: Callable[[], tuple[bytes, bytes, bytes]],
+        get_encryption_key: Callable[[], tuple[bytes, bytes, bytes, str | None]],
         open_batch_session: Callable[..., BatchSessionClient],
     ) -> None:
         self._invoice_eps = InvoicesEndpoints(authed_transport)
@@ -60,12 +60,13 @@ class BatchService:
             A prepared batch with encrypted part payloads and the metadata required
             to open a batch session.
         """
-        aes_key, iv, encrypted_key = self._get_encryption_key()
+        aes_key, iv, encrypted_key, public_key_id = self._get_encryption_key()
         return prepare_batch_package(
             invoices=invoices,
             aes_key=aes_key,
             iv=iv,
             encrypted_key=encrypted_key,
+            public_key_id=public_key_id,
             form_code=form_code,
             offline_mode=offline_mode,
             max_part_size=max_part_size,
@@ -113,6 +114,7 @@ class BatchService:
             aes_key=encryption.get_aes_key_bytes(),
             iv=encryption.get_iv_bytes(),
             encrypted_key=encryption.get_encrypted_key_bytes(),
+            public_key_id=encryption.public_key_id,
             form_code=prepared_batch.form_code,
             offline_mode=prepared_batch.offline_mode,
             prepared_batch=prepared_batch,

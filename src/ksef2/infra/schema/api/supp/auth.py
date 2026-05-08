@@ -24,6 +24,10 @@ class InitTokenAuthenticationRequest(BaseSupp):
     """
     Zaszyfrowany token wraz z timestampem z challenge'a, w postaci `token|timestamp`, zakodowany w formacie Base64.
     """
+    publicKeyId: str | None = None
+    """
+    Identyfikator klucza publicznego użytego do szyfrowania tokena.
+    """
     authorizationPolicy: AuthorizationPolicy | None = None
     """
     Polityka autoryzacji żądań przy każdym użyciu tokena dostępu.

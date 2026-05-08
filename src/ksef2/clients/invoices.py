@@ -46,6 +46,7 @@ class InvoicesClient:
         *,
         filters: InvoicesFilter,
         encryption_certificate: str,
+        encryption_public_key_id: str | None = None,
         only_metadata: bool = False,
     ) -> ExportHandle:
         """Schedule an export and return the handle needed to decrypt it later."""
@@ -59,6 +60,7 @@ class InvoicesClient:
                 filter=filters,
                 encrypted_symmetric_key=base64.b64encode(encrypted_key).decode(),
                 initialization_vector=base64.b64encode(iv).decode(),
+                public_key_id=encryption_public_key_id,
                 only_metadata=only_metadata,
             )
         )

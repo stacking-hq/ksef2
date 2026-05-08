@@ -6,7 +6,7 @@ from ksef2.infra.schema.api.supp.batch import OpenBatchSessionRequest
 from polyfactory.factories.pydantic_factory import ModelFactory
 from polyfactory.pytest_plugin import register_fixture
 
-from tests.unit.helpers import VALID_BASE64
+from tests.unit.helpers import VALID_BASE64, VALID_PUBLIC_KEY_ID
 
 
 @register_fixture(name="session_open_online_req")
@@ -23,6 +23,7 @@ class OpenOnlineSessionResponseFactory(
 class DomainOpenOnlineSessionRequestFactory(
     ModelFactory[domain_session.OpenOnlineSessionRequest]
 ):
+    public_key_id: str = VALID_PUBLIC_KEY_ID
     form_code: domain_session.FormSchema = domain_session.FormSchema.FA3
 
 
@@ -45,6 +46,7 @@ class DomainOpenBatchSessionRequestFactory(
 ):
     encrypted_key: bytes = b"secret-batch-key"
     iv: bytes = b"\x00" * 16
+    public_key_id: str = VALID_PUBLIC_KEY_ID
     form_code: domain_session.FormSchema = domain_session.FormSchema.FA3
     offline_mode: bool = False
 

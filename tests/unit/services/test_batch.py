@@ -25,6 +25,7 @@ from ksef2.domain.models.session import FormSchema
 from ksef2.infra.schema.api import spec
 from ksef2.services.batch import BatchService
 from tests.unit.fakes.transport import FakeTransport
+from tests.unit.helpers import VALID_PUBLIC_KEY_ID
 
 
 def _build_service(
@@ -37,7 +38,7 @@ def _build_service(
         authed_transport=fake_transport,
         upload_transport=fake_transport,
         get_encryption_key=get_encryption_key
-        or (lambda: (b"k" * 32, b"v" * 16, b"enc-key")),
+        or (lambda: (b"k" * 32, b"v" * 16, b"enc-key", VALID_PUBLIC_KEY_ID)),
         open_batch_session=open_batch_session,
     )
 
@@ -62,6 +63,7 @@ class TestBatchService:
         assert len(prepared.parts) == 1
         assert prepared.invoices[0].invoice_hash == sha256_b64(invoices[0].content)
         assert prepared.invoices[1].invoice_hash == sha256_b64(invoices[1].content)
+        assert prepared.encryption.public_key_id == VALID_PUBLIC_KEY_ID
 
         decrypted_zip = decrypt_aes_cbc(
             prepared.parts[0].content,

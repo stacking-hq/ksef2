@@ -264,4 +264,6 @@ class TestAsyncAuthenticatedOnlineSession:
         assert call.method == "POST"
         assert call.path == SessionRoutes.OPEN_ONLINE
         assert call.headers == {"Authorization": "Bearer fake-access-token"}
+        assert call.json is not None
+        assert call.json["encryption"]["publicKeyId"] == store.all()[0].public_key_id
         assert session_client.get_state().access_token == "fake-access-token"

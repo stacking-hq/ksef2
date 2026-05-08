@@ -328,6 +328,7 @@ class ExportInvoicesPayload(KSeFBaseModel):
     filter: InvoicesFilter
     encrypted_symmetric_key: str
     initialization_vector: str
+    public_key_id: str | None = None
     only_metadata: bool = False
 
 

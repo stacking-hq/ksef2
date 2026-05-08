@@ -84,10 +84,8 @@ class TestAuthClient:
         auth_status_resp: BaseFactory[spec.AuthenticationOperationStatusResponse],
         auth_tokens_resp: BaseFactory[spec.AuthenticationTokensResponse],
     ) -> None:
-        client = _build_auth_client(
-            fake_transport,
-            _token_store(domain_public_key_cert.build(usage=["ksef_token_encryption"])),
-        )
+        certificate = domain_public_key_cert.build(usage=["ksef_token_encryption"])
+        client = _build_auth_client(fake_transport, _token_store(certificate))
         challenge = auth_challenge_resp.build(timestampMs=1735689600000)
         init_response = auth_init_resp.build()
         status_response = auth_status_resp.build(
@@ -114,6 +112,7 @@ class TestAuthClient:
         assert token_request.contextIdentifier.type == "Nip"
         assert token_request.contextIdentifier.value == "1234567890"
         assert token_request.encryptedToken == VALID_BASE64
+        assert token_request.publicKeyId == certificate.public_key_id
         assert status_call.method == "GET"
         assert status_call.path == AuthRoutes.AUTH_STATUS.format(
             referenceNumber=init_response.referenceNumber

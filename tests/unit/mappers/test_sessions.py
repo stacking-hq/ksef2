@@ -45,6 +45,7 @@ class TestSessionRequestMapper:
         assert result.formCode.value == "PEF"
         assert result.encryption.encryptedSymmetricKey == "c2VjcmV0"
         assert result.encryption.initializationVector == "AAAAAAAAAAAAAAAAAAAAAA=="
+        assert result.encryption.publicKeyId == request.public_key_id
 
     def test_to_spec_open_batch_session_request(
         self,
@@ -72,6 +73,7 @@ class TestSessionRequestMapper:
         assert result.batchFile.fileHash == "ZmFrZS1iYXRjaC1oYXNoLWJhc2U2NA=="
         assert result.encryption.encryptedSymmetricKey == "YmF0Y2gtc2VjcmV0"
         assert result.encryption.initializationVector == "AQEBAQEBAQEBAQEBAQEBAQ=="
+        assert result.encryption.publicKeyId == request.public_key_id
         assert result.offlineMode is True
 
     def test_list_sessions_query_params(

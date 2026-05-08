@@ -244,6 +244,7 @@ def _(request: invoices.ExportInvoicesPayload) -> spec.InvoiceExportRequest:
         encryption=spec.EncryptionInfo(
             encryptedSymmetricKey=request.encrypted_symmetric_key,
             initializationVector=request.initialization_vector,
+            publicKeyId=request.public_key_id,
         ),
         onlyMetadata=request.only_metadata,
         filters=to_spec(request.filter),

@@ -14,6 +14,7 @@ from ksef2.domain.models.session import FormSchema
 from ksef2.infra.mappers.invoices import to_spec
 from ksef2.infra.schema.api import spec
 from tests.unit.fakes.transport import AsyncFakeTransport
+from tests.unit.helpers import VALID_PUBLIC_KEY_ID
 
 
 def _build_client(
@@ -88,6 +89,7 @@ class TestAsyncInvoicesClient:
             invoices_client.schedule_export(
                 filters=filters,
                 encryption_certificate="ZmFrZS1jZXJ0",
+                encryption_public_key_id=VALID_PUBLIC_KEY_ID,
                 only_metadata=True,
             )
         )
@@ -96,6 +98,7 @@ class TestAsyncInvoicesClient:
                 filter=filters,
                 encrypted_symmetric_key="ZW5jLWtleQ==",
                 initialization_vector="dnZ2dnZ2dnZ2dnZ2dnZ2dg==",
+                public_key_id=VALID_PUBLIC_KEY_ID,
                 only_metadata=True,
             )
         )

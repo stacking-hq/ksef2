@@ -71,6 +71,7 @@ class InvoicesService:
         return self._client.schedule_export(
             filters=filters,
             encryption_certificate=cert.certificate,
+            encryption_public_key_id=cert.public_key_id,
             only_metadata=only_metadata,
         )
 

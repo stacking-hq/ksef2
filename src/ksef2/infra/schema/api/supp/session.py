@@ -15,6 +15,10 @@ class EncryptionInfo(BaseSupp):
     """
     Wektor inicjalizujący (IV) o długości 16 bajtów, używany do szyfrowania symetrycznego, zakodowany w formacie Base64.
     """
+    publicKeyId: str | None = None
+    """
+    Identyfikator klucza publicznego użytego do szyfrowania.
+    """
 
 
 class OpenOnlineSessionRequest(BaseSupp):

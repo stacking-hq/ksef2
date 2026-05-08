@@ -80,6 +80,7 @@ class AsyncAuthClient:
             context_type=context_type,
             context_value=nip,
             encrypted_token=encrypted,
+            public_key_id=cert.public_key_id,
         )
         init_resp = from_spec(await self._auth_ep.token_auth(body=to_spec(request)))
 

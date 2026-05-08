@@ -5,7 +5,7 @@ from ksef2.infra.schema.api import spec
 from polyfactory.factories.pydantic_factory import ModelFactory
 from polyfactory.pytest_plugin import register_fixture
 
-from tests.unit.helpers import VALID_BASE64
+from tests.unit.helpers import VALID_BASE64, VALID_PUBLIC_KEY_ID
 
 
 def _future_time(hours: int = 1) -> datetime:
@@ -82,6 +82,7 @@ class InitTokenAuthenticationRequestFactory(
 ):
     challenge = "A" * 36
     encryptedToken = VALID_BASE64
+    publicKeyId = VALID_PUBLIC_KEY_ID
     contextIdentifier = spec.AuthenticationContextIdentifier(
         type=spec.AuthenticationContextIdentifierType.Nip,
         value="1234567890",
@@ -97,6 +98,7 @@ class DomainInitTokenAuthenticationRequestFactory(
     context_type: str = "nip"
     context_value: str = "1234567890"
     encrypted_token: str = VALID_BASE64
+    public_key_id: str = VALID_PUBLIC_KEY_ID
 
 
 @register_fixture(name="domain_auth_challenge_resp")

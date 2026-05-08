@@ -33,6 +33,8 @@ class PublicKeyCertificate(KSeFBaseModel):
     """Public certificate that can encrypt tokens or session keys for KSeF."""
 
     certificate: str
+    certificate_id: str | None = None
+    public_key_id: str | None = None
     valid_from: datetime
     valid_to: datetime
     usage: list[CertUsage]

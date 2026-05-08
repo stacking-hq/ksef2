@@ -32,6 +32,7 @@ def prepare_batch_package(
     aes_key: bytes,
     iv: bytes,
     encrypted_key: bytes,
+    public_key_id: str | None = None,
     form_code: FormSchema = FormSchema.FA3,
     offline_mode: bool = False,
     max_part_size: int = MAX_BATCH_PART_SIZE,
@@ -78,6 +79,7 @@ def prepare_batch_package(
             aes_key=aes_key,
             iv=iv,
             encrypted_key=encrypted_key,
+            public_key_id=public_key_id,
         ),
         invoices=[
             BatchInvoiceHash(

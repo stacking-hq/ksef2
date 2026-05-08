@@ -30,6 +30,7 @@ from ksef2.services.batch import BatchService
 from ksef2.services.invoices import InvoicesService
 from tests.unit.conftest import _TOKEN
 from tests.unit.fakes.transport import FakeTransport
+from tests.unit.helpers import VALID_PUBLIC_KEY_ID
 from ksef2.core.crypto import sha256_b64
 
 
@@ -194,6 +195,8 @@ class TestEncryptionAndSessions:
         assert call.method == "POST"
         assert call.path == SessionRoutes.OPEN_ONLINE
         assert call.headers == {"Authorization": f"Bearer {_TOKEN}"}
+        assert call.json is not None
+        assert call.json["encryption"]["publicKeyId"] == store.all()[0].public_key_id
         assert session_client.get_state().access_token == _TOKEN
 
     @patch("ksef2.clients.authenticated.encrypt_symmetric_key", return_value=b"enc-key")
@@ -234,6 +237,8 @@ class TestEncryptionAndSessions:
         assert call.method == "POST"
         assert call.path == SessionRoutes.OPEN_BATCH
         assert call.headers == {"Authorization": f"Bearer {_TOKEN}"}
+        assert call.json is not None
+        assert call.json["encryption"]["publicKeyId"] == store.all()[0].public_key_id
         assert batch_client.access_token == _TOKEN
 
     def test_open_batch_session_uses_supplied_encryption_material(
@@ -251,12 +256,16 @@ class TestEncryptionAndSessions:
             aes_key=b"a" * 32,
             iv=b"b" * 16,
             encrypted_key=b"enc-key",
+            public_key_id=VALID_PUBLIC_KEY_ID,
         )
 
         assert isinstance(batch_client, BatchSessionClient)
         assert batch_client.aes_key == b"a" * 32
         assert batch_client.iv == b"b" * 16
-        assert fake_transport.calls[0].path == SessionRoutes.OPEN_BATCH
+        call = fake_transport.calls[0]
+        assert call.path == SessionRoutes.OPEN_BATCH
+        assert call.json is not None
+        assert call.json["encryption"]["publicKeyId"] == VALID_PUBLIC_KEY_ID
 
     def test_batch_session_accepts_prepared_batch(
         self,
@@ -292,6 +301,7 @@ class TestEncryptionAndSessions:
                 aes_key=b"a" * 32,
                 iv=b"b" * 16,
                 encrypted_key=b"enc-key",
+                public_key_id=VALID_PUBLIC_KEY_ID,
             ),
             invoices=[],
         )
@@ -301,7 +311,10 @@ class TestEncryptionAndSessions:
         assert isinstance(batch_client, BatchSessionClient)
         assert batch_client.aes_key == b"a" * 32
         assert batch_client.iv == b"b" * 16
-        assert fake_transport.calls[0].path == SessionRoutes.OPEN_BATCH
+        call = fake_transport.calls[0]
+        assert call.path == SessionRoutes.OPEN_BATCH
+        assert call.json is not None
+        assert call.json["encryption"]["publicKeyId"] == VALID_PUBLIC_KEY_ID
 
     def test_resume_online_session_reuses_authenticated_transport(
         self,

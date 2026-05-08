@@ -128,6 +128,7 @@ class InvoiceStatusInfo(KSeFBaseModel):
 class OpenOnlineSessionRequest(KSeFBaseModel):
     encrypted_key: bytes
     iv: bytes
+    public_key_id: str | None = None
     form_code: FormSchema = FormSchema.FA3
 
 

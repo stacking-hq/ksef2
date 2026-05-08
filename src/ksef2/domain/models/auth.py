@@ -59,6 +59,7 @@ class InitTokenAuthenticationRequest(KSeFBaseModel):
     context_type: ContextIdentifierType
     context_value: str
     encrypted_token: str
+    public_key_id: str | None = None
 
 
 class ChallengeResponse(KSeFBaseModel):

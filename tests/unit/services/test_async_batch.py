@@ -26,6 +26,7 @@ from ksef2.domain.models.session import FormSchema
 from ksef2.infra.schema.api import spec
 from ksef2.services.async_batch import AsyncBatchService
 from tests.unit.fakes.transport import AsyncFakeTransport
+from tests.unit.helpers import VALID_PUBLIC_KEY_ID
 
 
 def _build_service(
@@ -34,8 +35,8 @@ def _build_service(
     open_batch_session,
     get_encryption_key=None,
 ) -> AsyncBatchService:
-    async def _default_get_encryption_key() -> tuple[bytes, bytes, bytes]:
-        return b"k" * 32, b"v" * 16, b"enc-key"
+    async def _default_get_encryption_key() -> tuple[bytes, bytes, bytes, str | None]:
+        return b"k" * 32, b"v" * 16, b"enc-key", VALID_PUBLIC_KEY_ID
 
     return AsyncBatchService(
         authed_transport=async_fake_transport,
@@ -68,6 +69,7 @@ class TestAsyncBatchService:
 
         assert prepared.form_code is FormSchema.FA3
         assert len(prepared.parts) == 1
+        assert prepared.encryption.public_key_id == VALID_PUBLIC_KEY_ID
         assert prepared.invoices[0].invoice_hash == sha256_b64(invoices[0].content)
         assert prepared.invoices[1].invoice_hash == sha256_b64(invoices[1].content)
 

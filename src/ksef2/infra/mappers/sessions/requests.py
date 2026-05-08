@@ -61,6 +61,7 @@ def _(request: OpenOnlineSessionRequest) -> spec.OpenOnlineSessionRequest:
         encryption=spec.EncryptionInfo(
             encryptedSymmetricKey=base64.b64encode(request.encrypted_key).decode(),
             initializationVector=base64.b64encode(request.iv).decode(),
+            publicKeyId=request.public_key_id,
         ),
     )
 
@@ -91,6 +92,7 @@ def _(request: OpenBatchSessionRequest) -> spec.OpenBatchSessionRequest:
         encryption=spec.EncryptionInfo(
             encryptedSymmetricKey=base64.b64encode(request.encrypted_key).decode(),
             initializationVector=base64.b64encode(request.iv).decode(),
+            publicKeyId=request.public_key_id,
         ),
         offlineMode=request.offline_mode,
     )

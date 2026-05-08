@@ -32,7 +32,9 @@ class AsyncBatchService:
         *,
         authed_transport: AsyncMiddleware,
         upload_transport: AsyncMiddleware,
-        get_encryption_key: Callable[[], Awaitable[tuple[bytes, bytes, bytes]]],
+        get_encryption_key: Callable[
+            [], Awaitable[tuple[bytes, bytes, bytes, str | None]]
+        ],
         open_batch_session: Callable[..., Awaitable[AsyncBatchSessionClient]],
     ) -> None:
         self._invoice_eps = AsyncInvoicesEndpoints(authed_transport)
@@ -49,13 +51,14 @@ class AsyncBatchService:
         offline_mode: bool = False,
         max_part_size: int = MAX_BATCH_PART_SIZE,
     ) -> PreparedBatch:
-        aes_key, iv, encrypted_key = await self._get_encryption_key()
+        aes_key, iv, encrypted_key, public_key_id = await self._get_encryption_key()
         return await asyncio.to_thread(
             prepare_batch_package,
             invoices=invoices,
             aes_key=aes_key,
             iv=iv,
             encrypted_key=encrypted_key,
+            public_key_id=public_key_id,
             form_code=form_code,
             offline_mode=offline_mode,
             max_part_size=max_part_size,
@@ -88,6 +91,7 @@ class AsyncBatchService:
             aes_key=encryption.get_aes_key_bytes(),
             iv=encryption.get_iv_bytes(),
             encrypted_key=encryption.get_encrypted_key_bytes(),
+            public_key_id=encryption.public_key_id,
             form_code=prepared_batch.form_code,
             offline_mode=prepared_batch.offline_mode,
             prepared_batch=prepared_batch,
