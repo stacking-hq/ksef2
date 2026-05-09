@@ -9,7 +9,7 @@ from ksef2.services.builders.fa3.root import StandardInvoiceBuilder
 
 def build_sample_1_builder() -> StandardInvoiceBuilder:
     builder = StandardInvoiceBuilder()
-    (
+    _ = (
         builder.header(
             generation_timestamp=datetime(2026, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
             system_info="SampleBuilder",
@@ -35,7 +35,7 @@ def build_sample_1_builder() -> StandardInvoiceBuilder:
         )
     )
 
-    (
+    _ = (
         builder.footer()
         .add_information("Kapital zakladowy 5 000 000")
         .add_registry(
@@ -46,7 +46,7 @@ def build_sample_1_builder() -> StandardInvoiceBuilder:
         .done()
     )
 
-    (
+    _ = (
         builder.standard()
         .issue_date(date(2026, 2, 15))
         .issue_place("Warszawa")

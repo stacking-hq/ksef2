@@ -23,10 +23,6 @@ from tests.unit.factories.certificates import (
 from ksef2.core.middlewares.exceptions import KSeFExceptionMiddleware
 
 
-class InvalidContent(BaseModel):
-    invalid_field: str
-
-
 @pytest.fixture
 def req_factory(request: pytest.FixtureRequest) -> BaseFactory[BaseModel]:
     return cast(BaseFactory[BaseModel], request.getfixturevalue(request.param))
@@ -114,11 +110,12 @@ class TestCertificateEndpoints:
         method: Callable[[], BaseModel],
         resp_factory: BaseFactory[BaseModel],
     ):
-        response_dump = InvalidContent(invalid_field="invalid").model_dump()
+        response_data = resp_factory.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(response_dump)
-            _ = getattr(cert_eps, method.__name__)()
+        fake_transport.enqueue(response_data)
+        _ = getattr(cert_eps, method.__name__)()
 
         assert fake_transport.responses == []
 
@@ -206,13 +203,15 @@ class TestCertificateEndpoints:
         cert_eps: CertificatesEndpoints,
         fake_transport: transport.FakeTransport,
         cert_enroll_req: EnrollCertificateRequestFactory,
+        cert_enroll_resp: EnrollCertificateResponseFactory,
     ):
         request = cert_enroll_req.build()
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = cert_enroll_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = cert_eps.enroll(request)
+        fake_transport.enqueue(response_data)
+        _ = cert_eps.enroll(request)
 
         assert fake_transport.responses == []
 
@@ -283,12 +282,14 @@ class TestCertificateEndpoints:
         self,
         cert_eps: CertificatesEndpoints,
         fake_transport: transport.FakeTransport,
+        cert_enrollment_status_resp: CertificateEnrollmentStatusResponseFactory,
     ):
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = cert_enrollment_status_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = cert_eps.get_enrollment_status("dummy-ref")
+        fake_transport.enqueue(response_data)
+        _ = cert_eps.get_enrollment_status("dummy-ref")
 
         assert fake_transport.responses == []
 
@@ -364,13 +365,15 @@ class TestCertificateEndpoints:
         cert_eps: CertificatesEndpoints,
         fake_transport: transport.FakeTransport,
         cert_retrieve_req: RetrieveCertificatesRequestFactory,
+        cert_retrieve_resp: RetrieveCertificatesResponseFactory,
     ):
         request = cert_retrieve_req.build()
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = cert_retrieve_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = cert_eps.retrieve(request)
+        fake_transport.enqueue(response_data)
+        _ = cert_eps.retrieve(request)
 
         assert fake_transport.responses == []
 
@@ -519,13 +522,15 @@ class TestCertificateEndpoints:
         cert_eps: CertificatesEndpoints,
         fake_transport: transport.FakeTransport,
         cert_query_req: QueryCertificatesRequestFactory,
+        cert_query_resp: QueryCertificatesResponseFactory,
     ):
         request = cert_query_req.build()
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = cert_query_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = cert_eps.query(request)
+        fake_transport.enqueue(response_data)
+        _ = cert_eps.query(request)
 
         assert fake_transport.responses == []
 

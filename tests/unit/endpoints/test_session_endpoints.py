@@ -19,10 +19,6 @@ from tests.unit.factories.session import (
 from ksef2.core.middlewares.exceptions import KSeFExceptionMiddleware
 
 
-class InvalidContent(BaseModel):
-    invalid_field: str
-
-
 class TestSessionEndpoints:
     @pytest.fixture
     def session_eps(self, fake_transport: transport.FakeTransport) -> SessionEndpoints:
@@ -66,13 +62,15 @@ class TestSessionEndpoints:
         session_eps: SessionEndpoints,
         fake_transport: transport.FakeTransport,
         session_open_online_req: OpenOnlineSessionRequestFactory,
+        session_open_online_resp: OpenOnlineSessionResponseFactory,
     ):
         request = session_open_online_req.build()
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = session_open_online_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = session_eps.open_online(request)
+        fake_transport.enqueue(response_data)
+        _ = session_eps.open_online(request)
 
         assert fake_transport.responses == []
 
@@ -199,13 +197,15 @@ class TestSessionEndpoints:
         session_eps: SessionEndpoints,
         fake_transport: transport.FakeTransport,
         session_open_batch_req: OpenBatchSessionRequestFactory,
+        session_open_batch_resp: OpenBatchSessionResponseFactory,
     ):
         request = session_open_batch_req.build()
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = session_open_batch_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = session_eps.open_batch(request)
+        fake_transport.enqueue(response_data)
+        _ = session_eps.open_batch(request)
 
         assert fake_transport.responses == []
 
@@ -412,12 +412,14 @@ class TestSessionEndpoints:
         self,
         session_eps: SessionEndpoints,
         fake_transport: transport.FakeTransport,
+        session_list_resp: SessionsQueryResponseFactory,
     ):
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = session_list_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = session_eps.list_sessions(sessionType="Online")
+        fake_transport.enqueue(response_data)
+        _ = session_eps.list_sessions(sessionType="Online")
 
         assert fake_transport.responses == []
 

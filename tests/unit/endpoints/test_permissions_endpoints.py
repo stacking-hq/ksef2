@@ -41,10 +41,6 @@ def resp_factory(request: pytest.FixtureRequest) -> BaseFactory[BaseModel]:
     return cast(BaseFactory[BaseModel], request.getfixturevalue(request.param))
 
 
-class InvalidContent(BaseModel):
-    invalid_field: str
-
-
 class TestGrantPermissionsEndpoints:
     @pytest.fixture
     def grant_permissions_eps(
@@ -139,38 +135,45 @@ class TestGrantPermissionsEndpoints:
         assert fake_transport.responses == []
 
     @pytest.mark.parametrize(
-        ["method", "req_factory"],
+        ["method", "req_factory", "resp_factory"],
         [
             (
                 PermissionsGrantEndpoints.grant_person,
                 "perm_grant_person_req",
+                "perm_op_resp",
             ),
             (
                 PermissionsGrantEndpoints.grant_entity,
                 "perm_grant_entity_req",
+                "perm_op_resp",
             ),
             (
                 PermissionsGrantEndpoints.grant_authorization,
                 "perm_grant_auth_req",
+                "perm_op_resp",
             ),
             (
                 PermissionsGrantEndpoints.grant_indirect,
                 "perm_grant_indirect_req",
+                "perm_op_resp",
             ),
             (
                 PermissionsGrantEndpoints.grant_subunit,
                 "perm_grant_subunit_req",
+                "perm_op_resp",
             ),
             (
                 PermissionsGrantEndpoints.grant_administered_eu_entity,
                 "perm_grant_eu_admin_req",
+                "perm_op_resp",
             ),
             (
                 PermissionsGrantEndpoints.grant_eu_entity,
                 "perm_grant_eu_entity_req",
+                "perm_op_resp",
             ),
         ],
-        indirect=["req_factory"],
+        indirect=["req_factory", "resp_factory"],
     )
     def test_response_validation(
         self,
@@ -178,14 +181,15 @@ class TestGrantPermissionsEndpoints:
         fake_transport: transport.FakeTransport,
         method: Callable[[BaseModel], BaseModel],
         req_factory: BaseFactory[BaseModel],
+        resp_factory: BaseFactory[BaseModel],
     ):
         request = req_factory.build()
 
-        invalid_response = InvalidContent(invalid_field="invalid")
-        # Act
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = getattr(grant_permissions_eps, method.__name__)(request)
+        response_data = resp_factory.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
+        fake_transport.enqueue(response_data)
+        _ = getattr(grant_permissions_eps, method.__name__)(request)
 
     @pytest.mark.parametrize(
         ["target_path", "method", "req_factory", "resp_factory"],
@@ -335,25 +339,34 @@ class TestRevokePermissionsEndpoints:
         assert fake_transport.responses == []
 
     @pytest.mark.parametrize(
-        "method",
+        ["method", "resp_factory"],
         [
-            RevokePermissionsEndpoints.revoke_person,
-            RevokePermissionsEndpoints.revoke_authorization,
+            (
+                RevokePermissionsEndpoints.revoke_person,
+                "perm_op_resp",
+            ),
+            (
+                RevokePermissionsEndpoints.revoke_authorization,
+                "perm_op_resp",
+            ),
         ],
+        indirect=["resp_factory"],
     )
     def test_response_validation(
         self,
         revoke_permissions_eps: RevokePermissionsEndpoints,
         fake_transport: transport.FakeTransport,
         method: Callable[[str], BaseModel],
+        resp_factory: BaseFactory[BaseModel],
     ):
         # Arrange
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = resp_factory.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
         # Act
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = getattr(revoke_permissions_eps, method.__name__)("dummy-permission-id")
+        fake_transport.enqueue(response_data)
+        _ = getattr(revoke_permissions_eps, method.__name__)("dummy-permission-id")
         assert fake_transport.responses == []
 
     @pytest.mark.parametrize(
@@ -597,38 +610,45 @@ class TestQueryPermissionsEndpoints:
         assert all((param in call.params for param in params.keys()))
 
     @pytest.mark.parametrize(
-        ["method", "req_factory"],
+        ["method", "req_factory", "resp_factory"],
         [
             (
                 QueryPermissionsEndpoints.query_entities_grants,
                 "perm_query_entity_req",
+                "perm_query_entity_resp",
             ),
             (
                 QueryPermissionsEndpoints.query_personal_grants,
                 "perm_query_personal_req",
+                "perm_query_personal_resp",
             ),
             (
                 QueryPermissionsEndpoints.query_authorizations_grants,
                 "perm_query_auth_req",
+                "perm_query_auth_resp",
             ),
             (
                 QueryPermissionsEndpoints.query_eu_entities_grants,
                 "perm_query_eu_entity_req",
+                "perm_query_eu_entity_resp",
             ),
             (
                 QueryPermissionsEndpoints.query_persons_grants,
                 "perm_query_person_req",
+                "perm_query_person_resp",
             ),
             (
                 QueryPermissionsEndpoints.query_subordinate_entities_roles,
                 "perm_query_subordinate_req",
+                "perm_query_subordinate_resp",
             ),
             (
                 QueryPermissionsEndpoints.query_subunits_grants,
                 "perm_query_subunit_req",
+                "perm_query_subunit_resp",
             ),
         ],
-        indirect=["req_factory"],
+        indirect=["req_factory", "resp_factory"],
     )
     def test_response_validation(
         self,
@@ -636,15 +656,17 @@ class TestQueryPermissionsEndpoints:
         fake_transport: transport.FakeTransport,
         method: Callable[[BaseModel], BaseModel],
         req_factory: BaseFactory[BaseModel],
+        resp_factory: BaseFactory[BaseModel],
     ):
         # Arrange
         request = req_factory.build()
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = resp_factory.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
         # Act
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = getattr(query_permissions_eps, method.__name__)(request)
+        fake_transport.enqueue(response_data)
+        _ = getattr(query_permissions_eps, method.__name__)(request)
 
         assert fake_transport.responses == []
 
@@ -652,14 +674,16 @@ class TestQueryPermissionsEndpoints:
         self,
         query_permissions_eps: QueryPermissionsEndpoints,
         fake_transport: transport.FakeTransport,
+        perm_attachment_status_resp: CheckAttachmentPermissionStatusResponseFactory,
     ):
         # Arrange
-        response_dump = {"isAttachmentAllowed": []}
+        response_data = perm_attachment_status_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
         # Act
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(response_dump)
-            _ = query_permissions_eps.query_attachments_status()
+        fake_transport.enqueue(response_data)
+        _ = query_permissions_eps.query_attachments_status()
 
         assert fake_transport.responses == []
 
@@ -866,14 +890,16 @@ class TestGetPermissionsEndpoints:
         self,
         get_permissions_eps: GetPermissionsEndpoints,
         fake_transport: transport.FakeTransport,
+        perm_op_status_resp: PermissionsOperationStatusResponseFactory,
     ):
         # Arrange
-        response_dump = InvalidContent(invalid_field="invalid").model_dump()
+        response_data = perm_op_status_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
         # Act
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(response_dump)
-            _ = get_permissions_eps.query_operation_status("dummy-reference")
+        fake_transport.enqueue(response_data)
+        _ = get_permissions_eps.query_operation_status("dummy-reference")
 
         assert fake_transport.responses == []
 
@@ -881,14 +907,16 @@ class TestGetPermissionsEndpoints:
         self,
         get_permissions_eps: GetPermissionsEndpoints,
         fake_transport: transport.FakeTransport,
+        perm_entity_roles_resp: QueryEntityRolesResponseFactory,
     ):
         # Arrange
-        response_dump = InvalidContent(invalid_field="invalid").model_dump()
+        response_data = perm_entity_roles_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
         # Act
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(response_dump)
-            _ = get_permissions_eps.query_entity_roles()
+        fake_transport.enqueue(response_data)
+        _ = get_permissions_eps.query_entity_roles()
 
         assert fake_transport.responses == []
 

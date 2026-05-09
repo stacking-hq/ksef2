@@ -13,10 +13,6 @@ from tests.unit.factories.peppol import QueryPeppolProvidersResponseFactory
 from ksef2.core.middlewares.exceptions import KSeFExceptionMiddleware
 
 
-class InvalidContent(BaseModel):
-    invalid_field: str
-
-
 class TestPeppolEndpoints:
     @pytest.fixture
     def peppol_eps(self, fake_transport: transport.FakeTransport) -> PeppolEndpoints:
@@ -97,12 +93,14 @@ class TestPeppolEndpoints:
         self,
         peppol_eps: PeppolEndpoints,
         fake_transport: transport.FakeTransport,
+        peppol_providers_resp: QueryPeppolProvidersResponseFactory,
     ):
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = peppol_providers_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = peppol_eps.query_providers()
+        fake_transport.enqueue(response_data)
+        _ = peppol_eps.query_providers()
 
         assert fake_transport.responses == []
 

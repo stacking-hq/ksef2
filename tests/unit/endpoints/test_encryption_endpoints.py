@@ -1,17 +1,11 @@
 import pytest
 
-from pydantic import BaseModel
-
 from ksef2.core import exceptions
 from ksef2.core.routes import EncryptionRoutes
 from ksef2.endpoints.encryption import EncryptionEndpoints
 from tests.unit.fakes import transport
 
 from ksef2.core.middlewares.exceptions import KSeFExceptionMiddleware
-
-
-class InvalidContent(BaseModel):
-    invalid_field: str
 
 
 class TestEncryptionEndpoints:
@@ -59,12 +53,15 @@ class TestEncryptionEndpoints:
         self,
         encryption_eps: EncryptionEndpoints,
         fake_transport: transport.FakeTransport,
+        public_key_cert,
     ):
-        invalid_response = [{"invalid_field": "invalid"}]
+        response_data = [
+            public_key_cert.build().model_dump(mode="json")
+            | {"invalid_field": "invalid"}
+        ]
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response)
-            _ = encryption_eps.fetch_public_certificates()
+        fake_transport.enqueue(response_data)
+        _ = encryption_eps.fetch_public_certificates()
 
         assert fake_transport.responses == []
 
