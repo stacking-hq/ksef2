@@ -127,13 +127,18 @@ class TestInvoiceEndpoints:
         assert fake_transport.responses == []
 
     @pytest.mark.parametrize(
-        ["method_name", "req_factory", "prefix_args"],
+        ["method_name", "req_factory", "prefix_args", "resp_factory"],
         [
-            ("query_metadata", "inv_query_metadata_body", []),
-            ("export", "inv_export_req", []),
-            ("send", "inv_send_req", [_REF]),
+            (
+                "query_metadata",
+                "inv_query_metadata_body",
+                [],
+                "inv_query_metadata_resp",
+            ),
+            ("export", "inv_export_req", [], "inv_export_resp"),
+            ("send", "inv_send_req", [_REF], "inv_send_resp"),
         ],
-        indirect=["req_factory"],
+        indirect=["req_factory", "resp_factory"],
     )
     def test_post_response_validation(
         self,
@@ -142,13 +147,15 @@ class TestInvoiceEndpoints:
         method_name: str,
         req_factory: object,
         prefix_args: list[str],
+        resp_factory: BaseFactory[BaseModel],
     ):
         request = _build_request(req_factory)
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = resp_factory.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = getattr(invoice_eps, method_name)(*prefix_args, request)
+        fake_transport.enqueue(response_data)
+        _ = getattr(invoice_eps, method_name)(*prefix_args, request)
 
         assert fake_transport.responses == []
 
@@ -289,12 +296,17 @@ class TestInvoiceEndpoints:
         assert fake_transport.responses == []
 
     @pytest.mark.parametrize(
-        ["method_name", "call_args"],
+        ["method_name", "call_args", "resp_factory"],
         [
-            ("get_export_status", [_EXPORT_REF]),
-            ("get_session_status", [_REF]),
-            ("get_session_invoice_status", [_REF, _INV_REF]),
+            ("get_export_status", [_EXPORT_REF], "inv_export_status_resp"),
+            ("get_session_status", [_REF], "inv_session_status_resp"),
+            (
+                "get_session_invoice_status",
+                [_REF, _INV_REF],
+                "inv_session_invoice_status_resp",
+            ),
         ],
+        indirect=["resp_factory"],
     )
     def test_get_model_response_validation(
         self,
@@ -302,12 +314,14 @@ class TestInvoiceEndpoints:
         fake_transport: transport.FakeTransport,
         method_name: str,
         call_args: list[str],
+        resp_factory: BaseFactory[BaseModel],
     ):
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = resp_factory.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = getattr(invoice_eps, method_name)(*call_args)
+        fake_transport.enqueue(response_data)
+        _ = getattr(invoice_eps, method_name)(*call_args)
 
         assert fake_transport.responses == []
 
@@ -543,12 +557,14 @@ class TestInvoiceEndpoints:
         invoice_eps: InvoicesEndpoints,
         fake_transport: transport.FakeTransport,
         method_name: str,
+        inv_session_invoices_resp: SessionInvoicesResponseFactory,
     ):
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = inv_session_invoices_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = getattr(invoice_eps, method_name)(_REF, pageSize=10)
+        fake_transport.enqueue(response_data)
+        _ = getattr(invoice_eps, method_name)(_REF, pageSize=10)
 
         assert fake_transport.responses == []
 

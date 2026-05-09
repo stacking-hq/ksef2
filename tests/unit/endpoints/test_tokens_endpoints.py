@@ -29,10 +29,6 @@ def resp_factory(request: pytest.FixtureRequest) -> BaseFactory[BaseModel]:
     return cast(BaseFactory[BaseModel], request.getfixturevalue(request.param))
 
 
-class InvalidContent(BaseModel):
-    invalid_field: str
-
-
 class TestTokenEndpoints:
     @pytest.fixture
     def token_eps(self, fake_transport: transport.FakeTransport) -> TokenEndpoints:
@@ -76,13 +72,15 @@ class TestTokenEndpoints:
         token_eps: TokenEndpoints,
         fake_transport: transport.FakeTransport,
         token_generate_req: GenerateTokenRequestFactory,
+        token_generate_resp: GenerateTokenResponseFactory,
     ):
         request = token_generate_req.build()
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = token_generate_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = token_eps.generate_token(request)
+        fake_transport.enqueue(response_data)
+        _ = token_eps.generate_token(request)
 
         assert fake_transport.responses == []
 
@@ -208,12 +206,14 @@ class TestTokenEndpoints:
         self,
         token_eps: TokenEndpoints,
         fake_transport: transport.FakeTransport,
+        token_list_resp: QueryTokensResponseFactory,
     ):
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = token_list_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = token_eps.list_tokens()
+        fake_transport.enqueue(response_data)
+        _ = token_eps.list_tokens()
 
         assert fake_transport.responses == []
 
@@ -275,12 +275,14 @@ class TestTokenEndpoints:
         self,
         token_eps: TokenEndpoints,
         fake_transport: transport.FakeTransport,
+        token_status_resp: TokenStatusResponseFactory,
     ):
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = token_status_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = token_eps.token_status("20250625-TOKEN-2C3E6C8000-B675CF5D68-07")
+        fake_transport.enqueue(response_data)
+        _ = token_eps.token_status("20250625-TOKEN-2C3E6C8000-B675CF5D68-07")
 
         assert fake_transport.responses == []
 

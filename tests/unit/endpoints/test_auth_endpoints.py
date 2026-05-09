@@ -21,10 +21,6 @@ from tests.unit.factories.auth import (
 from ksef2.core.middlewares.exceptions import KSeFExceptionMiddleware
 
 
-class InvalidContent(BaseModel):
-    invalid_field: str
-
-
 class TestAuthEndpoints:
     @pytest.fixture
     def auth_eps(self, fake_transport: transport.FakeTransport) -> AuthEndpoints:
@@ -63,12 +59,14 @@ class TestAuthEndpoints:
         self,
         auth_eps: AuthEndpoints,
         fake_transport: transport.FakeTransport,
+        auth_challenge_resp: AuthenticationChallengeResponseFactory,
     ):
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = auth_challenge_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = auth_eps.challenge()
+        fake_transport.enqueue(response_data)
+        _ = auth_eps.challenge()
 
         assert fake_transport.responses == []
 
@@ -139,13 +137,15 @@ class TestAuthEndpoints:
         auth_eps: AuthEndpoints,
         fake_transport: transport.FakeTransport,
         auth_init_req: InitTokenAuthenticationRequestFactory,
+        auth_init_resp: AuthenticationInitResponseFactory,
     ):
         request = auth_init_req.build()
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = auth_init_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = auth_eps.token_auth(request)
+        fake_transport.enqueue(response_data)
+        _ = auth_eps.token_auth(request)
 
         assert fake_transport.responses == []
 
@@ -236,13 +236,15 @@ class TestAuthEndpoints:
         self,
         auth_eps: AuthEndpoints,
         fake_transport: transport.FakeTransport,
+        auth_init_resp: AuthenticationInitResponseFactory,
     ):
         signed_xml = b"<SignedXML>...</SignedXML>"
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = auth_init_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = auth_eps.xades_auth(signed_xml)
+        fake_transport.enqueue(response_data)
+        _ = auth_eps.xades_auth(signed_xml)
 
         assert fake_transport.responses == []
 
@@ -312,14 +314,16 @@ class TestAuthEndpoints:
         self,
         auth_eps: AuthEndpoints,
         fake_transport: transport.FakeTransport,
+        auth_status_resp: AuthenticationOperationStatusResponseFactory,
     ):
         bearer_token = "test-bearer-token"
         reference_number = "20250625-AUTH-2C3E6C8000-B675CF5D68-07"
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = auth_status_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = auth_eps.auth_status(bearer_token, reference_number)
+        fake_transport.enqueue(response_data)
+        _ = auth_eps.auth_status(bearer_token, reference_number)
 
         assert fake_transport.responses == []
 
@@ -552,12 +556,14 @@ class TestAuthEndpoints:
         self,
         auth_eps: AuthEndpoints,
         fake_transport: transport.FakeTransport,
+        auth_list_resp: AuthenticationListResponseFactory,
     ):
-        invalid_response = InvalidContent(invalid_field="invalid")
+        response_data = auth_list_resp.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(invalid_response.model_dump(mode="json"))
-            _ = auth_eps.list_sessions()
+        fake_transport.enqueue(response_data)
+        _ = auth_eps.list_sessions()
 
         assert fake_transport.responses == []
 

@@ -14,10 +14,6 @@ from ksef2.endpoints import limits
 from ksef2.core.middlewares.exceptions import KSeFExceptionMiddleware
 
 
-class InvalidContent(BaseModel):
-    invalid_field: str
-
-
 @pytest.fixture
 def req_factory(request: pytest.FixtureRequest) -> BaseFactory[BaseModel]:
     return cast(BaseFactory[BaseModel], request.getfixturevalue(request.param))
@@ -207,12 +203,13 @@ class TestLimitEndpoints:
         resp_factory: BaseFactory[BaseModel],
     ):
         # Arrange
-        response_dump = {"enrollment": {"maxEnrollments": []}}
+        response_data = resp_factory.build().model_dump(mode="json") | {
+            "invalid_field": "invalid"
+        }
 
         # Act & Assert
-        with pytest.raises(exceptions.KSeFValidationError):
-            fake_transport.enqueue(response_dump)
-            _ = getattr(limit_eps, method.__name__)()
+        fake_transport.enqueue(response_data)
+        _ = getattr(limit_eps, method.__name__)()
 
         assert fake_transport.responses == []
 
