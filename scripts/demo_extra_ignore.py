@@ -1,6 +1,8 @@
 """Demonstrate KSeFBaseModel extra="ignore" with warning logging."""
 
-from ksef2.domain.models.base import KSeFBaseModel
+from pydantic import Field
+
+from ksef2.domain.models.base import KSeFBaseModel, KSeFBaseParams
 from ksef2.logging import configure_logging
 
 # ---------------------------------------------------------------------------
@@ -45,12 +47,45 @@ m = DemoModel(
 print(f"OK: {m}\n")
 
 # ---------------------------------------------------------------------------
-# 6. Required field missing — still raises ValidationError
+# 6. Missing required field — still raises ValidationError
 # ---------------------------------------------------------------------------
 print("=== Missing required field — still fails ===\n")
 try:
     DemoModel(name="Dan")
 except Exception as e:
     print(f"Expected error: {type(e).__name__}: {e}\n")
+
+# ---------------------------------------------------------------------------
+# 7. Alias-aware — camelCase keys on KSeFBaseParams do NOT trigger warnings
+# ---------------------------------------------------------------------------
+print("=== Alias-aware: camelCase keys on KSeFBaseParams ===\n")
+
+
+class DemoParams(KSeFBaseParams[dict[str, object]]):
+    page_offset: int = Field(default=0)
+    page_size: int = Field(default=10)
+
+
+# Both the Python name and the camelCase alias are accepted — no warnings
+m = DemoParams(pageOffset=1, pageSize=50)
+print(f"OK: {m}")
+print(f"  -> to_query_params(): {m.to_query_params()}\n")
+
+# Same model with actual extra field — warning still fires
+m = DemoParams(pageOffset=0, pageSize=20, unknown="should warn")
+print(f"OK: {m}\n")
+
+# ---------------------------------------------------------------------------
+# 8. Explicit validation_alias on a field
+# ---------------------------------------------------------------------------
+print("=== Explicit validation_alias ===\n")
+
+
+class AliasedModel(KSeFBaseModel):
+    value: int = Field(validation_alias="val")
+
+
+m = AliasedModel(val=42)
+print(f"OK: {m}\n")
 
 print("Done.")
