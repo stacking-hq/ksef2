@@ -1,3 +1,14 @@
+## v0.14.0 (2026-05-09)
+
+### Feat
+
+- **models**: change base model extra from forbid to ignore with warning logging
+
+### Fix
+
+- resolve pyright errors in alias-aware _warn_extra_fields
+- **models**: make _warn_extra_fields alias-aware to avoid false warnings
+
 ## v0.13.3 (2026-05-08)
 
 ### Feat
