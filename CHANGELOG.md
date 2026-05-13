@@ -1,3 +1,9 @@
+## v0.14.1 (2026-05-13)
+
+### Fix
+
+- **invoices**: wait for invoice download availability
+
 ## v0.14.0 (2026-05-09)
 
 ### Feat
