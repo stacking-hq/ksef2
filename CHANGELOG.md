@@ -1,3 +1,10 @@
+## v0.15.0 (2026-05-15)
+
+### Feat
+
+- **invoices**: merge metadata pagination helpers
+- **invoices**: add metadata pagination helpers
+
 ## v0.14.1 (2026-05-13)
 
 ### Fix
