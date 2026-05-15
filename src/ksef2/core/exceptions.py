@@ -183,6 +183,12 @@ class KSeFInvoiceQueryTimeoutError(KSeFException):
         )
 
 
+class KSeFMetadataPaginationError(KSeFException):
+    """Raised when metadata pagination cannot continue safely."""
+
+    code: str = "METADATA_PAGINATION_ERROR"
+
+
 class KSeFInvoiceDownloadTimeoutError(KSeFException):
     """Raised when polling for an invoice download exceeds the timeout."""
 

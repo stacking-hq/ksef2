@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import final
 
@@ -13,6 +13,7 @@ from ksef2.logging import get_logger
 from ksef2.domain.models.invoices import (
     ExportHandle,
     InvoiceExportStatusResponse,
+    InvoiceMetadata,
     InvoicePackage,
     InvoicesFilter,
     QueryInvoicesMetadataResponse,
@@ -54,6 +55,22 @@ class InvoicesService:
             filters=filters,
             params=params,
         )
+
+    def query_metadata_pages(
+        self,
+        *,
+        filters: InvoicesFilter,
+        params: InvoiceMetadataParams | None = None,
+    ) -> Iterator[QueryInvoicesMetadataResponse]:
+        return self._client.query_metadata_pages(filters=filters, params=params)
+
+    def all_metadata(
+        self,
+        *,
+        filters: InvoicesFilter,
+        params: InvoiceMetadataParams | None = None,
+    ) -> Iterator[InvoiceMetadata]:
+        return self._client.all_metadata(filters=filters, params=params)
 
     def download_invoice(self, *, ksef_number: str) -> bytes:
         return self._client.download_invoice(

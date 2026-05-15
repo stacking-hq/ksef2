@@ -113,7 +113,7 @@ on `auth.invoices`.
 ```python
 from datetime import datetime, timedelta, timezone
 
-from ksef2.domain.models import InvoicesFilter
+from ksef2.domain.models import InvoicesFilter, InvoiceMetadataParams
 
 
 filters = InvoicesFilter(
@@ -126,6 +126,15 @@ filters = InvoicesFilter(
 
 metadata = await auth.invoices.query_metadata(filters=filters)
 print(len(metadata.invoices))
+
+async for page in auth.invoices.query_metadata_pages(
+    filters=filters,
+    params=InvoiceMetadataParams(page_size=250, sort_order="asc"),
+):
+    print(len(page.invoices), page.has_more)
+
+async for invoice in auth.invoices.all_metadata(filters=filters):
+    print(invoice.ksef_number)
 
 export = await auth.invoices.schedule_export(filters=filters)
 package = await auth.invoices.wait_for_export_package(

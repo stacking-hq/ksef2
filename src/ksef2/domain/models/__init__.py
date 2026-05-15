@@ -171,6 +171,7 @@ from ksef2.domain.models.peppol import (
     PeppolProvider,
     ListPeppolProvidersResponse,
 )
+from ksef2.domain.models.pagination import InvoiceMetadataParams
 
 __all__ = [
     # base
@@ -217,6 +218,7 @@ __all__ = [
     "InvoiceMetadataSeller",
     "InvoiceMetadataThirdSubject",
     "InvoiceMetadataThirdSubjectIdentifier",
+    "InvoiceMetadataParams",
     "InvoicePackage",
     "InvoicesFilter",
     "InvoiceType",

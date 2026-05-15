@@ -1,12 +1,18 @@
 import base64
+from collections.abc import AsyncIterator
 from typing import final
 
+from ksef2.clients._metadata_pagination import (
+    MetadataBoundary,
+    next_metadata_page_request,
+)
 from ksef2.core.async_protocols import AsyncMiddleware
 from ksef2.core.crypto import encrypt_symmetric_key, generate_session_key
 from ksef2.domain.models.invoices import (
     ExportHandle,
     ExportInvoicesPayload,
     InvoiceExportStatusResponse,
+    InvoiceMetadata,
     InvoicesFilter,
     QueryInvoicesMetadataResponse,
 )
@@ -35,6 +41,48 @@ class AsyncInvoicesClient:
             **parameters.to_query_params(),
         )
         return from_spec(spec_resp)
+
+    async def query_metadata_pages(
+        self,
+        *,
+        filters: InvoicesFilter,
+        params: InvoiceMetadataParams | None = None,
+    ) -> AsyncIterator[QueryInvoicesMetadataResponse]:
+        current_filters = filters
+        current_params = params or InvoiceMetadataParams()
+        previous_truncation_boundary: MetadataBoundary | None = None
+
+        while True:
+            response = await self.query_metadata(
+                filters=current_filters,
+                params=current_params,
+            )
+            yield response
+
+            next_request = next_metadata_page_request(
+                filters=current_filters,
+                params=current_params,
+                response=response,
+                previous_truncation_boundary=previous_truncation_boundary,
+            )
+            if next_request is None:
+                break
+
+            (
+                current_filters,
+                current_params,
+                previous_truncation_boundary,
+            ) = next_request
+
+    async def all_metadata(
+        self,
+        *,
+        filters: InvoicesFilter,
+        params: InvoiceMetadataParams | None = None,
+    ) -> AsyncIterator[InvoiceMetadata]:
+        async for page in self.query_metadata_pages(filters=filters, params=params):
+            for invoice in page.invoices:
+                yield invoice
 
     async def download_invoice(self, *, ksef_number: str) -> bytes:
         return await self._endpoints.download(ksef_number=ksef_number)

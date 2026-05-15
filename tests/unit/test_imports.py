@@ -15,6 +15,13 @@ def test_public_clients_import() -> None:
     assert AsyncClient.__name__ == "AsyncClient"
 
 
+def test_common_domain_models_import() -> None:
+    from ksef2.domain.models import InvoiceMetadataParams, InvoicesFilter
+
+    assert InvoicesFilter.__name__ == "InvoicesFilter"
+    assert InvoiceMetadataParams.__name__ == "InvoiceMetadataParams"
+
+
 def test_middlewares_import() -> None:
     from ksef2.core import middlewares
 

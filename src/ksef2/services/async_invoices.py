@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from pathlib import Path
 from typing import final
 
@@ -12,6 +12,7 @@ from ksef2.core.stores import CertificateStore
 from ksef2.domain.models.invoices import (
     ExportHandle,
     InvoiceExportStatusResponse,
+    InvoiceMetadata,
     InvoicePackage,
     InvoicesFilter,
     QueryInvoicesMetadataResponse,
@@ -52,6 +53,27 @@ class AsyncInvoicesService:
         params: InvoiceMetadataParams | None = None,
     ) -> QueryInvoicesMetadataResponse:
         return await self._client.query_metadata(filters=filters, params=params)
+
+    async def query_metadata_pages(
+        self,
+        *,
+        filters: InvoicesFilter,
+        params: InvoiceMetadataParams | None = None,
+    ) -> AsyncIterator[QueryInvoicesMetadataResponse]:
+        async for page in self._client.query_metadata_pages(
+            filters=filters,
+            params=params,
+        ):
+            yield page
+
+    async def all_metadata(
+        self,
+        *,
+        filters: InvoicesFilter,
+        params: InvoiceMetadataParams | None = None,
+    ) -> AsyncIterator[InvoiceMetadata]:
+        async for invoice in self._client.all_metadata(filters=filters, params=params):
+            yield invoice
 
     async def download_invoice(self, *, ksef_number: str) -> bytes:
         return await self._client.download_invoice(ksef_number=ksef_number)

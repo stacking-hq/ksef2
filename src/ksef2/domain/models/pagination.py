@@ -59,7 +59,14 @@ class InvoiceMetadataParams(
     PageSizeMixin,
     PageOffsetMixin,
     SortOrderMixin,
-): ...
+):
+    page_size: int = Field(default=10, ge=10, le=250)
+
+    def with_page_offset(self, page_offset: int) -> Self:
+        return self.model_copy(update={"page_offset": page_offset})
+
+    def next_page(self) -> Self:
+        return self.with_page_offset(self.page_offset + 1)
 
 
 class PermissionsQueryParams(OffsetPaginationParams): ...

@@ -41,7 +41,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from ksef2 import Client, Environment, FormSchema
-from ksef2.domain.models import InvoicesFilter
+from ksef2.domain.models import InvoicesFilter, InvoiceMetadataParams
 
 NIP = "5261040828"
 client = Client(Environment.TEST)
@@ -258,16 +258,23 @@ print(limits.online_session.max_invoices)
 sessions = auth.sessions.query(page_size=10)
 print(len(sessions.items))
 
+metadata_filters = InvoicesFilter(
+    role="seller",
+    date_type="issue_date",
+    date_from=datetime.now(tz=timezone.utc) - timedelta(days=7),
+    date_to=datetime.now(tz=timezone.utc),
+    amount_type="brutto",
+)
 metadata = auth.invoices.query_metadata(
-    filters=InvoicesFilter(
-        role="seller",
-        date_type="issue_date",
-        date_from=datetime.now(tz=timezone.utc) - timedelta(days=7),
-        date_to=datetime.now(tz=timezone.utc),
-        amount_type="brutto",
-    )
+    filters=metadata_filters,
 )
 print(len(metadata.invoices))
+
+for page in auth.invoices.query_metadata_pages(
+    filters=metadata_filters,
+    params=InvoiceMetadataParams(page_size=250, sort_order="asc"),
+):
+    print(len(page.invoices), page.has_more)
 ```
 
 For the full API surface, see the guide docs below.

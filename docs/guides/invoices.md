@@ -135,6 +135,24 @@ print(len(result.invoices))
 
 SDK endpoint: `POST /invoices/query/metadata`
 
+`query_metadata` performs one KSeF request. To follow `hasMore` pagination and
+the KSeF `isTruncated` date-range reset rule explicitly, iterate pages:
+
+```python
+for page in auth.invoices.query_metadata_pages(
+    filters=filters,
+    params=InvoiceMetadataParams(page_size=250, sort_order="asc"),
+):
+    print(len(page.invoices), page.has_more, page.is_truncated)
+```
+
+For the item-level pattern used by other offset-paginated SDK clients:
+
+```python
+for invoice in auth.invoices.all_metadata(filters=filters):
+    print(invoice.ksef_number)
+```
+
 If you need to wait for invoices to become visible:
 
 ```python
