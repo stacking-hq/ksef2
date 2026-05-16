@@ -138,6 +138,25 @@ class TestAuthResponseMapper:
         assert output.authentication_method_category == "xades_signature"
         assert output.authentication_method_code == "xades.ksef-certificate"
 
+    def test_map_authentication_session_unknown_method_code(self) -> None:
+        mapped_input = AuthenticationListItemFactory.build(
+            authenticationMethod=spec.AuthenticationMethod.InternalCertificate,
+            authenticationMethodInfo=spec.AuthenticationMethodInfo(
+                category=spec.AuthenticationMethodCategory.Other,
+                code="future.authentication-method",
+                displayName="Future authentication method",
+            ),
+        )
+
+        output = from_spec(mapped_input)
+
+        assert output.authentication_method == "other"
+        assert output.authentication_method_category == "other"
+        assert output.authentication_method_code == "future.authentication-method"
+        assert (
+            output.authentication_method_display_name == "Future authentication method"
+        )
+
     def test_map_authentication_sessions_response(
         self, auth_list_resp: BaseFactory[spec.AuthenticationListResponse]
     ) -> None:
