@@ -779,9 +779,13 @@ dependencies = [
     { name = "signxml" },
     { name = "structlog" },
     { name = "tenacity" },
-    { name = "weasyprint" },
     { name = "xsdata" },
     { name = "xsdata-pydantic" },
+]
+
+[package.optional-dependencies]
+pdf = [
+    { name = "weasyprint" },
 ]
 
 [package.dev-dependencies]
@@ -815,10 +819,11 @@ requires-dist = [
     { name = "signxml", specifier = ">=4.0" },
     { name = "structlog", specifier = ">=25.5.0" },
     { name = "tenacity", specifier = ">=9.0" },
-    { name = "weasyprint", specifier = ">=63.0" },
+    { name = "weasyprint", marker = "extra == 'pdf'", specifier = ">=63.0" },
     { name = "xsdata", specifier = ">=26.1" },
     { name = "xsdata-pydantic", specifier = ">=24.5" },
 ]
+provides-extras = ["pdf"]
 
 [package.metadata.requires-dev]
 codegen = [

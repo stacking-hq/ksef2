@@ -153,7 +153,7 @@ The SDK ships with a runnable example that:
 Run it from the repository root:
 
 ```bash
-uv run -m scripts.examples.invoices.build_fa3_invoice
+uv run --extra pdf -m scripts.examples.invoices.build_fa3_invoice
 ```
 
 The example writes:
@@ -164,7 +164,7 @@ The example writes:
 If you want the same flow while keeping the builder object around, use:
 
 ```bash
-uv run -m scripts.examples.invoices.build_fa3_invoice_builder
+uv run --extra pdf -m scripts.examples.invoices.build_fa3_invoice_builder
 ```
 
 The PDF is a visualization of the generated XML, which is helpful for previewing invoice content before sending it to KSeF.
