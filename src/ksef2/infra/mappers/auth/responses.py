@@ -92,26 +92,20 @@ def _from_spec(response: BaseModel | Enum) -> object:
     )
 
 
+_AUTHENTICATION_METHOD_BY_CODE: dict[str, AuthenticationMethod] = {
+    "token.ksef": "token",
+    "national-node.trusted-profile": "trusted_profile",
+    "other.internal-certificate": "internal_certificate",
+    "xades.qualified-signature": "qualified_signature",
+    "xades.qualified-seal": "qualified_seal",
+    "xades.personal-signature": "personal_signature",
+    "xades.peppol-signature": "peppol_signature",
+    "xades.ksef-certificate": "ksef_certificate",
+}
+
+
 def _method_from_code(code: str) -> AuthenticationMethod:
-    match code:
-        case "token.ksef":
-            return "token"
-        case "national-node.trusted-profile":
-            return "trusted_profile"
-        case "other.internal-certificate":
-            return "internal_certificate"
-        case "xades.qualified-signature":
-            return "qualified_signature"
-        case "xades.qualified-seal":
-            return "qualified_seal"
-        case "xades.personal-signature":
-            return "personal_signature"
-        case "xades.peppol-signature":
-            return "peppol_signature"
-        case "xades.ksef-certificate":
-            return "ksef_certificate"
-        case _:
-            raise ValueError(f"Unsupported authentication method code: {code!r}")
+    return _AUTHENTICATION_METHOD_BY_CODE.get(code, "other")
 
 
 @_from_spec.register

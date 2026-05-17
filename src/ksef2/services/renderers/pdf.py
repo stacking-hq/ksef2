@@ -1,11 +1,24 @@
 """PDF exporter for FA3 invoices using XSLT transformation and WeasyPrint."""
 
+from importlib import import_module
 from pathlib import Path
-from typing import final
+from typing import Any, final
 
 from ksef2.services.renderers.xslt import InvoiceXSLTRenderer
 from ksef2.infra.schema.fa3 import DEFAULT_CSS_OVERRIDES
-from weasyprint import CSS, HTML
+
+
+def _load_weasyprint() -> Any:
+    try:
+        return import_module("weasyprint")
+    except ModuleNotFoundError as exc:
+        if exc.name == "weasyprint":
+            raise ImportError(
+                "InvoicePDFExporter requires the optional PDF dependencies. "
+                "Install them with `pip install 'ksef2[pdf]'` or "
+                "`uv add 'ksef2[pdf]'`."
+            ) from exc
+        raise
 
 
 @final
@@ -16,6 +29,7 @@ class InvoicePDFExporter:
         enable_code_lookups: bool = False,
         html_overrides: str | None = None,
     ):
+        self._weasyprint = _load_weasyprint()
         self._xslt_renderer = InvoiceXSLTRenderer(
             stylesheet_path=stylesheet_path,
             enable_code_lookups=enable_code_lookups,
@@ -30,9 +44,9 @@ class InvoicePDFExporter:
         return self._xslt_renderer.stylesheet_path
 
     def _render_html(self, html_content: str) -> bytes:
-        stylesheets = [CSS(string=self._html_overrides)]
+        stylesheets = [self._weasyprint.CSS(string=self._html_overrides)]
 
-        pdf_bytes = HTML(
+        pdf_bytes = self._weasyprint.HTML(
             string=html_content, base_url=str(self.stylesheet_path.parent)
         ).write_pdf(stylesheets=stylesheets)
 

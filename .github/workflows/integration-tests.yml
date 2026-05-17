@@ -28,7 +28,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0 libharfbuzz-subset0
 
       - name: Install dependencies
-        run: uv sync --all-groups
+        run: uv sync --all-groups --extra pdf
 
       - name: Run integration tests
         env:
