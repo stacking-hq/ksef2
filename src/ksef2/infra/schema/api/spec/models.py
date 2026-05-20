@@ -12,7 +12,10 @@ from pydantic import AnyUrl, AwareDatetime, Base64Str, BaseModel, Field, RootMod
 
 class Ip4Address(RootModel[str]):
     root: Annotated[
-        str, Field(pattern="^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$")
+        str,
+        Field(
+            pattern="^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$"
+        ),
     ]
 
 
@@ -20,7 +23,7 @@ class Ip4Range(RootModel[str]):
     root: Annotated[
         str,
         Field(
-            pattern="^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}-((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$"
+            pattern="^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])-((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$"
         ),
     ]
 
@@ -29,7 +32,7 @@ class Ip4Mask(RootModel[str]):
     root: Annotated[
         str,
         Field(
-            pattern="^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}\\/(0|[1-9]|1[0-9]|2[0-9]|3[0-2])$"
+            pattern="^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])/(0|[1-9]|[12][0-9]|3[0-2])$"
         ),
     ]
 
@@ -449,6 +452,11 @@ class CommonSessionStatus(StrEnum):
     Succeeded = "Succeeded"
     Failed = "Failed"
     Cancelled = "Cancelled"
+
+
+class CompressionType(StrEnum):
+    Zip = "Zip"
+    TarGz = "TarGz"
 
 
 class CurrencyCode(StrEnum):
@@ -1860,6 +1868,20 @@ class SubunitPermissionsSubunitIdentifierType(StrEnum):
     Nip = "Nip"
 
 
+class SystemWarning(RootModel[str]):
+    root: str
+    """
+    Ostrzeżenie techniczne dla systemu integratora. Ostrzeżenie nie wpływa na bieżący wynik operacji. Wartość nagłówka jest normalizowana z użyciem ASCII folding.
+
+    Format:
+    `[code]: message | [code]: message`
+
+    Regex pojedynczego ostrzeżenia: `\\[(?<code>[^\\]]+)\\]: (?<message>[^|]+)`<br/><br/>
+    Generowanie ostrzeżeń można wymusić przekazując nagłówek:
+        `X-Test-System-Warning`, którego treść zostanie zwrócona w odpowiedzi.
+    """
+
+
 class TestDataAuthenticationContextIdentifierType(StrEnum):
     Nip = "Nip"
     InternalId = "InternalId"
@@ -2912,6 +2934,17 @@ class InvoiceMetadataSeller(BaseModel):
 
 
 class InvoiceMetadataThirdSubjectIdentifier(BaseModel):
+    """
+    Identyfikator podmiotu trzeciego.
+    | Type | Value |
+    | --- | --- |
+    | Nip | 10 cyfrowy numer NIP |
+    | InternalId | Identyfikator wewnętrzny, składający się z numeru NIP i 5 cyfr |
+    | VatUe | Identyfikator VAT UE podmiotu unijnego |
+    | Other | Inny identyfikator |
+    | None  | Brak identyfikatora podmiotu trzeciego |
+    """
+
     type: ThirdSubjectIdentifierType
     """
     Typ identyfikatora podmiotu trzeciego.
@@ -3876,6 +3909,10 @@ class BatchFileInfo(BaseModel):
     """
     Skrót SHA256 pliku paczki, zakodowany w formacie Base64.
     """
+    compressionType: CompressionType | None = None
+    """
+    Typ kompresji pliku paczki. Obsługiwane typy: Zip oraz TarGz. Domyślna kompresja to Zip.
+    """
     fileParts: Annotated[list[BatchFilePartInfo], Field(max_length=50, min_length=1)]
     """
     Informacje o częściach pliku paczki. Maksymalna liczba części to 50. Maksymalny dozwolony rozmiar części przed zaszyfrowaniem to 100MB.
@@ -4131,10 +4168,24 @@ class InvoiceExportRequest(BaseModel):
     """
     Zestaw filtrów do wyszukiwania faktur.
     """
+    compressionType: CompressionType | None = None
+    """
+    Typ kompresji. Obsługiwane typy: Zip oraz TarGz. Domyślna kompresja to Zip.
+    """
 
 
 class InvoiceMetadataThirdSubject(BaseModel):
     identifier: InvoiceMetadataThirdSubjectIdentifier
+    """
+    Identyfikator podmiotu trzeciego.
+    | Type | Value |
+    | --- | --- |
+    | Nip | 10 cyfrowy numer NIP |
+    | InternalId | Identyfikator wewnętrzny, składający się z numeru NIP i 5 cyfr. |
+    | VatUe | Identyfikator VAT UE podmiotu unijnego. |
+    | Other | Inny identyfikator|
+    | None  | Brak identyfikatora podmiotu trzeciego |
+    """
     name: Annotated[str | None, Field(max_length=512)] = None
     """
     Nazwa podmiotu trzeciego.
