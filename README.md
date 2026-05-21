@@ -40,7 +40,7 @@ uv add "ksef2[pdf]"
 
 ## Supported OpenAPI Version
 
-The SDK currently supports KSeF OpenAPI version `2.3.0`.
+The SDK currently supports KSeF OpenAPI version `2.6.0`.
 
 ## Quick Start
 
