@@ -6,6 +6,10 @@ from typing import Literal
 from pydantic import field_validator
 
 from ksef2.domain.models.base import KSeFBaseModel
+from ksef2.domain.models.compression import (
+    CompressionType,
+    normalize_compression_type,
+)
 from ksef2.domain.models.session import FormSchema
 from ksef2.domain.types import CurrencyCodes, KsefInvoiceTypes
 
@@ -330,6 +334,16 @@ class ExportInvoicesPayload(KSeFBaseModel):
     initialization_vector: str
     public_key_id: str | None = None
     only_metadata: bool = False
+    compression_type: CompressionType | None = None
+
+    @field_validator("compression_type", mode="before")
+    @classmethod
+    def _normalize_compression_type(cls, value: object) -> object:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return normalize_compression_type(value)
+        return value
 
 
 class SendInvoicePayload(KSeFBaseModel):

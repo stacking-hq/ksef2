@@ -10,6 +10,7 @@ from ksef2.core.polling import poll_until
 from ksef2.core.protocols import Middleware
 from ksef2.core.stores import CertificateStore
 from ksef2.logging import get_logger
+from ksef2.domain.models.compression import CompressionType
 from ksef2.domain.models.invoices import (
     ExportHandle,
     InvoiceExportStatusResponse,
@@ -115,6 +116,7 @@ class InvoicesService:
         *,
         filters: InvoicesFilter,
         only_metadata: bool = False,
+        compression_type: CompressionType | str | None = None,
     ) -> ExportHandle:
         self._ensure_encryption_certificates_loaded()
         cert = self._certificate_store.get_valid("symmetric_key_encryption")
@@ -123,6 +125,7 @@ class InvoicesService:
             encryption_certificate=cert.certificate,
             encryption_public_key_id=cert.public_key_id,
             only_metadata=only_metadata,
+            compression_type=compression_type,
         )
 
     def get_export_status(
@@ -239,6 +242,7 @@ class InvoicesService:
         *,
         filters: InvoicesFilter,
         only_metadata: bool = False,
+        compression_type: CompressionType | str | None = None,
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> list[bytes]:
@@ -246,6 +250,7 @@ class InvoicesService:
         handle = self.schedule_export(
             filters=filters,
             only_metadata=only_metadata,
+            compression_type=compression_type,
         )
         package = self.wait_for_export_package(
             reference_number=handle.reference_number,

@@ -4,6 +4,7 @@ from typing import overload
 
 from pydantic import BaseModel
 
+from ksef2.domain.models.compression import compression_type_to_spec
 from ksef2.domain.models.batch import (
     BatchFileInfo,
     BatchFilePart,
@@ -80,6 +81,11 @@ def _(request: BatchFileInfo) -> spec.BatchFileInfo:
     return spec.BatchFileInfo(
         fileSize=request.file_size,
         fileHash=request.file_hash,
+        compressionType=(
+            spec.CompressionType(compression_type_to_spec(request.compression_type))
+            if request.compression_type is not None
+            else None
+        ),
         fileParts=[to_spec(part) for part in request.parts],
     )
 

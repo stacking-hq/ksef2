@@ -8,6 +8,7 @@ from ksef2.clients._metadata_pagination import (
 )
 from ksef2.core.async_protocols import AsyncMiddleware
 from ksef2.core.crypto import encrypt_symmetric_key, generate_session_key
+from ksef2.domain.models.compression import CompressionType, normalize_compression_type
 from ksef2.domain.models.invoices import (
     ExportHandle,
     ExportInvoicesPayload,
@@ -94,6 +95,7 @@ class AsyncInvoicesClient:
         encryption_certificate: str,
         encryption_public_key_id: str | None = None,
         only_metadata: bool = False,
+        compression_type: CompressionType | str | None = None,
     ) -> ExportHandle:
         aes_key, iv = generate_session_key()
         encrypted_key = encrypt_symmetric_key(
@@ -107,6 +109,11 @@ class AsyncInvoicesClient:
                 initialization_vector=base64.b64encode(iv).decode(),
                 public_key_id=encryption_public_key_id,
                 only_metadata=only_metadata,
+                compression_type=(
+                    normalize_compression_type(compression_type)
+                    if compression_type is not None
+                    else None
+                ),
             )
         )
         spec_resp = await self._endpoints.export(body=spec_request)

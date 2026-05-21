@@ -5,7 +5,13 @@ from __future__ import annotations
 import base64
 from typing import Self
 
+from pydantic import field_validator
+
 from ksef2.domain.models.base import KSeFBaseModel
+from ksef2.domain.models.compression import (
+    CompressionType,
+    normalize_compression_type,
+)
 from ksef2.domain.models.session import BaseSessionState, FormSchema
 
 
@@ -45,8 +51,20 @@ class BatchFileInfo(KSeFBaseModel):
     file_hash: str
     """SHA-256 hash of the batch file, Base64 encoded."""
 
+    compression_type: CompressionType | None = None
+    """Compression used for the batch file. Defaults to KSeF's ZIP behavior."""
+
     parts: list[BatchFilePart]
     """List of file parts. Max 50 parts, each max 100MB before encryption."""
+
+    @field_validator("compression_type", mode="before")
+    @classmethod
+    def _normalize_compression(cls, value: object) -> object:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return normalize_compression_type(value)
+        return value
 
 
 class BatchEncryptionData(KSeFBaseModel):

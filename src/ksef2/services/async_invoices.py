@@ -9,6 +9,7 @@ from ksef2.core.async_protocols import AsyncMiddleware
 from ksef2.core.crypto import decrypt_aes_cbc
 from ksef2.core.polling import async_poll_until
 from ksef2.core.stores import CertificateStore
+from ksef2.domain.models.compression import CompressionType
 from ksef2.domain.models.invoices import (
     ExportHandle,
     InvoiceExportStatusResponse,
@@ -116,6 +117,7 @@ class AsyncInvoicesService:
         *,
         filters: InvoicesFilter,
         only_metadata: bool = False,
+        compression_type: CompressionType | str | None = None,
     ) -> ExportHandle:
         await self._ensure_encryption_certificates_loaded()
         cert = self._certificate_store.get_valid("symmetric_key_encryption")
@@ -124,6 +126,7 @@ class AsyncInvoicesService:
             encryption_certificate=cert.certificate,
             encryption_public_key_id=cert.public_key_id,
             only_metadata=only_metadata,
+            compression_type=compression_type,
         )
 
     async def get_export_status(
@@ -252,12 +255,14 @@ class AsyncInvoicesService:
         *,
         filters: InvoicesFilter,
         only_metadata: bool = False,
+        compression_type: CompressionType | str | None = None,
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> list[bytes]:
         handle = await self.schedule_export(
             filters=filters,
             only_metadata=only_metadata,
+            compression_type=compression_type,
         )
         package = await self.wait_for_export_package(
             reference_number=handle.reference_number,

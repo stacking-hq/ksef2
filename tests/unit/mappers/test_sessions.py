@@ -60,6 +60,7 @@ class TestSessionRequestMapper:
             batch_file=domain_batch_file_info.build(
                 file_size=2048,
                 file_hash="ZmFrZS1iYXRjaC1oYXNoLWJhc2U2NA==",
+                compression_type="zip",
             ),
         )
 
@@ -71,6 +72,7 @@ class TestSessionRequestMapper:
         assert result.formCode.value == "FA"
         assert result.batchFile.fileSize == 2048
         assert result.batchFile.fileHash == "ZmFrZS1iYXRjaC1oYXNoLWJhc2U2NA=="
+        assert result.batchFile.compressionType == spec.CompressionType.Zip
         assert result.encryption.encryptedSymmetricKey == "YmF0Y2gtc2VjcmV0"
         assert result.encryption.initializationVector == "AQEBAQEBAQEBAQEBAQEBAQ=="
         assert result.encryption.publicKeyId == request.public_key_id

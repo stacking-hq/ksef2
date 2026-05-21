@@ -61,6 +61,7 @@ class TestBatchService:
 
         assert prepared.form_code is FormSchema.FA3
         assert len(prepared.parts) == 1
+        assert prepared.batch_file.compression_type == "zip"
         assert prepared.invoices[0].invoice_hash == sha256_b64(invoices[0].content)
         assert prepared.invoices[1].invoice_hash == sha256_b64(invoices[1].content)
         assert prepared.encryption.public_key_id == VALID_PUBLIC_KEY_ID

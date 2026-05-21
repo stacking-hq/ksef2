@@ -24,6 +24,7 @@ class TestInvoicesRequestMapper:
             encrypted_symmetric_key="enc",
             initialization_vector="iv",
             only_metadata=True,
+            compression_type="tar_gz",
         )
 
         output = to_spec(request)
@@ -33,6 +34,7 @@ class TestInvoicesRequestMapper:
         assert output.encryption.initializationVector == "iv"
         assert output.onlyMetadata is True
         assert output.filters.subjectType == spec.InvoiceQuerySubjectType.Subject1
+        assert output.compressionType == spec.CompressionType.TarGz
 
     def test_to_send_invoice_request(self) -> None:
         output = to_spec(

@@ -4,6 +4,7 @@ from typing import Annotated
 from pydantic import AnyUrl, AwareDatetime, Field
 
 from ksef2.infra.schema.api.spec.models import (
+    CompressionType,
     FormCode,
     InvoiceMetadataAuthorizedSubject,
     InvoiceMetadataBuyerIdentifier,
@@ -65,6 +66,7 @@ class InvoiceExportRequest(BaseSupp):
     encryption: EncryptionInfo
     onlyMetadata: bool = False
     filters: InvoiceQueryFilters
+    compressionType: CompressionType | None = None
 
 
 class InvoiceMetadataBuyer(BaseSupp):

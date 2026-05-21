@@ -254,6 +254,7 @@ class TestAsyncInvoicesClient:
                 encryption_certificate="ZmFrZS1jZXJ0",
                 encryption_public_key_id=VALID_PUBLIC_KEY_ID,
                 only_metadata=True,
+                compression_type="tar_gz",
             )
         )
         expected_request = to_spec(
@@ -263,6 +264,7 @@ class TestAsyncInvoicesClient:
                 initialization_vector="dnZ2dnZ2dnZ2dnZ2dnZ2dg==",
                 public_key_id=VALID_PUBLIC_KEY_ID,
                 only_metadata=True,
+                compression_type="tar_gz",
             )
         )
 

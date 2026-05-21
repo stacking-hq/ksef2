@@ -1,4 +1,5 @@
 from ksef2.domain.models.base import KSeFBaseModel, KSeFBaseParams
+from ksef2.domain.models.compression import CompressionType, CompressionTypeEnum
 from ksef2.domain.models.session import (
     BaseSessionState,
     FormSchema,
@@ -177,6 +178,8 @@ __all__ = [
     # base
     "KSeFBaseModel",
     "KSeFBaseParams",
+    "CompressionType",
+    "CompressionTypeEnum",
     # session
     "BaseSessionState",
     "FormSchema",

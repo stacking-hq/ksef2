@@ -10,7 +10,7 @@ from pydantic import Field
 
 from ksef2.infra.schema.api.supp.base import BaseSupp
 from ksef2.infra.schema.api.supp.session import EncryptionInfo
-from ksef2.infra.schema.api.spec.models import FormCode
+from ksef2.infra.schema.api.spec.models import CompressionType, FormCode
 
 
 class BatchFilePartInfo(BaseSupp):
@@ -34,6 +34,9 @@ class BatchFileInfo(BaseSupp):
 
     fileHash: str
     """SHA-256 hash of the batch file, Base64 encoded."""
+
+    compressionType: CompressionType | None = None
+    """Compression type for the batch file."""
 
     fileParts: Annotated[list[BatchFilePartInfo], Field(max_length=50, min_length=1)]
     """List of file parts. Max 50 parts."""

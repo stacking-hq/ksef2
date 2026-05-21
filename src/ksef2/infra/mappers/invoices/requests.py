@@ -7,6 +7,7 @@ from typing import overload
 from pydantic import BaseModel
 
 from ksef2.core.crypto import sha256_b64
+from ksef2.domain.models.compression import compression_type_to_spec
 from ksef2.domain.models import invoices
 from ksef2.infra.mappers.helpers import to_aware_datetime
 from ksef2.infra.schema.api import spec
@@ -248,6 +249,11 @@ def _(request: invoices.ExportInvoicesPayload) -> spec.InvoiceExportRequest:
         ),
         onlyMetadata=request.only_metadata,
         filters=to_spec(request.filter),
+        compressionType=(
+            spec.CompressionType(compression_type_to_spec(request.compression_type))
+            if request.compression_type is not None
+            else None
+        ),
     )
 
 

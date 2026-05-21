@@ -72,6 +72,7 @@ def prepare_batch_package(
         batch_file=BatchFileInfo(
             file_size=len(zip_bytes),
             file_hash=sha256_b64(zip_bytes),
+            compression_type="zip",
             parts=declared_parts,
         ),
         parts=prepared_parts,
