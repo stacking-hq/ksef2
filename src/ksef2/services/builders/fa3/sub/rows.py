@@ -43,10 +43,18 @@ RowQuantityParam = Annotated[
     ),
 ]
 RowUnitPriceNetParam = Annotated[
-    Decimal,
+    Decimal | None,
     builder_param(
-        "Net unit price for one item or one service unit.",
+        "Net unit price for one item or one service unit. Provide either this or unit_price_gross.",
         examples=["100.00", "2499.99"],
+        format="decimal-string",
+    ),
+]
+RowUnitPriceGrossParam = Annotated[
+    Decimal | None,
+    builder_param(
+        "Gross unit price for one item or one service unit. Provide either this or unit_price_net.",
+        examples=["123.00", "3074.99"],
         format="decimal-string",
     ),
 ]
@@ -223,6 +231,16 @@ def _coerce_vat_classification(
     return coerce_vat_classification(vat_classification)
 
 
+def _validate_unit_price_choice(
+    unit_price_net: Decimal | None,
+    unit_price_gross: Decimal | None,
+) -> None:
+    if unit_price_net is not None and unit_price_gross is not None:
+        raise ValueError("Provide either unit_price_net or unit_price_gross, not both.")
+    if unit_price_net is None and unit_price_gross is None:
+        raise ValueError("Provide unit_price_net or unit_price_gross.")
+
+
 class RowsBuilder[TParent]:
     def __init__(
         self,
@@ -245,7 +263,7 @@ class RowsBuilder[TParent]:
         *,
         name: RowNameParam,
         quantity: RowQuantityParam,
-        unit_price_net: RowUnitPriceNetParam,
+        unit_price_net: RowUnitPriceNetParam = None,
         vat_rate: RowVatRateParam = None,
         vat_classification: RowVatClassificationParam = None,
         unit_of_measure: RowUnitOfMeasureParam = "szt",
@@ -256,7 +274,7 @@ class RowsBuilder[TParent]:
         net_amount: RowOverrideAmountParam = None,
         vat_amount: RowOverrideAmountParam = None,
         gross_amount: RowOverrideAmountParam = None,
-        unit_price_gross: RowOverrideAmountParam = None,
+        unit_price_gross: RowUnitPriceGrossParam = None,
         vat_rate_xii: RowVatRateXiiParam = None,
         annex_15_marker: RowAnnex15Param = None,
         excise_amount: RowExciseAmountParam = None,
@@ -271,6 +289,7 @@ class RowsBuilder[TParent]:
         currency_exchange_rate: RowCurrencyExchangeRateParam = None,
         before_correction: RowBeforeCorrectionParam = False,
     ) -> Self:
+        _validate_unit_price_choice(unit_price_net, unit_price_gross)
         self._state["rows"].append(
             InvoiceRow(
                 name=name,
@@ -309,7 +328,7 @@ class RowsBuilder[TParent]:
         *,
         name: RowNameParam,
         quantity: RowQuantityParam,
-        unit_price_net: RowUnitPriceNetParam,
+        unit_price_net: RowUnitPriceNetParam = None,
         vat_rate: RowVatRateParam = None,
         vat_classification: RowVatClassificationParam = None,
         unit_of_measure: RowUnitOfMeasureParam = "szt",
@@ -320,7 +339,7 @@ class RowsBuilder[TParent]:
         net_amount: RowOverrideAmountParam = None,
         vat_amount: RowOverrideAmountParam = None,
         gross_amount: RowOverrideAmountParam = None,
-        unit_price_gross: RowOverrideAmountParam = None,
+        unit_price_gross: RowUnitPriceGrossParam = None,
         vat_rate_xii: RowVatRateXiiParam = None,
         annex_15_marker: RowAnnex15Param = None,
         excise_amount: RowExciseAmountParam = None,

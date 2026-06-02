@@ -194,6 +194,18 @@ class InvoiceRow(KSeFBaseModel):
     def compute_financial_field(self) -> Self:
         rate = self._vat_percent()
 
+        if (
+            self.gross_amount is None
+            and self.net_amount is None
+            and self.unit_price_net is None
+            and self.unit_price_gross is not None
+            and self.quantity is not None
+        ):
+            base_gross = self.unit_price_gross * self.quantity
+            self.gross_amount = round_pln(base_gross) - (
+                self.discount_amount or Decimal("0.00")
+            )
+
         if self.gross_amount is not None:
             if self.net_amount is None:
                 if rate is None:

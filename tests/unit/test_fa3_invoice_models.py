@@ -232,6 +232,20 @@ def test_invoice_line_derives_structured_vat_classification_from_legacy_inputs()
     assert line.tax_regime is TaxRegime.STANDARD
 
 
+def test_invoice_line_computes_amounts_from_gross_unit_price() -> None:
+    line = InvoiceRow(
+        name="Gross-priced service",
+        quantity=Decimal("2"),
+        unit_price_gross=Decimal("123.00"),
+        vat_rate=VatRate.VAT_23,
+    )
+
+    assert line.unit_price_net is None
+    assert line.gross_amount == Decimal("246.00")
+    assert line.net_amount == Decimal("200.00")
+    assert line.vat_amount == Decimal("46.00")
+
+
 def test_invoice_line_derives_legacy_fields_from_structured_vat_classification() -> (
     None
 ):
