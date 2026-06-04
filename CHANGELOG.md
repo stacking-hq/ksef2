@@ -1,3 +1,9 @@
+## v0.17.0 (2026-06-04)
+
+### Feat
+
+- **fa3**: support gross unit price lines
+
 ## v0.16.0 (2026-05-21)
 
 ### Feat
