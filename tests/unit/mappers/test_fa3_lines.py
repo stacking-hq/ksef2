@@ -104,6 +104,25 @@ def test_lines_to_spec_maps_optional_fields_to_none() -> None:
     assert output.stan_przed is None
 
 
+def test_lines_to_spec_maps_gross_priced_invoice_line() -> None:
+    output = lines_to_spec(
+        InvoiceRow(
+            name="Gross-priced service",
+            quantity=Decimal("2"),
+            unit_price_gross=Decimal("123.00"),
+            vat_rate=VatRate.VAT_23,
+        ),
+        row_number=2,
+    )
+
+    assert output.p_9_a is None
+    assert output.p_9_b == "123.00"
+    assert output.p_11 == "200.00"
+    assert output.p_11_a == "246.00"
+    assert output.p_11_vat == "46.00"
+    assert output.p_12 == TstawkaPodatku.VALUE_23
+
+
 def test_lines_to_spec_maps_zero_wdt_bucket_to_brochure_specific_value() -> None:
     output = lines_to_spec(
         InvoiceRow(
