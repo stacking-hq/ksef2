@@ -23,6 +23,7 @@ from ksef2.domain.models.fa3.body import (
     VatRate,
     VatTreatment,
 )
+from ksef2.domain.models.fa3.body.row import round_pln
 
 
 def make_polish_address() -> InvoiceAddress:
@@ -244,6 +245,61 @@ def test_invoice_line_computes_amounts_from_gross_unit_price() -> None:
     assert line.gross_amount == Decimal("246.00")
     assert line.net_amount == Decimal("200.00")
     assert line.vat_amount == Decimal("46.00")
+
+
+def test_round_pln_uses_half_up_rounding() -> None:
+    assert round_pln(Decimal("1.005")) == Decimal("1.01")
+
+
+def test_invoice_line_rounds_net_amount_half_up() -> None:
+    line = InvoiceRow(
+        name="Half-up net-priced service",
+        quantity=Decimal("1"),
+        unit_price_net=Decimal("1.005"),
+        vat_rate=VatRate.VAT_23,
+    )
+
+    assert line.net_amount == Decimal("1.01")
+    assert line.vat_amount == Decimal("0.23")
+    assert line.gross_amount == Decimal("1.24")
+
+
+def test_invoice_line_rejects_inconsistent_explicit_gross_amount() -> None:
+    with pytest.raises(
+        ValidationError,
+        match="gross_amount must equal net_amount \\+ vat_amount",
+    ):
+        InvoiceRow(
+            name="Inconsistent service",
+            quantity=Decimal("1"),
+            gross_amount=Decimal("1.25"),
+            net_amount=Decimal("1.01"),
+            vat_amount=Decimal("0.23"),
+            vat_rate=VatRate.VAT_23,
+        )
+
+
+def test_invoice_line_rejects_gross_amount_without_both_net_and_vat() -> None:
+    line = InvoiceRow.model_construct(
+        name="Partial gross service",
+        gross_amount=Decimal("1.24"),
+        net_amount=Decimal("1.01"),
+        vat_amount=None,
+        vat_rate=VatRate.VAT_23,
+        vat_classification=VatClassification(
+            treatment=VatTreatment.TAXABLE,
+            rate=Decimal("23"),
+        ),
+        sale_category=SaleCategory.RATE_23,
+        tax_regime=TaxRegime.STANDARD,
+        discount_amount=Decimal("0.00"),
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match="net_amount and vat_amount must be set",
+    ):
+        line.validate_tax_logic()
 
 
 def test_invoice_line_derives_legacy_fields_from_structured_vat_classification() -> (
