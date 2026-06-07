@@ -272,6 +272,40 @@ def test_invoice_line_special_xii_computes_amounts_with_decimal_percent() -> Non
     assert line.gross_amount == Decimal("217.00")
 
 
+@pytest.mark.parametrize(
+    ("field_name", "field_value"),
+    [
+        ("unit_price_net", Decimal("100.00")),
+        ("unit_price_gross", Decimal("123.00")),
+        ("net_amount", Decimal("100.00")),
+        ("gross_amount", Decimal("123.00")),
+        ("vat_amount", Decimal("23.00")),
+        ("vat_rate_xii", Decimal("8.5")),
+        ("discount_amount", Decimal("1.00")),
+    ],
+)
+def test_invoice_line_requires_vat_classification_for_business_bearing_fields(
+    field_name: str,
+    field_value: Decimal,
+) -> None:
+    with pytest.raises(ValidationError, match="vat classification is required"):
+        InvoiceRow(name="Consulting service", **{field_name: field_value})
+
+
+def test_invoice_line_accepts_descriptive_only_without_tax_or_financial_fields() -> (
+    None
+):
+    line = InvoiceRow(name="Descriptive note")
+
+    assert line.name == "Descriptive note"
+    assert line.vat_classification is None
+    assert line.vat_rate is None
+    assert line.sale_category is None
+    assert line.net_amount is None
+    assert line.gross_amount is None
+    assert line.vat_amount is None
+
+
 def test_invoice_line_derives_legacy_fields_from_structured_vat_classification() -> (
     None
 ):
