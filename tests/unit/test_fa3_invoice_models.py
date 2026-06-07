@@ -424,6 +424,74 @@ def test_invoice_margin_line_accepts_row_without_vat_fields() -> None:
     assert line.sale_category is None
 
 
+@pytest.mark.parametrize(
+    ("vat_classification", "sale_category", "vat_rate"),
+    [
+        (None, None, VatRate.VAT_23),
+        (None, SaleCategory.RATE_23, None),
+        (
+            VatClassification(
+                treatment=VatTreatment.TAXABLE,
+                rate=Decimal("23"),
+            ),
+            None,
+            None,
+        ),
+        (
+            VatClassification(
+                treatment=VatTreatment.TAXABLE,
+                rate=Decimal("23"),
+            ),
+            SaleCategory.RATE_23,
+            None,
+        ),
+        (
+            VatClassification(
+                treatment=VatTreatment.TAXABLE,
+                rate=Decimal("23"),
+            ),
+            None,
+            VatRate.VAT_23,
+        ),
+        (None, SaleCategory.RATE_23, VatRate.VAT_23),
+    ],
+)
+def test_invoice_line_normalizes_partial_vat_classification_fields(
+    vat_classification: VatClassification | None,
+    sale_category: SaleCategory | None,
+    vat_rate: VatRate | None,
+) -> None:
+    # Documents issue #53: through InvoiceRow(...) standard VAT inputs cannot
+    # reach validation with exactly one classification field missing.
+    line = InvoiceRow(
+        name="Consulting service",
+        quantity=Decimal("1"),
+        unit_price_net=Decimal("100.00"),
+        net_amount=Decimal("100.00"),
+        vat_classification=vat_classification,
+        sale_category=sale_category,
+        vat_rate=vat_rate,
+    )
+
+    assert line.vat_classification is not None
+    assert line.sale_category == line.vat_classification.sale_category
+    assert line.vat_rate == line.vat_classification.vat_rate
+
+
+def test_invoice_line_rejects_amounted_standard_line_without_vat_classification() -> (
+    None
+):
+    # Keep this message-agnostic: the exact validation text is not a documented
+    # public API, so message-only mutants should be treated as low signal.
+    with pytest.raises(ValidationError):
+        InvoiceRow(
+            name="Consulting service",
+            quantity=Decimal("1"),
+            unit_price_net=Decimal("100.00"),
+            net_amount=Decimal("100.00"),
+        )
+
+
 def test_invoice_entity_accepts_contact_and_customer_number() -> None:
     entity = InvoiceEntity(
         tax_id="1234567890",
