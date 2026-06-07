@@ -324,6 +324,50 @@ def test_invoice_line_derives_legacy_fields_from_structured_vat_classification()
     assert line.vat_rate is VatRate.VAT_23
 
 
+@pytest.mark.parametrize(
+    "forbidden_field",
+    [
+        {
+            "vat_classification": VatClassification(
+                treatment=VatTreatment.TAXABLE,
+                rate=Decimal("23"),
+            )
+        },
+        {"vat_rate": VatRate.VAT_23},
+        {"sale_category": SaleCategory.RATE_23},
+    ],
+)
+def test_invoice_margin_line_rejects_each_vat_field_independently(
+    forbidden_field: dict[str, object],
+) -> None:
+    line = InvoiceRow.model_construct(
+        name="Margin sale",
+        tax_regime=TaxRegime.MARGIN,
+        **forbidden_field,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="margin lines must not define vat_classification, vat_rate, or sale_category",
+    ):
+        line.validate_tax_logic()
+
+
+def test_invoice_margin_line_accepts_row_without_vat_fields() -> None:
+    line = InvoiceRow(
+        name="Margin sale",
+        quantity=Decimal("1"),
+        unit_price_net=Decimal("100.00"),
+        net_amount=Decimal("100.00"),
+        tax_regime=TaxRegime.MARGIN,
+    )
+
+    assert line.tax_regime is TaxRegime.MARGIN
+    assert line.vat_classification is None
+    assert line.vat_rate is None
+    assert line.sale_category is None
+
+
 def test_invoice_entity_accepts_contact_and_customer_number() -> None:
     entity = InvoiceEntity(
         tax_id="1234567890",
