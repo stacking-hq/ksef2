@@ -113,21 +113,6 @@ class SessionFiltersMixin(BaseModel):
         return [session_status_to_spec(status) for status in value]
 
 
-class SessionListParams(SessionFiltersMixin, TokenPaginationParams):
-    """GET /sessions"""
-
-    page_size: int = Field(default=10, ge=10, le=1000)
-    session_type: SessionType
-    reference_number: str | None = None
-    date_created_from: datetime | None = None
-    date_created_to: datetime | None = None
-    date_closed_from: datetime | None = None
-    date_closed_to: datetime | None = None
-    date_modified_from: datetime | None = None
-    date_modified_to: datetime | None = None
-    statuses: list[SessionStatus] | None = None
-
-
 class SessionInvoiceListParams(TokenPaginationParams):
     page_size: int = Field(default=10, ge=10, le=1000)
 
@@ -137,9 +122,6 @@ class TokenListParams(KSeFBaseParams[ListTokensQueryParams], PageSizeMixin):
     description: str | None = None
     author_identifier: str | None = None
     author_identifier_type: TokenAuthorIdentifierType | None = None
-
-
-class AuthSessionListParams(TokenPaginationParams): ...
 
 
 class ListSessionsQuery(

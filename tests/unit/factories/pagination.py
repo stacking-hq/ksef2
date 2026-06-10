@@ -1,14 +1,12 @@
 import pytest
 
 from ksef2.domain.models.pagination import (
+    InvoiceMetadataParams,
     OffsetPaginationParams,
     PermissionsQueryParams,
-    TokenPaginationParams,
-    SessionListParams,
     SessionInvoiceListParams,
+    TokenPaginationParams,
     TokenListParams,
-    AuthSessionListParams,
-    InvoiceMetadataParams,
 )
 
 
@@ -38,11 +36,6 @@ def token_pagination_params() -> TokenPaginationParams:
 
 
 @pytest.fixture
-def session_list_params() -> SessionListParams:
-    return SessionListParams(session_type="online")
-
-
-@pytest.fixture
 def session_invoice_list_params() -> SessionInvoiceListParams:
     return SessionInvoiceListParams()
 
@@ -50,8 +43,3 @@ def session_invoice_list_params() -> SessionInvoiceListParams:
 @pytest.fixture
 def token_list_params() -> TokenListParams:
     return TokenListParams()
-
-
-@pytest.fixture
-def auth_session_list_params() -> AuthSessionListParams:
-    return AuthSessionListParams()
