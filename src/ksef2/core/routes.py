@@ -137,3 +137,20 @@ ALL_ROUTES = [
     *SessionRoutes,
     *InvoiceRoutes,
 ]
+
+RETRYABLE_POST_PATHS = frozenset(
+    {
+        AuthRoutes.CHALLENGE,
+        AuthRoutes.REDEEM_TOKEN,
+        AuthRoutes.REFRESH_TOKEN,
+        InvoiceRoutes.QUERY_METADATA,
+        CertificateRoutes.QUERY,
+        CertificateRoutes.RETRIEVE,
+        QueryPermissionsRoutes.QUERY_PERSONAL_GRANTS,
+        QueryPermissionsRoutes.QUERY_AUTHORIZATIONS_GRANTS,
+        QueryPermissionsRoutes.QUERY_EU_ENTITIES_GRANTS,
+        QueryPermissionsRoutes.QUERY_PERSONS_GRANTS,
+        QueryPermissionsRoutes.QUERY_SUBORDINATE_ENTITIES_ROLES,
+        QueryPermissionsRoutes.QUERY_SUBUNITS_GRANTS,
+    }
+)

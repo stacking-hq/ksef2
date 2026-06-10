@@ -12,23 +12,6 @@ from ksef2.core.types import Headers, JsonObject, QueryParamsInput
 
 AsyncSleep = Callable[[float], Awaitable[object]]
 
-_RETRYABLE_POST_PATHS = frozenset(
-    {
-        routes.AuthRoutes.CHALLENGE,
-        routes.AuthRoutes.REDEEM_TOKEN,
-        routes.AuthRoutes.REFRESH_TOKEN,
-        routes.InvoiceRoutes.QUERY_METADATA,
-        routes.CertificateRoutes.QUERY,
-        routes.CertificateRoutes.RETRIEVE,
-        routes.QueryPermissionsRoutes.QUERY_PERSONAL_GRANTS,
-        routes.QueryPermissionsRoutes.QUERY_AUTHORIZATIONS_GRANTS,
-        routes.QueryPermissionsRoutes.QUERY_EU_ENTITIES_GRANTS,
-        routes.QueryPermissionsRoutes.QUERY_PERSONS_GRANTS,
-        routes.QueryPermissionsRoutes.QUERY_SUBORDINATE_ENTITIES_ROLES,
-        routes.QueryPermissionsRoutes.QUERY_SUBUNITS_GRANTS,
-    }
-)
-
 
 @final
 class AsyncRetryMiddleware(AsyncBaseMiddleware):
@@ -43,7 +26,7 @@ class AsyncRetryMiddleware(AsyncBaseMiddleware):
     def _is_retryable_request(self, method: str, path: str) -> bool:
         if method in {"GET", "DELETE"}:
             return True
-        return method == "POST" and path in _RETRYABLE_POST_PATHS
+        return method == "POST" and path in routes.RETRYABLE_POST_PATHS
 
     def _is_retryable_status(self, status_code: int) -> bool:
         return status_code in self._config.retryable_status_codes
