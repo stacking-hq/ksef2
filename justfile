@@ -34,10 +34,10 @@ coverage:
 
 
 lint:
-    uv run ruff check src/ tests/
+    uv run ruff check src/ tests/ scripts/gen_sync.py
 
 format-check:
-    uv run ruff format --check src/ tests/
+    uv run ruff format --check src/ tests/ scripts/gen_sync.py
 
 gen-sync:
     uv run python scripts/gen_sync.py
@@ -51,6 +51,7 @@ typecheck:
     output=$(uv run basedpyright --level error 2>&1)
     echo "$output"
     echo "$output" | grep -q "0 errors"
+    uv run basedpyright scripts/gen_sync.py
 
 
 sync-ksef-api-version:

@@ -11,6 +11,7 @@ import tempfile
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast, override
 
 import libcst as cst
 from libcst.helpers import get_full_name_for_node, parse_template_module
@@ -241,6 +242,7 @@ def resolve_pair(only: str | None) -> list[GeneratedPair]:
 
 
 class AsyncToSyncTransformer(cst.CSTTransformer):
+    @override
     def leave_FunctionDef(
         self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
     ) -> cst.FunctionDef:
@@ -249,6 +251,7 @@ class AsyncToSyncTransformer(cst.CSTTransformer):
             body=_rewrite_docstring_in_suite(updated_node.body),
         )
 
+    @override
     def leave_ClassDef(
         self, original_node: cst.ClassDef, updated_node: cst.ClassDef
     ) -> cst.ClassDef:
@@ -256,17 +259,21 @@ class AsyncToSyncTransformer(cst.CSTTransformer):
             body=_rewrite_docstring_in_suite(updated_node.body)
         )
 
+    @override
     def leave_Module(
         self, original_node: cst.Module, updated_node: cst.Module
     ) -> cst.Module:
         return _rewrite_module_docstring(updated_node)
 
+    @override
     def leave_With(self, original_node: cst.With, updated_node: cst.With) -> cst.With:
         return updated_node.with_changes(asynchronous=None)
 
+    @override
     def leave_For(self, original_node: cst.For, updated_node: cst.For) -> cst.For:
         return updated_node.with_changes(asynchronous=None)
 
+    @override
     def leave_Await(
         self, original_node: cst.Await, updated_node: cst.Await
     ) -> cst.BaseExpression:
@@ -276,6 +283,7 @@ class AsyncToSyncTransformer(cst.CSTTransformer):
             return _unwrap_to_thread(updated_node.expression)
         return updated_node.expression
 
+    @override
     def leave_Call(
         self, original_node: cst.Call, updated_node: cst.Call
     ) -> cst.BaseExpression:
@@ -286,6 +294,7 @@ class AsyncToSyncTransformer(cst.CSTTransformer):
             return updated_node.args[0].value
         return updated_node
 
+    @override
     def leave_Subscript(
         self, original_node: cst.Subscript, updated_node: cst.Subscript
     ) -> cst.BaseExpression:
@@ -298,6 +307,7 @@ class AsyncToSyncTransformer(cst.CSTTransformer):
             return third or updated_node
         return updated_node
 
+    @override
     def leave_Attribute(
         self, original_node: cst.Attribute, updated_node: cst.Attribute
     ) -> cst.BaseExpression:
@@ -305,6 +315,7 @@ class AsyncToSyncTransformer(cst.CSTTransformer):
             return cst.Attribute(value=cst.Name("time"), attr=cst.Name("sleep"))
         return updated_node
 
+    @override
     def leave_Annotation(
         self, original_node: cst.Annotation, updated_node: cst.Annotation
     ) -> cst.Annotation:
@@ -314,9 +325,11 @@ class AsyncToSyncTransformer(cst.CSTTransformer):
             )
         return updated_node
 
+    @override
     def leave_Name(self, original_node: cst.Name, updated_node: cst.Name) -> cst.Name:
         return updated_node.with_changes(value=_sync_identifier(updated_node.value))
 
+    @override
     def leave_ImportAlias(
         self, original_node: cst.ImportAlias, updated_node: cst.ImportAlias
     ) -> cst.ImportAlias:
@@ -324,6 +337,7 @@ class AsyncToSyncTransformer(cst.CSTTransformer):
             return updated_node.with_changes(name=cst.Name("time"))
         return updated_node
 
+    @override
     def leave_ImportFrom(
         self, original_node: cst.ImportFrom, updated_node: cst.ImportFrom
     ) -> cst.ImportFrom:
@@ -353,6 +367,8 @@ def generate_source(pair: GeneratedPair, repo_root: Path = REPO_ROOT) -> str:
 
 class SyncCompatibilityTransformer(cst.CSTTransformer):
     def __init__(self, pair: GeneratedPair) -> None:
+        super().__init__()
+
         self._pair = pair
         self._class_stack: list[str] = []
         self._function_stack: list[str] = []
@@ -361,20 +377,24 @@ class SyncCompatibilityTransformer(cst.CSTTransformer):
     def _generating_invoices_service(self) -> bool:
         return self._pair.target == Path("src/ksef2/services/invoices.py")
 
+    @override
     def visit_ClassDef(self, node: cst.ClassDef) -> bool | None:
         self._class_stack.append(node.name.value)
         return True
 
+    @override
     def leave_ClassDef(
         self, original_node: cst.ClassDef, updated_node: cst.ClassDef
     ) -> cst.ClassDef:
-        self._class_stack.pop()
+        _ = self._class_stack.pop()
         return updated_node
 
+    @override
     def visit_FunctionDef(self, node: cst.FunctionDef) -> bool | None:
         self._function_stack.append(node.name.value)
         return True
 
+    @override
     def leave_FunctionDef(
         self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
     ) -> cst.FunctionDef:
@@ -389,6 +409,7 @@ class SyncCompatibilityTransformer(cst.CSTTransformer):
             )
         return updated_node
 
+    @override
     def leave_SimpleStatementLine(
         self,
         original_node: cst.SimpleStatementLine,
@@ -409,6 +430,7 @@ class SyncCompatibilityTransformer(cst.CSTTransformer):
             )
         return updated_node
 
+    @override
     def leave_Call(
         self, original_node: cst.Call, updated_node: cst.Call
     ) -> cst.BaseExpression:
@@ -429,6 +451,7 @@ class SyncCompatibilityTransformer(cst.CSTTransformer):
                 )
         return updated_node
 
+    @override
     def leave_Module(
         self, original_node: cst.Module, updated_node: cst.Module
     ) -> cst.Module:
@@ -456,7 +479,7 @@ def check_generated(pairs: Sequence[GeneratedPair], diff: bool) -> int:
         failures += 1
         print(f"{pair.target} is not up to date", file=sys.stderr)
         if diff:
-            sys.stdout.writelines(_diff(actual, expected, pair.target))
+            _ = sys.stdout.writelines(_diff(actual, expected, pair.target))
 
     return 1 if failures else 0
 
@@ -465,7 +488,7 @@ def write_generated(pairs: Sequence[GeneratedPair]) -> None:
     written: list[Path] = []
     for pair in pairs:
         target_path = REPO_ROOT / pair.target
-        target_path.write_text(generate_source(pair), newline="")
+        _ = target_path.write_text(generate_source(pair), newline="")
         written.append(target_path)
 
     _run_ruff_fix(written)
@@ -478,35 +501,41 @@ def print_diffs(pairs: Sequence[GeneratedPair]) -> int:
         actual = (REPO_ROOT / pair.target).read_text()
         if actual != expected:
             status = 1
-            sys.stdout.writelines(_diff(actual, expected, pair.target))
+            _ = sys.stdout.writelines(_diff(actual, expected, pair.target))
     return status
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
+    _ = parser.add_argument(
         "--check", action="store_true", help="fail if generated files differ"
     )
-    parser.add_argument("--diff", action="store_true", help="print unified diffs")
-    parser.add_argument("--only", help="generate/check one async source or sync target")
-    parser.add_argument(
+    _ = parser.add_argument("--diff", action="store_true", help="print unified diffs")
+    _ = parser.add_argument(
+        "--only", help="generate/check one async source or sync target"
+    )
+    _ = parser.add_argument(
         "--print-files",
         action="store_true",
         help="print generated sync target paths, one per line",
     )
-    args = parser.parse_args(argv)
+    namespace = parser.parse_args(argv)
+    check = cast(bool, namespace.check)
+    diff = cast(bool, namespace.diff)
+    only = cast(str | None, namespace.only)
+    print_files = cast(bool, namespace.print_files)
 
-    pairs = resolve_pair(args.only)
+    pairs = resolve_pair(only)
 
-    if args.print_files:
+    if print_files:
         for pair in pairs:
             print(pair.target.as_posix())
         return 0
 
-    if args.check:
-        return check_generated(pairs, diff=args.diff)
+    if check:
+        return check_generated(pairs, diff=diff)
 
-    if args.diff:
+    if diff:
         return print_diffs(pairs)
 
     write_generated(pairs)
@@ -523,7 +552,7 @@ def _sync_identifier(name: str) -> str:
 
 def _rewrite_string_annotation(node: cst.SimpleString) -> cst.SimpleString:
     try:
-        value = ast.literal_eval(node.value)
+        value = cast(object, ast.literal_eval(node.value))
     except (SyntaxError, ValueError):
         return node
     if not isinstance(value, str):
@@ -656,7 +685,7 @@ def _format_source(source: str, target: Path, repo_root: Path) -> str:
         tmp_root = Path(tmp)
         tmp_path = tmp_root / target
         tmp_path.parent.mkdir(parents=True, exist_ok=True)
-        tmp_path.write_text(source, newline="")
+        _ = tmp_path.write_text(source, newline="")
         _run_ruff_fix([tmp_path], cwd=repo_root)
         return tmp_path.read_text()
 
@@ -677,8 +706,8 @@ def _run(command: list[str], cwd: Path) -> None:
     result = subprocess.run(command, cwd=cwd, text=True, capture_output=True)
     if result.returncode == 0:
         return
-    sys.stdout.write(result.stdout)
-    sys.stderr.write(result.stderr)
+    _ = sys.stdout.write(result.stdout)
+    _ = sys.stderr.write(result.stderr)
     raise subprocess.CalledProcessError(
         result.returncode,
         command,
