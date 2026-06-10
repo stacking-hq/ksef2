@@ -15,14 +15,10 @@ dependencies = [
     "signxml>=4.0",
     "httpx[http2]>=0.28.1",
     "structlog>=25.5.0",
-    "dotenv>=0.9.9",
-    "requests>=2.32.5",
     "xsdata-pydantic>=24.5",
     "tenacity>=9.0",
-    "polyfactory>=3.3.0",
     "beartype>=0.22.9",
     "camel-converter>=5.1.0",
-    "pytest-cov>=7.1.0",
     "xsdata>=26.1",
 ]
 
@@ -41,6 +37,9 @@ dev = [
     "commitizen>=4.13.9",
     "pre-commit>=4.5.1",
     "pytest-asyncio>=1.3.0",
+    "polyfactory>=3.3.0",
+    "pytest-cov>=7.1.0",
+    "python-dotenv>=1.2.1",
 ]
 codegen = [
     "datamodel-code-generator[ruff]>=0.53.0",
