@@ -144,6 +144,7 @@ class AsyncInvoicesService:
         export: ExportHandle,
         target_directory: Path | str = Path("."),
     ) -> list[Path]:
+        """Download and decrypt all parts of an export package to disk."""
         target_path = Path(target_directory)
         await asyncio.to_thread(target_path.mkdir, parents=True, exist_ok=True)
 
@@ -184,6 +185,7 @@ class AsyncInvoicesService:
         package: InvoicePackage,
         export: ExportHandle,
     ) -> list[bytes]:
+        """Download and decrypt all parts of an export package in memory."""
         result: list[bytes] = []
         for part in package.parts:
             logger.info(
@@ -251,6 +253,7 @@ class AsyncInvoicesService:
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> list[bytes]:
+        """Schedule an export, wait for it, and download the decrypted package."""
         handle = await self.schedule_export(
             filters=filters,
             only_metadata=only_metadata,

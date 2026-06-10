@@ -43,6 +43,7 @@ dev = [
 ]
 codegen = [
     "datamodel-code-generator[ruff]>=0.53.0",
+    "libcst>=1.8.6",
     "xsdata-pydantic[cli,lxml,soap]>=24.5",
     "xsdata[cli,lxml]>=24.0",
 ]

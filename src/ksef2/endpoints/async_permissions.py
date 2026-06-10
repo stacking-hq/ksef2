@@ -8,10 +8,13 @@ from ksef2.infra.schema.api import spec
 
 @final
 class AsyncPermissionsGrantEndpoints(AsyncBaseEndpoints):
+    """Raw endpoints for permission grant operations."""
+
     async def grant_person(
         self,
         request: spec.PersonPermissionsGrantRequest,
     ) -> spec.PermissionsOperationResponse:
+        """Start a person permission grant operation."""
         return self._parse(
             await self._transport.post(
                 path=routes.GrantPermissionsRoutes.GRANT_PERSON,
@@ -23,6 +26,7 @@ class AsyncPermissionsGrantEndpoints(AsyncBaseEndpoints):
     async def grant_entity(
         self, request: spec.EntityPermissionsGrantRequest
     ) -> spec.PermissionsOperationResponse:
+        """Start an entity permission grant operation."""
         return self._parse(
             await self._transport.post(
                 path=routes.GrantPermissionsRoutes.GRANT_ENTITY,
@@ -34,6 +38,7 @@ class AsyncPermissionsGrantEndpoints(AsyncBaseEndpoints):
     async def grant_authorization(
         self, request: spec.EntityAuthorizationPermissionsGrantRequest
     ) -> spec.PermissionsOperationResponse:
+        """Start an authorization permission grant operation."""
         return self._parse(
             await self._transport.post(
                 path=routes.GrantPermissionsRoutes.GRANT_AUTHORIZATION,
@@ -45,6 +50,7 @@ class AsyncPermissionsGrantEndpoints(AsyncBaseEndpoints):
     async def grant_indirect(
         self, request: spec.IndirectPermissionsGrantRequest
     ) -> spec.PermissionsOperationResponse:
+        """Start an indirect permission grant operation."""
         return self._parse(
             await self._transport.post(
                 path=routes.GrantPermissionsRoutes.GRANT_INDIRECT,
@@ -56,6 +62,7 @@ class AsyncPermissionsGrantEndpoints(AsyncBaseEndpoints):
     async def grant_subunit(
         self, request: spec.SubunitPermissionsGrantRequest
     ) -> spec.PermissionsOperationResponse:
+        """Start a subunit permission grant operation."""
         return self._parse(
             await self._transport.post(
                 path=routes.GrantPermissionsRoutes.GRANT_SUBUNITS,
@@ -67,6 +74,7 @@ class AsyncPermissionsGrantEndpoints(AsyncBaseEndpoints):
     async def grant_administered_eu_entity(
         self, request: spec.EuEntityAdministrationPermissionsGrantRequest
     ) -> spec.PermissionsOperationResponse:
+        """Start an EU-entity administration grant operation."""
         return self._parse(
             await self._transport.post(
                 path=routes.GrantPermissionsRoutes.GRANT_ADMINISTERED_EU_ENTITY,
@@ -78,6 +86,7 @@ class AsyncPermissionsGrantEndpoints(AsyncBaseEndpoints):
     async def grant_eu_entity(
         self, request: spec.EuEntityPermissionsGrantRequest
     ) -> spec.PermissionsOperationResponse:
+        """Start an EU-entity permission grant operation."""
         return self._parse(
             await self._transport.post(
                 path=routes.GrantPermissionsRoutes.GRANT_EU_ENTITY,
@@ -89,9 +98,12 @@ class AsyncPermissionsGrantEndpoints(AsyncBaseEndpoints):
 
 @final
 class AsyncRevokePermissionsEndpoints(AsyncBaseEndpoints):
+    """Raw endpoints for permission revocation operations."""
+
     async def revoke_person(
         self, permission_id: str
     ) -> spec.PermissionsOperationResponse:
+        """Revoke a non-authorization permission."""
         return self._parse(
             await self._transport.delete(
                 path=routes.RevokePermissionsRoutes.REVOKE_PERMISSION.format(
@@ -104,6 +116,7 @@ class AsyncRevokePermissionsEndpoints(AsyncBaseEndpoints):
     async def revoke_authorization(
         self, permission_id: str
     ) -> spec.PermissionsOperationResponse:
+        """Revoke an authorization permission."""
         return self._parse(
             await self._transport.delete(
                 path=routes.RevokePermissionsRoutes.REVOKE_AUTHORIZATION_PERMISSION.format(
@@ -116,11 +129,14 @@ class AsyncRevokePermissionsEndpoints(AsyncBaseEndpoints):
 
 @final
 class AsyncQueryPermissionsEndpoints(AsyncBaseEndpoints):
+    """Raw endpoints for permission query operations."""
+
     async def query_entities_grants(
         self,
         request: spec.EntityPermissionsQueryRequest,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QueryEntityPermissionsResponse:
+        """Fetch one page of entity permission grants."""
         return self._parse(
             await self._transport.post(
                 path=routes.QueryPermissionsRoutes.QUERY_ENTITIES_GRANTS,
@@ -135,6 +151,7 @@ class AsyncQueryPermissionsEndpoints(AsyncBaseEndpoints):
         request: spec.PersonalPermissionsQueryRequest,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QueryPersonalPermissionsResponse:
+        """Fetch one page of personal permission grants."""
         return self._parse(
             await self._transport.post(
                 path=routes.QueryPermissionsRoutes.QUERY_PERSONAL_GRANTS,
@@ -147,6 +164,7 @@ class AsyncQueryPermissionsEndpoints(AsyncBaseEndpoints):
     async def query_attachments_status(
         self,
     ) -> spec.CheckAttachmentPermissionStatusResponse:
+        """Fetch current attachment permission state."""
         return self._parse(
             await self._transport.get(
                 path=routes.QueryPermissionsRoutes.QUERY_ATTACHMENTS_STATUS,
@@ -159,6 +177,7 @@ class AsyncQueryPermissionsEndpoints(AsyncBaseEndpoints):
         request: spec.EntityAuthorizationPermissionsQueryRequest,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QueryEntityAuthorizationPermissionsResponse:
+        """Fetch one page of authorization grants."""
         return self._parse(
             await self._transport.post(
                 path=routes.QueryPermissionsRoutes.QUERY_AUTHORIZATIONS_GRANTS,
@@ -173,6 +192,7 @@ class AsyncQueryPermissionsEndpoints(AsyncBaseEndpoints):
         request: spec.EuEntityPermissionsQueryRequest,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QueryEuEntityPermissionsResponse:
+        """Fetch one page of EU-entity permissions."""
         return self._parse(
             await self._transport.post(
                 path=routes.QueryPermissionsRoutes.QUERY_EU_ENTITIES_GRANTS,
@@ -187,6 +207,7 @@ class AsyncQueryPermissionsEndpoints(AsyncBaseEndpoints):
         request: spec.PersonPermissionsQueryRequest,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QueryPersonPermissionsResponse:
+        """Fetch one page of person permission grants."""
         return self._parse(
             await self._transport.post(
                 path=routes.QueryPermissionsRoutes.QUERY_PERSONS_GRANTS,
@@ -201,6 +222,7 @@ class AsyncQueryPermissionsEndpoints(AsyncBaseEndpoints):
         request: spec.SubordinateEntityRolesQueryRequest,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QuerySubordinateEntityRolesResponse:
+        """Fetch one page of subordinate entity roles."""
         return self._parse(
             await self._transport.post(
                 path=routes.QueryPermissionsRoutes.QUERY_SUBORDINATE_ENTITIES_ROLES,
@@ -215,6 +237,7 @@ class AsyncQueryPermissionsEndpoints(AsyncBaseEndpoints):
         request: spec.SubunitPermissionsQueryRequest,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QuerySubunitPermissionsResponse:
+        """Fetch one page of subunit permission grants."""
         return self._parse(
             await self._transport.post(
                 path=routes.QueryPermissionsRoutes.QUERY_SUBUNITS_GRANTS,
@@ -227,10 +250,13 @@ class AsyncQueryPermissionsEndpoints(AsyncBaseEndpoints):
 
 @final
 class AsyncGetPermissionsEndpoints(AsyncBaseEndpoints):
+    """Raw endpoints for permission-related status and role lookups."""
+
     async def query_operation_status(
         self,
         reference_number: str,
     ) -> spec.PermissionsOperationStatusResponse:
+        """Fetch the status of a permission operation."""
         return self._parse(
             await self._transport.get(
                 path=routes.QueryPermissionsRoutes.QUERY_OPERATIONS_STATUS.format(
@@ -244,6 +270,7 @@ class AsyncGetPermissionsEndpoints(AsyncBaseEndpoints):
         self,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QueryEntityRolesResponse:
+        """Fetch one page of entity roles."""
         return self._parse(
             await self._transport.get(
                 path=routes.QueryPermissionsRoutes.QUERY_ENTITY_ROLES,

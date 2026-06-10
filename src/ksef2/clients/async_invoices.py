@@ -35,6 +35,7 @@ class AsyncInvoicesClient:
         filters: InvoicesFilter,
         params: InvoiceMetadataParams | None = None,
     ) -> QueryInvoicesMetadataResponse:
+        """Fetch one page of invoice metadata matching the provided filters."""
         request = to_spec(filters)
         parameters = params or InvoiceMetadataParams()
         spec_resp = await self._endpoints.query_metadata(
@@ -49,6 +50,7 @@ class AsyncInvoicesClient:
         filters: InvoicesFilter,
         params: InvoiceMetadataParams | None = None,
     ) -> AsyncIterator[QueryInvoicesMetadataResponse]:
+        """Fetch metadata pages, following KSeF page and truncation mechanics."""
         current_filters = filters
         current_params = params or InvoiceMetadataParams()
         previous_truncation_boundary: MetadataBoundary | None = None
@@ -81,11 +83,13 @@ class AsyncInvoicesClient:
         filters: InvoicesFilter,
         params: InvoiceMetadataParams | None = None,
     ) -> AsyncIterator[InvoiceMetadata]:
+        """Iterate over all invoice metadata items matching the provided filters."""
         async for page in self.query_metadata_pages(filters=filters, params=params):
             for invoice in page.invoices:
                 yield invoice
 
     async def download_invoice(self, *, ksef_number: str) -> bytes:
+        """Download raw invoice bytes by KSeF number."""
         return await self._endpoints.download(ksef_number=ksef_number)
 
     async def schedule_export(
@@ -97,6 +101,7 @@ class AsyncInvoicesClient:
         only_metadata: bool = False,
         compression_type: CompressionType | str | None = None,
     ) -> ExportHandle:
+        """Schedule an export and return the handle needed to decrypt it later."""
         aes_key, iv = generate_session_key()
         encrypted_key = encrypt_symmetric_key(
             key=aes_key,
@@ -129,6 +134,7 @@ class AsyncInvoicesClient:
         *,
         reference_number: str,
     ) -> InvoiceExportStatusResponse:
+        """Fetch export status and package metadata by export reference number."""
         spec_resp = await self._endpoints.get_export_status(
             reference_number=reference_number,
         )

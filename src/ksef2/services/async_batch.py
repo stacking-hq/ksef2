@@ -52,6 +52,18 @@ class AsyncBatchService:
         offline_mode: bool = False,
         max_part_size: int = MAX_BATCH_PART_SIZE,
     ) -> PreparedBatch:
+        """Build a ZIP package, split it, and encrypt each upload part.
+
+        Args:
+            invoices: Invoice XML payloads to include in the batch package.
+            form_code: Invoice schema declared for the batch session.
+            offline_mode: Whether to declare offline invoicing mode for the batch.
+            max_part_size: Maximum size of each ZIP part before encryption.
+
+        Returns:
+            A prepared batch with encrypted part payloads and the metadata required
+            to open a batch session.
+        """
         aes_key, iv, encrypted_key, public_key_id = await self._get_encryption_key()
         return await asyncio.to_thread(
             prepare_batch_package,
@@ -73,6 +85,17 @@ class AsyncBatchService:
         offline_mode: bool = False,
         max_part_size: int = MAX_BATCH_PART_SIZE,
     ) -> PreparedBatch:
+        """Load invoice XML files from disk and prepare a batch package.
+
+        Args:
+            invoice_paths: Paths to XML files that should be added to the batch.
+            form_code: Invoice schema declared for the batch session.
+            offline_mode: Whether to declare offline invoicing mode for the batch.
+            max_part_size: Maximum size of each ZIP part before encryption.
+
+        Returns:
+            A prepared batch with encrypted parts ready to be uploaded.
+        """
         invoices = await asyncio.to_thread(load_batch_invoices, invoice_paths)
         return await self.prepare_batch(
             invoices=invoices,
@@ -86,6 +109,14 @@ class AsyncBatchService:
         *,
         prepared_batch: PreparedBatch,
     ) -> _AwaitableSession[AsyncBatchSessionClient]:
+        """Open a batch session for an already prepared package.
+
+        Args:
+            prepared_batch: Prepared batch payload returned by ``prepare_batch()``.
+
+        Returns:
+            A session client exposing the upload instructions returned by KSeF.
+        """
         return _AwaitableSession(self._open_session(prepared_batch=prepared_batch))
 
     async def _open_session(
@@ -111,6 +142,12 @@ class AsyncBatchService:
         session: AsyncBatchSessionClient,
         prepared_batch: PreparedBatch,
     ) -> None:
+        """Upload all prepared batch parts using the session's presigned URLs.
+
+        Args:
+            session: Open batch session that already contains upload instructions.
+            prepared_batch: Prepared batch whose part ordinals match the session.
+        """
         upload_requests = {
             request.ordinal_number: request for request in session.part_upload_requests
         }
@@ -145,6 +182,14 @@ class AsyncBatchService:
         *,
         prepared_batch: PreparedBatch,
     ) -> BatchSessionState:
+        """Open, upload, and close a batch session for a prepared package.
+
+        Args:
+            prepared_batch: Prepared batch payload returned by ``prepare_batch()``.
+
+        Returns:
+            Serializable state of the submitted batch session.
+        """
         async with self.open_session(prepared_batch=prepared_batch) as session:
             state = session.get_state()
             await session.upload_parts()
@@ -158,6 +203,17 @@ class AsyncBatchService:
         offline_mode: bool = False,
         max_part_size: int = MAX_BATCH_PART_SIZE,
     ) -> BatchSessionState:
+        """Prepare and submit a batch in one call.
+
+        Args:
+            invoices: Invoice XML payloads to include in the batch package.
+            form_code: Invoice schema declared for the batch session.
+            offline_mode: Whether to declare offline invoicing mode for the batch.
+            max_part_size: Maximum size of each ZIP part before encryption.
+
+        Returns:
+            Serializable state of the submitted batch session.
+        """
         prepared_batch = await self.prepare_batch(
             invoices=invoices,
             form_code=form_code,
@@ -171,6 +227,14 @@ class AsyncBatchService:
         *,
         session: str | BatchSessionState | AsyncBatchSessionClient,
     ) -> SessionStatusResponse:
+        """Fetch the current status of a batch session.
+
+        Args:
+            session: Session reference number, persisted state, or open session client.
+
+        Returns:
+            Current batch session status as reported by KSeF.
+        """
         return session_from_spec(
             await self._invoice_eps.get_session_status(
                 reference_number=self._resolve_reference_number(session),
@@ -213,6 +277,15 @@ class AsyncBatchService:
         session: str | BatchSessionState | AsyncBatchSessionClient,
         upo_reference_number: str,
     ) -> bytes:
+        """Download the collective UPO for a batch session.
+
+        Args:
+            session: Session reference number, persisted state, or open session client.
+            upo_reference_number: UPO page reference returned in the session status.
+
+        Returns:
+            Raw XML bytes of the requested UPO page.
+        """
         return await self._session_eps.get_session_upo(
             reference_number=self._resolve_reference_number(session),
             upo_reference_number=upo_reference_number,
@@ -225,6 +298,16 @@ class AsyncBatchService:
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> SessionStatusResponse:
+        """Poll a batch session until KSeF reports a terminal status.
+
+        Args:
+            session: Session reference number, persisted state, or open session client.
+            timeout: Maximum number of seconds to wait for completion.
+            poll_interval: Delay between status checks.
+
+        Returns:
+            Final successful batch session status.
+        """
         reference_number = self._resolve_reference_number(session)
 
         async def _poll() -> SessionStatusResponse:

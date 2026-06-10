@@ -23,6 +23,7 @@ test-coverage:
 release-check:
     just lint
     just format-check
+    just check-gen-sync
     just typecheck
     just test
     uv build
@@ -37,6 +38,13 @@ lint:
 
 format-check:
     uv run ruff format --check src/ tests/
+
+gen-sync:
+    uv run python scripts/gen_sync.py
+    uv run ruff format $(uv run python scripts/gen_sync.py --print-files)
+
+check-gen-sync:
+    uv run python scripts/gen_sync.py --check
 
 typecheck:
     #!/usr/bin/env bash

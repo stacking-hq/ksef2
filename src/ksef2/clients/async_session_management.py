@@ -20,6 +20,15 @@ class AsyncSessionManagementClient:
         page_size: int | None = None,
         continuation_token: str | None = None,
     ) -> AuthenticationSessionsResponse:
+        """Fetch one page of authentication sessions.
+
+        Args:
+            page_size: Maximum number of sessions to request from KSeF.
+            continuation_token: Cursor returned by a previous page.
+
+        Returns:
+            One page of authentication sessions for the current subject.
+        """
         return from_spec(
             await self._auth_ep.list_sessions(
                 continuation_token=continuation_token,
@@ -32,6 +41,15 @@ class AsyncSessionManagementClient:
         *,
         page_size: int | None = None,
     ) -> AsyncIterator[AuthenticationSessionsResponse]:
+        """Iterate through all authentication session pages.
+
+        Args:
+            page_size: Maximum number of sessions to request per page.
+
+        Yields:
+            Successive pages of authentication sessions until KSeF stops
+            returning a continuation token.
+        """
         response = await self.query(page_size=page_size)
         yield response
 
@@ -40,7 +58,9 @@ class AsyncSessionManagementClient:
             yield response
 
     async def terminate_current(self) -> None:
+        """Terminate the authentication session backing the current bearer token."""
         await self._auth_ep.terminate_current_session()
 
     async def close(self, *, reference_number: str) -> None:
+        """Terminate an authentication session by reference number."""
         await self._auth_ep.terminate_auth_session(reference_number=reference_number)

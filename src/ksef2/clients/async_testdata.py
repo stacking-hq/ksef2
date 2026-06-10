@@ -46,6 +46,7 @@ class AsyncTestDataClient:
         subunits: list[SubUnit] | None = None,
         created_date: datetime | None = None,
     ) -> None:
+        """Create a test subject with optional subunits."""
         request = CreateSubjectRequest(
             subject_nip=nip,
             subject_type=subject_type,
@@ -56,6 +57,7 @@ class AsyncTestDataClient:
         await self._endpoints.create_subject(to_spec(request))
 
     async def delete_subject(self, *, nip: str) -> None:
+        """Delete a test subject by NIP."""
         await self._endpoints.delete_subject(
             to_spec(DeleteSubjectRequest(subject_nip=nip))
         )
@@ -70,6 +72,7 @@ class AsyncTestDataClient:
         is_deceased: bool = False,
         created_date: datetime | None = None,
     ) -> None:
+        """Create a test person in the chosen subject."""
         request = CreatePersonRequest(
             nip=nip,
             pesel=pesel,
@@ -81,6 +84,7 @@ class AsyncTestDataClient:
         await self._endpoints.create_person(to_spec(request))
 
     async def delete_person(self, *, nip: str) -> None:
+        """Delete a test person by subject NIP."""
         await self._endpoints.delete_person(to_spec(DeletePersonRequest(nip=nip)))
 
     async def grant_permissions(
@@ -90,6 +94,7 @@ class AsyncTestDataClient:
         grant_to: Identifier,
         in_context_of: Identifier,
     ) -> None:
+        """Grant test permissions in a chosen context."""
         request = GrantPermissionsRequest(
             permissions=permissions,
             grant_to=grant_to,
@@ -100,6 +105,7 @@ class AsyncTestDataClient:
     async def revoke_permissions(
         self, *, revoke_from: Identifier, in_context_of: Identifier
     ) -> None:
+        """Revoke test permissions in a chosen context."""
         request = RevokePermissionsRequest(
             revoke_from=revoke_from,
             in_context_of=in_context_of,
@@ -107,6 +113,7 @@ class AsyncTestDataClient:
         await self._endpoints.revoke_permissions(to_spec(request))
 
     async def enable_attachments(self, *, nip: str) -> None:
+        """Enable invoice attachments for a test subject."""
         await self._endpoints.enable_attachments(
             to_spec(EnableAttachmentsRequest(nip=nip))
         )
@@ -114,6 +121,7 @@ class AsyncTestDataClient:
     async def revoke_attachments(
         self, *, nip: str, expected_end_date: date | None = None
     ) -> None:
+        """Revoke attachment permissions, optionally effective on a given date."""
         request = RevokeAttachmentsRequest(
             nip=nip,
             expected_end_date=expected_end_date,
@@ -121,16 +129,19 @@ class AsyncTestDataClient:
         await self._endpoints.revoke_attachments(to_spec(request))
 
     async def block_context(self, *, context: AuthContextIdentifier) -> None:
+        """Block authentication for a specific test context."""
         await self._endpoints.block_context(
             to_spec(BlockContextRequest(context=context))
         )
 
     async def unblock_context(self, *, context: AuthContextIdentifier) -> None:
+        """Unblock authentication for a specific test context."""
         await self._endpoints.unblock_context(
             to_spec(UnblockContextRequest(context=context))
         )
 
     def temporal(self) -> "AsyncTemporalTestData":
+        """Return a context manager that automatically cleans up created test data."""
         return AsyncTemporalTestData(self)
 
 
@@ -147,6 +158,7 @@ class AsyncTemporalTestData:
         self._blocked_contexts: list[AuthContextIdentifier] = []
 
     async def __aenter__(self) -> Self:
+        """Return the helper for use in a ``with`` block."""
         return self
 
     async def _cleanup_blocked_context(self, context: AuthContextIdentifier) -> None:
@@ -211,6 +223,7 @@ class AsyncTemporalTestData:
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
+        """Best-effort cleanup of tracked changes in reverse creation order."""
         for context in reversed(self._blocked_contexts):
             await self._cleanup_blocked_context(context)
         for nip in reversed(self._attachments):

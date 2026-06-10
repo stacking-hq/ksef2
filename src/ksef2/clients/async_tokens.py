@@ -30,6 +30,7 @@ class AsyncTokensClient:
         poll_interval: float,
         max_attempts: int,
     ) -> TokenStatusResponse:
+        """Poll token status until it becomes active or reaches a terminal state."""
         reference_number_local = reference_number
 
         async def _poll() -> TokenStatusResponse:
@@ -62,6 +63,23 @@ class AsyncTokensClient:
         poll_interval: float = 1.0,
         max_poll_attempts: int = 60,
     ) -> GenerateTokenResponse:
+        """Create a token and wait until KSeF marks it as active.
+
+        Args:
+            permissions: Permissions to include in the generated token.
+            description: Human-readable label shown in KSeF token listings.
+            poll_interval: Delay in seconds between status checks.
+            max_poll_attempts: Maximum number of status requests before timing out.
+
+        Returns:
+            The token payload returned immediately after creation.
+
+        Raises:
+            KSeFApiError: If activation ends in a terminal failure state or polling
+                exceeds ``max_poll_attempts``.
+            KSeFTokenStatusTimeoutError: If polling exceeds
+                ``max_poll_attempts``.
+        """
         request = GenerateTokenRequest(
             permissions=permissions,
             description=description,
@@ -83,6 +101,15 @@ class AsyncTokensClient:
         continuation_token: str | None = None,
         params: TokenListParams | None = None,
     ) -> QueryTokensResponse:
+        """Fetch one page of tokens using optional filters and continuation state.
+
+        Args:
+            continuation_token: Token identifying the next page to fetch.
+            params: Optional filters and page size for the request.
+
+        Returns:
+            A single page of token results.
+        """
         parameters = params or TokenListParams()
         spec_resp = await self._endpoints.list_tokens(
             continuation_token=continuation_token, **parameters.to_query_params()
@@ -92,6 +119,14 @@ class AsyncTokensClient:
     async def list_all(
         self, *, params: TokenListParams | None = None
     ) -> AsyncIterator[QueryTokensResponse]:
+        """Iterate through all token pages until KSeF stops returning a continuation token.
+
+        Args:
+            params: Optional filters and page size applied to every request.
+
+        Yields:
+            Each page returned by the token listing endpoint.
+        """
         parameters = params or TokenListParams()
         response = await self.list_page(params=parameters)
         yield response
@@ -105,6 +140,7 @@ class AsyncTokensClient:
         *,
         reference_number: str,
     ) -> TokenStatusResponse:
+        """Return the current status of a token."""
         spec_resp = await self._endpoints.token_status(
             reference_number=reference_number
         )
@@ -115,4 +151,5 @@ class AsyncTokensClient:
         *,
         reference_number: str,
     ) -> None:
+        """Revoke a token."""
         await self._endpoints.revoke_token(reference_number=reference_number)

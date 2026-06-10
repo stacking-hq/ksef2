@@ -29,6 +29,18 @@ class AsyncInvoiceSessionsClient:
         params: ListSessionsQuery | None = None,
         statuses: list[SessionStatus | SessionStatusEnum] | None = None,
     ) -> ListSessionsResponse:
+        """Fetch one page of invoice session history for the chosen session type.
+
+        Args:
+            session_type: Invoice session family to browse, such as ``"online"``
+                or ``"batch"``.
+            continuation_token: Cursor returned by a previous page.
+            params: Optional query object with pagination and filter settings.
+            statuses: Optional list of status filters applied on top of ``params``.
+
+        Returns:
+            One page of historical invoice sessions.
+        """
         parameters = params or ListSessionsQuery(
             session_type=normalize_session_type(session_type),
         )
@@ -54,6 +66,17 @@ class AsyncInvoiceSessionsClient:
         session_type: str,
         params: ListSessionsQuery | None = None,
     ) -> AsyncIterator[ListSessionsResponse]:
+        """Iterate through all pages of invoice session history.
+
+        Args:
+            session_type: Invoice session family to browse, such as ``"online"``
+                or ``"batch"``.
+            params: Optional query object with pagination and filter settings.
+
+        Yields:
+            Successive pages of historical invoice sessions until KSeF stops
+            returning a continuation token.
+        """
         parameters = params or ListSessionsQuery(
             session_type=normalize_session_type(session_type),
         )

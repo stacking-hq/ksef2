@@ -45,32 +45,46 @@ class AsyncBatchSessionClient:
 
     @property
     def reference_number(self) -> str:
+        """Get the batch session reference number."""
         return self._state.reference_number
 
     @property
     def access_token(self) -> str:
+        """Get the access token for this session."""
         self._ensure_open()
         return self._state.access_token
 
     @property
     def aes_key(self) -> bytes:
+        """Get the AES key for encrypting batch files."""
         self._ensure_open()
         return self._state.get_aes_key_bytes()
 
     @property
     def iv(self) -> bytes:
+        """Get the initialization vector for AES encryption."""
         self._ensure_open()
         return self._state.get_iv_bytes()
 
     @property
     def part_upload_requests(self) -> list[PartUploadRequest]:
+        """Get the upload instructions for each file part."""
         self._ensure_open()
         return self._state.part_upload_requests
 
     def get_state(self) -> BatchSessionState:
+        """Get the serializable state of this batch session.
+
+        The returned state can be serialized to JSON and used later
+        to resume the session or access upload URLs.
+
+        Returns:
+            BatchSessionState containing all session information.
+        """
         return self._state
 
     async def get_status(self) -> SessionStatusResponse:
+        """Fetch the current processing state of the batch session."""
         return session_from_spec(
             await self._invoice_eps.get_session_status(
                 reference_number=self._state.reference_number,
@@ -83,6 +97,7 @@ class AsyncBatchSessionClient:
         page_size: int = 10,
         continuation_token: str | None = None,
     ) -> SessionInvoicesResponse:
+        """Fetch one page of invoices submitted in this batch session."""
         return session_from_spec(
             await self._invoice_eps.list_session_invoices(
                 reference_number=self._state.reference_number,
@@ -97,6 +112,7 @@ class AsyncBatchSessionClient:
         page_size: int = 10,
         continuation_token: str | None = None,
     ) -> SessionInvoicesResponse:
+        """Fetch one page of failed invoices from this batch session."""
         return session_from_spec(
             await self._invoice_eps.list_failed_session_invoices(
                 reference_number=self._state.reference_number,
@@ -106,12 +122,19 @@ class AsyncBatchSessionClient:
         )
 
     async def get_upo(self, *, upo_reference_number: str) -> bytes:
+        """Download the collective UPO for the batch session."""
         return await self._session_eps.get_session_upo(
             reference_number=self._state.reference_number,
             upo_reference_number=upo_reference_number,
         )
 
     async def upload_parts(self) -> None:
+        """Upload the prepared batch parts using the session's presigned URLs.
+
+        Raises:
+            KSeFClientClosedError: If the upload window has already been closed.
+            KSeFValidationError: If the session has no prepared batch payload attached.
+        """
         self._ensure_open()
 
         if self._prepared_batch is None:
@@ -152,6 +175,11 @@ class AsyncBatchSessionClient:
             )
 
     async def aclose(self) -> None:
+        """Close the batch session and start processing.
+
+        This triggers processing of the invoice batch and generation of UPO
+        for valid invoices and a collective UPO for the session.
+        """
         if self._closed:
             return
 

@@ -18,21 +18,26 @@ from ksef2.endpoints.shared import (
 
 
 class AsyncBaseEndpoints(abc.ABC):
+    """Base class for endpoint wrappers around the transport middleware chain."""
+
     _PARAMS_ADAPTER: ClassVar[QueryParamsAdapter] = DEFAULT_PARAMS_ADAPTER
 
     def __init__(self, transport: AsyncMiddleware):
+        """Bind the endpoint wrapper to a transport implementation."""
         self._transport = transport
 
     @classmethod
     def _parse[T: BaseModel](
         cls, response: httpx.Response, response_type: type[T]
     ) -> T:
+        """Parse a JSON response body into one generated schema model."""
         return parse_response(response, response_type)
 
     @classmethod
     def _parse_list[T: BaseModel](
         cls, response: httpx.Response, response_type: type[T]
     ) -> list[T]:
+        """Parse a JSON response body into a list of generated schema models."""
         return parse_response_list(response, response_type)
 
     def build_params(
@@ -40,4 +45,5 @@ class AsyncBaseEndpoints(abc.ABC):
         params: Mapping[str, object],
         adapter: QueryParamsAdapter | None = None,
     ) -> httpx.QueryParams:
+        """Validate, drop ``None`` values, and encode query parameters."""
         return build_query_params(params, adapter or self._PARAMS_ADAPTER)

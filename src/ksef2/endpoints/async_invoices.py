@@ -21,6 +21,8 @@ SessionInvoiceListQueryParams = TypedDict(
 
 @final
 class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
+    """Raw invoice endpoints backed by generated schema models."""
+
     _METADATA_PARAMS = TypeAdapter(InvoiceMetadataQueryParams)
     _SESSION_LIST_PARAMS = TypeAdapter(SessionInvoiceListQueryParams)
 
@@ -29,6 +31,7 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         body: spec.InvoiceQueryFilters,
         **params: Unpack[InvoiceMetadataQueryParams],
     ) -> spec.QueryInvoicesMetadataResponse:
+        """Fetch one page of invoice metadata."""
         return self._parse(
             await self._transport.post(
                 path=routes.InvoiceRoutes.QUERY_METADATA,
@@ -39,6 +42,7 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         )
 
     async def export(self, body: InvoiceExportRequest) -> spec.ExportInvoicesResponse:
+        """Start an invoice export operation."""
         return self._parse(
             await self._transport.post(
                 path=routes.InvoiceRoutes.EXPORT,
@@ -51,6 +55,7 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         self,
         reference_number: str,
     ) -> spec.InvoiceExportStatusResponse:
+        """Fetch status for a scheduled invoice export."""
         return self._parse(
             await self._transport.get(
                 path=routes.InvoiceRoutes.EXPORT_STATUS.format(
@@ -61,6 +66,7 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         )
 
     async def download(self, ksef_number: str) -> bytes:
+        """Download raw invoice bytes by KSeF number."""
         return (
             await self._transport.get(
                 path=routes.InvoiceRoutes.DOWNLOAD.format(ksefNumber=ksef_number),
@@ -72,6 +78,7 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         reference_number: str,
         body: SendInvoiceRequest,
     ) -> spec.SendInvoiceResponse:
+        """Send one encrypted invoice into an open session."""
         return self._parse(
             await self._transport.post(
                 path=routes.InvoiceRoutes.SEND.format(referenceNumber=reference_number),
@@ -84,6 +91,7 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         self,
         reference_number: str,
     ) -> spec.SessionStatusResponse:
+        """Fetch status for an online or batch session."""
         return self._parse(
             await self._transport.get(
                 path=routes.InvoiceRoutes.SESSION_STATUS.format(
@@ -99,6 +107,7 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         continuation_token: str | None = None,
         **params: Unpack[SessionInvoiceListQueryParams],
     ) -> spec.SessionInvoicesResponse:
+        """Fetch one page of invoices submitted in a session."""
         headers = (
             {"x-continuation-token": continuation_token} if continuation_token else None
         )
@@ -120,6 +129,7 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         continuation_token: str | None = None,
         **params: Unpack[SessionInvoiceListQueryParams],
     ) -> spec.SessionInvoicesResponse:
+        """Fetch one page of failed invoices from a session."""
         headers = (
             {"x-continuation-token": continuation_token} if continuation_token else None
         )
@@ -140,6 +150,7 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         reference_number: str,
         invoice_reference_number: str,
     ) -> spec.SessionInvoiceStatusResponse:
+        """Fetch status for a single invoice inside a session."""
         return self._parse(
             await self._transport.get(
                 path=routes.InvoiceRoutes.SESSION_INVOICE_STATUS.format(
@@ -155,6 +166,7 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         reference_number: str,
         ksef_number: str,
     ) -> bytes:
+        """Download a UPO document by KSeF number."""
         return (
             await self._transport.get(
                 path=routes.InvoiceRoutes.INVOICE_UPO_BY_KSEF.format(
@@ -169,6 +181,7 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         reference_number: str,
         invoice_reference_number: str,
     ) -> bytes:
+        """Download a UPO document by session invoice reference number."""
         return (
             await self._transport.get(
                 path=routes.InvoiceRoutes.INVOICE_UPO_BY_REFERENCE.format(

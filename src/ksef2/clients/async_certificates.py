@@ -34,9 +34,11 @@ class AsyncCertificatesClient:
         self._endpoints = AsyncCertificatesEndpoints(transport)
 
     async def get_limits(self) -> CertificateLimitsResponse:
+        """Return the effective certificate enrollment and issuance quotas."""
         return from_spec(await self._endpoints.get_limits())
 
     async def get_enrollment_data(self) -> CertificateEnrollmentData:
+        """Return subject data needed to prepare a CSR for enrollment."""
         return from_spec(await self._endpoints.get_enrollment_data())
 
     async def enroll(
@@ -47,6 +49,7 @@ class AsyncCertificatesClient:
         csr: str,
         valid_from: datetime | str | None = None,
     ) -> CertificateEnrollmentResponse:
+        """Request issuance of a certificate from a CSR."""
         request = EnrollCertificateRequest(
             certificate_name=certificate_name,
             certificate_type=certificate_type,
@@ -61,6 +64,7 @@ class AsyncCertificatesClient:
         *,
         reference_number: str,
     ) -> CertificateEnrollmentStatusResponse:
+        """Fetch the current status of a certificate enrollment request."""
         return from_spec(
             await self._endpoints.get_enrollment_status(
                 reference_number=reference_number,
@@ -72,6 +76,7 @@ class AsyncCertificatesClient:
         *,
         certificate_serial_numbers: list[CertificateSerialNumber],
     ) -> RetrievedCertificatesList:
+        """Download issued certificates by serial number."""
         request = RetrieveCertificatesRequest(
             certificate_serial_numbers=certificate_serial_numbers,
         )
@@ -84,6 +89,7 @@ class AsyncCertificatesClient:
         certificate_serial_number: CertificateSerialNumber,
         reason: RevocationReason | None = None,
     ) -> None:
+        """Revoke a certificate, optionally providing a revocation reason."""
         validated_serial_number = validate_certificate_serial_number(
             certificate_serial_number
         )
@@ -104,6 +110,7 @@ class AsyncCertificatesClient:
         expires_after: datetime | str | None = None,
         params: OffsetPaginationParams | None = None,
     ) -> CertificatesInfoList:
+        """Fetch one page of certificate search results."""
         parameters = params or OffsetPaginationParams()
         request = QueryCertificatesRequest(
             certificate_serial_number=certificate_serial_number,
@@ -128,6 +135,7 @@ class AsyncCertificatesClient:
         expires_after: datetime | str | None = None,
         params: OffsetPaginationParams | None = None,
     ) -> AsyncIterator[CertificateInfo]:
+        """Iterate over all certificates matching the provided filters."""
         current_params = params or OffsetPaginationParams()
 
         while True:

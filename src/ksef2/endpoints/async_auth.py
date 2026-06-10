@@ -26,6 +26,8 @@ XadesAuthParams = TypedDict(
 
 @final
 class AsyncAuthEndpoints(AsyncBaseEndpoints):
+    """Raw authentication endpoints backed by generated schema models."""
+
     _AUTH_SESSIONS_PARAMS = TypeAdapter(AuthSessionsQueryParams)
     _XADES_AUTH_PARAMS = TypeAdapter(XadesAuthParams)
 
@@ -34,6 +36,7 @@ class AsyncAuthEndpoints(AsyncBaseEndpoints):
         continuation_token: str | None = None,
         **params: Unpack[AuthSessionsQueryParams],
     ) -> spec.AuthenticationListResponse:
+        """Fetch one page of authentication sessions."""
         req_headers = (
             {"x-continuation-token": continuation_token} if continuation_token else None
         )
@@ -52,6 +55,7 @@ class AsyncAuthEndpoints(AsyncBaseEndpoints):
         signed_xml: bytes,
         verify_chain: bool = False,
     ) -> spec.AuthenticationInitResponse:
+        """Start authentication from an XAdES-signed XML payload."""
         query_params: XadesAuthParams = {
             "verifyCertificateChain": str(verify_chain).lower(),
         }
@@ -67,6 +71,7 @@ class AsyncAuthEndpoints(AsyncBaseEndpoints):
         )
 
     async def challenge(self) -> spec.AuthenticationChallengeResponse:
+        """Create an authentication challenge."""
         return self._parse(
             await self._transport.post(
                 path=routes.AuthRoutes.CHALLENGE,
@@ -77,6 +82,7 @@ class AsyncAuthEndpoints(AsyncBaseEndpoints):
     async def token_auth(
         self, body: InitTokenAuthenticationRequest
     ) -> spec.AuthenticationInitResponse:
+        """Start token-based authentication."""
         return self._parse(
             await self._transport.post(
                 path=routes.AuthRoutes.TOKEN_AUTH,
@@ -90,6 +96,7 @@ class AsyncAuthEndpoints(AsyncBaseEndpoints):
         bearer_token: str,
         reference_number: str,
     ) -> spec.AuthenticationOperationStatusResponse:
+        """Fetch the status of an in-progress authentication operation."""
         return self._parse(
             await self._transport.get(
                 path=routes.AuthRoutes.AUTH_STATUS.format(
@@ -104,6 +111,7 @@ class AsyncAuthEndpoints(AsyncBaseEndpoints):
         self,
         bearer_token: str,
     ) -> spec.AuthenticationTokensResponse:
+        """Redeem a temporary authentication token for access and refresh tokens."""
         return self._parse(
             await self._transport.post(
                 path=routes.AuthRoutes.REDEEM_TOKEN,
@@ -115,6 +123,7 @@ class AsyncAuthEndpoints(AsyncBaseEndpoints):
     async def refresh_token(
         self, bearer_token: str
     ) -> spec.AuthenticationTokenRefreshResponse:
+        """Refresh an access token using a refresh token bearer header."""
         return self._parse(
             await self._transport.post(
                 path=routes.AuthRoutes.REFRESH_TOKEN,
@@ -124,11 +133,13 @@ class AsyncAuthEndpoints(AsyncBaseEndpoints):
         )
 
     async def terminate_current_session(self) -> None:
+        """Terminate the current authentication session."""
         _ = await self._transport.delete(
             path=routes.AuthRoutes.TERMINATE_CURRENT_SESSION,
         )
 
     async def terminate_auth_session(self, reference_number: str) -> None:
+        """Terminate an authentication session by reference number."""
         _ = await self._transport.delete(
             path=routes.AuthRoutes.TERMINATE_AUTH_SESSION.format(
                 referenceNumber=reference_number

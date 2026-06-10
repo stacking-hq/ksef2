@@ -8,7 +8,10 @@ from ksef2.infra.schema.api import spec
 
 @final
 class AsyncCertificatesEndpoints(AsyncBaseEndpoints):
+    """Raw certificate endpoints backed by generated schema models."""
+
     async def get_limits(self) -> spec.CertificateLimitsResponse:
+        """Fetch effective certificate quotas."""
         return self._parse(
             await self._transport.get(
                 path=routes.CertificateRoutes.LIMITS,
@@ -17,6 +20,7 @@ class AsyncCertificatesEndpoints(AsyncBaseEndpoints):
         )
 
     async def get_enrollment_data(self) -> spec.CertificateEnrollmentDataResponse:
+        """Fetch subject data needed to prepare a certificate request."""
         return self._parse(
             await self._transport.get(
                 path=routes.CertificateRoutes.ENROLLMENT_DATA,
@@ -27,6 +31,7 @@ class AsyncCertificatesEndpoints(AsyncBaseEndpoints):
     async def enroll(
         self, body: spec.EnrollCertificateRequest
     ) -> spec.EnrollCertificateResponse:
+        """Start certificate enrollment from a schema-native payload."""
         return self._parse(
             await self._transport.post(
                 path=routes.CertificateRoutes.ENROLLMENT,
@@ -38,6 +43,7 @@ class AsyncCertificatesEndpoints(AsyncBaseEndpoints):
     async def get_enrollment_status(
         self, reference_number: str
     ) -> spec.CertificateEnrollmentStatusResponse:
+        """Fetch enrollment status by reference number."""
         return self._parse(
             await self._transport.get(
                 path=routes.CertificateRoutes.ENROLLMENT_STATUS.format(
@@ -50,6 +56,7 @@ class AsyncCertificatesEndpoints(AsyncBaseEndpoints):
     async def retrieve(
         self, body: spec.RetrieveCertificatesRequest
     ) -> spec.RetrieveCertificatesResponse:
+        """Retrieve issued certificates from a schema-native request payload."""
         return self._parse(
             await self._transport.post(
                 path=routes.CertificateRoutes.RETRIEVE,
@@ -63,6 +70,7 @@ class AsyncCertificatesEndpoints(AsyncBaseEndpoints):
         certificate_serial_number: str,
         body: spec.RevokeCertificateRequest | None = None,
     ) -> None:
+        """Revoke a certificate, optionally sending a revocation reason."""
         _ = await self._transport.post(
             path=routes.CertificateRoutes.REVOKE.format(
                 certificateSerialNumber=certificate_serial_number
@@ -75,6 +83,7 @@ class AsyncCertificatesEndpoints(AsyncBaseEndpoints):
         body: spec.QueryCertificatesRequest,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QueryCertificatesResponse:
+        """Fetch one page of certificate query results."""
         return self._parse(
             await self._transport.post(
                 path=routes.CertificateRoutes.QUERY,

@@ -100,6 +100,7 @@ class AsyncClient:
         return AsyncTestDataClient(self._transport)
 
     async def aclose(self) -> None:
+        """Close owned resources and invalidate cached child clients."""
         if self._lifecycle_state.closed:
             return
 

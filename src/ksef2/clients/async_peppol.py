@@ -21,6 +21,15 @@ class AsyncPeppolClient:
         *,
         params: OffsetPaginationParams | None = None,
     ) -> ListPeppolProvidersResponse:
+        """Query Peppol service providers.
+
+        Args:
+            params: Pagination parameters.
+
+        Returns:
+            QueryPeppolProvidersResponse containing the list of providers
+            and pagination info.
+        """
         current_params = params or OffsetPaginationParams()
         response = await self._endpoints.query_providers(
             **current_params.to_query_params()
@@ -30,6 +39,16 @@ class AsyncPeppolClient:
     async def all(
         self, *, params: OffsetPaginationParams | None = None
     ) -> AsyncIterator[PeppolProvider]:
+        """Iterate over all Peppol service providers.
+
+        This method handles pagination internally.
+
+        Args:
+            params: Pagination parameters.
+
+        Returns:
+            Iterator over PeppolProvider objects.
+        """
         current_params = params or OffsetPaginationParams()
 
         while True:

@@ -68,6 +68,7 @@ class AsyncAuthenticatedClient:
         return self._auth_tokens.refresh_token.token
 
     async def _ensure_encryption_certificates_loaded(self) -> None:
+        """Load public encryption certificates on first use."""
         if self._certificate_store.all():
             return
         self._certificate_store.load(await self._encryption_client.get_certificates())
@@ -75,6 +76,7 @@ class AsyncAuthenticatedClient:
     async def _get_encryption_material(
         self,
     ) -> tuple[bytes, bytes, bytes, str | None]:
+        """Generate encrypted session material and keep the selected key id."""
         await self._ensure_encryption_certificates_loaded()
 
         cert = self._certificate_store.get_valid("symmetric_key_encryption")
@@ -83,6 +85,7 @@ class AsyncAuthenticatedClient:
         return aes_key, iv, encrypted_key, cert.public_key_id
 
     async def get_encryption_key(self) -> tuple[bytes, bytes, bytes]:
+        """Generate a session AES key, IV, and encrypted symmetric key payload."""
         (
             aes_key,
             iv,
@@ -96,6 +99,7 @@ class AsyncAuthenticatedClient:
         *,
         form_code: FormSchema,
     ) -> _AwaitableSession[AsyncOnlineSessionClient]:
+        """Open a new online invoice session and return a bound session client."""
         return _AwaitableSession(self._open_online_session(form_code=form_code))
 
     async def _open_online_session(
@@ -134,6 +138,7 @@ class AsyncAuthenticatedClient:
         self,
         state: OnlineSessionState,
     ) -> AsyncOnlineSessionClient:
+        """Rebind an existing serialized online session state to this client."""
         return AsyncOnlineSessionClient(transport=self._authed_transport, state=state)
 
     def batch_session(
@@ -144,6 +149,19 @@ class AsyncAuthenticatedClient:
         form_code: FormSchema = FormSchema.FA3,
         offline_mode: bool = False,
     ) -> _AwaitableSession[AsyncBatchSessionClient]:
+        """Open a batch session for upload work.
+
+        Args:
+            prepared_batch: Prepared batch payload created by ``auth.batch.prepare_batch()``.
+            batch_file: Declared ZIP package metadata and encrypted part metadata.
+            form_code: Invoice schema declared for the batch session when ``batch_file``
+                is provided directly.
+            offline_mode: Whether to declare offline invoicing mode for the batch when
+                ``batch_file`` is provided directly.
+
+        Returns:
+            A bound batch session client exposing presigned upload instructions.
+        """
         return _AwaitableSession(
             self._open_batch_session_from_input(
                 prepared_batch=prepared_batch,
@@ -212,6 +230,22 @@ class AsyncAuthenticatedClient:
         offline_mode: bool = False,
         prepared_batch: PreparedBatch | None = None,
     ) -> _AwaitableSession[AsyncBatchSessionClient]:
+        """Open a batch session using caller-prepared encryption metadata.
+
+        Args:
+            batch_file: Declared ZIP package metadata and encrypted part metadata.
+            aes_key: Raw symmetric key used for part encryption.
+            iv: Initialization vector paired with ``aes_key``.
+            encrypted_key: RSA-encrypted symmetric key sent to KSeF.
+            public_key_id: Identifier of the KSeF public key used for encryption.
+            form_code: Invoice schema declared for the batch session.
+            offline_mode: Whether to declare offline invoicing mode for the batch.
+            prepared_batch: Optional prepared batch payload to attach to the returned
+                session so ``session.upload_parts()`` can operate without extra args.
+
+        Returns:
+            A bound batch session client exposing presigned upload instructions.
+        """
         return _AwaitableSession(
             self._open_batch_session(
                 batch_file=batch_file,
@@ -268,6 +302,7 @@ class AsyncAuthenticatedClient:
         self,
         state: BatchSessionState,
     ) -> AsyncBatchSessionClient:
+        """Rebind an existing serialized batch session state to this client."""
         return AsyncBatchSessionClient(
             transport=self._authed_transport,
             state=state,
@@ -276,6 +311,7 @@ class AsyncAuthenticatedClient:
 
     @cached_property
     def invoices(self) -> AsyncInvoicesService:
+        """Return the invoices service with encryption support configured."""
         return AsyncInvoicesService(
             self._authed_transport,
             self._transport,
@@ -288,6 +324,11 @@ class AsyncAuthenticatedClient:
 
     @cached_property
     def batch(self) -> AsyncBatchService:
+        """Return the high-level batch upload workflow service.
+
+        The service orchestrates package preparation, session opening,
+        presigned part uploads, session closing, and status polling.
+        """
         return AsyncBatchService(
             authed_transport=self._authed_transport,
             upload_transport=self._transport,

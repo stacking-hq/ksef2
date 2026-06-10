@@ -18,6 +18,7 @@ class AsyncEncryptionClient:
         *,
         usage: list[CertUsage] | None = None,
     ) -> list[PublicKeyCertificate]:
+        """Return public certificates, optionally filtered by supported usage."""
         certificates = [
             from_spec(cert)
             for cert in await self._endpoints.fetch_public_certificates()
