@@ -29,6 +29,8 @@ def test_sync_and_async_endpoint_base_build_identical_params() -> None:
         "pageSize": 50,
     }
 
+    assert BaseEndpoints._PARAMS_ADAPTER is AsyncBaseEndpoints._PARAMS_ADAPTER
+
     sync_params = BaseEndpoints(FakeTransport()).build_params(params)
     async_params = AsyncBaseEndpoints(AsyncFakeTransport()).build_params(params)
 
