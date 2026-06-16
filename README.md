@@ -1,15 +1,14 @@
 <div align="center">
-<a href="https://github.com/artpods56/ksef2" title="KSeF Toolkit">
-  <img src="https://raw.githubusercontent.com/artpods56/ksef2/master/docs/assets/logo.png" alt="KSeF Toolkit" width="50%">
+<a href="https://github.com/stacking-hq/ksef2" title="KSeF Toolkit">
+  <img src="https://raw.githubusercontent.com/stacking-hq/ksef2/main/docs/assets/logo.png" alt="KSeF Toolkit" width="50%">
 </a>
 
 **Python SDK for Poland's KSeF (Krajowy System e-Faktur) v2 API.**
 
-![API Coverage](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/artpods56/ksef2/master/coverage.json&query=$.message&label=KSeF%20API%20coverage&color=$.color)
-[![Unit Test Coverage](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/artpods56/ksef2/master/test-coverage.json&query=$.message&label=Unit%20test%20coverage&color=$.color)](https://github.com/artpods56/ksef2/actions/workflows/test-coverage.yml)
+![API Coverage](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/stacking-hq/ksef2/main/coverage.json&query=$.message&label=KSeF%20API%20coverage&color=$.color)
+[![Unit Test Coverage](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/stacking-hq/ksef2/main/test-coverage.json&query=$.message&label=Unit%20test%20coverage&color=$.color)](https://github.com/stacking-hq/ksef2/actions/workflows/test-coverage.yml)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![Integration Tests](https://github.com/artpods56/ksef2/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/artpods56/ksef2/actions/workflows/integration-tests.yml) \
-[![beartype](https://raw.githubusercontent.com/beartype/beartype-assets/main/badge/bear-ified.svg)](https://github.com/beartype/beartype)
+[![Integration Tests](https://github.com/stacking-hq/ksef2/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/stacking-hq/ksef2/actions/workflows/integration-tests.yml) \
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -36,6 +35,15 @@ invoice PDF visualization:
 ```bash
 pip install "ksef2[pdf]"
 uv add "ksef2[pdf]"
+```
+
+Runtime type checks are optional and disabled by default. Install the
+`runtime-checks` extra and set `KSEF2_RUNTIME_CHECKS=1` when you want beartype
+to validate SDK calls during development or debugging:
+
+```bash
+pip install "ksef2[runtime-checks]"
+KSEF2_RUNTIME_CHECKS=1 python -c "import ksef2"
 ```
 
 ## Supported OpenAPI Version

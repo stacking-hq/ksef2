@@ -24,7 +24,7 @@ from scripts.examples._common import repo_root
 DEFAULT_BUYER_COUNT = 3
 DEFAULT_INVOICES_PER_BUYER = 2
 DEFAULT_POLL_INTERVAL = 3.0
-DEFAULT_MAX_POLL_ATTEMPTS = 60
+DEFAULT_EXPORT_TIMEOUT = 180.0
 
 
 @dataclass
@@ -32,7 +32,7 @@ class ExampleConfig:
     buyer_count: int = DEFAULT_BUYER_COUNT
     invoices_per_buyer: int = DEFAULT_INVOICES_PER_BUYER
     poll_interval: float = DEFAULT_POLL_INTERVAL
-    max_poll_attempts: int = DEFAULT_MAX_POLL_ATTEMPTS
+    export_timeout: float = DEFAULT_EXPORT_TIMEOUT
     environment: Environment = Environment.TEST
     download_dir: Path = field(
         default_factory=lambda: repo_root() / "downloads" / "test"
@@ -111,7 +111,7 @@ def download_for_buyer(
     try:
         package = auth.invoices.wait_for_export_package(
             reference_number=export.reference_number,
-            timeout=config.poll_interval * config.max_poll_attempts,
+            timeout=config.export_timeout,
             poll_interval=config.poll_interval,
         )
     except exceptions.KSeFExportTimeoutError:

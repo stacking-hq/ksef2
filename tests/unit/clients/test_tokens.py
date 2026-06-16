@@ -109,22 +109,27 @@ class TestTokensClient:
             _ = tokens_client.generate(
                 permissions=["invoice_read"],
                 description="Test token",
+                timeout=0.0,
                 poll_interval=0.0,
-                max_poll_attempts=3,
             )
 
         assert exc_info.value.reference_number == gen_resp.referenceNumber
-        assert exc_info.value.attempts == 3
+        assert exc_info.value.timeout == 0.0
+        assert not hasattr(exc_info.value, "attempts")
         assert not hasattr(exc_info.value, "status_code")
 
-    def test_generate_zero_max_poll_attempts_does_not_poll_status(
+    def test_generate_zero_timeout_polls_status_once(
         self,
         tokens_client: TokensClient,
         fake_transport: FakeTransport,
         token_generate_resp: BaseFactory[spec.GenerateTokenResponse],
     ):
         gen_resp = token_generate_resp.build()
+        pending_resp = TokenStatusResponseFactory.build(
+            status=spec.AuthenticationTokenStatus.Pending
+        )
         fake_transport.enqueue(gen_resp.model_dump(mode="json"))
+        fake_transport.enqueue(pending_resp.model_dump(mode="json"))
 
         with pytest.raises(
             exceptions.KSeFTokenStatusTimeoutError,
@@ -133,16 +138,18 @@ class TestTokensClient:
             _ = tokens_client.generate(
                 permissions=["invoice_read"],
                 description="Test token",
+                timeout=0.0,
                 poll_interval=0.0,
-                max_poll_attempts=0,
             )
 
         assert exc_info.value.reference_number == gen_resp.referenceNumber
-        assert exc_info.value.attempts == 0
+        assert exc_info.value.timeout == 0.0
+        assert not hasattr(exc_info.value, "attempts")
         assert not hasattr(exc_info.value, "status_code")
 
-        assert len(fake_transport.calls) == 1
+        assert len(fake_transport.calls) == 2
         assert fake_transport.calls[0].method == "POST"
+        assert fake_transport.calls[1].method == "GET"
 
     def test_list_page(
         self,

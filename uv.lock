@@ -757,7 +757,6 @@ name = "ksef2"
 version = "0.17.0"
 source = { editable = "." }
 dependencies = [
-    { name = "beartype" },
     { name = "camel-converter" },
     { name = "cryptography" },
     { name = "httpx", extra = ["http2"] },
@@ -772,6 +771,9 @@ dependencies = [
 [package.optional-dependencies]
 pdf = [
     { name = "weasyprint" },
+]
+runtime-checks = [
+    { name = "beartype" },
 ]
 
 [package.dev-dependencies]
@@ -797,7 +799,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "beartype", specifier = ">=0.22.9" },
+    { name = "beartype", marker = "extra == 'runtime-checks'", specifier = ">=0.22.9" },
     { name = "camel-converter", specifier = ">=5.1.0" },
     { name = "cryptography", specifier = ">=44.0.0" },
     { name = "httpx", extras = ["http2"], specifier = ">=0.28.1" },
@@ -809,7 +811,7 @@ requires-dist = [
     { name = "xsdata", specifier = ">=26.1" },
     { name = "xsdata-pydantic", specifier = ">=24.5" },
 ]
-provides-extras = ["pdf"]
+provides-extras = ["runtime-checks", "pdf"]
 
 [package.metadata.requires-dev]
 codegen = [

@@ -27,8 +27,8 @@ class AsyncTokensClient:
         self,
         *,
         reference_number: str,
+        timeout: float,
         poll_interval: float,
-        max_attempts: int,
     ) -> TokenStatusResponse:
         """Poll token status until it becomes active or reaches a terminal state."""
         reference_number_local = reference_number
@@ -47,11 +47,10 @@ class AsyncTokensClient:
             operation=_poll,
             retry_predicate=lambda result: result.status != "active",
             poll_interval=poll_interval,
-            max_attempts=max_attempts,
+            timeout_seconds=timeout,
             timeout_error_factory=lambda: exceptions.KSeFTokenStatusTimeoutError(
                 reference_number=reference_number_local,
-                attempts=max_attempts,
-                poll_interval=poll_interval,
+                timeout=timeout,
             ),
         )
 
@@ -60,25 +59,24 @@ class AsyncTokensClient:
         *,
         permissions: list[TokenPermission],
         description: str,
+        timeout: float = 60.0,
         poll_interval: float = 1.0,
-        max_poll_attempts: int = 60,
     ) -> GenerateTokenResponse:
         """Create a token and wait until KSeF marks it as active.
 
         Args:
             permissions: Permissions to include in the generated token.
             description: Human-readable label shown in KSeF token listings.
+            timeout: Maximum number of seconds to wait for activation.
             poll_interval: Delay in seconds between status checks.
-            max_poll_attempts: Maximum number of status requests before timing out.
 
         Returns:
             The token payload returned immediately after creation.
 
         Raises:
             KSeFApiError: If activation ends in a terminal failure state or polling
-                exceeds ``max_poll_attempts``.
-            KSeFTokenStatusTimeoutError: If polling exceeds
-                ``max_poll_attempts``.
+                exceeds ``timeout``.
+            KSeFTokenStatusTimeoutError: If polling exceeds ``timeout``.
         """
         request = GenerateTokenRequest(
             permissions=permissions,
@@ -90,8 +88,8 @@ class AsyncTokensClient:
 
         _ = await self._poll_until_active(
             reference_number=result.reference_number,
+            timeout=timeout,
             poll_interval=poll_interval,
-            max_attempts=max_poll_attempts,
         )
         return result
 
