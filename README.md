@@ -53,7 +53,7 @@ The SDK currently supports KSeF OpenAPI version `2.6.0`.
 ## Documentation
 
 Published documentation is available at <https://ksef2.stacking.me/sdk/>.
-The SDK owns its source documentation under [`docs/`](docs/); the separate
+The SDK owns its source documentation under [`docs/`](https://github.com/stacking-hq/ksef2/tree/main/docs); the separate
 `ksef2-docs` repository assembles and publishes the unified site.
 
 ## Quick Start
@@ -103,8 +103,8 @@ for path in auth.invoices.fetch_package(
     print(f"Downloaded: {path}")
 ```
 > Runnable TEST examples:
-> [`scripts/examples/quickstart.py`](scripts/examples/quickstart.py) and
-> [`scripts/examples/invoices/send_query_export_download.py`](scripts/examples/invoices/send_query_export_download.py)
+> [`scripts/examples/quickstart.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/quickstart.py) and
+> [`scripts/examples/invoices/send_query_export_download.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/invoices/send_query_export_download.py)
 
 ## Async Quick Start
 
@@ -159,12 +159,12 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-See [`docs/guides/async-client.md`](docs/guides/async-client.md) for async usage patterns.
+See [`docs/guides/async-client.md`](https://github.com/stacking-hq/ksef2/blob/main/docs/guides/async-client.md) for async usage patterns.
 
 ## Error Handling
 
 Catch stable SDK exception classes from the package root. See
-[`docs/guides/errors.md`](docs/guides/errors.md) for the public catch contract,
+[`docs/guides/errors.md`](https://github.com/stacking-hq/ksef2/blob/main/docs/guides/errors.md) for the public catch contract,
 including SDK-classified errors, `httpx.HTTPError` transport failures,
 `KSeFValidationError`, KSeF `ExceptionCode` handling, retry patterns, and
 timeout semantics.
@@ -350,7 +350,7 @@ xml_text = (
 )
 ```
 
-See [`docs/guides/fa3-builder.md`](docs/guides/fa3-builder.md) for the full builder guide and the runnable examples in [`scripts/examples/invoices`](scripts/examples/invoices).
+See [`docs/guides/fa3-builder.md`](https://github.com/stacking-hq/ksef2/blob/main/docs/guides/fa3-builder.md) for the full builder guide and the runnable examples in [`scripts/examples/invoices`](https://github.com/stacking-hq/ksef2/tree/main/scripts/examples/invoices).
 
 To build an invoice and generate a PDF visualization locally:
 
@@ -364,18 +364,18 @@ This writes both `output/fa3_invoice.xml` and `output/fa3_invoice.pdf`.
 
 Run examples as modules with `uv run -m ...`; direct execution by file path is not supported.
 
-- [`scripts/examples/quickstart.py`](scripts/examples/quickstart.py) - minimal TEST-environment invoice send
-- [`scripts/examples/auth/auth_xades.py`](scripts/examples/auth/auth_xades.py) - XAdES authentication
-- [`scripts/examples/auth/auth_token.py`](scripts/examples/auth/auth_token.py) - KSeF token authentication
-- [`scripts/examples/invoices/send_batch.py`](scripts/examples/invoices/send_batch.py) - staged batch upload with explicit session lifecycle
-- [`scripts/examples/invoices/submit_batch.py`](scripts/examples/invoices/submit_batch.py) - one-shot batch submission flow
-- [`scripts/examples/invoices/send_query_export_download.py`](scripts/examples/invoices/send_query_export_download.py) - send, inspect, export, and download invoices
-- [`scripts/examples/invoices/build_fa3_invoice.py`](scripts/examples/invoices/build_fa3_invoice.py) - build an FA(3) invoice, validate the XML, and generate a PDF visualization with the `pdf` extra
-- [`scripts/examples/invoices/build_fa3_invoice_builder.py`](scripts/examples/invoices/build_fa3_invoice_builder.py) - use the nested FA(3) builder DSL and generate XML plus a PDF visualization with the `pdf` extra
-- [`scripts/examples/invoices/build_fa3_invoice_sample_1.py`](scripts/examples/invoices/build_fa3_invoice_sample_1.py) - recreate the first official FA(3) sample with the public builder
-- [`scripts/examples/peppol/query_providers.py`](scripts/examples/peppol/query_providers.py) - query public PEPPOL providers
-- [`scripts/examples/scenarios/download_purchase_invoices.py`](scripts/examples/scenarios/download_purchase_invoices.py) - multi-buyer purchase-invoice export scenario
-- [`scripts/examples/session/session_resume.py`](scripts/examples/session/session_resume.py) - persist and resume an online session
+- [`scripts/examples/quickstart.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/quickstart.py) - minimal TEST-environment invoice send
+- [`scripts/examples/auth/auth_xades.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/auth/auth_xades.py) - XAdES authentication
+- [`scripts/examples/auth/auth_token.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/auth/auth_token.py) - KSeF token authentication
+- [`scripts/examples/invoices/send_batch.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/invoices/send_batch.py) - staged batch upload with explicit session lifecycle
+- [`scripts/examples/invoices/submit_batch.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/invoices/submit_batch.py) - one-shot batch submission flow
+- [`scripts/examples/invoices/send_query_export_download.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/invoices/send_query_export_download.py) - send, inspect, export, and download invoices
+- [`scripts/examples/invoices/build_fa3_invoice.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/invoices/build_fa3_invoice.py) - build an FA(3) invoice, validate the XML, and generate a PDF visualization with the `pdf` extra
+- [`scripts/examples/invoices/build_fa3_invoice_builder.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/invoices/build_fa3_invoice_builder.py) - use the nested FA(3) builder DSL and generate XML plus a PDF visualization with the `pdf` extra
+- [`scripts/examples/invoices/build_fa3_invoice_sample_1.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/invoices/build_fa3_invoice_sample_1.py) - recreate the first official FA(3) sample with the public builder
+- [`scripts/examples/peppol/query_providers.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/peppol/query_providers.py) - query public PEPPOL providers
+- [`scripts/examples/scenarios/download_purchase_invoices.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/scenarios/download_purchase_invoices.py) - multi-buyer purchase-invoice export scenario
+- [`scripts/examples/session/session_resume.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/session/session_resume.py) - persist and resume an online session
 
 ## Development
 
@@ -399,26 +399,26 @@ just fetch-spec     # Fetch latest OpenAPI spec from KSeF
 
 The SDK covers **73 of 73** KSeF API endpoints (100%). See feature docs for details:
 
-- [Authentication](docs/guides/authentication.md) — XAdES, token auth, session management
-- [Async Client](docs/guides/async-client.md) — async authentication, sessions, exports, batch, and testdata
-- [Encryption](docs/guides/encryption.md) — public KSeF encryption certificates
-- [Invoices](docs/guides/invoices.md) — send, download, query, export
-- [Sessions](docs/guides/sessions.md) — online/batch sessions, resume support
-- [Tokens](docs/guides/tokens.md) — generate and manage KSeF authorization tokens
-- [Permissions](docs/guides/permissions.md) — grant/query permissions for persons and entities
-- [Certificates](docs/guides/certificates.md) — enroll, query, revoke KSeF certificates
-- [Limits](docs/guides/limits.md) — query and modify API rate limits
-- [PEPPOL](docs/guides/peppol.md) — query registered PEPPOL providers
-- [Test Data](docs/guides/testdata.md) — create test subjects, manage test environment
+- [Authentication](https://github.com/stacking-hq/ksef2/blob/main/docs/guides/authentication.md) — XAdES, token auth, session management
+- [Async Client](https://github.com/stacking-hq/ksef2/blob/main/docs/guides/async-client.md) — async authentication, sessions, exports, batch, and testdata
+- [Encryption](https://github.com/stacking-hq/ksef2/blob/main/docs/guides/encryption.md) — public KSeF encryption certificates
+- [Invoices](https://github.com/stacking-hq/ksef2/blob/main/docs/guides/invoices.md) — send, download, query, export
+- [Sessions](https://github.com/stacking-hq/ksef2/blob/main/docs/guides/sessions.md) — online/batch sessions, resume support
+- [Tokens](https://github.com/stacking-hq/ksef2/blob/main/docs/guides/tokens.md) — generate and manage KSeF authorization tokens
+- [Permissions](https://github.com/stacking-hq/ksef2/blob/main/docs/guides/permissions.md) — grant/query permissions for persons and entities
+- [Certificates](https://github.com/stacking-hq/ksef2/blob/main/docs/guides/certificates.md) — enroll, query, revoke KSeF certificates
+- [Limits](https://github.com/stacking-hq/ksef2/blob/main/docs/guides/limits.md) — query and modify API rate limits
+- [PEPPOL](https://github.com/stacking-hq/ksef2/blob/main/docs/guides/peppol.md) — query registered PEPPOL providers
+- [Test Data](https://github.com/stacking-hq/ksef2/blob/main/docs/guides/testdata.md) — create test subjects, manage test environment
 
 ## Stability And Releases
 
 The SDK is still in the pre-`1.0.0` stabilization phase.
 
-- Track release notes in [CHANGELOG.md](CHANGELOG.md)
+- Track release notes in [CHANGELOG.md](https://github.com/stacking-hq/ksef2/blob/main/CHANGELOG.md)
 - Run `just release-check` before publishing a release
 - Expect `0.x` minor releases to contain public API cleanup when needed
 
 ## License
 
-[MIT](LICENSE.md)
+[MIT](https://github.com/stacking-hq/ksef2/blob/main/LICENSE.md)
