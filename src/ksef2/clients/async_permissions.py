@@ -1,3 +1,5 @@
+"""Async permissions branch client."""
+
 from typing import final
 
 from ksef2.core.async_protocols import AsyncMiddleware
@@ -60,7 +62,18 @@ from ksef2.infra.mappers.permissions import (
 
 @final
 class AsyncPermissionsClient:
-    """Async high-level API for permission grants, revocations, and queries."""
+    """Async high-level API for permission grants, revocations, and queries.
+
+    Catch ``KSeFException`` for SDK-classified failures raised by this branch,
+    and ``httpx.HTTPError`` for transport failures.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response. Catch
+            ``KSeFAuthError`` for authentication or authorization failures and
+            ``KSeFRateLimitError`` for throttling.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
+    """
 
     def __init__(self, transport: AsyncMiddleware) -> None:
         self._grant_eps = AsyncPermissionsGrantEndpoints(transport)

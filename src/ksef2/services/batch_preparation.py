@@ -20,6 +20,12 @@ MAX_BATCH_PART_SIZE = 100_000_000
 
 
 def load_batch_invoices(invoice_paths: Iterable[Path | str]) -> list[BatchInvoice]:
+    """Load invoice XML files into batch invoice payloads.
+
+    Raises:
+        FileNotFoundError: If any invoice path does not exist.
+        OSError: If any invoice path cannot be read.
+    """
     return [
         BatchInvoice(file_name=Path(path).name, content=Path(path).read_bytes())
         for path in invoice_paths
@@ -37,6 +43,12 @@ def prepare_batch_package(
     offline_mode: bool = False,
     max_part_size: int = MAX_BATCH_PART_SIZE,
 ) -> PreparedBatch:
+    """Build, split, and encrypt a batch package from invoice payloads.
+
+    Raises:
+        KSeFEncryptionError: If part encryption fails.
+        KSeFValidationError: If the invoice list or part size is invalid.
+    """
     normalized = list(invoices)
     validate_invoices(normalized)
     validate_max_part_size(max_part_size)
@@ -93,6 +105,12 @@ def prepare_batch_package(
 
 
 def validate_invoices(invoices: list[BatchInvoice]) -> None:
+    """Validate invoice payloads before creating the ZIP package.
+
+    Raises:
+        KSeFValidationError: If no invoices are provided or names are empty or
+            duplicated.
+    """
     if not invoices:
         raise exceptions.KSeFValidationError(
             "At least one invoice is required to build a batch package."
@@ -114,6 +132,11 @@ def validate_invoices(invoices: list[BatchInvoice]) -> None:
 
 
 def validate_max_part_size(max_part_size: int) -> None:
+    """Validate the batch part size limit.
+
+    Raises:
+        KSeFValidationError: If ``max_part_size`` is outside KSeF limits.
+    """
     if max_part_size < 1 or max_part_size > MAX_BATCH_PART_SIZE:
         raise exceptions.KSeFValidationError(
             "max_part_size must be between 1 and 100000000 bytes.",
@@ -137,4 +160,9 @@ def split_bytes(payload: bytes, *, max_part_size: int) -> list[bytes]:
 
 
 def encrypt_batch_part(*, payload: bytes, aes_key: bytes, iv: bytes) -> bytes:
+    """Encrypt a single batch part.
+
+    Raises:
+        KSeFEncryptionError: If AES-CBC encryption fails.
+    """
     return encrypt_invoice(payload, key=aes_key, iv=iv)

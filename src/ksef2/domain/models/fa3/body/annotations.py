@@ -1,3 +1,5 @@
+"""FA(3) invoice annotation domain models."""
+
 from datetime import date
 
 from pydantic import Field, model_validator

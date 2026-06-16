@@ -1,3 +1,5 @@
+"""Domain models for Peppol provider queries."""
+
 from datetime import datetime
 
 from ksef2.domain.models.base import KSeFBaseModel

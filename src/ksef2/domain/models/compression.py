@@ -1,3 +1,5 @@
+"""Compression choices accepted by invoice export and batch payloads."""
+
 from enum import StrEnum
 from typing import Literal
 
@@ -6,6 +8,8 @@ type CompressionTypeSpecValue = Literal["Zip", "TarGz"]
 
 
 class CompressionTypeEnum(StrEnum):
+    """Runtime enum for KSeF compression values."""
+
     ZIP = "Zip"
     TAR_GZ = "TarGz"
 
@@ -22,6 +26,17 @@ _COMPRESSION_TYPE_FROM_SPEC: dict[CompressionTypeSpecValue, CompressionType] = {
 def normalize_compression_type(
     value: CompressionType | CompressionTypeEnum | str,
 ) -> CompressionType:
+    """Normalize SDK or OpenAPI compression values to SDK literals.
+
+    Args:
+        value: SDK literal, OpenAPI enum value, or enum member.
+
+    Returns:
+        Normalized SDK compression literal.
+
+    Raises:
+        ValueError: If ``value`` is not a supported compression type.
+    """
     if isinstance(value, CompressionTypeEnum):
         return _COMPRESSION_TYPE_FROM_SPEC[value.value]
 
@@ -41,4 +56,5 @@ def normalize_compression_type(
 def compression_type_to_spec(
     value: CompressionType | CompressionTypeEnum | str,
 ) -> CompressionTypeSpecValue:
+    """Convert a compression value to the OpenAPI representation."""
     return _COMPRESSION_TYPE_TO_SPEC[normalize_compression_type(value)]

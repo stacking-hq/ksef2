@@ -1,3 +1,5 @@
+"""FA(3) attachment block domain models."""
+
 from collections.abc import Sequence
 from datetime import datetime, date, time
 from decimal import Decimal, InvalidOperation

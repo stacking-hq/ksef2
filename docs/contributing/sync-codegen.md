@@ -1,4 +1,7 @@
-# Sync Code Generation
+---
+title: Sync Code Generation
+description: Understand the generated sync tree and the async source of truth.
+---
 
 The async modules are the hand-written source of truth for mirrored SDK APIs.
 Their sync twins are committed generated artifacts.

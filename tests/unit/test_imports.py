@@ -1,4 +1,8 @@
 import asyncio
+import os
+from pathlib import Path
+import subprocess
+import sys
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -6,6 +10,24 @@ import httpx
 
 HTTPX_CLIENT_CLASS = httpx.Client
 HTTPX_ASYNC_CLIENT_CLASS = httpx.AsyncClient
+PROJECT_ROOT = Path(__file__).parents[2]
+SRC_ROOT = PROJECT_ROOT / "src"
+BEARTYPE_BLOCKED_IMPORT = """
+import builtins
+
+original_import = builtins.__import__
+
+
+def blocked_import(name, globals=None, locals=None, fromlist=(), level=0):
+    if name == "beartype" or name.startswith("beartype."):
+        raise ModuleNotFoundError("No module named 'beartype'")
+    return original_import(name, globals, locals, fromlist, level)
+
+
+builtins.__import__ = blocked_import
+import ksef2
+print(ksef2.__version__)
+"""
 
 
 def test_public_clients_import() -> None:
@@ -29,6 +51,43 @@ def test_root_error_surface_import() -> None:
     assert ksef2.ExceptionCode.UNKNOWN_ERROR == 10000
     assert "KSeFApiError" in ksef2.__all__
     assert "__version__" in ksef2.__all__
+
+
+def test_root_import_does_not_require_beartype_by_default() -> None:
+    env = os.environ.copy()
+    env.pop("KSEF2_RUNTIME_CHECKS", None)
+    env["PYTHONPATH"] = str(SRC_ROOT)
+
+    result = subprocess.run(
+        [sys.executable, "-c", BEARTYPE_BLOCKED_IMPORT],
+        cwd=PROJECT_ROOT,
+        env=env,
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert result.stdout.strip()
+
+
+def test_runtime_checks_extra_is_required_when_enabled_without_beartype() -> None:
+    env = os.environ.copy()
+    env["KSEF2_RUNTIME_CHECKS"] = "1"
+    env["PYTHONPATH"] = str(SRC_ROOT)
+
+    result = subprocess.run(
+        [sys.executable, "-c", BEARTYPE_BLOCKED_IMPORT],
+        cwd=PROJECT_ROOT,
+        env=env,
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert result.returncode != 0
+    assert "ksef2[runtime-checks]" in result.stderr
 
 
 def test_common_domain_models_import() -> None:

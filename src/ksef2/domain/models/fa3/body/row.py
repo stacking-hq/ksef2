@@ -1,3 +1,5 @@
+"""FA(3) invoice row domain models and financial calculations."""
+
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Literal, Self
@@ -17,6 +19,7 @@ from ksef2.domain.models.fa3.body.tax import (
 
 
 def round_pln(value: Decimal) -> Decimal:
+    """Round a monetary amount using standard PLN precision."""
     return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
@@ -48,6 +51,8 @@ InvoiceProcedure = Literal[
 
 
 class InvoiceRow(KSeFBaseModel):
+    """Line item stored in the FA(3) ``Fa/FaWiersz`` block."""
+
     name: str | None = Field(default=None, description="p_7: Name of good/service")
     supply_date: date | None = Field(default=None, description="p_6_a: Date of supply")
     unit_price_net: Decimal | None = Field(
@@ -245,6 +250,7 @@ class InvoiceRow(KSeFBaseModel):
         return self
 
     def validate_tax_logic(self) -> Self:
+        """Validate VAT classification and amount consistency for this row."""
         self._validate_quantity()
         self._validate_tax_classification_rules()
         self._validate_gross_amount_consistency()

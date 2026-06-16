@@ -1,3 +1,5 @@
+"""Async high-level batch-session workflow service."""
+
 import asyncio
 from collections.abc import Awaitable, Callable, Iterable
 from pathlib import Path
@@ -26,7 +28,18 @@ from ksef2.services.batch_preparation import (
 
 @final
 class AsyncBatchService:
-    """Async high-level workflow for preparing and sending invoice batches."""
+    """Async high-level workflow for preparing and sending invoice batches.
+
+    Catch ``KSeFException`` for SDK-classified failures raised by this service,
+    and ``httpx.HTTPError`` for transport failures.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response. Catch
+            ``KSeFAuthError`` for authentication or authorization failures and
+            ``KSeFRateLimitError`` for throttling.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
+    """
 
     def __init__(
         self,
@@ -63,6 +76,12 @@ class AsyncBatchService:
         Returns:
             A prepared batch with encrypted part payloads and the metadata required
             to open a batch session.
+
+        Raises:
+            NoCertificateAvailableError: If no valid symmetric-key certificate is
+                available.
+            KSeFEncryptionError: If key or part encryption fails.
+            KSeFValidationError: If the invoice list or part size is invalid.
         """
         aes_key, iv, encrypted_key, public_key_id = await self._get_encryption_key()
         return await asyncio.to_thread(
@@ -95,6 +114,13 @@ class AsyncBatchService:
 
         Returns:
             A prepared batch with encrypted parts ready to be uploaded.
+
+        Raises:
+            FileNotFoundError: If an invoice XML path does not exist.
+            NoCertificateAvailableError: If no valid symmetric-key certificate is
+                available.
+            KSeFEncryptionError: If key or part encryption fails.
+            KSeFValidationError: If the invoice list or part size is invalid.
         """
         invoices = await asyncio.to_thread(load_batch_invoices, invoice_paths)
         return await self.prepare_batch(
@@ -116,6 +142,9 @@ class AsyncBatchService:
 
         Returns:
             A session client exposing the upload instructions returned by KSeF.
+
+        Raises:
+            KSeFValidationError: If the prepared batch cannot be opened.
         """
         return _AwaitableSession(self._open_session(prepared_batch=prepared_batch))
 
@@ -147,6 +176,12 @@ class AsyncBatchService:
         Args:
             session: Open batch session that already contains upload instructions.
             prepared_batch: Prepared batch whose part ordinals match the session.
+
+        Raises:
+            KSeFClientClosedError: If the session client is closed.
+            KSeFValidationError: If prepared part ordinals do not match session upload
+                instructions.
+            httpx.HTTPError: If uploading a part to its presigned URL fails.
         """
         upload_requests = {
             request.ordinal_number: request for request in session.part_upload_requests
@@ -189,6 +224,11 @@ class AsyncBatchService:
 
         Returns:
             Serializable state of the submitted batch session.
+
+        Raises:
+            KSeFClientClosedError: If the session client closes before upload.
+            KSeFValidationError: If the prepared batch cannot be opened or uploaded.
+            httpx.HTTPError: If uploading a part to its presigned URL fails.
         """
         async with self.open_session(prepared_batch=prepared_batch) as session:
             state = session.get_state()
@@ -213,6 +253,14 @@ class AsyncBatchService:
 
         Returns:
             Serializable state of the submitted batch session.
+
+        Raises:
+            NoCertificateAvailableError: If no valid symmetric-key certificate is
+                available.
+            KSeFEncryptionError: If key or part encryption fails.
+            KSeFValidationError: If preparation, session opening, or upload validation
+                fails.
+            httpx.HTTPError: If uploading a part to its presigned URL fails.
         """
         prepared_batch = await self.prepare_batch(
             invoices=invoices,
@@ -248,6 +296,7 @@ class AsyncBatchService:
         page_size: int = 10,
         continuation_token: str | None = None,
     ) -> SessionInvoicesResponse:
+        """Fetch one page of accepted invoices from a batch session."""
         return session_from_spec(
             await self._invoice_eps.list_session_invoices(
                 reference_number=self._resolve_reference_number(session),
@@ -263,6 +312,7 @@ class AsyncBatchService:
         page_size: int = 10,
         continuation_token: str | None = None,
     ) -> SessionInvoicesResponse:
+        """Fetch one page of failed invoices from a batch session."""
         return session_from_spec(
             await self._invoice_eps.list_failed_session_invoices(
                 reference_number=self._resolve_reference_number(session),
@@ -307,6 +357,10 @@ class AsyncBatchService:
 
         Returns:
             Final successful batch session status.
+
+        Raises:
+            KSeFSessionError: If batch processing reaches a failed terminal status.
+            KSeFBatchSessionTimeoutError: If polling exceeds ``timeout``.
         """
         reference_number = self._resolve_reference_number(session)
 

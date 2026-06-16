@@ -20,15 +20,20 @@ _CERTIFICATE_SERIAL_NUMBER_ADAPTER = TypeAdapter(CertificateSerialNumber)
 
 
 def validate_certificate_serial_number(value: str) -> CertificateSerialNumber:
+    """Validate and return a KSeF certificate serial number."""
     return _CERTIFICATE_SERIAL_NUMBER_ADAPTER.validate_python(value)
 
 
 class CertificateTypeEnum(StrEnum):
+    """Runtime enum for certificate types."""
+
     AUTHENTICATION = "authentication"
     OFFLINE = "offline"
 
 
 class CertificateStatusEnum(StrEnum):
+    """Runtime enum for certificate lifecycle statuses."""
+
     ACTIVE = "active"
     BLOCKED = "blocked"
     REVOKED = "revoked"
@@ -36,12 +41,16 @@ class CertificateStatusEnum(StrEnum):
 
 
 class IdentifierTypeEnum(StrEnum):
+    """Runtime enum for certificate subject identifier types."""
+
     NIP = "nip"
     PESEL = "pesel"
     FINGERPRINT = "fingerprint"
 
 
 class RevocationReasonEnum(StrEnum):
+    """Runtime enum for certificate revocation reasons."""
+
     UNSPECIFIED = "unspecified"
     SUPERSEDED = "superseded"
     KEY_COMPROMISE = "key_compromise"
@@ -55,6 +64,8 @@ class SubjectIdentifier(KSeFBaseModel):
 
 
 class Certificate(KSeFBaseModel):
+    """Issued certificate payload returned by retrieval endpoints."""
+
     base64_encoded_certificate: str
     name: str
     serial_number: CertificateSerialNumber
@@ -68,6 +79,8 @@ class RetrievedCertificatesList(KSeFBaseModel):
 
 
 class CertificateQuota(KSeFBaseModel):
+    """Limit and remaining count for one certificate quota."""
+
     limit: int
     remaining: int
 
@@ -113,10 +126,13 @@ class CertificateEnrollmentData(KSeFBaseModel):
 
     @property
     def country_name(self) -> str:
+        """Alias for ``iso_country_code`` used by certificate tooling."""
         return self.iso_country_code
 
 
 class CertificateEnrollmentResponse(KSeFBaseModel):
+    """Reference returned after submitting a certificate enrollment request."""
+
     reference_number: str
     timestamp: datetime
 
@@ -142,6 +158,7 @@ class CertificateLimitsResponse(KSeFBaseModel):
 
     @property
     def enrollment(self) -> CertificateQuota:
+        """Return the enrollment quota as a structured value."""
         return CertificateQuota(
             limit=self.enrollment_limit,
             remaining=self.enrollment_remaining,
@@ -149,6 +166,7 @@ class CertificateLimitsResponse(KSeFBaseModel):
 
     @property
     def certificate(self) -> CertificateQuota:
+        """Return the issued-certificate quota as a structured value."""
         return CertificateQuota(
             limit=self.certificate_limit,
             remaining=self.certificate_remaining,

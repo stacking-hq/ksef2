@@ -1,4 +1,7 @@
-# Invoices
+---
+title: Invoices
+description: Send, query, export, and download invoices with KSeF2 clients.
+---
 
 Use online sessions to send invoices and `auth.invoices` for metadata queries, exports, and downloads.
 
@@ -212,12 +215,12 @@ print(len(zip_parts))
 
 ## Examples
 
-- [`scripts/examples/invoices/send_invoice.py`](../../scripts/examples/invoices/send_invoice.py)
-- [`scripts/examples/invoices/send_query_export_download.py`](../../scripts/examples/invoices/send_query_export_download.py)
-- [`scripts/examples/invoices/batch_export_to_pdf.py`](../../scripts/examples/invoices/batch_export_to_pdf.py)
-- [`scripts/examples/invoices/download_purchase_invoices.py`](../../scripts/examples/invoices/download_purchase_invoices.py)
-- [`scripts/examples/scenarios/download_and_export_to_pdf.py`](../../scripts/examples/scenarios/download_and_export_to_pdf.py)
-- [`scripts/examples/scenarios/download_purchase_invoices.py`](../../scripts/examples/scenarios/download_purchase_invoices.py)
+- [`scripts/examples/invoices/send_invoice.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/invoices/send_invoice.py)
+- [`scripts/examples/invoices/send_query_export_download.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/invoices/send_query_export_download.py)
+- [`scripts/examples/invoices/batch_export_to_pdf.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/invoices/batch_export_to_pdf.py)
+- [`scripts/examples/invoices/download_purchase_invoices.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/invoices/download_purchase_invoices.py)
+- [`scripts/examples/scenarios/download_and_export_to_pdf.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/scenarios/download_and_export_to_pdf.py)
+- [`scripts/examples/scenarios/download_purchase_invoices.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/scenarios/download_purchase_invoices.py)
 
 ## Related
 

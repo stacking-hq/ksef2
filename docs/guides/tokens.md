@@ -1,4 +1,7 @@
-# Tokens
+---
+title: Tokens
+description: Create, query, and revoke KSeF authentication tokens.
+---
 
 KSeF tokens are generated and managed through `auth.tokens`.
 They are different from access tokens and refresh tokens.
@@ -69,7 +72,7 @@ SDK endpoint: `DELETE /tokens/{referenceNumber}`
 
 ## Example
 
-- [`scripts/examples/auth/token_management.py`](../../scripts/examples/auth/token_management.py)
+- [`scripts/examples/auth/token_management.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/auth/token_management.py)
 
 ## Related
 

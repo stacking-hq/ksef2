@@ -1,3 +1,5 @@
+"""Domain models for online, batch, and authentication sessions."""
+
 import base64
 from datetime import datetime
 from enum import Enum, StrEnum
@@ -35,11 +37,15 @@ type SessionStatusSpecValue = Literal["InProgress", "Succeeded", "Failed", "Canc
 
 
 class SessionTypeEnum(StrEnum):
+    """Runtime enum for KSeF session type values."""
+
     ONLINE = "Online"
     BATCH = "Batch"
 
 
 class SessionStatusEnum(StrEnum):
+    """Runtime enum for KSeF session status values."""
+
     IN_PROGRESS = "InProgress"
     SUCCEEDED = "Succeeded"
     FAILED = "Failed"
@@ -65,6 +71,11 @@ _SESSION_STATUS_FROM_SPEC: dict[SessionStatusSpecValue, SessionStatus] = {
 
 
 def normalize_session_type(value: SessionType | SessionTypeEnum | str) -> SessionType:
+    """Normalize SDK or OpenAPI session type values to SDK literals.
+
+    Raises:
+        ValueError: If ``value`` is not a supported session type.
+    """
     if isinstance(value, SessionTypeEnum):
         return _SESSION_TYPE_FROM_SPEC[value.value]
 
@@ -84,6 +95,11 @@ def normalize_session_type(value: SessionType | SessionTypeEnum | str) -> Sessio
 def normalize_session_status(
     value: SessionStatus | SessionStatusEnum | str,
 ) -> SessionStatus:
+    """Normalize SDK or OpenAPI session status values to SDK literals.
+
+    Raises:
+        ValueError: If ``value`` is not a supported session status.
+    """
     if isinstance(value, SessionStatusEnum):
         return _SESSION_STATUS_FROM_SPEC[value.value]
 
@@ -103,22 +119,28 @@ def normalize_session_status(
 def session_type_to_spec(
     value: SessionType | SessionTypeEnum | str,
 ) -> SessionTypeSpecValue:
+    """Convert a session type value to the OpenAPI representation."""
     return _SESSION_TYPE_TO_SPEC[normalize_session_type(value)]
 
 
 def session_status_to_spec(
     value: SessionStatus | SessionStatusEnum | str,
 ) -> SessionStatusSpecValue:
+    """Convert a session status value to the OpenAPI representation."""
     return _SESSION_STATUS_TO_SPEC[normalize_session_status(value)]
 
 
 class StatusInfo(KSeFBaseModel):
+    """Generic KSeF status code, description, and optional details."""
+
     code: int
     description: str
     details: list[str] | None = None
 
 
 class InvoiceStatusInfo(KSeFBaseModel):
+    """Invoice processing status returned within session APIs."""
+
     code: int
     description: str
     details: list[str] | None = None
@@ -126,6 +148,8 @@ class InvoiceStatusInfo(KSeFBaseModel):
 
 
 class OpenOnlineSessionRequest(KSeFBaseModel):
+    """Payload used to open an online invoice session."""
+
     encrypted_key: bytes
     iv: bytes
     public_key_id: str | None = None
@@ -133,21 +157,29 @@ class OpenOnlineSessionRequest(KSeFBaseModel):
 
 
 class OpenOnlineSessionResponse(KSeFBaseModel):
+    """Response returned after opening an online invoice session."""
+
     reference_number: str
     valid_until: AwareDatetime
 
 
 class UpoPage(KSeFBaseModel):
+    """Download information for one UPO page."""
+
     reference_number: str
     download_url: AnyUrl
     download_url_expiration_date: AwareDatetime
 
 
 class Upo(KSeFBaseModel):
+    """Collection of UPO pages available for a session or invoice."""
+
     pages: list[UpoPage]
 
 
 class SessionStatusResponse(KSeFBaseModel):
+    """Current status and counters for an online or batch session."""
+
     status: StatusInfo
     date_created: AwareDatetime
     date_updated: AwareDatetime
@@ -159,6 +191,8 @@ class SessionStatusResponse(KSeFBaseModel):
 
 
 class SessionInvoiceStatusResponse(KSeFBaseModel):
+    """Processing status for one invoice submitted in a session."""
+
     ordinal_number: int
     invoice_number: str | None = None
     ksef_number: str | None = None
@@ -175,11 +209,15 @@ class SessionInvoiceStatusResponse(KSeFBaseModel):
 
 
 class SessionInvoicesResponse(KSeFBaseModel):
+    """One page of invoices submitted in a session."""
+
     continuation_token: str | None = None
     invoices: list[SessionInvoiceStatusResponse]
 
 
 class SessionSummary(KSeFBaseModel):
+    """Summary row returned when listing sessions."""
+
     reference_number: str
     status: StatusInfo
     date_created: AwareDatetime
@@ -191,6 +229,8 @@ class SessionSummary(KSeFBaseModel):
 
 
 class ListSessionsResponse(KSeFBaseModel):
+    """One page of session summaries."""
+
     continuation_token: str | None = None
     sessions: list[SessionSummary]
 

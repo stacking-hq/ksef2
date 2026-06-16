@@ -1,4 +1,7 @@
-# Test Data
+---
+title: Test Data
+description: Use TEST-environment helper endpoints for integration workflows.
+---
 
 `client.testdata` is available only on `Environment.TEST`.
 It helps create disposable subjects, people, permissions, attachment state, and blocked auth contexts.
@@ -118,7 +121,7 @@ with client.testdata.temporal() as temp:
 ```
 
 Example:
-- [`scripts/examples/testdata/setup_test_data.py`](../../scripts/examples/testdata/setup_test_data.py)
+- [`scripts/examples/testdata/setup_test_data.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/testdata/setup_test_data.py)
 
 ## Related
 

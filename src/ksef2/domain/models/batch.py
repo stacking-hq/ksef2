@@ -84,6 +84,7 @@ class BatchEncryptionData(KSeFBaseModel):
         encrypted_key: bytes,
         public_key_id: str | None = None,
     ) -> Self:
+        """Create encoded batch encryption data from raw key bytes."""
         return cls(
             aes_key=base64.b64encode(aes_key).decode(),
             iv=base64.b64encode(iv).decode(),
@@ -92,12 +93,15 @@ class BatchEncryptionData(KSeFBaseModel):
         )
 
     def get_aes_key_bytes(self) -> bytes:
+        """Return the decoded AES key."""
         return base64.b64decode(self.aes_key)
 
     def get_iv_bytes(self) -> bytes:
+        """Return the decoded initialization vector."""
         return base64.b64decode(self.iv)
 
     def get_encrypted_key_bytes(self) -> bytes:
+        """Return the decoded encrypted symmetric key."""
         return base64.b64decode(self.encrypted_key)
 
 

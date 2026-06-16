@@ -1,3 +1,5 @@
+"""Async authentication branch client."""
+
 import asyncio
 from typing import final
 
@@ -38,7 +40,18 @@ def _build_signed_xades(
 
 @final
 class AsyncAuthClient:
-    """Async entry point for creating authenticated SDK clients."""
+    """Async entry point for creating authenticated SDK clients.
+
+    Catch ``KSeFException`` for SDK-classified failures raised by this branch,
+    and ``httpx.HTTPError`` for transport failures.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response. Catch
+            ``KSeFAuthError`` for authentication or authorization failures and
+            ``KSeFRateLimitError`` for throttling.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
+    """
 
     def __init__(
         self,
@@ -58,8 +71,8 @@ class AsyncAuthClient:
         ksef_token: str,
         nip: str,
         context_type: ContextIdentifierType = "nip",
+        timeout: float = 60.0,
         poll_interval: float = 1.0,
-        max_poll_attempts: int = 60,
     ) -> AsyncAuthenticatedClient:
         """Authenticate with a KSeF token and return an authenticated client.
 
@@ -67,8 +80,8 @@ class AsyncAuthClient:
             ksef_token: Token generated in KSeF for the target context.
             nip: Context identifier value used for authentication.
             context_type: Type of identifier represented by ``nip``.
+            timeout: Maximum number of seconds to wait for authentication.
             poll_interval: Delay in seconds between authentication status checks.
-            max_poll_attempts: Maximum number of polling attempts before timing out.
 
         Returns:
             An authenticated client with redeemed access and refresh tokens.
@@ -76,9 +89,9 @@ class AsyncAuthClient:
         Raises:
             NoCertificateAvailableError: If no valid token-encryption certificate is
                 available.
+            KSeFEncryptionError: If token encryption fails.
             KSeFAuthError: If authentication fails.
-            KSeFAuthPollingTimeoutError: If polling exceeds
-                ``max_poll_attempts``.
+            KSeFAuthPollingTimeoutError: If polling exceeds ``timeout``.
         """
         await self._ensure_certificates()
 
@@ -105,8 +118,8 @@ class AsyncAuthClient:
         await self._poll_until_authenticated(
             auth_token=init_resp.authentication_token.token,
             reference_number=init_resp.reference_number,
+            timeout=timeout,
             poll_interval=poll_interval,
-            max_attempts=max_poll_attempts,
         )
 
         return self._build_authenticated_client(
@@ -120,8 +133,8 @@ class AsyncAuthClient:
         cert: Certificate,
         private_key: XAdESPrivateKey,
         verify_chain: bool = False,
+        timeout: float = 60.0,
         poll_interval: float = 1.0,
-        max_poll_attempts: int = 60,
     ) -> AsyncAuthenticatedClient:
         """Authenticate with an XAdES-signed challenge response.
 
@@ -130,11 +143,15 @@ class AsyncAuthClient:
             cert: Signing certificate accepted by the target environment.
             private_key: RSA or EC private key used to sign the XAdES payload.
             verify_chain: Whether KSeF should verify the certificate chain.
+            timeout: Maximum number of seconds to wait for authentication.
             poll_interval: Delay in seconds between authentication status checks.
-            max_poll_attempts: Maximum number of polling attempts before timing out.
 
         Returns:
             An authenticated client with redeemed access and refresh tokens.
+
+        Raises:
+            KSeFAuthError: If authentication fails.
+            KSeFAuthPollingTimeoutError: If polling exceeds ``timeout``.
         """
         challenge = from_spec(await self._auth_ep.challenge())
         signed_xml = await asyncio.to_thread(
@@ -152,8 +169,8 @@ class AsyncAuthClient:
         await self._poll_until_authenticated(
             auth_token=init_resp.authentication_token.token,
             reference_number=init_resp.reference_number,
+            timeout=timeout,
             poll_interval=poll_interval,
-            max_attempts=max_poll_attempts,
         )
 
         return self._build_authenticated_client(
@@ -165,10 +182,16 @@ class AsyncAuthClient:
         *,
         nip: str,
         verify_chain: bool = False,
+        timeout: float = 60.0,
         poll_interval: float = 1.0,
-        max_poll_attempts: int = 60,
     ) -> AsyncAuthenticatedClient:
-        """Authenticate in the TEST environment using an SDK-generated certificate."""
+        """Authenticate in the TEST environment using an SDK-generated certificate.
+
+        Raises:
+            KSeFUnsupportedEnvironmentError: If the client is not configured for TEST.
+            KSeFAuthError: If authentication fails.
+            KSeFAuthPollingTimeoutError: If polling exceeds ``timeout``.
+        """
         if self._environment is not Environment.TEST:
             raise exceptions.KSeFUnsupportedEnvironmentError(
                 "with_test_certificate() is only available for Environment.TEST"
@@ -180,8 +203,8 @@ class AsyncAuthClient:
             cert=cert,
             private_key=private_key,
             verify_chain=verify_chain,
+            timeout=timeout,
             poll_interval=poll_interval,
-            max_poll_attempts=max_poll_attempts,
         )
 
     async def refresh(self, *, refresh_token: str) -> RefreshedToken:
@@ -214,8 +237,8 @@ class AsyncAuthClient:
         *,
         auth_token: str,
         reference_number: str,
+        timeout: float,
         poll_interval: float,
-        max_attempts: int,
     ) -> None:
         """Poll authentication status until the operation succeeds or fails."""
         auth_token_local = auth_token
@@ -239,10 +262,9 @@ class AsyncAuthClient:
             operation=_poll,
             retry_predicate=lambda status: status.status_code < 200,
             poll_interval=poll_interval,
-            max_attempts=max_attempts,
+            timeout_seconds=timeout,
             timeout_error_factory=lambda: exceptions.KSeFAuthPollingTimeoutError(
                 reference_number=reference_number_local,
-                attempts=max_attempts,
-                poll_interval=poll_interval,
+                timeout=timeout,
             ),
         )

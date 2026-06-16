@@ -15,6 +15,10 @@ test:
     uv run pytest tests/unit/ -v
 
 
+test-runtime-checks:
+    KSEF2_RUNTIME_CHECKS=1 uv run --extra runtime-checks pytest tests/unit/ -q
+
+
 test-coverage:
     uv run pytest --cov=ksef2 --cov-config=.coveragerc.toml --cov-report=xml tests/unit/ -v
     uv run python scripts/test_coverage_badge.py
@@ -26,6 +30,7 @@ release-check:
     just check-gen-sync
     just typecheck
     just test
+    just test-runtime-checks
     uv build
 
 

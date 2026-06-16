@@ -1,4 +1,7 @@
-# Sessions
+---
+title: Sessions
+description: Work with authentication sessions, invoice sessions, and resumable state.
+---
 
 The SDK exposes two different session concepts:
 
@@ -113,8 +116,13 @@ resumed = auth.resume_online_session(state=restored_state)
 resumed.close()
 ```
 
+Resuming a session reconstructs the local SDK object from stored state. It does
+not validate the session with KSeF at construction time, and it does not refresh
+the stored `access_token`. If the token is stale, the next API call will fail and
+the caller should authenticate again before resuming work.
+
 Example:
-- [`scripts/examples/session/session_resume.py`](../../scripts/examples/session/session_resume.py)
+- [`scripts/examples/session/session_resume.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/session/session_resume.py)
 
 ## Resume a Batch Session
 
@@ -128,6 +136,9 @@ restored_state = BatchSessionState.model_validate_json(payload)
 resumed = auth.resume_batch_session(state=restored_state)
 print(resumed.reference_number)
 ```
+
+The same caveat applies to batch sessions: resume restores local state only. KSeF
+server-side validation happens when the resumed session makes a request.
 
 ## Query Historical Invoice Sessions
 
@@ -151,11 +162,11 @@ SDK endpoint: `GET /sessions`
 
 ## Examples
 
-- [`scripts/examples/scenarios/session_workflow.py`](../../scripts/examples/scenarios/session_workflow.py)
-- [`scripts/examples/session/session_resume.py`](../../scripts/examples/session/session_resume.py)
-- [`scripts/examples/session/session_management.py`](../../scripts/examples/session/session_management.py)
-- [`scripts/examples/invoices/send_batch.py`](../../scripts/examples/invoices/send_batch.py)
-- [`scripts/examples/invoices/submit_batch.py`](../../scripts/examples/invoices/submit_batch.py)
+- [`scripts/examples/scenarios/session_workflow.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/scenarios/session_workflow.py)
+- [`scripts/examples/session/session_resume.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/session/session_resume.py)
+- [`scripts/examples/session/session_management.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/session/session_management.py)
+- [`scripts/examples/invoices/send_batch.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/invoices/send_batch.py)
+- [`scripts/examples/invoices/submit_batch.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/invoices/submit_batch.py)
 
 ## Related
 

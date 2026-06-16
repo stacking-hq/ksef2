@@ -1,4 +1,7 @@
-# Authentication
+---
+title: Authentication
+description: Authenticate with TEST certificates, XAdES certificates, or KSeF tokens.
+---
 
 The SDK exposes authentication through `Client.authentication`.
 
@@ -47,8 +50,8 @@ cert, key = load_certificate_and_key_from_p12("cert.p12", password=b"secret")
 ```
 
 Examples:
-- [`scripts/examples/auth/auth_xades.py`](../../scripts/examples/auth/auth_xades.py)
-- [`scripts/examples/auth/auth_xades_demo.py`](../../scripts/examples/auth/auth_xades_demo.py)
+- [`scripts/examples/auth/auth_xades.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/auth/auth_xades.py)
+- [`scripts/examples/auth/auth_xades_demo.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/auth/auth_xades_demo.py)
 
 ## KSeF Token Authentication
 
@@ -68,7 +71,7 @@ print(auth.refresh_token)
 ```
 
 Example:
-- [`scripts/examples/auth/auth_token.py`](../../scripts/examples/auth/auth_token.py)
+- [`scripts/examples/auth/auth_token.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/auth/auth_token.py)
 
 ## Async Authentication
 
@@ -109,7 +112,7 @@ print(refreshed.access_token.valid_until)
 If you need a fresh authenticated context after expiry, authenticate again with XAdES or a KSeF token.
 
 Example:
-- [`scripts/examples/auth/auth_refresh.py`](../../scripts/examples/auth/auth_refresh.py)
+- [`scripts/examples/auth/auth_refresh.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/auth/auth_refresh.py)
 
 ## Active Authentication Sessions
 
@@ -130,7 +133,7 @@ auth.sessions.terminate_current()
 ```
 
 Example:
-- [`scripts/examples/session/session_management.py`](../../scripts/examples/session/session_management.py)
+- [`scripts/examples/session/session_management.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/session/session_management.py)
 
 ## Flow
 

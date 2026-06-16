@@ -1,3 +1,5 @@
+"""Domain models for invoice metadata, sending, downloading, and export."""
+
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import StrEnum
@@ -27,11 +29,15 @@ type InvoicingModeSpecValue = Literal["Online", "Offline"]
 
 
 class SortOrderEnum(StrEnum):
+    """Runtime enum for invoice metadata sort order values."""
+
     ASC = "Asc"
     DESC = "Desc"
 
 
 class BuyerIdentifierTypeEnum(StrEnum):
+    """Runtime enum for buyer identifier types in invoice metadata."""
+
     NIP = "Nip"
     VAT_UE = "VatUe"
     OTHER = "Other"
@@ -39,6 +45,8 @@ class BuyerIdentifierTypeEnum(StrEnum):
 
 
 class InvoiceTypeEnum(StrEnum):
+    """Runtime enum for KSeF invoice type values."""
+
     VAT = "Vat"
     ZAL = "Zal"
     KOR = "Kor"
@@ -54,11 +62,15 @@ class InvoiceTypeEnum(StrEnum):
 
 
 class InvoicingModeEnum(StrEnum):
+    """Runtime enum for invoice submission modes."""
+
     ONLINE = "Online"
     OFFLINE = "Offline"
 
 
 class ThirdSubjectIdentifierTypeEnum(StrEnum):
+    """Runtime enum for third-subject identifier types."""
+
     NIP = "Nip"
     INTERNAL_ID = "InternalId"
     VAT_UE = "VatUe"
@@ -83,6 +95,11 @@ _INVOICING_MODE_FROM_SPEC: dict[InvoicingModeSpecValue, InvoicingMode] = {
 
 
 def normalize_sort_order(value: SortOrder | SortOrderEnum | str) -> SortOrder:
+    """Normalize SDK or OpenAPI sort order values to SDK literals.
+
+    Raises:
+        ValueError: If ``value`` is not a supported sort order.
+    """
     if isinstance(value, SortOrderEnum):
         return _SORT_ORDER_FROM_SPEC[value.value]
 
@@ -100,12 +117,18 @@ def normalize_sort_order(value: SortOrder | SortOrderEnum | str) -> SortOrder:
 
 
 def sort_order_to_spec(value: SortOrder | SortOrderEnum | str) -> SortOrderSpecValue:
+    """Convert a sort order value to the OpenAPI representation."""
     return _SORT_ORDER_TO_SPEC[normalize_sort_order(value)]
 
 
 def normalize_invoicing_mode(
     value: InvoicingMode | InvoicingModeEnum | str,
 ) -> InvoicingMode:
+    """Normalize SDK or OpenAPI invoicing mode values to SDK literals.
+
+    Raises:
+        ValueError: If ``value`` is not a supported invoicing mode.
+    """
     if isinstance(value, InvoicingModeEnum):
         return _INVOICING_MODE_FROM_SPEC[value.value]
 
@@ -125,6 +148,7 @@ def normalize_invoicing_mode(
 def invoicing_mode_to_spec(
     value: InvoicingMode | InvoicingModeEnum | str,
 ) -> InvoicingModeSpecValue:
+    """Convert an invoicing mode value to the OpenAPI representation."""
     return _INVOICING_MODE_TO_SPEC[normalize_invoicing_mode(value)]
 
 
@@ -140,6 +164,8 @@ class SendInvoiceResponse(KSeFBaseModel):
 
 
 class InvoicesMetadataFilter(KSeFBaseModel):
+    """Legacy invoice metadata filter model retained for compatibility."""
+
     role: Literal["seller", "buyer", "third_subject", "authorized_subject"]
     date_from: datetime | str
     date_to: datetime | str
@@ -150,6 +176,8 @@ class InvoicesMetadataFilter(KSeFBaseModel):
 
 
 class Identity(KSeFBaseModel):
+    """NIP identity used by invoice metadata filters."""
+
     type: Literal["nip"]
     value: str
 
@@ -160,38 +188,52 @@ class Identity(KSeFBaseModel):
 
 
 class InvoiceMetadataSeller(KSeFBaseModel):
+    """Seller data returned with invoice metadata."""
+
     nip: str
     name: str | None = None
 
 
 class InvoiceMetadataBuyerIdentifier(KSeFBaseModel):
+    """Buyer identifier returned with invoice metadata."""
+
     type: BuyerIdentifierType
     value: str | None = None
 
 
 class InvoiceMetadataBuyer(KSeFBaseModel):
+    """Buyer data returned with invoice metadata."""
+
     identifier: InvoiceMetadataBuyerIdentifier
     name: str | None = None
 
 
 class InvoiceMetadataThirdSubjectIdentifier(KSeFBaseModel):
+    """Third-subject identifier returned with invoice metadata."""
+
     type: ThirdSubjectIdentifierType
     value: str | None = None
 
 
 class InvoiceMetadataThirdSubject(KSeFBaseModel):
+    """Third subject data returned with invoice metadata."""
+
     identifier: InvoiceMetadataThirdSubjectIdentifier
     name: str | None = None
     role: int
 
 
 class InvoiceMetadataAuthorizedSubject(KSeFBaseModel):
+    """Authorized subject data returned with invoice metadata."""
+
     nip: str
     name: str | None = None
     role: int
 
 
 class InvoiceMetadata(KSeFBaseModel):
+    """Metadata describing an invoice visible to the authenticated subject."""
+
     ksef_number: str
     invoice_number: str
     issue_date: date
@@ -218,6 +260,8 @@ class InvoiceMetadata(KSeFBaseModel):
 
 
 class QueryInvoicesMetadataResponse(KSeFBaseModel):
+    """One page of invoice metadata query results."""
+
     has_more: bool
     is_truncated: bool
     permanent_storage_hwm_date: datetime | None = None
@@ -230,16 +274,22 @@ class QueryInvoicesMetadataResponse(KSeFBaseModel):
 
 
 class ExportInvoicesResponse(KSeFBaseModel):
+    """Reference returned after scheduling an invoice export."""
+
     reference_number: str
 
 
 class ExportStatusInfo(KSeFBaseModel):
+    """Status code and description for an invoice export operation."""
+
     code: int
     description: str
     details: list[str] | None = None
 
 
 class PackagePart(KSeFBaseModel):
+    """Download metadata for one encrypted package part."""
+
     ordinal_number: int
     part_name: str
     method: str
@@ -252,6 +302,8 @@ class PackagePart(KSeFBaseModel):
 
 
 class InvoicePackage(KSeFBaseModel):
+    """Package metadata returned when an invoice export is ready."""
+
     invoice_count: int
     size: int
     parts: list[PackagePart]
@@ -263,6 +315,8 @@ class InvoicePackage(KSeFBaseModel):
 
 
 class InvoiceExportStatusResponse(KSeFBaseModel):
+    """Status response for a scheduled invoice export."""
+
     status: ExportStatusInfo
     completed_date: datetime | None = None
     package_expiration_date: datetime | None = None
@@ -282,12 +336,16 @@ class ExportHandle:
 
 
 class AmountMixin(KSeFBaseModel):
+    """Reusable amount-range filter fields."""
+
     amount_type: Literal["brutto", "netto", "vat"]
     amount_min: float | None = None
     amount_max: float | None = None
 
 
 class InvoicesFilter(KSeFBaseModel):
+    """Filters accepted by invoice metadata query and export operations."""
+
     # role
     role: Literal["buyer", "seller", "third_subject", "authorized_subject"]
 
@@ -329,6 +387,8 @@ class InvoicesFilter(KSeFBaseModel):
 
 
 class ExportInvoicesPayload(KSeFBaseModel):
+    """Payload used to schedule an encrypted invoice export."""
+
     filter: InvoicesFilter
     encrypted_symmetric_key: str
     initialization_vector: str
@@ -347,5 +407,7 @@ class ExportInvoicesPayload(KSeFBaseModel):
 
 
 class SendInvoicePayload(KSeFBaseModel):
+    """Plain and encrypted bytes for one invoice submitted to an online session."""
+
     xml_bytes: bytes
     encrypted_bytes: bytes

@@ -1,3 +1,5 @@
+"""Async invoice metadata, download, and export branch client."""
+
 import base64
 from collections.abc import AsyncIterator
 from typing import final
@@ -24,7 +26,18 @@ from ksef2.infra.mappers.invoices import from_spec, to_spec
 
 @final
 class AsyncInvoicesClient:
-    """Async low-level invoice API used by higher-level invoice services."""
+    """Async low-level invoice API used by higher-level invoice services.
+
+    Catch ``KSeFException`` for SDK-classified failures raised by this branch,
+    and ``httpx.HTTPError`` for transport failures.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response. Catch
+            ``KSeFAuthError`` for authentication or authorization failures and
+            ``KSeFRateLimitError`` for throttling.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
+    """
 
     def __init__(self, transport: AsyncMiddleware) -> None:
         self._endpoints = AsyncInvoicesEndpoints(transport)
@@ -50,7 +63,12 @@ class AsyncInvoicesClient:
         filters: InvoicesFilter,
         params: InvoiceMetadataParams | None = None,
     ) -> AsyncIterator[QueryInvoicesMetadataResponse]:
-        """Fetch metadata pages, following KSeF page and truncation mechanics."""
+        """Fetch metadata pages, following KSeF page and truncation mechanics.
+
+        Raises:
+            KSeFMetadataPaginationError: If KSeF returns inconsistent pagination
+                boundaries.
+        """
         current_filters = filters
         current_params = params or InvoiceMetadataParams()
         previous_truncation_boundary: MetadataBoundary | None = None
@@ -83,7 +101,12 @@ class AsyncInvoicesClient:
         filters: InvoicesFilter,
         params: InvoiceMetadataParams | None = None,
     ) -> AsyncIterator[InvoiceMetadata]:
-        """Iterate over all invoice metadata items matching the provided filters."""
+        """Iterate over all invoice metadata items matching the provided filters.
+
+        Raises:
+            KSeFMetadataPaginationError: If KSeF returns inconsistent pagination
+                boundaries.
+        """
         async for page in self.query_metadata_pages(filters=filters, params=params):
             for invoice in page.invoices:
                 yield invoice
@@ -101,7 +124,11 @@ class AsyncInvoicesClient:
         only_metadata: bool = False,
         compression_type: CompressionType | str | None = None,
     ) -> ExportHandle:
-        """Schedule an export and return the handle needed to decrypt it later."""
+        """Schedule an export and return the handle needed to decrypt it later.
+
+        Raises:
+            KSeFEncryptionError: If export key encryption fails.
+        """
         aes_key, iv = generate_session_key()
         encrypted_key = encrypt_symmetric_key(
             key=aes_key,

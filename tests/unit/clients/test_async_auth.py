@@ -177,13 +177,14 @@ class TestAsyncAuthClient:
                 client.with_token(
                     ksef_token="ksef-token",
                     nip="1234567890",
+                    timeout=0.0,
                     poll_interval=0.0,
-                    max_poll_attempts=2,
                 )
             )
 
         assert exc_info.value.reference_number == init_response.referenceNumber
-        assert exc_info.value.attempts == 2
+        assert exc_info.value.timeout == 0.0
+        assert not hasattr(exc_info.value, "attempts")
         assert not hasattr(exc_info.value, "status_code")
 
     @patch(
@@ -267,8 +268,8 @@ class TestAsyncAuthClient:
             client.with_test_certificate(
                 nip="1234567890",
                 verify_chain=True,
+                timeout=5.0,
                 poll_interval=2.0,
-                max_poll_attempts=5,
             )
         )
 
@@ -278,5 +279,5 @@ class TestAsyncAuthClient:
         assert isinstance(kwargs["cert"], Certificate)
         assert kwargs["private_key"] is not None
         assert kwargs["verify_chain"] is True
+        assert kwargs["timeout"] == 5.0
         assert kwargs["poll_interval"] == 2.0
-        assert kwargs["max_poll_attempts"] == 5

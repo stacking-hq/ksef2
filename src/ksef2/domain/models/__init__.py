@@ -1,3 +1,5 @@
+"""Public domain models and typed request/response helpers."""
+
 from ksef2.domain.models.base import KSeFBaseModel, KSeFBaseParams
 from ksef2.domain.models.compression import CompressionType, CompressionTypeEnum
 from ksef2.domain.models.session import (

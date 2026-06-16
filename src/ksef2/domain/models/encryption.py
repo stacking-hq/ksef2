@@ -12,11 +12,18 @@ type CertUsage = CertUsageValue
 
 
 class CertUsageEnum(StrEnum):
+    """Runtime enum for KSeF public-certificate usages."""
+
     KSEF_TOKEN_ENCRYPTION = "ksef_token_encryption"
     SYMMETRIC_KEY_ENCRYPTION = "symmetric_key_encryption"
 
 
 def normalize_cert_usage(value: CertUsage | CertUsageEnum | str) -> CertUsage:
+    """Normalize public certificate usage values to SDK literals.
+
+    Raises:
+        ValueError: If ``value`` is not a supported certificate usage.
+    """
     if isinstance(value, CertUsageEnum):
         return value.value
 

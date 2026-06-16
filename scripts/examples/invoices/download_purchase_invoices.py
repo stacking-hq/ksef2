@@ -39,8 +39,8 @@ class ExampleConfig:
     cert_dir: Path = Path("certs")
     download_dir: Path = field(default_factory=lambda: repo_root() / "downloads")
     date_to: datetime = field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    export_timeout: float = 180.0
     poll_interval: float = 3.0
-    max_poll_attempts: int = 60
 
     @property
     def date_from(self) -> datetime:
@@ -76,7 +76,7 @@ def download_for_nip(client: Client, nip: str, config: ExampleConfig) -> None:
 
     package = auth.invoices.wait_for_export_package(
         reference_number=export.reference_number,
-        timeout=config.poll_interval * config.max_poll_attempts,
+        timeout=config.export_timeout,
         poll_interval=config.poll_interval,
     )
 

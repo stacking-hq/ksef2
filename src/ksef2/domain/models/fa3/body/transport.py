@@ -1,3 +1,5 @@
+"""FA(3) new means of transport annotation models."""
+
 from datetime import date
 
 from pydantic import Field

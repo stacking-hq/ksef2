@@ -1,3 +1,5 @@
+"""Public FA(3) invoice body model exports."""
+
 from ksef2.domain.models.fa3.body.advance_payment import (
     AdvancePayment,
     AdvancePaymentInvoiceContext,

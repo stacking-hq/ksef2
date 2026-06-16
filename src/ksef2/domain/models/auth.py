@@ -29,6 +29,8 @@ type AuthenticationMethodCategory = Literal[
 
 
 class ContextIdentifierTypeEnum(StrEnum):
+    """Runtime enum for authentication context identifier types."""
+
     NIP = "nip"
     INTERNAL_ID = "internal_id"
     NIP_VAT_UE = "nip_vat_ue"
@@ -36,6 +38,8 @@ class ContextIdentifierTypeEnum(StrEnum):
 
 
 class AuthenticationMethodEnum(StrEnum):
+    """Runtime enum for authentication methods reported by KSeF."""
+
     TOKEN = "token"
     TRUSTED_PROFILE = "trusted_profile"
     INTERNAL_CERTIFICATE = "internal_certificate"
@@ -48,6 +52,8 @@ class AuthenticationMethodEnum(StrEnum):
 
 
 class AuthenticationMethodCategoryEnum(StrEnum):
+    """Runtime enum for broad authentication method categories."""
+
     XADES_SIGNATURE = "xades_signature"
     NATIONAL_NODE = "national_node"
     TOKEN = "token"

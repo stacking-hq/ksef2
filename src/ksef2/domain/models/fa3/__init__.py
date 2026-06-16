@@ -1,3 +1,5 @@
+"""Public FA(3) invoice domain model exports."""
+
 from ksef2.domain.models.fa3.attachment import (
     Attachment,
     AttachmentTable,

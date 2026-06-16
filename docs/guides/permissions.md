@@ -1,4 +1,7 @@
-# Permissions
+---
+title: Permissions
+description: Grant, query, and revoke KSeF permissions.
+---
 
 Permissions are managed through `auth.permissions`.
 
@@ -210,9 +213,9 @@ SDK endpoints:
 
 ## Examples
 
-- [`scripts/examples/permissions/grant_permissions.py`](../../scripts/examples/permissions/grant_permissions.py)
-- [`scripts/examples/permissions/query_permissions.py`](../../scripts/examples/permissions/query_permissions.py)
-- [`scripts/examples/permissions/query.py`](../../scripts/examples/permissions/query.py)
+- [`scripts/examples/permissions/grant_permissions.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/permissions/grant_permissions.py)
+- [`scripts/examples/permissions/query_permissions.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/permissions/query_permissions.py)
+- [`scripts/examples/permissions/query.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/permissions/query.py)
 
 ## Related
 

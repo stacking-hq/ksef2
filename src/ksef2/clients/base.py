@@ -17,7 +17,16 @@ from ksef2.core.http import HttpTransport
 
 @final
 class Client:
-    """Root KSeF SDK client responsible for transport and lifecycle management."""
+    """Root KSeF SDK client responsible for transport and lifecycle management.
+
+    Branch properties only create child clients. Branch operations document
+    their own API, validation, and transport failures.
+
+    Raises:
+        KSeFClientClosedError: If a branch is accessed after the client is closed.
+        KSeFUnsupportedEnvironmentError: If a TEST-only branch is accessed outside
+            ``Environment.TEST``.
+    """
 
     def __init__(
         self,
@@ -63,7 +72,11 @@ class Client:
 
     @cached_property
     def authentication(self) -> AuthClient:
-        """Return the authentication entry point."""
+        """Return the authentication entry point.
+
+        Raises:
+            KSeFClientClosedError: If the root client has been closed.
+        """
         self._ensure_open()
         return AuthClient(
             transport=self._transport,
@@ -73,13 +86,22 @@ class Client:
 
     @cached_property
     def encryption(self) -> encryption.EncryptionClient:
-        """Return the public encryption-certificate client."""
+        """Return the public encryption-certificate client.
+
+        Raises:
+            KSeFClientClosedError: If the root client has been closed.
+        """
         self._ensure_open()
         return encryption.EncryptionClient(self._transport)
 
     @cached_property
     def testdata(self) -> TestDataClient:
-        """Return the TEST-only data seeding client."""
+        """Return the TEST-only data seeding client.
+
+        Raises:
+            KSeFClientClosedError: If the root client has been closed.
+            KSeFUnsupportedEnvironmentError: If the client environment is not TEST.
+        """
         self._ensure_open()
         if self._environment is not Environment.TEST:
             raise exceptions.KSeFUnsupportedEnvironmentError(
@@ -89,7 +111,11 @@ class Client:
 
     @cached_property
     def peppol(self) -> peppol.PeppolClient:
-        """Return the public Peppol provider client."""
+        """Return the public Peppol provider client.
+
+        Raises:
+            KSeFClientClosedError: If the root client has been closed.
+        """
         self._ensure_open()
         return peppol.PeppolClient(self._transport)
 

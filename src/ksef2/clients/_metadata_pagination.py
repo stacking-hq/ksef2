@@ -1,3 +1,5 @@
+"""Shared helpers for KSeF metadata pagination."""
+
 from datetime import date, datetime
 from typing import Literal, assert_never
 
@@ -23,6 +25,12 @@ def next_metadata_page_request(
     response: QueryInvoicesMetadataResponse,
     previous_truncation_boundary: MetadataBoundary | None,
 ) -> MetadataPageRequest | None:
+    """Return the next metadata request needed to continue pagination.
+
+    Raises:
+        KSeFMetadataPaginationError: If KSeF reports a truncated page that cannot
+            advance safely.
+    """
     if not response.has_more:
         return None
 

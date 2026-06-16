@@ -1,3 +1,5 @@
+"""FA(3) invoice header domain models."""
+
 from datetime import datetime
 from importlib.metadata import PackageNotFoundError, version
 

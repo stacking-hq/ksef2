@@ -1,3 +1,5 @@
+"""Shared fluent builder methods for FA(3) invoice bodies."""
+
 from datetime import date
 from decimal import Decimal
 from typing import Annotated, Self, TypedDict
@@ -10,6 +12,8 @@ from ksef2.services.builders.fa3.metadata import builder_param
 
 
 class BodyCoreState(TypedDict):
+    """Typed state for common FA(3) body fields."""
+
     currency: str
     issue_date: date
     issue_place: str | None
@@ -49,12 +53,15 @@ def _default_state() -> BodyCoreState:
 
 
 class BaseBodyBuilder:
+    """Shared fluent builder for common FA(3) body fields."""
+
     def __init__(self, existing_state: KsefInvoiceBody | None = None) -> None:
         self._state = adapter.validate_python(
             existing_state.model_dump() if existing_state else _default_state()
         )
 
     def from_model(self, body: KsefInvoiceBody) -> Self:
+        """Replace the builder state from an existing domain model."""
         self._state = adapter.validate_python(body.model_dump())
         return self
 
@@ -68,6 +75,7 @@ class BaseBodyBuilder:
             ),
         ],
     ) -> Self:
+        """Set the currency value."""
         self._state["currency"] = value.upper()
         return self
 
@@ -82,6 +90,7 @@ class BaseBodyBuilder:
             ),
         ],
     ) -> Self:
+        """Set the issue date value."""
         self._state["issue_date"] = value
         return self
 
@@ -95,6 +104,7 @@ class BaseBodyBuilder:
             ),
         ],
     ) -> Self:
+        """Set the issue place value."""
         self._state["issue_place"] = value
         return self
 
@@ -108,6 +118,7 @@ class BaseBodyBuilder:
             ),
         ],
     ) -> Self:
+        """Set the invoice number value."""
         self._state["invoice_number"] = value
         return self
 
@@ -122,14 +133,17 @@ class BaseBodyBuilder:
             ),
         ],
     ) -> Self:
+        """Add a warehouse document entry."""
         self._state["warehouse_documents"].append(value)
         return self
 
     def replace_warehouse_documents(self, values: list[str]) -> Self:
+        """Replace the warehouse documents collection."""
         self._state["warehouse_documents"] = list(values)
         return self
 
     def clear_warehouse_documents(self) -> Self:
+        """Remove all warehouse documents entries."""
         self._state["warehouse_documents"].clear()
         return self
 
@@ -144,6 +158,7 @@ class BaseBodyBuilder:
             ),
         ],
     ) -> Self:
+        """Set the date of supply value."""
         self._state["date_of_supply"] = value
         return self
 
@@ -169,6 +184,7 @@ class BaseBodyBuilder:
             ),
         ] = None,
     ) -> Self:
+        """Set the billing period value."""
         self._state["period_start"] = period_start
         self._state["period_end"] = period_end
         return self
@@ -185,6 +201,7 @@ class BaseBodyBuilder:
             ),
         ],
     ) -> Self:
+        """Set the VAT currency exchange rate value."""
         self._state["vat_currency_exchange_rate"] = value
         return self
 
@@ -199,6 +216,7 @@ class BaseBodyBuilder:
             ),
         ] = True,
     ) -> Self:
+        """Set the FP marker flag."""
         self._state["fp_invoice"] = enabled
         return self
 
@@ -213,6 +231,7 @@ class BaseBodyBuilder:
             ),
         ] = True,
     ) -> Self:
+        """Set the related party transaction value."""
         self._state["related_party_transaction"] = enabled
         return self
 
@@ -244,6 +263,7 @@ class BaseBodyBuilder:
             ),
         ] = None,
     ) -> Self:
+        """Add a description entry."""
         self._state["additional_description"].append(
             AdditionalDescriptionEntry(
                 row_number=row_number,
@@ -254,10 +274,12 @@ class BaseBodyBuilder:
         return self
 
     def add_description_model(self, entry: AdditionalDescriptionEntry) -> Self:
+        """Add an existing additional-description domain model."""
         self._state["additional_description"].append(entry)
         return self
 
     def clear_descriptions(self) -> Self:
+        """Remove all additional description entries."""
         self._state["additional_description"].clear()
         return self
 
@@ -272,6 +294,7 @@ class BaseBodyBuilder:
             ),
         ],
     ) -> Self:
+        """Set the return of excise value."""
         self._state["return_of_excise"] = value
         return self
 
@@ -288,5 +311,6 @@ class BaseBodyBuilder:
             ),
         ],
     ) -> Self:
+        """Set the summary overrides value."""
         self._state["summary_overrides"] = value
         return self

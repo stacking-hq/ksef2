@@ -26,6 +26,8 @@ type TokenContextIdentifierType = Literal[
 
 
 class TokenPermissionEnum(StrEnum):
+    """Runtime enum for token permission scopes."""
+
     INVOICE_READ = "invoice_read"
     INVOICE_WRITE = "invoice_write"
     INTROSPECTION = "introspection"
@@ -36,6 +38,8 @@ class TokenPermissionEnum(StrEnum):
 
 
 class TokenStatusEnum(StrEnum):
+    """Runtime enum for token lifecycle statuses."""
+
     PENDING = "pending"
     ACTIVE = "active"
     REVOKING = "revoking"
@@ -44,12 +48,16 @@ class TokenStatusEnum(StrEnum):
 
 
 class TokenAuthorIdentifierTypeEnum(StrEnum):
+    """Runtime enum for token author identifier types."""
+
     NIP = "nip"
     PESEL = "pesel"
     FINGERPRINT = "fingerprint"
 
 
 class TokenContextIdentifierTypeEnum(StrEnum):
+    """Runtime enum for token context identifier types."""
+
     NIP = "nip"
     INTERNAL_ID = "internal_id"
     NIP_VAT_UE = "nip_vat_ue"
@@ -71,11 +79,15 @@ class TokenContextIdentifier(KSeFBaseModel):
 
 
 class GenerateTokenResponse(KSeFBaseModel):
+    """Token value returned after a successful generate operation."""
+
     reference_number: str
     token: str
 
 
 class TokenStatusResponse(KSeFBaseModel):
+    """Current lifecycle status of one token."""
+
     reference_number: str
     status: TokenStatus
 

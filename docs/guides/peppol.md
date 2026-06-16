@@ -1,4 +1,7 @@
-# PEPPOL Providers
+---
+title: PEPPOL Providers
+description: Query PEPPOL provider data through the public client.
+---
 
 `client.peppol` exposes the public PEPPOL provider registry published by KSeF.
 These endpoints do not require authentication.
@@ -34,7 +37,7 @@ for provider in client.peppol.all():
 
 ## Example
 
-- [`scripts/examples/peppol/query_providers.py`](../../scripts/examples/peppol/query_providers.py)
+- [`scripts/examples/peppol/query_providers.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/peppol/query_providers.py)
 
 ## Related
 

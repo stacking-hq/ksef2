@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
 
 jobs:
@@ -36,3 +36,6 @@ jobs:
 
       - name: Test
         run: just test
+
+      - name: Test with runtime checks
+        run: just test-runtime-checks

@@ -1,3 +1,5 @@
+"""Root fluent builder for complete FA(3) invoices."""
+
 from collections.abc import Sequence
 from datetime import datetime
 from decimal import Decimal
@@ -42,6 +44,8 @@ class StandardInvoiceBuilder(
     FooterBuilderMixin,
     AttachmentBuilderMixin,
 ):
+    """Fluent builder for complete FA(3) invoices."""
+
     def __init__(self) -> None:
         self._header: InvoiceHeader | None = InvoiceHeader()
         self._seller: InvoiceEntity | None = None
@@ -71,6 +75,7 @@ class StandardInvoiceBuilder(
             ),
         ] = None,
     ) -> Self:
+        """Set the header value."""
         self._header = InvoiceHeader(
             generation_timestamp=to_aware_datetime(
                 generation_timestamp or datetime.now()
@@ -81,6 +86,7 @@ class StandardInvoiceBuilder(
 
     @override
     def header_model(self, header: InvoiceHeader) -> Self:
+        """Set the invoice header from an existing domain model."""
         self._header = header
         return self
 
@@ -188,6 +194,7 @@ class StandardInvoiceBuilder(
             ),
         ] = None,
     ) -> Self:
+        """Set the seller party from address and identifier fields."""
         self._seller = self._build_entity(
             name=name,
             country_code=country_code,
@@ -207,6 +214,7 @@ class StandardInvoiceBuilder(
 
     @override
     def seller_model(self, seller: InvoiceEntity) -> Self:
+        """Set the seller from an existing domain model."""
         self._seller = seller
         return self
 
@@ -338,6 +346,11 @@ class StandardInvoiceBuilder(
             ),
         ] = None,
     ) -> Self:
+        """Set the buyer party from address and identifier fields.
+
+        Raises:
+            ValueError: If an address line is provided without a country code.
+        """
         self._buyer = self._build_entity(
             name=name,
             country_code=country_code,
@@ -360,6 +373,7 @@ class StandardInvoiceBuilder(
 
     @override
     def buyer_model(self, buyer: InvoiceEntity) -> Self:
+        """Set the buyer from an existing domain model."""
         self._buyer = buyer
         return self
 
@@ -555,6 +569,11 @@ class StandardInvoiceBuilder(
             ),
         ] = None,
     ) -> Self:
+        """Add a third-party subject from address, identity, and role fields.
+
+        Raises:
+            ValueError: If address or correspondence-address fields are incomplete.
+        """
         address = None
         if address_line_1 is not None:
             if address_country_code is None:
@@ -621,54 +640,67 @@ class StandardInvoiceBuilder(
         return self.add_third_party_model(third_party)
 
     def add_third_party_model(self, third_party: InvoiceThirdParty) -> Self:
+        """Add an existing third-party domain model."""
         if self._third_parties is None:
             self._third_parties = []
         self._third_parties.append(third_party)
         return self
 
     def replace_third_parties(self, third_parties: Sequence[InvoiceThirdParty]) -> Self:
+        """Replace all third-party subjects."""
         self._third_parties = list(third_parties)
         return self
 
     def clear_third_parties(self) -> Self:
+        """Remove all third-party subjects."""
         self._third_parties = []
         return self
 
     @override
     def footer_model(self, footer: InvoiceFooter) -> Self:
+        """Set the footer from an existing domain model."""
         self._footer = footer
         return self
 
     @override
     def attachment_model(self, attachment: Attachment) -> Self:
+        """Set the attachment from an existing domain model."""
         self._attachment = attachment
         return self
 
     def standard(self) -> StandardBodyBuilder[Self]:
+        """Start a standard invoice body builder."""
         return StandardBodyBuilder(self, self._set_body, self._body)
 
     def simplified(self) -> SimplifiedBodyBuilder[Self]:
+        """Start a simplified invoice body builder."""
         return SimplifiedBodyBuilder(self, self._set_body, self._body)
 
     def correction(self) -> CorrectionBodyBuilder[Self]:
+        """Start a correction invoice body builder."""
         return CorrectionBodyBuilder(self, self._set_body, self._body)
 
     def advance(self) -> AdvanceBodyBuilder[Self]:
+        """Start an advance invoice body builder or sub-builder."""
         return AdvanceBodyBuilder(self, self._set_body, self._body)
 
     def settlement(self) -> SettlementBodyBuilder[Self]:
+        """Start a settlement invoice body builder or sub-builder."""
         return SettlementBodyBuilder(self, self._set_body, self._body)
 
     def correction_advance(self) -> CorrectionAdvanceBodyBuilder[Self]:
+        """Start a correction advance invoice body builder."""
         return CorrectionAdvanceBodyBuilder(self, self._set_body, self._body)
 
     def correction_settlement(self) -> CorrectionSettlementBodyBuilder[Self]:
+        """Start a correction settlement invoice body builder."""
         return CorrectionSettlementBodyBuilder(self, self._set_body, self._body)
 
     def _set_body(self, body: KsefInvoiceBody) -> None:
         self._body = body
 
     def dump_state(self) -> KsefInvoiceDraft:
+        """Return a serializable draft snapshot of the current builder state."""
         return KsefInvoiceDraft(
             header=self._header.model_copy(deep=True) if self._header else None,
             seller=self._seller.model_copy(deep=True) if self._seller else None,
@@ -685,9 +717,11 @@ class StandardInvoiceBuilder(
         )
 
     def dump_state_json(self, *, indent: int | None = None) -> str:
+        """Return the current builder state as JSON."""
         return self.dump_state().model_dump_json(indent=indent)
 
     def load_state(self, state: KsefInvoiceDraft) -> Self:
+        """Load builder state from a serializable draft snapshot."""
         self._header = state.header.model_copy(deep=True) if state.header else None
         self._seller = state.seller.model_copy(deep=True) if state.seller else None
         self._buyer = state.buyer.model_copy(deep=True) if state.buyer else None
@@ -703,17 +737,25 @@ class StandardInvoiceBuilder(
 
     @classmethod
     def from_state(cls, state: KsefInvoiceDraft) -> Self:
+        """Create a builder from a serializable draft snapshot."""
         return cls().load_state(state)
 
     @classmethod
     def from_state_json(cls, data: str | bytes | bytearray) -> Self:
+        """Create a builder from serialized JSON state."""
         return cls.from_state(KsefInvoiceDraft.model_validate_json(data))
 
     @classmethod
     def from_invoice(cls, invoice: KsefInvoice) -> Self:
+        """Create a builder initialized from an existing invoice."""
         return cls.from_state(KsefInvoiceDraft.from_invoice(invoice))
 
     def build(self) -> KsefInvoice:
+        """Build the corresponding FA(3) domain model.
+
+        Raises:
+            ValueError: If the required header, seller, buyer, or body is missing.
+        """
         if self._header is None:
             raise ValueError("Invoice header is required but not set.")
         if self._seller is None:
@@ -737,6 +779,11 @@ class StandardInvoiceBuilder(
         )
 
     def to_spec(self) -> Faktura:
+        """Convert the built invoice to the generated FA(3) schema model.
+
+        Raises:
+            ValueError: If the current builder state cannot build a complete invoice.
+        """
         return invoice_to_spec(self.build())
 
     def to_xml(
@@ -746,6 +793,11 @@ class StandardInvoiceBuilder(
         xml_declaration: bool = True,
         encoding: str = "UTF-8",
     ) -> str:
+        """Serialize the built invoice to XML bytes.
+
+        Raises:
+            ValueError: If the current builder state cannot build a complete invoice.
+        """
         serializer = XmlSerializer(
             config=SerializerConfig(
                 pretty_print=pretty_print,

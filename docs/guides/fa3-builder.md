@@ -1,4 +1,7 @@
-# FA(3) Builder
+---
+title: FA(3) Builder
+description: Build FA(3) invoice XML with typed SDK helpers.
+---
 
 Use `ksef2.fa3` to build typed FA(3) invoices inside the SDK.
 Import the builder and the commonly used enums directly from that namespace.
@@ -235,10 +238,10 @@ with auth.online_session(form_code=FormSchema.FA3) as session:
 
 ## Examples
 
-- [`scripts/examples/invoices/build_fa3_invoice.py`](../../scripts/examples/invoices/build_fa3_invoice.py)
-- [`scripts/examples/invoices/build_fa3_invoice_builder.py`](../../scripts/examples/invoices/build_fa3_invoice_builder.py)
-- [`scripts/examples/invoices/build_fa3_invoice_sample_1.py`](../../scripts/examples/invoices/build_fa3_invoice_sample_1.py)
-- [`tests/integration/builders/fa3/test_standard_invoice.py`](../../tests/integration/builders/fa3/test_standard_invoice.py)
+- [`scripts/examples/invoices/build_fa3_invoice.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/invoices/build_fa3_invoice.py)
+- [`scripts/examples/invoices/build_fa3_invoice_builder.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/invoices/build_fa3_invoice_builder.py)
+- [`scripts/examples/invoices/build_fa3_invoice_sample_1.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/invoices/build_fa3_invoice_sample_1.py)
+- [`tests/integration/builders/fa3/test_standard_invoice.py`](https://github.com/stacking-hq/ksef2/blob/main/tests/integration/builders/fa3/test_standard_invoice.py)
 
 ## Related
 

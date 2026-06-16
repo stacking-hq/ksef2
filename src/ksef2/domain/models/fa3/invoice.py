@@ -42,6 +42,7 @@ class KsefInvoiceDraft(KSeFBaseModel):
 
     @classmethod
     def from_invoice(cls, invoice: "KsefInvoice") -> "KsefInvoiceDraft":
+        """Create an editable draft snapshot from a complete invoice."""
         return cls(
             header=invoice.header.model_copy(deep=True),
             seller=invoice.seller.model_copy(deep=True),
@@ -80,14 +81,17 @@ class KsefInvoice(KSeFBaseModel):
 
     @property
     def total_gross(self) -> Decimal:
+        """Return the gross total computed by the invoice body."""
         return self.body.total_gross
 
     @property
     def total_net(self) -> Decimal:
+        """Return the net total computed by the invoice body."""
         return self.body.total_net
 
     @property
     def total_vat(self) -> Decimal:
+        """Return the VAT total computed by the invoice body."""
         return self.body.total_vat
 
     @model_validator(mode="after")

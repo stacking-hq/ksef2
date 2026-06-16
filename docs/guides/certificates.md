@@ -1,4 +1,7 @@
-# Certificates
+---
+title: Certificates
+description: Enroll, query, retrieve, and revoke KSeF certificates.
+---
 
 Certificate management is available through `auth.certificates`.
 

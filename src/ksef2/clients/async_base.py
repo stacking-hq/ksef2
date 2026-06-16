@@ -24,7 +24,16 @@ from ksef2.core.middlewares.async_retry import AsyncRetryMiddleware
 
 @final
 class AsyncClient:
-    """Root async KSeF SDK client responsible for transport and lifecycle management."""
+    """Root async KSeF SDK client responsible for transport and lifecycle management.
+
+    Branch properties only create child clients. Branch operations document
+    their own API, validation, and transport failures.
+
+    Raises:
+        KSeFClientClosedError: If a branch is accessed after the client is closed.
+        KSeFUnsupportedEnvironmentError: If a TEST-only branch is accessed outside
+            ``Environment.TEST``.
+    """
 
     def __init__(
         self,
@@ -73,6 +82,11 @@ class AsyncClient:
 
     @cached_property
     def authentication(self) -> AsyncAuthClient:
+        """Return the authentication entry point.
+
+        Raises:
+            KSeFClientClosedError: If the root client has been closed.
+        """
         self._ensure_open()
         return AsyncAuthClient(
             transport=self._transport,
@@ -82,16 +96,32 @@ class AsyncClient:
 
     @cached_property
     def encryption(self) -> AsyncEncryptionClient:
+        """Return the public encryption-certificate client.
+
+        Raises:
+            KSeFClientClosedError: If the root client has been closed.
+        """
         self._ensure_open()
         return AsyncEncryptionClient(self._transport)
 
     @cached_property
     def peppol(self) -> AsyncPeppolClient:
+        """Return the public Peppol provider client.
+
+        Raises:
+            KSeFClientClosedError: If the root client has been closed.
+        """
         self._ensure_open()
         return AsyncPeppolClient(self._transport)
 
     @cached_property
     def testdata(self) -> AsyncTestDataClient:
+        """Return the TEST-only data seeding client.
+
+        Raises:
+            KSeFClientClosedError: If the root client has been closed.
+            KSeFUnsupportedEnvironmentError: If the client environment is not TEST.
+        """
         self._ensure_open()
         if self._environment is not Environment.TEST:
             raise exceptions.KSeFUnsupportedEnvironmentError(

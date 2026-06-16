@@ -1,3 +1,5 @@
+"""Fluent builder for simplified invoice bodies."""
+
 from typing import Self
 from collections.abc import Callable
 
@@ -19,6 +21,8 @@ class SimplifiedBodyBuilder[TParent](
     TransactionBuilderMixin,
     SettlementBuilderMixin,
 ):
+    """Fluent builder for Simplified invoice bodies."""
+
     def __init__(
         self,
         parent: TParent | None = None,
@@ -55,6 +59,7 @@ class SimplifiedBodyBuilder[TParent](
         )
 
     def build(self) -> KsefInvoiceBody:
+        """Build the corresponding FA(3) domain model."""
         return KsefInvoiceBody(
             **self._state,
             invoice_type=InvoiceType.UPR,
@@ -66,6 +71,7 @@ class SimplifiedBodyBuilder[TParent](
         )
 
     def from_model(self, body: KsefInvoiceBody) -> Self:
+        """Replace the builder state from an existing domain model."""
         BaseBodyBuilder.from_model(self, body)
         self._rows = [row.model_copy(deep=True) for row in body.rows]
         self._payment = body.payment.model_copy(deep=True) if body.payment else None
@@ -83,6 +89,11 @@ class SimplifiedBodyBuilder[TParent](
         return self
 
     def done(self) -> TParent:
+        """Attach the built invoice body to the parent invoice builder.
+
+        Raises:
+            ValueError: If this body builder has no parent invoice builder.
+        """
         if self._parent is None or self._on_done is None:
             raise ValueError("SimplifiedBodyBuilder requires a parent to call done().")
         self._on_done(self.build())

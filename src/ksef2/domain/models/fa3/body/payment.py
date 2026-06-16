@@ -1,3 +1,5 @@
+"""FA(3) payment, terms, and bank-account domain models."""
+
 from datetime import date
 from decimal import Decimal
 from typing import Self, Literal

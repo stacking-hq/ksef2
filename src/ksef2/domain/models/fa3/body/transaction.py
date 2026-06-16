@@ -1,3 +1,5 @@
+"""FA(3) transaction condition and transport detail models."""
+
 from datetime import date, datetime
 from decimal import Decimal
 import re

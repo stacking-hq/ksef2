@@ -1,4 +1,7 @@
-# Encryption Certificates
+---
+title: Encryption Certificates
+description: Retrieve and use public KSeF encryption certificates.
+---
 
 `client.encryption` exposes the public KSeF certificates used to encrypt KSeF tokens
 and session symmetric keys.

@@ -1,3 +1,5 @@
+"""VAT classification helpers used by FA(3) rows and summaries."""
+
 from decimal import Decimal
 from enum import StrEnum
 from typing import Any, Self
@@ -8,6 +10,8 @@ from ksef2.domain.models import KSeFBaseModel
 
 
 class VatRate(StrEnum):
+    """FA(3) schema VAT rate markers."""
+
     VAT_23 = "23"
     VAT_22 = "22"
     VAT_8 = "8"
@@ -22,6 +26,8 @@ class VatRate(StrEnum):
 
 
 class VatTreatment(StrEnum):
+    """Legal VAT treatment categories used by the domain model."""
+
     TAXABLE = "taxable"
     ZERO_DOMESTIC = "zero_domestic"
     ZERO_WDT = "zero_wdt"
@@ -33,6 +39,8 @@ class VatTreatment(StrEnum):
 
 
 class SaleCategory(StrEnum):
+    """Strict FA(3) sale category mapped to schema VAT codes."""
+
     RATE_23 = "rate_23"
     RATE_22 = "rate_22"
     RATE_8 = "rate_8"
@@ -50,6 +58,8 @@ class SaleCategory(StrEnum):
 
 
 class TaxRegime(StrEnum):
+    """Additional tax regime context for non-standard line calculations."""
+
     STANDARD = "standard"
     TAXI_FLAT_RATE = "taxi_flat_rate"
     SPECIAL_XII = "special_xii"
@@ -175,6 +185,7 @@ SCHEMA_CODE_BY_CATEGORY = {
 
 
 def coerce_vat_rate(value: VatRate | str | None) -> VatRate | None:
+    """Normalize raw VAT rate input to a ``VatRate`` enum member."""
     if value is None or isinstance(value, VatRate):
         return value
     if value == "":
@@ -185,14 +196,17 @@ def coerce_vat_rate(value: VatRate | str | None) -> VatRate | None:
 
 
 def vat_rate_for_category(category: SaleCategory) -> VatRate:
+    """Return the FA(3) VAT rate marker for a sale category."""
     return VAT_RATE_BY_CATEGORY[category]
 
 
 def default_category_for_vat_rate(vat_rate: VatRate) -> SaleCategory:
+    """Return the default sale category for a VAT rate marker."""
     return DEFAULT_CATEGORY_BY_VAT_RATE[vat_rate]
 
 
 def schema_code_for_category(category: SaleCategory) -> str:
+    """Return the exact FA(3) schema code for a sale category."""
     return SCHEMA_CODE_BY_CATEGORY[category]
 
 
@@ -201,6 +215,18 @@ def parse_sale_category(
     *,
     vat_rate: VatRate | str | None = None,
 ) -> tuple[SaleCategory | None, TaxRegime | None]:
+    """Parse modern and legacy sale-category inputs.
+
+    Args:
+        value: Sale category, legacy alias, or ``None``.
+        vat_rate: Optional VAT rate used to resolve legacy aliases.
+
+    Returns:
+        A ``(sale_category, tax_regime)`` pair. Either value may be ``None``.
+
+    Raises:
+        ValueError: If the alias conflicts with the supplied VAT rate.
+    """
     if value is None:
         return None, None
     if isinstance(value, SaleCategory):
@@ -233,6 +259,8 @@ def parse_sale_category(
 
 
 class VatClassification(KSeFBaseModel):
+    """Structured VAT treatment and numeric rate pair."""
+
     treatment: VatTreatment = Field(
         description="Legal VAT treatment used by the domain model."
     )
@@ -275,6 +303,7 @@ class VatClassification(KSeFBaseModel):
 
     @property
     def sale_category(self) -> SaleCategory:
+        """Return the strict sale category matching this classification."""
         category = CATEGORY_BY_TREATMENT_AND_RATE.get((self.treatment, self.rate))
         if category is None:
             raise ValueError(
@@ -284,14 +313,17 @@ class VatClassification(KSeFBaseModel):
 
     @property
     def vat_rate(self) -> VatRate:
+        """Return the FA(3) VAT rate marker for this classification."""
         return vat_rate_for_category(self.sale_category)
 
     @property
     def numeric_rate(self) -> Decimal | None:
+        """Return the numeric VAT rate when this treatment has one."""
         return self.rate
 
     @property
     def is_zero_rated(self) -> bool:
+        """Return whether this classification is one of the zero-rate categories."""
         return self.treatment in {
             VatTreatment.ZERO_DOMESTIC,
             VatTreatment.ZERO_WDT,
@@ -300,6 +332,7 @@ class VatClassification(KSeFBaseModel):
 
     @classmethod
     def from_sale_category(cls, category: SaleCategory) -> Self:
+        """Build a classification from a strict sale category."""
         return cls(
             treatment=TREATMENT_BY_CATEGORY[category],
             rate=NUMERIC_RATE_BY_CATEGORY.get(category),
@@ -312,6 +345,7 @@ class VatClassification(KSeFBaseModel):
         *,
         sale_category: SaleCategory | str | None = None,
     ) -> Self:
+        """Build a classification from a VAT rate and optional sale category."""
         normalized_vat_rate = coerce_vat_rate(vat_rate)
         assert normalized_vat_rate is not None, "vat_rate must not be None"
         parsed_category, _ = parse_sale_category(
@@ -327,18 +361,21 @@ class VatClassification(KSeFBaseModel):
 
     @classmethod
     def from_schema_code(cls, code: str) -> Self:
+        """Build a classification from a raw FA(3) schema VAT code."""
         for category, raw_code in SCHEMA_CODE_BY_CATEGORY.items():
             if raw_code == code:
                 return cls.from_sale_category(category)
         raise ValueError(f"Unsupported FA(3) VAT classification: {code}")
 
     def to_schema_code(self) -> str:
+        """Return the raw FA(3) schema VAT code for this classification."""
         return schema_code_for_category(self.sale_category)
 
 
 def coerce_vat_classification(
     value: VatClassification | dict[str, Any] | None,
 ) -> VatClassification | None:
+    """Normalize dictionaries and existing objects to ``VatClassification``."""
     if value is None or isinstance(value, VatClassification):
         return value
     return VatClassification.model_validate(value)

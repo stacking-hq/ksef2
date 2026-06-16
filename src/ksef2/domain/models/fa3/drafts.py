@@ -1,3 +1,5 @@
+"""Reusable FA(3) draft helper models."""
+
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 from enum import StrEnum
@@ -8,10 +10,13 @@ from ksef2.domain.models import KSeFBaseModel
 
 
 def round_pln(value: Decimal) -> Decimal:
+    """Round a monetary amount using standard PLN precision."""
     return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 class DraftIntent(StrEnum):
+    """High-level invoice intent used by draft helpers."""
+
     STANDARD = "VAT"
     CORRECTION = "KOR"
     ADVANCE = "ZAL"
@@ -20,6 +25,8 @@ class DraftIntent(StrEnum):
 
 
 class MarginProcedure(StrEnum):
+    """Margin procedure variants supported by FA(3) annotations."""
+
     TRAVEL_AGENCY = "travel_agency"
     USED_GOODS = "used_goods"
     ARTWORKS = "artworks"
@@ -27,6 +34,8 @@ class MarginProcedure(StrEnum):
 
 
 class CorrectedInvoiceReference(KSeFBaseModel):
+    """Reference to an invoice corrected by a correction invoice."""
+
     issue_date: date
     invoice_number: str
     ksef_id: str | None = None
@@ -42,6 +51,8 @@ class CorrectedInvoiceReference(KSeFBaseModel):
 
 
 class AdvanceInvoiceReference(KSeFBaseModel):
+    """Reference to an advance invoice settled by another invoice."""
+
     ksef_id: str | None = None
     invoice_number: str | None = None
     outside_ksef: bool = False
@@ -71,6 +82,8 @@ class AdvanceInvoiceReference(KSeFBaseModel):
 
 
 class SettlementCharge(KSeFBaseModel):
+    """Additional settlement charge included in a draft invoice."""
+
     amount: Decimal
     reason: str
 
@@ -83,6 +96,8 @@ class SettlementCharge(KSeFBaseModel):
 
 
 class SettlementDeduction(KSeFBaseModel):
+    """Settlement deduction included in a draft invoice."""
+
     amount: Decimal
     reason: str
 

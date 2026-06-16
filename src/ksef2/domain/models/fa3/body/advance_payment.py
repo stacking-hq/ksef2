@@ -1,3 +1,5 @@
+"""FA(3) advance-payment and settlement-reference body models."""
+
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -8,10 +10,12 @@ from ksef2.domain.models.fa3.drafts import AdvanceInvoiceReference
 
 
 def round_pln(value: Decimal) -> Decimal:
+    """Round a monetary amount using standard PLN precision."""
     return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 def round_rate(value: Decimal) -> Decimal:
+    """Round an exchange rate to FA(3) precision."""
     return value.quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
 
 

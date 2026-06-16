@@ -17,12 +17,14 @@ dependencies = [
     "structlog>=25.5.0",
     "xsdata-pydantic>=24.5",
     "tenacity>=9.0",
-    "beartype>=0.22.9",
     "camel-converter>=5.1.0",
     "xsdata>=26.1",
 ]
 
 [project.optional-dependencies]
+runtime-checks = [
+    "beartype>=0.22.9",
+]
 pdf = [
     "weasyprint>=63.0",
 ]

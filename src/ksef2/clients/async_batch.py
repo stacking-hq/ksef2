@@ -21,7 +21,19 @@ logger = get_logger(__name__)
 
 @final
 class AsyncBatchSessionClient:
-    """Async client for managing an active batch session."""
+    """Async client for managing an active batch session.
+
+    Catch ``KSeFException`` for SDK-classified failures raised by this session
+    branch, and ``httpx.HTTPError`` for transport failures.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response. Catch
+            ``KSeFAuthError`` for authentication or authorization failures and
+            ``KSeFRateLimitError`` for throttling.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        KSeFClientClosedError: If an operation is attempted after closing the session.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
+    """
 
     def __init__(
         self,
@@ -134,6 +146,7 @@ class AsyncBatchSessionClient:
         Raises:
             KSeFClientClosedError: If the upload window has already been closed.
             KSeFValidationError: If the session has no prepared batch payload attached.
+            httpx.HTTPError: If uploading a part to its presigned URL fails.
         """
         self._ensure_open()
 

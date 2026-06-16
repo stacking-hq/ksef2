@@ -27,12 +27,16 @@ type PermissionType = Literal[
 
 
 class SubjectTypeEnum(StrEnum):
+    """Runtime enum for TEST subject types."""
+
     ENFORCEMENT_AUTHORITY = "enforcement_authority"
     VAT_GROUP = "vat_group"
     JST = "jst"
 
 
 class IdentifierTypeEnum(StrEnum):
+    """Runtime enum for TEST data identifier types."""
+
     NIP = "nip"
     PESEL = "pesel"
     FINGERPRINT = "fingerprint"
@@ -40,6 +44,8 @@ class IdentifierTypeEnum(StrEnum):
 
 
 class AuthContextIdentifierTypeEnum(StrEnum):
+    """Runtime enum for TEST authentication context identifiers."""
+
     NIP = "nip"
     INTERNAL_ID = "internal_id"
     NIP_VAT_UE = "nip_vat_ue"
@@ -47,6 +53,8 @@ class AuthContextIdentifierTypeEnum(StrEnum):
 
 
 class PermissionTypeEnum(StrEnum):
+    """Runtime enum for TEST permission scopes."""
+
     INVOICE_READ = "invoice_read"
     INVOICE_WRITE = "invoice_write"
     PEF_INVOICE_WRITE = "pef_invoice_write"
@@ -59,6 +67,8 @@ class PermissionTypeEnum(StrEnum):
 
 
 class SubUnit(KSeFBaseModel):
+    """Subunit belonging to a TEST subject."""
+
     subject_nip: str
     description: str
 
@@ -95,6 +105,8 @@ class CreateSubjectRequest(KSeFBaseModel):
 
 
 class DeleteSubjectRequest(KSeFBaseModel):
+    """Payload used to delete a TEST subject."""
+
     subject_nip: str
 
 
@@ -110,6 +122,8 @@ class CreatePersonRequest(KSeFBaseModel):
 
 
 class DeletePersonRequest(KSeFBaseModel):
+    """Payload used to delete a TEST person."""
+
     nip: str
 
 
@@ -122,11 +136,15 @@ class GrantPermissionsRequest(KSeFBaseModel):
 
 
 class RevokePermissionsRequest(KSeFBaseModel):
+    """Payload used to revoke TEST permissions in a chosen context."""
+
     revoke_from: Identifier
     in_context_of: Identifier
 
 
 class EnableAttachmentsRequest(KSeFBaseModel):
+    """Payload used to enable attachments for a TEST subject."""
+
     nip: str
 
 
@@ -138,8 +156,12 @@ class RevokeAttachmentsRequest(KSeFBaseModel):
 
 
 class BlockContextRequest(KSeFBaseModel):
+    """Payload used to block authentication for a TEST context."""
+
     context: AuthContextIdentifier
 
 
 class UnblockContextRequest(KSeFBaseModel):
+    """Payload used to unblock authentication for a TEST context."""
+
     context: AuthContextIdentifier

@@ -1,3 +1,5 @@
+"""FA(3) settlement charge and deduction domain models."""
+
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Self
 
@@ -7,6 +9,7 @@ from ksef2.domain.models import KSeFBaseModel
 
 
 def round_pln(value: Decimal) -> Decimal:
+    """Round a monetary amount using standard PLN precision."""
     return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 

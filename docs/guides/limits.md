@@ -1,4 +1,7 @@
-# Limits and Restrictions
+---
+title: Limits and Restrictions
+description: Read and manage KSeF API, context, and subject limits.
+---
 
 Manage API limits and restrictions for the KSeF system. All limits operations are accessed through the authenticated client via `auth.limits`.
 
@@ -49,7 +52,7 @@ print(f"Online session: {rate_limits.online_session.per_second}/request  {rate_l
 print(f"Invoice download: {rate_limits.invoice_download.per_second}/request  {rate_limits.invoice_download.per_minute}/m  {rate_limits.invoice_download.per_hour}/h")
 ```
 
-> Full example: [`scripts/examples/limits/limits_query.py`](../../scripts/examples/limits/limits_query.py)
+> Full example: [`scripts/examples/limits/limits_query.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/limits/limits_query.py)
 
 ## Test Environment Only
 
@@ -143,4 +146,4 @@ auth.limits.set_production_rate_limits()
 auth.limits.reset_api_rate_limits()
 ```
 
-> Full example: [`scripts/examples/limits/limits_modify.py`](../../scripts/examples/limits/limits_modify.py)
+> Full example: [`scripts/examples/limits/limits_modify.py`](https://github.com/stacking-hq/ksef2/blob/main/scripts/examples/limits/limits_modify.py)

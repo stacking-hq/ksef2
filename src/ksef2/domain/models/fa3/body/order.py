@@ -1,3 +1,5 @@
+"""FA(3) order and advance-order body models."""
+
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Self
 
@@ -16,6 +18,7 @@ from ksef2.domain.models.fa3.body.tax import (
 
 
 def round_pln(value: Decimal) -> Decimal:
+    """Round a monetary amount using standard PLN precision."""
     return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
@@ -202,6 +205,8 @@ class InvoiceOrderLine(KSeFBaseModel):
 
 
 class InvoiceOrder(KSeFBaseModel):
+    """FA(3) order block with one or more order lines."""
+
     total_value: Decimal | None = None
     order_lines: list[InvoiceOrderLine] = Field(min_length=1)
 

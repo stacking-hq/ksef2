@@ -1,3 +1,5 @@
+"""Reusable pagination and filter parameter models."""
+
 from datetime import datetime
 from typing import Self
 
@@ -27,14 +29,20 @@ from ksef2.domain.types import (
 
 
 class PageSizeMixin(BaseModel):
+    """Adds a bounded ``page_size`` query parameter."""
+
     page_size: int = Field(default=10, ge=10, le=100)
 
 
 class PageOffsetMixin(BaseModel):
+    """Adds a zero-based ``page_offset`` query parameter."""
+
     page_offset: int = Field(default=0, ge=0)
 
 
 class SortOrderMixin(BaseModel):
+    """Adds a sortable ``sort_order`` query parameter."""
+
     sort_order: SortOrder = "asc"
 
     @field_validator("sort_order", mode="before")
@@ -52,7 +60,10 @@ class SortOrderMixin(BaseModel):
 class OffsetPaginationParams(
     KSeFBaseParams[OffsetPaginationQueryParams], PageSizeMixin, PageOffsetMixin
 ):
+    """Offset-based pagination parameters."""
+
     def next_page(self) -> Self:
+        """Return a copy advanced by one page offset."""
         return self.model_copy(update={"page_offset": self.page_offset + 1})
 
 
@@ -62,16 +73,21 @@ class InvoiceMetadataParams(
     PageOffsetMixin,
     SortOrderMixin,
 ):
+    """Pagination parameters for invoice metadata queries."""
+
     page_size: int = Field(default=10, ge=10, le=250)
 
     def with_page_offset(self, page_offset: int) -> Self:
+        """Return a copy with an explicit page offset."""
         return self.model_copy(update={"page_offset": page_offset})
 
     def next_page(self) -> Self:
+        """Return a copy advanced by one invoice metadata page."""
         return self.with_page_offset(self.page_offset + 1)
 
 
-class PermissionsQueryParams(OffsetPaginationParams): ...
+class PermissionsQueryParams(OffsetPaginationParams):
+    """Offset-based pagination parameters for permission query endpoints."""
 
 
 class TokenPaginationParams(KSeFBaseParams[dict[str, object]]):
@@ -81,6 +97,8 @@ class TokenPaginationParams(KSeFBaseParams[dict[str, object]]):
 
 
 class SessionFiltersMixin(BaseModel):
+    """Normalizes and serializes session-list filter fields."""
+
     @field_validator("session_type", mode="before", check_fields=False)
     @classmethod
     def _normalize_session_type(cls, value: object) -> object:
@@ -114,10 +132,14 @@ class SessionFiltersMixin(BaseModel):
 
 
 class SessionInvoiceListParams(TokenPaginationParams):
+    """Continuation-token pagination for session invoice listings."""
+
     page_size: int = Field(default=10, ge=10, le=1000)
 
 
 class TokenListParams(KSeFBaseParams[ListTokensQueryParams], PageSizeMixin):
+    """Query parameters for token listings."""
+
     status: list[TokenStatus] | None = None
     description: str | None = None
     author_identifier: str | None = None
@@ -127,6 +149,8 @@ class TokenListParams(KSeFBaseParams[ListTokensQueryParams], PageSizeMixin):
 class ListSessionsQuery(
     SessionFiltersMixin, KSeFBaseParams[ListSessionsQueryParams], PageSizeMixin
 ):
+    """Query parameters for authentication or invoice session listings."""
+
     session_type: SessionType
     reference_number: str | None = None
     date_created_from: datetime | None = None

@@ -1,4 +1,7 @@
-# Async Client
+---
+title: Async Client
+description: Use the async KSeF2 client in event-loop based applications.
+---
 
 Use `AsyncClient` when the application already runs in an event loop, for
 example in FastAPI, aiohttp, background workers, or async CLI jobs.

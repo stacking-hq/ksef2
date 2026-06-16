@@ -1,3 +1,5 @@
+"""FA(3) additional description entry models."""
+
 from pydantic import Field
 
 from ksef2.domain.models import KSeFBaseModel

@@ -8,9 +8,11 @@ wheels/
 .coverage
 coverage.xml
 htmlcov/
+site/
 
 # Virtual environments
 .venv
+node_modules/
 
 # IDEs
 .idea/

@@ -1,3 +1,5 @@
+"""Fluent builder for correction invoice context."""
+
 from datetime import date
 from typing import Annotated, Self, TypedDict
 from collections.abc import Callable
@@ -16,6 +18,8 @@ from ksef2.services.builders.fa3.metadata import builder_param
 
 
 class InvoiceCorrectionState(TypedDict):
+    """Typed state for FA(3) correction fields."""
+
     correction_reason: str | None
     correction_effect_type: CorrectionEffectType | None
     corrected_invoices: list[CorrectedInvoiceReference]
@@ -55,6 +59,8 @@ def _build_address(
 
 
 class CorrectionBuilder[TParent]:
+    """Fluent builder for FA(3) correction details."""
+
     def __init__(
         self,
         parent: TParent,
@@ -68,6 +74,7 @@ class CorrectionBuilder[TParent]:
         )
 
     def from_model(self, correction: CorrectionInvoiceContext) -> Self:
+        """Replace the builder state from an existing domain model."""
         self._state = adapter.validate_python(correction.model_dump())
         return self
 
@@ -81,6 +88,7 @@ class CorrectionBuilder[TParent]:
             ),
         ],
     ) -> Self:
+        """Set the reason value."""
         self._state["correction_reason"] = value
         return self
 
@@ -96,6 +104,7 @@ class CorrectionBuilder[TParent]:
             ),
         ],
     ) -> Self:
+        """Set the effect type value."""
         self._state["correction_effect_type"] = value
         return self
 
@@ -134,6 +143,7 @@ class CorrectionBuilder[TParent]:
             ),
         ] = False,
     ) -> Self:
+        """Add a corrected invoice entry."""
         self._state["corrected_invoices"].append(
             CorrectedInvoiceReference(
                 issue_date=issue_date,
@@ -147,10 +157,12 @@ class CorrectionBuilder[TParent]:
     def add_corrected_invoice_model(
         self, corrected_invoice: CorrectedInvoiceReference
     ) -> Self:
+        """Add an existing corrected-invoice reference model."""
         self._state["corrected_invoices"].append(corrected_invoice)
         return self
 
     def clear_corrected_invoices(self) -> Self:
+        """Remove all corrected-invoice references."""
         self._state["corrected_invoices"].clear()
         return self
 
@@ -165,6 +177,7 @@ class CorrectionBuilder[TParent]:
             ),
         ],
     ) -> Self:
+        """Set the corrected invoice period value."""
         self._state["corrected_invoice_period"] = value
         return self
 
@@ -179,6 +192,7 @@ class CorrectionBuilder[TParent]:
             ),
         ],
     ) -> Self:
+        """Set the corrected invoice number override value."""
         self._state["corrected_invoice_number_override"] = value
         return self
 
@@ -238,6 +252,7 @@ class CorrectionBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
+        """Set the corrected seller value."""
         self._state["corrected_seller"] = CorrectedSellerEntity(
             vat_prefix=vat_prefix,
             tax_id=tax_id,
@@ -254,6 +269,7 @@ class CorrectionBuilder[TParent]:
     def corrected_seller_model(
         self, corrected_seller: CorrectedSellerEntity | None
     ) -> Self:
+        """Set the corrected seller from an existing domain model."""
         self._state["corrected_seller"] = corrected_seller
         return self
 
@@ -349,6 +365,7 @@ class CorrectionBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
+        """Add a corrected buyer entry."""
         address = None
         address_code = address_country_code or country_code
         if address_code is not None and address_line_1 is not None:
@@ -373,20 +390,28 @@ class CorrectionBuilder[TParent]:
         return self
 
     def add_corrected_buyer_model(self, corrected_buyer: CorrectedBuyerEntity) -> Self:
+        """Add an existing corrected-buyer domain model."""
         self._state["corrected_buyers"].append(corrected_buyer)
         return self
 
     def clear_corrected_buyers(self) -> Self:
+        """Remove all corrected buyer entries."""
         self._state["corrected_buyers"].clear()
         return self
 
     def build(self) -> CorrectionInvoiceContext:
+        """Build the corresponding FA(3) domain model."""
         return CorrectionInvoiceContext(**self._state)
 
     def _is_empty(self) -> bool:
         return self._state == _default_state()
 
     def done(self) -> TParent:
+        """Attach the built correction details to the parent builder and return it.
+
+        Raises:
+            ValueError: If correction details are empty.
+        """
         if self._is_empty():
             raise ValueError(
                 "Correction details are empty. Set at least one field before calling done()."
@@ -396,9 +421,12 @@ class CorrectionBuilder[TParent]:
 
 
 class CorrectionBuilderMixin:
+    """Mixin exposing the Correction sub-builder."""
+
     _correction: CorrectionInvoiceContext | None = None
 
     def correction(self) -> CorrectionBuilder[Self]:
+        """Start a correction invoice body builder."""
         return CorrectionBuilder(self, self._set_correction, self._correction)
 
     def _set_correction(self, value: CorrectionInvoiceContext) -> None:

@@ -12,6 +12,8 @@ from lxml.etree import _ElementTree as ElementTree, _Element as Element
 
 @final
 class InvoiceXSLTRenderer:
+    """Render FA3 invoice XML to HTML using the bundled XSLT stylesheet."""
+
     def __init__(
         self,
         stylesheet_path: str | Path | None = None,
@@ -79,6 +81,13 @@ class InvoiceXSLTRenderer:
             ) from e
 
     def render_from_path(self, invoice_xml_path: str | Path) -> str:
+        """Render an invoice XML file to HTML.
+
+        Raises:
+            FileNotFoundError: If ``invoice_xml_path`` does not exist.
+            KSeFInvoiceRenderingError: If the stylesheet or invoice XML cannot be
+                parsed, compiled, transformed, or serialized.
+        """
         invoice_xml_path = Path(invoice_xml_path)
 
         if not invoice_xml_path.exists():
@@ -94,6 +103,12 @@ class InvoiceXSLTRenderer:
         return self._render_doc(xml_doc)
 
     def render_from_string(self, invoice_xml: str | bytes) -> str:
+        """Render invoice XML content to HTML.
+
+        Raises:
+            KSeFInvoiceRenderingError: If the stylesheet or invoice XML cannot be
+                parsed, compiled, transformed, or serialized.
+        """
         try:
             if isinstance(invoice_xml, str):
                 invoice_xml = invoice_xml.encode("utf-8")
@@ -111,6 +126,13 @@ class InvoiceXSLTRenderer:
         invoice_xml_path: str | Path,
         output_html_path: str | Path,
     ) -> Path:
+        """Render an invoice XML file and write HTML output to disk.
+
+        Raises:
+            FileNotFoundError: If ``invoice_xml_path`` does not exist.
+            KSeFInvoiceRenderingError: If rendering fails or the output file cannot be
+                written.
+        """
         output_html_path = Path(output_html_path)
         output_html_path.parent.mkdir(parents=True, exist_ok=True)
 

@@ -110,6 +110,8 @@ type EuEntityQueryPermissionType = Literal[
 
 
 class IdentifierTypeEnum(StrEnum):
+    """Runtime enum for permission identifier types."""
+
     NIP = "nip"
     PESEL = "pesel"
     FINGERPRINT = "fingerprint"
@@ -120,6 +122,8 @@ class IdentifierTypeEnum(StrEnum):
 
 
 class PersonPermissionTypeEnum(StrEnum):
+    """Runtime enum for person permission scopes."""
+
     INVOICE_READ = "invoice_read"
     INVOICE_WRITE = "invoice_write"
     PEF_INVOICE_WRITE = "pef_invoice_write"
@@ -132,11 +136,15 @@ class PersonPermissionTypeEnum(StrEnum):
 
 
 class EntityPermissionTypeEnum(StrEnum):
+    """Runtime enum for entity permission scopes."""
+
     INVOICE_READ = "invoice_read"
     INVOICE_WRITE = "invoice_write"
 
 
 class AuthorizationPermissionTypeEnum(StrEnum):
+    """Runtime enum for authorization permission scopes."""
+
     SELF_INVOICING = "self_invoicing"
     RR_INVOICING = "rr_invoicing"
     TAX_REPRESENTATIVE = "tax_representative"
@@ -144,36 +152,50 @@ class AuthorizationPermissionTypeEnum(StrEnum):
 
 
 class AuthorizationSubjectIdentifierTypeEnum(StrEnum):
+    """Runtime enum for authorization subject identifier types."""
+
     NIP = "nip"
     PEPPOL_ID = "peppol_id"
 
 
 class IndirectPermissionTypeEnum(StrEnum):
+    """Runtime enum for indirect permission scopes."""
+
     INVOICE_READ = "invoice_read"
     INVOICE_WRITE = "invoice_write"
 
 
 class IndirectTargetIdentifierTypeEnum(StrEnum):
+    """Runtime enum for indirect permission target identifiers."""
+
     NIP = "nip"
     ALL_PARTNERS = "all_partners"
     INTERNAL_ID = "internal_id"
 
 
 class SubunitIdentifierTypeEnum(StrEnum):
+    """Runtime enum for subunit context identifiers."""
+
     NIP = "nip"
     INTERNAL_ID = "internal_id"
 
 
 class EuEntityPermissionTypeEnum(StrEnum):
+    """Runtime enum for EU-entity permission scopes."""
+
     INVOICE_READ = "invoice_read"
     INVOICE_WRITE = "invoice_write"
 
 
 class EuEntityAdminContextIdentifierTypeEnum(StrEnum):
+    """Runtime enum for EU-entity administration context identifiers."""
+
     NIP_VAT_UE = "nip_vat_ue"
 
 
 class EntityRoleTypeEnum(StrEnum):
+    """Runtime enum for entity role values."""
+
     COURT_BAILIFF = "court_bailiff"
     ENFORCEMENT_AUTHORITY = "enforcement_authority"
     LOCAL_GOVERNMENT_UNIT = "local_government_unit"
@@ -183,26 +205,36 @@ class EntityRoleTypeEnum(StrEnum):
 
 
 class PermissionStateEnum(StrEnum):
+    """Runtime enum for permission state filters."""
+
     ACTIVE = "active"
     INACTIVE = "inactive"
 
 
 class QueryTypeEnum(StrEnum):
+    """Runtime enum for granted/received permission query directions."""
+
     GRANTED = "granted"
     RECEIVED = "received"
 
 
 class PersonPermissionsQueryTypeEnum(StrEnum):
+    """Runtime enum for person permission query modes."""
+
     IN_CONTEXT = "in_context"
     GRANTED_IN_CONTEXT = "granted_in_context"
 
 
 class SubordinateEntityRoleTypeEnum(StrEnum):
+    """Runtime enum for subordinate entity role values."""
+
     LOCAL_GOVERNMENT_SUB_UNIT = "local_government_sub_unit"
     VAT_GROUP_SUB_UNIT = "vat_group_sub_unit"
 
 
 class EuEntityQueryPermissionTypeEnum(StrEnum):
+    """Runtime enum for EU-entity permission query scopes."""
+
     VAT_UE_MANAGE = "vat_ue_manage"
     INVOICE_WRITE = "invoice_write"
     INVOICE_READ = "invoice_read"
@@ -210,6 +242,8 @@ class EuEntityQueryPermissionTypeEnum(StrEnum):
 
 
 class ScopeLiteralEnum(StrEnum):
+    """Runtime enum for simple invoice permission scopes."""
+
     INVOICE_READ = "invoice_read"
     INVOICE_WRITE = "invoice_write"
 
@@ -623,5 +657,7 @@ class SubunitPermissionsQueryResponse(KSeFBaseModel):
 
 
 class ItemsListResponse[ItemT: BaseModel](KSeFBaseModel):
+    """Generic paginated item-list response."""
+
     items: list[ItemT]
     has_more: bool

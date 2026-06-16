@@ -196,12 +196,13 @@ class TestAuthClient:
             _ = client.with_token(
                 ksef_token="ksef-token",
                 nip="1234567890",
+                timeout=0.0,
                 poll_interval=0.0,
-                max_poll_attempts=2,
             )
 
         assert exc_info.value.reference_number == init_response.referenceNumber
-        assert exc_info.value.attempts == 2
+        assert exc_info.value.timeout == 0.0
+        assert not hasattr(exc_info.value, "attempts")
         assert not hasattr(exc_info.value, "status_code")
 
     @patch(
@@ -334,8 +335,8 @@ class TestAuthClient:
         result = client.with_test_certificate(
             nip="1234567890",
             verify_chain=True,
+            timeout=5.0,
             poll_interval=0.5,
-            max_poll_attempts=5,
         )
 
         assert result is expected
@@ -345,8 +346,8 @@ class TestAuthClient:
             cert="cert",
             private_key="private-key",
             verify_chain=True,
+            timeout=5.0,
             poll_interval=0.5,
-            max_poll_attempts=5,
         )
 
     def test_with_test_certificate_raises_outside_test_environment(

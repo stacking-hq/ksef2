@@ -1,3 +1,5 @@
+"""Helpers for loading certificates and creating XAdES authentication payloads."""
+
 from __future__ import annotations
 
 import datetime
@@ -71,6 +73,9 @@ def load_private_key_from_pem(
     Returns:
         An :class:`~cryptography.hazmat.primitives.asymmetric.rsa.RSAPrivateKey` or
         :class:`~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePrivateKey`.
+
+    Raises:
+        TypeError: If the decoded key is not an RSA or EC private key.
     """
     data = Path(source).read_bytes() if not isinstance(source, bytes) else source
     key = serialization.load_pem_private_key(data, password=password)
@@ -97,6 +102,10 @@ def load_certificate_and_key_from_p12(
     Note:
         If you have separate ``.pem`` and ``.key`` files downloaded directly from MCU, prefer
         :func:`load_certificate_from_pem` + :func:`load_private_key_from_pem` — no conversion needed.
+
+    Raises:
+        ValueError: If the archive does not contain a certificate.
+        TypeError: If the decoded key is not an RSA or EC private key.
     """
     data = Path(source).read_bytes() if not isinstance(source, bytes) else source
     private_key, cert, _ = pkcs12.load_key_and_certificates(data, password)
@@ -186,7 +195,16 @@ def build_auth_token_request_xml(
     nip: str,
     subject_identifier_type: str = "certificateSubject",
 ) -> bytes:
-    """Build the AuthTokenRequest XML per the XSD ``http://ksef.mf.gov.pl/auth/token/2.0``."""
+    """Build the XML payload that is signed for XAdES authentication.
+
+    Args:
+        challenge: Challenge value returned by KSeF.
+        nip: Taxpayer NIP used in the authentication context.
+        subject_identifier_type: Subject identifier type written to the XML.
+
+    Returns:
+        UTF-8 XML bytes matching the KSeF auth-token schema.
+    """
     nsmap: dict[str | None, str] = {None: _AUTH_TOKEN_NS}
     root = etree.Element(f"{{{_AUTH_TOKEN_NS}}}AuthTokenRequest", nsmap=nsmap)  # pyright: ignore[reportArgumentType]
 
@@ -207,7 +225,16 @@ def sign_xades(
     cert: Certificate,
     private_key: XAdESPrivateKey,
 ) -> bytes:
-    """Sign XML with an enveloped XAdES-B signature (RSA-SHA256 or ECDSA-SHA256)."""
+    """Sign XML with an enveloped XAdES-B signature.
+
+    Args:
+        xml_bytes: XML document to sign.
+        cert: Certificate that should be embedded in the signature.
+        private_key: RSA or EC private key used for signing.
+
+    Returns:
+        UTF-8 XML bytes containing the enveloped XAdES signature.
+    """
     if isinstance(private_key, EllipticCurvePrivateKey):
         sig_alg = SignatureMethod.ECDSA_SHA256
     else:
@@ -238,4 +265,5 @@ class LocalSigner:
         self._private_key = private_key
 
     def sign(self, xml_bytes: bytes) -> bytes:
+        """Sign XML bytes with the certificate and key held by this signer."""
         return sign_xades(xml_bytes, self._cert, self._private_key)

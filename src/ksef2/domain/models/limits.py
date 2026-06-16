@@ -19,10 +19,14 @@ class ContextLimits(KSeFBaseModel):
 
 
 class SubjectCertificateLimits(KSeFBaseModel):
+    """Certificate issuance limit override for the current subject."""
+
     max_certificates: int | None = None
 
 
 class SubjectEnrollmentLimits(KSeFBaseModel):
+    """Certificate enrollment limit override for the current subject."""
+
     max_enrollments: int | None = None
 
 

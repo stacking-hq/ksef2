@@ -1,3 +1,5 @@
+"""FA(3) invoice footer domain models."""
+
 from pydantic import Field, field_validator
 from ksef2.domain.models import KSeFBaseModel
 

@@ -1,3 +1,5 @@
+"""Root FA(3) invoice body aggregate and computed summary totals."""
+
 from collections.abc import Callable
 from datetime import date, datetime
 from decimal import Decimal, ROUND_HALF_UP
@@ -29,10 +31,13 @@ from ksef2.domain.models.fa3.body.transaction import TransactionConditions
 
 # Helper to round to 2 decimal places (standard Polish accounting rounding)
 def round_pln(value: Decimal) -> Decimal:
+    """Round a monetary amount using standard PLN precision."""
     return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 class InvoiceType(StrEnum):
+    """Human-readable FA(3) invoice type labels."""
+
     VAT = "Faktura podstawowa"
     CORRECTING = "Faktura korygująca"
     ZAL = "Faktura dokumentująca otrzymanie zapłaty lub jej części przed dokonaniem czynności oraz faktura wystawiona w związku z art. 106f ust. 4 ustawy (faktura zaliczkowa)"
@@ -80,10 +85,13 @@ class InvoiceSummaryOverrides(KSeFBaseModel):
 
 
 def get_placeholder_invoice_number() -> str:
+    """Return a timestamped placeholder invoice number for draft invoices."""
     return f"DEMO-{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
 
 class KsefInvoiceBody(KSeFBaseModel):
+    """Main ``Fa`` body aggregate for an FA(3) invoice."""
+
     currency: str = Field(
         default="PLN",
         description="kod_waluty: Invoice currency code in ISO 4217 format.",
@@ -310,6 +318,7 @@ class KsefInvoiceBody(KSeFBaseModel):
 
     @property
     def order_lines(self) -> list[InvoiceOrderLine]:
+        """Return order lines or an empty list when no order block exists."""
         if self.order is None:
             return []
         return list(self.order.order_lines)
@@ -376,6 +385,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     def total_net(
         self,
     ) -> Annotated[Decimal, "Helper: total net value across all invoice lines"]:
+        """Return the signed net total across financial invoice rows."""
         sum_net = Decimal("0.00")
         for line in self._financial_rows():
             if line.net_amount is None:
@@ -387,6 +397,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     def total_vat(
         self,
     ) -> Annotated[Decimal, "Helper: total VAT amount across all invoice lines"]:
+        """Return the signed VAT total across financial invoice rows."""
         sum_vat = Decimal("0.00")
         for line in self._financial_rows():
             if line.vat_amount is None:
@@ -400,6 +411,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     ) -> Annotated[
         Decimal, "p_15: Kwota należności ogółem / gross amount of the invoice"
     ]:
+        """Return the gross invoice total mapped to ``P_15``."""
         return self._summary_value("total_gross", self.total_net + self.total_vat)
 
     @property
@@ -408,6 +420,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     ) -> Annotated[
         Decimal, "p_13_1: Net total for the basic VAT rate bucket (23%/22%)"
     ]:
+        """Return the net total for the basic VAT-rate bucket."""
         return self._summary_value(
             "base_rate_net_total",
             self._sum_net(
@@ -425,6 +438,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     ) -> Annotated[
         Decimal, "p_14_1: VAT total for the basic VAT rate bucket (23%/22%)"
     ]:
+        """Return the VAT total for the basic VAT-rate bucket."""
         return self._summary_value(
             "base_rate_vat_total",
             self._sum_vat(
@@ -442,6 +456,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     ) -> Annotated[
         Decimal, "p_13_2: Net total for the first reduced VAT rate bucket (8%/7%)"
     ]:
+        """Return the net total for the first reduced VAT-rate bucket."""
         return self._summary_value(
             "first_reduced_rate_net_total",
             self._sum_net(
@@ -458,6 +473,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     ) -> Annotated[
         Decimal, "p_14_2: VAT total for the first reduced VAT rate bucket (8%/7%)"
     ]:
+        """Return the VAT total for the first reduced VAT-rate bucket."""
         return self._summary_value(
             "first_reduced_rate_vat_total",
             self._sum_vat(
@@ -474,6 +490,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     ) -> Annotated[
         Decimal, "p_13_3: Net total for the second reduced VAT rate bucket (5%)"
     ]:
+        """Return the net total for the second reduced VAT-rate bucket."""
         return self._summary_value(
             "second_reduced_rate_net_total",
             self._sum_net(
@@ -490,6 +507,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     ) -> Annotated[
         Decimal, "p_14_3: VAT total for the second reduced VAT rate bucket (5%)"
     ]:
+        """Return the VAT total for the second reduced VAT-rate bucket."""
         return self._summary_value(
             "second_reduced_rate_vat_total",
             self._sum_vat(
@@ -504,6 +522,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     def taxi_flat_rate_net_total(
         self,
     ) -> Annotated[Decimal, "p_13_4: Net total for the taxi flat-rate bucket"]:
+        """Return the net total for taxi flat-rate lines."""
         return self._summary_value(
             "taxi_flat_rate_net_total",
             self._sum_net(lambda line: line.tax_regime == TaxRegime.TAXI_FLAT_RATE),
@@ -513,6 +532,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     def taxi_flat_rate_vat_total(
         self,
     ) -> Annotated[Decimal, "p_14_4: VAT total for the taxi flat-rate bucket"]:
+        """Return the VAT total for taxi flat-rate lines."""
         return self._summary_value(
             "taxi_flat_rate_vat_total",
             self._sum_vat(lambda line: line.tax_regime == TaxRegime.TAXI_FLAT_RATE),
@@ -544,6 +564,7 @@ class KsefInvoiceBody(KSeFBaseModel):
         Decimal | None,
         "p_14_1_w: VAT total for the basic rate bucket converted to PLN.",
     ]:
+        """Return basic-rate VAT converted to PLN when required."""
         return self._summary_optional_value(
             "base_rate_vat_total_pln",
             self._vat_total_in_pln_for(
@@ -563,6 +584,7 @@ class KsefInvoiceBody(KSeFBaseModel):
         Decimal | None,
         "p_14_2_w: VAT total for the first reduced rate bucket converted to PLN.",
     ]:
+        """Return first-reduced-rate VAT converted to PLN when required."""
         return self._summary_optional_value(
             "first_reduced_rate_vat_total_pln",
             self._vat_total_in_pln_for(
@@ -581,6 +603,7 @@ class KsefInvoiceBody(KSeFBaseModel):
         Decimal | None,
         "p_14_3_w: VAT total for the second reduced rate bucket converted to PLN.",
     ]:
+        """Return second-reduced-rate VAT converted to PLN when required."""
         return self._summary_optional_value(
             "second_reduced_rate_vat_total_pln",
             self._vat_total_in_pln_for(
@@ -599,6 +622,7 @@ class KsefInvoiceBody(KSeFBaseModel):
         Decimal | None,
         "p_14_4_w: VAT total for the taxi flat-rate bucket converted to PLN.",
     ]:
+        """Return taxi flat-rate VAT converted to PLN when required."""
         return self._summary_optional_value(
             "taxi_flat_rate_vat_total_pln",
             self._vat_total_in_pln_for(
@@ -613,6 +637,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     ) -> Annotated[
         Decimal, "p_13_5: Net total for the Title XII special procedure bucket"
     ]:
+        """Return the net total for Title XII special-procedure lines."""
         return self._summary_value(
             "special_procedure_xii_net_total",
             self._sum_net(lambda line: line.tax_regime == TaxRegime.SPECIAL_XII),
@@ -624,6 +649,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     ) -> Annotated[
         Decimal, "p_14_5: VAT total for the Title XII special procedure bucket"
     ]:
+        """Return the VAT total for Title XII special-procedure lines."""
         return self._summary_value(
             "special_procedure_xii_vat_total",
             self._sum_vat(lambda line: line.tax_regime == TaxRegime.SPECIAL_XII),
@@ -635,6 +661,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     ) -> Annotated[
         Decimal, "p_13_6_1: Net total for domestic 0% sales excluding WDT/export"
     ]:
+        """Return the net total for domestic zero-rate sales."""
         return self._summary_value(
             "zero_rate_domestic_total",
             self._sum_net(
@@ -648,6 +675,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     ) -> Annotated[
         Decimal, "p_13_6_2: Net total for intra-EU supply of goods (WDT) at 0%"
     ]:
+        """Return the net total for zero-rate intra-EU supply of goods."""
         return self._summary_value(
             "zero_rate_wdt_total",
             self._sum_net(lambda line: line.sale_category == SaleCategory.ZERO_WDT),
@@ -657,6 +685,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     def zero_rate_export_total(
         self,
     ) -> Annotated[Decimal, "p_13_6_3: Net total for export sales at 0%"]:
+        """Return the net total for zero-rate export sales."""
         return self._summary_value(
             "zero_rate_export_total",
             self._sum_net(lambda line: line.sale_category == SaleCategory.ZERO_EXPORT),
@@ -666,6 +695,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     def exempt_total(
         self,
     ) -> Annotated[Decimal, "p_13_7: Net total for VAT-exempt sales"]:
+        """Return the net total for VAT-exempt sales."""
         return self._summary_value(
             "exempt_total",
             self._sum_net(lambda line: line.sale_category == SaleCategory.EXEMPT),
@@ -677,6 +707,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     ) -> Annotated[
         Decimal, "p_13_8: Net total for out-of-scope foreign sales outside Poland"
     ]:
+        """Return the net total for sales outside Polish VAT territory."""
         return self._summary_value(
             "out_of_territory_total",
             self._sum_net(
@@ -692,6 +723,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     ) -> Annotated[
         Decimal, "p_13_9: Net total for services reported under Article 100(1)(4)"
     ]:
+        """Return the net total for Article 100 service sales."""
         return self._summary_value(
             "article_100_services_total",
             self._sum_net(
@@ -703,6 +735,7 @@ class KsefInvoiceBody(KSeFBaseModel):
     def reverse_charge_total(
         self,
     ) -> Annotated[Decimal, "p_13_10: Net total for reverse-charge sales"]:
+        """Return the net total for reverse-charge sales."""
         return self._summary_value(
             "reverse_charge_total",
             self._sum_net(
@@ -717,6 +750,7 @@ class KsefInvoiceBody(KSeFBaseModel):
         Decimal,
         "p_13_11: Total value of sales in the margin scheme under art. 119 and 120",
     ]:
+        """Return the total for margin-scheme sales."""
         return self._summary_value(
             "margin_total",
             self._sum_net(lambda line: line.tax_regime == TaxRegime.MARGIN),
@@ -724,6 +758,7 @@ class KsefInvoiceBody(KSeFBaseModel):
 
     @property
     def settlement_charges_total(self) -> Decimal:
+        """Return the total settlement charges applied to the invoice."""
         if self.settlement is None:
             return Decimal("0.00")
 
@@ -737,6 +772,7 @@ class KsefInvoiceBody(KSeFBaseModel):
 
     @property
     def settlement_deductions_total(self) -> Decimal:
+        """Return the total settlement deductions applied to the invoice."""
         explicit_deductions_total = Decimal("0.00")
         if self.settlement is not None:
             if self.settlement.deductions_total is not None:
@@ -761,18 +797,21 @@ class KsefInvoiceBody(KSeFBaseModel):
 
     @property
     def settlement_charges(self) -> list[SettlementCharge]:
+        """Return settlement charges or an empty list when absent."""
         if self.settlement is None:
             return []
         return list(self.settlement.charges)
 
     @property
     def settlement_deductions(self) -> list[SettlementDeduction]:
+        """Return settlement deductions or an empty list when absent."""
         if self.settlement is None:
             return []
         return list(self.settlement.deductions)
 
     @property
     def settlement_balance(self) -> Decimal:
+        """Return the final amount due after settlement charges and deductions."""
         if self.settlement is not None:
             if self.settlement.amount_due is not None:
                 return self.settlement.amount_due

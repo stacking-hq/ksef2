@@ -1,3 +1,5 @@
+"""Authenticated async client branch composition."""
+
 from functools import cached_property
 from typing import final
 
@@ -38,7 +40,18 @@ from ksef2.services.async_invoices import AsyncInvoicesService
 
 @final
 class AsyncAuthenticatedClient:
-    """Authenticated async entry point for KSeF operations."""
+    """Authenticated async entry point for KSeF operations.
+
+    Catch ``KSeFException`` for SDK-classified failures raised by authenticated
+    branches, and ``httpx.HTTPError`` for transport failures.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response. Catch
+            ``KSeFAuthError`` for authentication or authorization failures and
+            ``KSeFRateLimitError`` for throttling.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
+    """
 
     def __init__(
         self,
@@ -57,14 +70,17 @@ class AsyncAuthenticatedClient:
 
     @property
     def auth_tokens(self) -> AuthTokens:
+        """Return the authenticated token pair used by this client branch."""
         return self._auth_tokens
 
     @property
     def access_token(self) -> str:
+        """Return the bearer access token string used for authenticated calls."""
         return self._auth_tokens.access_token.token
 
     @property
     def refresh_token(self) -> str:
+        """Return the refresh token string paired with the access token."""
         return self._auth_tokens.refresh_token.token
 
     async def _ensure_encryption_certificates_loaded(self) -> None:
@@ -85,7 +101,13 @@ class AsyncAuthenticatedClient:
         return aes_key, iv, encrypted_key, cert.public_key_id
 
     async def get_encryption_key(self) -> tuple[bytes, bytes, bytes]:
-        """Generate a session AES key, IV, and encrypted symmetric key payload."""
+        """Generate a session AES key, IV, and encrypted symmetric key payload.
+
+        Raises:
+            NoCertificateAvailableError: If no valid symmetric-key certificate is
+                available.
+            KSeFEncryptionError: If symmetric-key encryption fails.
+        """
         (
             aes_key,
             iv,
@@ -99,7 +121,13 @@ class AsyncAuthenticatedClient:
         *,
         form_code: FormSchema,
     ) -> _AwaitableSession[AsyncOnlineSessionClient]:
-        """Open a new online invoice session and return a bound session client."""
+        """Open a new online invoice session and return a bound session client.
+
+        Raises:
+            NoCertificateAvailableError: If no valid symmetric-key certificate is
+                available.
+            KSeFEncryptionError: If symmetric-key encryption fails.
+        """
         return _AwaitableSession(self._open_online_session(form_code=form_code))
 
     async def _open_online_session(
@@ -161,6 +189,12 @@ class AsyncAuthenticatedClient:
 
         Returns:
             A bound batch session client exposing presigned upload instructions.
+
+        Raises:
+            NoCertificateAvailableError: If certificate-backed encryption material is
+                needed but no valid certificate is available.
+            KSeFEncryptionError: If symmetric-key encryption fails.
+            KSeFValidationError: If neither or both batch inputs are provided.
         """
         return _AwaitableSession(
             self._open_batch_session_from_input(
@@ -245,6 +279,9 @@ class AsyncAuthenticatedClient:
 
         Returns:
             A bound batch session client exposing presigned upload instructions.
+
+        Raises:
+            KSeFValidationError: If the batch session request is invalid.
         """
         return _AwaitableSession(
             self._open_batch_session(
@@ -338,24 +375,30 @@ class AsyncAuthenticatedClient:
 
     @cached_property
     def limits(self) -> AsyncLimitsClient:
+        """Return the authenticated rate-limit branch."""
         return AsyncLimitsClient(self._authed_transport)
 
     @cached_property
     def tokens(self) -> AsyncTokensClient:
+        """Return the authenticated token lifecycle branch."""
         return AsyncTokensClient(self._authed_transport)
 
     @cached_property
     def certificates(self) -> AsyncCertificatesClient:
+        """Return the authenticated certificate enrollment branch."""
         return AsyncCertificatesClient(self._authed_transport)
 
     @cached_property
     def sessions(self) -> AsyncSessionManagementClient:
+        """Return the authenticated session-management branch."""
         return AsyncSessionManagementClient(self._authed_transport)
 
     @cached_property
     def invoice_sessions(self) -> AsyncInvoiceSessionsClient:
+        """Return the authenticated invoice-session history branch."""
         return AsyncInvoiceSessionsClient(self._authed_transport)
 
     @cached_property
     def permissions(self) -> AsyncPermissionsClient:
+        """Return the authenticated permissions branch."""
         return AsyncPermissionsClient(self._authed_transport)

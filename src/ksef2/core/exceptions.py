@@ -1,4 +1,4 @@
-from __future__ import annotations
+"""Public exception hierarchy raised by the KSeF SDK."""
 
 from typing import Any
 from pydantic import BaseModel
@@ -15,7 +15,8 @@ class ExceptionCode(IntEnum):
     NOT_PROCESSED_YET = 21165
 
     @staticmethod
-    def from_code(code: int | None) -> ExceptionCode:
+    def from_code(code: int | None) -> "ExceptionCode":
+        """Return a known exception code or ``UNKNOWN_ERROR`` for unknown values."""
         try:
             return ExceptionCode(code)
         except ValueError:
@@ -171,52 +172,40 @@ class KSeFExportTimeoutError(KSeFException):
 
 
 class KSeFAuthPollingTimeoutError(KSeFException):
-    """Raised when polling for authentication completion exceeds the limit."""
+    """Raised when polling for authentication completion exceeds the timeout."""
 
     code: str = "AUTH_POLLING_TIMEOUT"
 
     def __init__(
         self,
         reference_number: str,
-        attempts: int,
-        poll_interval: float,
+        timeout: float,
     ) -> None:
-        elapsed = attempts * poll_interval
         self.reference_number = reference_number
-        self.attempts = attempts
-        self.poll_interval = poll_interval
-        self.elapsed = elapsed
+        self.timeout = timeout
         super().__init__(
-            f"Authentication {reference_number} not ready after {attempts} attempts",
+            f"Authentication {reference_number} not ready after {timeout}s",
             reference_number=reference_number,
-            attempts=attempts,
-            poll_interval=poll_interval,
-            elapsed=elapsed,
+            timeout=timeout,
         )
 
 
 class KSeFTokenStatusTimeoutError(KSeFException):
-    """Raised when polling for a token status change exceeds the limit."""
+    """Raised when polling for a token status change exceeds the timeout."""
 
     code: str = "TOKEN_STATUS_TIMEOUT"
 
     def __init__(
         self,
         reference_number: str,
-        attempts: int,
-        poll_interval: float,
+        timeout: float,
     ) -> None:
-        elapsed = attempts * poll_interval
         self.reference_number = reference_number
-        self.attempts = attempts
-        self.poll_interval = poll_interval
-        self.elapsed = elapsed
+        self.timeout = timeout
         super().__init__(
-            f"Token {reference_number} not active after {attempts} attempts",
+            f"Token {reference_number} not active after {timeout}s",
             reference_number=reference_number,
-            attempts=attempts,
-            poll_interval=poll_interval,
-            elapsed=elapsed,
+            timeout=timeout,
         )
 
 

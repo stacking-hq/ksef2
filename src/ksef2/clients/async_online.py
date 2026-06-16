@@ -1,3 +1,5 @@
+"""Async client bound to an open online invoice session."""
+
 import base64
 from types import TracebackType
 from typing import final
@@ -28,7 +30,19 @@ logger = get_logger(__name__)
 
 @final
 class AsyncOnlineSessionClient:
-    """Async client bound to a single online invoice session."""
+    """Async client bound to a single online invoice session.
+
+    Catch ``KSeFException`` for SDK-classified failures raised by this session
+    branch, and ``httpx.HTTPError`` for transport failures.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response. Catch
+            ``KSeFAuthError`` for authentication or authorization failures and
+            ``KSeFRateLimitError`` for throttling.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        KSeFClientClosedError: If an operation is attempted after closing the session.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
+    """
 
     def __init__(self, transport: AsyncMiddleware, state: OnlineSessionState):
         self._transport = transport
@@ -43,7 +57,11 @@ class AsyncOnlineSessionClient:
             raise exceptions.KSeFClientClosedError("Session client is closed.")
 
     async def send_invoice(self, *, invoice_xml: bytes) -> invoices.SendInvoiceResponse:
-        """Encrypt and submit one invoice into the open session."""
+        """Encrypt and submit one invoice into the open session.
+
+        Raises:
+            KSeFEncryptionError: If invoice encryption fails.
+        """
         self._ensure_open()
         encrypted = encrypt_invoice(
             xml_bytes=invoice_xml,
@@ -70,7 +88,13 @@ class AsyncOnlineSessionClient:
         timeout: float = 60.0,
         poll_interval: float = 2.0,
     ) -> SessionInvoiceStatusResponse:
-        """Submit an invoice and poll until KSeF assigns a final processing result."""
+        """Submit an invoice and poll until KSeF assigns a final processing result.
+
+        Raises:
+            KSeFEncryptionError: If invoice encryption fails.
+            KSeFSessionError: If invoice processing reaches a failed terminal status.
+            KSeFInvoiceProcessingTimeoutError: If polling exceeds ``timeout``.
+        """
         self._ensure_open()
         result = await self.send_invoice(invoice_xml=invoice_xml)
         return await self.wait_for_invoice_ready(
@@ -123,7 +147,12 @@ class AsyncOnlineSessionClient:
         timeout: float = 60.0,
         poll_interval: float = 2.0,
     ) -> SessionInvoiceStatusResponse:
-        """Poll invoice status until it succeeds, fails, or times out."""
+        """Poll invoice status until it succeeds, fails, or times out.
+
+        Raises:
+            KSeFSessionError: If invoice processing reaches a failed terminal status.
+            KSeFInvoiceProcessingTimeoutError: If polling exceeds ``timeout``.
+        """
         self._ensure_open()
 
         async def _poll() -> SessionInvoiceStatusResponse:
@@ -185,6 +214,13 @@ class AsyncOnlineSessionClient:
         )
 
     async def aclose(self) -> None:
+        """Terminate the online session if it is still open.
+
+        Raises:
+            KSeFApiError: If KSeF rejects the session termination request.
+            httpx.HTTPError: If the HTTP transport fails before KSeF returns a
+                response.
+        """
         if self._closed:
             return
 

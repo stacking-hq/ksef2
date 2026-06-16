@@ -1,3 +1,5 @@
+"""Fluent builder for FA(3) transaction condition blocks."""
+
 from datetime import date, datetime
 from decimal import Decimal
 from collections.abc import Sequence
@@ -20,6 +22,8 @@ from ksef2.services.builders.fa3.metadata import builder_param
 
 
 class TransactionState(TypedDict):
+    """Typed state for Transaction fields."""
+
     contracts: list[TransactionContract]
     orders: list[TransactionOrder]
     lot_numbers: list[str]
@@ -47,6 +51,8 @@ def _default_state() -> TransactionState:
 
 
 class TransactionBuilder[TParent]:
+    """Fluent builder for FA(3) transaction conditions."""
+
     def __init__(
         self,
         parent: TParent,
@@ -60,6 +66,7 @@ class TransactionBuilder[TParent]:
         )
 
     def from_model(self, transaction: TransactionConditions) -> Self:
+        """Replace the builder state from an existing domain model."""
         self._state = adapter.validate_python(transaction.model_dump())
         return self
 
@@ -74,6 +81,7 @@ class TransactionBuilder[TParent]:
             ),
         ],
     ) -> Self:
+        """Set the delivery terms value."""
         self._state["delivery_terms"] = value
         return self
 
@@ -98,6 +106,7 @@ class TransactionBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
+        """Set the contract exchange value."""
         self._state["contract_exchange_rate"] = rate
         self._state["contract_currency"] = currency
         return self
@@ -113,6 +122,7 @@ class TransactionBuilder[TParent]:
             ),
         ] = True,
     ) -> Self:
+        """Set the intermediary entity value."""
         self._state["intermediary_entity"] = enabled
         return self
 
@@ -137,6 +147,7 @@ class TransactionBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
+        """Add a contract entry."""
         self._state["contracts"].append(
             TransactionContract(
                 contract_date=contract_date,
@@ -146,10 +157,12 @@ class TransactionBuilder[TParent]:
         return self
 
     def add_contract_model(self, contract: TransactionContract) -> Self:
+        """Add an existing transaction contract model."""
         self._state["contracts"].append(contract)
         return self
 
     def clear_contracts(self) -> Self:
+        """Remove all transaction contracts."""
         self._state["contracts"].clear()
         return self
 
@@ -174,6 +187,7 @@ class TransactionBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
+        """Add an order reference entry."""
         self._state["orders"].append(
             TransactionOrder(
                 order_date=order_date,
@@ -183,10 +197,12 @@ class TransactionBuilder[TParent]:
         return self
 
     def add_order_model(self, order: TransactionOrder) -> Self:
+        """Add an existing transaction order model."""
         self._state["orders"].append(order)
         return self
 
     def clear_orders(self) -> Self:
+        """Remove all transaction orders."""
         self._state["orders"].clear()
         return self
 
@@ -201,10 +217,12 @@ class TransactionBuilder[TParent]:
             ),
         ],
     ) -> Self:
+        """Add a lot number entry."""
         self._state["lot_numbers"].append(value)
         return self
 
     def clear_lot_numbers(self) -> Self:
+        """Remove all lot numbers."""
         self._state["lot_numbers"].clear()
         return self
 
@@ -346,6 +364,7 @@ class TransactionBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
+        """Add a transport entry."""
         self._state["transports"].append(
             TransactionTransport(
                 transport_type=transport_type,
@@ -368,20 +387,28 @@ class TransactionBuilder[TParent]:
         return self
 
     def add_transport_model(self, transport: TransactionTransport) -> Self:
+        """Add an existing transport detail model."""
         self._state["transports"].append(transport)
         return self
 
     def clear_transports(self) -> Self:
+        """Remove all transport details."""
         self._state["transports"].clear()
         return self
 
     def build(self) -> TransactionConditions:
+        """Build the corresponding FA(3) domain model."""
         return TransactionConditions(**self._state)
 
     def _is_empty(self) -> bool:
         return self._state == _default_state()
 
     def done(self) -> TParent:
+        """Attach the built transaction details to the parent builder and return it.
+
+        Raises:
+            ValueError: If transaction details are empty.
+        """
         if self._is_empty():
             raise ValueError(
                 "Transaction details are empty. Set at least one field before calling done()."
@@ -391,9 +418,12 @@ class TransactionBuilder[TParent]:
 
 
 class TransactionBuilderMixin:
+    """Mixin exposing the Transaction sub-builder."""
+
     _transaction_conditions: TransactionConditions | None = None
 
     def transaction(self) -> TransactionBuilder[Self]:
+        """Start a transaction-conditions sub-builder."""
         return TransactionBuilder(
             self, self._set_transaction, self._transaction_conditions
         )

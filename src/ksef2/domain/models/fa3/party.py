@@ -9,6 +9,8 @@ from ksef2.domain.models.base import KSeFBaseModel
 
 
 class ContactInfoTuple(NamedTuple):
+    """Tuple representation of party contact email and phone."""
+
     email: str
     phone: str
 
