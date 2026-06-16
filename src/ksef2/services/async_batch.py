@@ -1,3 +1,5 @@
+"""Async high-level batch-session workflow service."""
+
 import asyncio
 from collections.abc import Awaitable, Callable, Iterable
 from pathlib import Path
@@ -294,6 +296,7 @@ class AsyncBatchService:
         page_size: int = 10,
         continuation_token: str | None = None,
     ) -> SessionInvoicesResponse:
+        """Fetch one page of accepted invoices from a batch session."""
         return session_from_spec(
             await self._invoice_eps.list_session_invoices(
                 reference_number=self._resolve_reference_number(session),
@@ -309,6 +312,7 @@ class AsyncBatchService:
         page_size: int = 10,
         continuation_token: str | None = None,
     ) -> SessionInvoicesResponse:
+        """Fetch one page of failed invoices from a batch session."""
         return session_from_spec(
             await self._invoice_eps.list_failed_session_invoices(
                 reference_number=self._resolve_reference_number(session),

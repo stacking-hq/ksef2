@@ -1,3 +1,5 @@
+"""Public sync and async client entry points."""
+
 from ksef2.clients.auth import AuthClient
 from ksef2.clients.async_auth import AsyncAuthClient
 from ksef2.clients.async_authenticated import AsyncAuthenticatedClient

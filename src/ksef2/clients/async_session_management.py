@@ -1,3 +1,5 @@
+"""Async session-management branch client."""
+
 from collections.abc import AsyncIterator
 from typing import final
 

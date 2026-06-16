@@ -1,3 +1,5 @@
+"""Authenticated async client branch composition."""
+
 from functools import cached_property
 from typing import final
 
@@ -68,14 +70,17 @@ class AsyncAuthenticatedClient:
 
     @property
     def auth_tokens(self) -> AuthTokens:
+        """Return the authenticated token pair used by this client branch."""
         return self._auth_tokens
 
     @property
     def access_token(self) -> str:
+        """Return the bearer access token string used for authenticated calls."""
         return self._auth_tokens.access_token.token
 
     @property
     def refresh_token(self) -> str:
+        """Return the refresh token string paired with the access token."""
         return self._auth_tokens.refresh_token.token
 
     async def _ensure_encryption_certificates_loaded(self) -> None:

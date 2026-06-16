@@ -1,3 +1,5 @@
+"""Fluent builder for FA(3) invoice rows."""
+
 from datetime import date
 from decimal import Decimal
 from typing import Annotated, Self, TypedDict
@@ -19,6 +21,8 @@ from ksef2.services.builders.fa3.metadata import builder_param
 
 
 class RowsState(TypedDict):
+    """Typed state for Rows fields."""
+
     rows: list[InvoiceRow]
 
 
@@ -242,6 +246,8 @@ def _validate_unit_price_choice(
 
 
 class RowsBuilder[TParent]:
+    """Fluent builder for FA(3) invoice rows."""
+
     def __init__(
         self,
         parent: TParent,
@@ -255,6 +261,7 @@ class RowsBuilder[TParent]:
         )
 
     def from_model(self, rows: list[InvoiceRow]) -> Self:
+        """Replace the builder state from an existing domain model."""
         self._state = adapter.validate_python({"rows": list(rows)})
         return self
 
@@ -289,6 +296,12 @@ class RowsBuilder[TParent]:
         currency_exchange_rate: RowCurrencyExchangeRateParam = None,
         before_correction: RowBeforeCorrectionParam = False,
     ) -> Self:
+        """Add an invoice row from pricing, quantity, and tax fields.
+
+        Raises:
+            ValueError: If both unit_price_net and unit_price_gross are provided,
+                or if neither price is provided.
+        """
         _validate_unit_price_choice(unit_price_net, unit_price_gross)
         self._state["rows"].append(
             InvoiceRow(
@@ -354,6 +367,12 @@ class RowsBuilder[TParent]:
         currency_exchange_rate: RowCurrencyExchangeRateParam = None,
         before_correction: RowBeforeCorrectionParam = False,
     ) -> Self:
+        """Add an invoice line aliasing the row-building API.
+
+        Raises:
+            ValueError: If both unit_price_net and unit_price_gross are provided,
+                or if neither price is provided.
+        """
         return self.add_row(
             name=name,
             quantity=quantity,
@@ -385,28 +404,38 @@ class RowsBuilder[TParent]:
         )
 
     def add_row_model(self, row: InvoiceRow) -> Self:
+        """Add a row model entry."""
         self._state["rows"].append(row)
         return self
 
     def add_line_model(self, line: InvoiceRow) -> Self:
+        """Add an existing invoice line domain model."""
         self._state["rows"].append(line)
         return self
 
     def replace_lines(self, rows: list[InvoiceRow]) -> Self:
+        """Replace all invoice lines."""
         self._state["rows"] = list(rows)
         return self
 
     def clear_lines(self) -> Self:
+        """Remove all invoice lines."""
         self._state["rows"].clear()
         return self
 
     def build(self) -> list[InvoiceRow]:
+        """Build the corresponding FA(3) domain model."""
         return list(self._state["rows"])
 
     def _is_empty(self) -> bool:
         return self._state == _default_state()
 
     def done(self) -> TParent:
+        """Attach the built rows to the parent builder and return the parent.
+
+        Raises:
+            ValueError: If no invoice rows have been added.
+        """
         if self._is_empty():
             raise ValueError("Invoice rows are empty. Add at least one line.")
         self._on_done(self.build())
@@ -414,9 +443,12 @@ class RowsBuilder[TParent]:
 
 
 class RowsBuilderMixin:
+    """Mixin exposing the Rows sub-builder."""
+
     _rows: list[InvoiceRow] = []
 
     def rows(self) -> RowsBuilder[Self]:
+        """Start an invoice rows sub-builder."""
         return RowsBuilder(self, self._set_rows, self._rows)
 
     def _set_rows(self, value: list[InvoiceRow]) -> None:

@@ -1,3 +1,5 @@
+"""Fluent builder for FA(3) settlement blocks."""
+
 from decimal import Decimal
 from typing import Annotated, Self, TypedDict
 from collections.abc import Callable
@@ -13,6 +15,8 @@ from ksef2.services.builders.fa3.metadata import builder_param
 
 
 class SettlementState(TypedDict):
+    """Typed state for Settlement fields."""
+
     charges: list[SettlementCharge]
     charges_total: Decimal | None
     deductions: list[SettlementDeduction]
@@ -36,6 +40,8 @@ def _default_state() -> SettlementState:
 
 
 class SettlementBuilder[TParent]:
+    """Fluent builder for FA(3) settlement details."""
+
     def __init__(
         self,
         parent: TParent,
@@ -49,6 +55,7 @@ class SettlementBuilder[TParent]:
         )
 
     def from_model(self, settlement: InvoiceSettlement) -> Self:
+        """Replace the builder state from an existing domain model."""
         self._state = adapter.validate_python(settlement.model_dump())
         return self
 
@@ -71,14 +78,17 @@ class SettlementBuilder[TParent]:
             ),
         ],
     ) -> Self:
+        """Add a charge entry."""
         self._state["charges"].append(SettlementCharge(amount=amount, reason=reason))
         return self
 
     def add_charge_model(self, charge: SettlementCharge) -> Self:
+        """Add an existing settlement charge model."""
         self._state["charges"].append(charge)
         return self
 
     def clear_charges(self) -> Self:
+        """Remove all settlement charges."""
         self._state["charges"].clear()
         self._state["charges_total"] = None
         return self
@@ -95,6 +105,7 @@ class SettlementBuilder[TParent]:
             ),
         ],
     ) -> Self:
+        """Set the charges total value."""
         self._state["charges_total"] = amount
         return self
 
@@ -117,16 +128,19 @@ class SettlementBuilder[TParent]:
             ),
         ],
     ) -> Self:
+        """Add a deduction entry."""
         self._state["deductions"].append(
             SettlementDeduction(amount=amount, reason=reason)
         )
         return self
 
     def add_deduction_model(self, deduction: SettlementDeduction) -> Self:
+        """Add an existing settlement deduction model."""
         self._state["deductions"].append(deduction)
         return self
 
     def clear_deductions(self) -> Self:
+        """Remove all settlement deductions."""
         self._state["deductions"].clear()
         self._state["deductions_total"] = None
         return self
@@ -143,6 +157,7 @@ class SettlementBuilder[TParent]:
             ),
         ],
     ) -> Self:
+        """Set the deductions total value."""
         self._state["deductions_total"] = amount
         return self
 
@@ -158,6 +173,7 @@ class SettlementBuilder[TParent]:
             ),
         ],
     ) -> Self:
+        """Set the amount due value."""
         self._state["amount_due"] = amount
         return self
 
@@ -173,16 +189,23 @@ class SettlementBuilder[TParent]:
             ),
         ],
     ) -> Self:
+        """Set the amount to settle value."""
         self._state["amount_to_settle"] = amount
         return self
 
     def build(self) -> InvoiceSettlement:
+        """Build the corresponding FA(3) domain model."""
         return InvoiceSettlement(**self._state)
 
     def _is_empty(self) -> bool:
         return self._state == _default_state()
 
     def done(self) -> TParent:
+        """Attach the built settlement details to the parent builder and return it.
+
+        Raises:
+            ValueError: If settlement details are empty.
+        """
         if self._is_empty():
             raise ValueError(
                 "Settlement details are empty. Set at least one field before calling done()."
@@ -192,9 +215,12 @@ class SettlementBuilder[TParent]:
 
 
 class SettlementBuilderMixin:
+    """Mixin exposing the Settlement sub-builder."""
+
     _settlement: InvoiceSettlement | None = None
 
     def settlement(self) -> SettlementBuilder[Self]:
+        """Start a settlement invoice body builder or sub-builder."""
         return SettlementBuilder(self, self._set_settlement, self._settlement)
 
     def _set_settlement(self, value: InvoiceSettlement) -> None:

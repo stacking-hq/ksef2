@@ -1,3 +1,5 @@
+"""Async invoice metadata, download, and export branch client."""
+
 import base64
 from collections.abc import AsyncIterator
 from typing import final

@@ -1,3 +1,5 @@
+"""Metadata helpers used by FA(3) fluent builders."""
+
 from collections.abc import Sequence
 from typing import Literal, cast
 
@@ -25,6 +27,7 @@ def builder_param(
     schema_ref: str | None = None,
     prefer_omit_when_null: bool = True,
 ) -> FieldInfo:
+    """Create API-reference metadata for a fluent builder parameter."""
     json_schema_extra = cast(
         JsonDict,
         {

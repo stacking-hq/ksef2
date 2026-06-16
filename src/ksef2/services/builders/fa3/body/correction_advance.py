@@ -1,3 +1,5 @@
+"""Fluent builder for correction advance invoice bodies."""
+
 from typing import Self
 from collections.abc import Callable
 
@@ -21,6 +23,8 @@ class CorrectionAdvanceBodyBuilder[TParent](
     CorrectionBuilderMixin,
     AdvanceBuilderMixin,
 ):
+    """Fluent builder for CorrectionAdvance invoice bodies."""
+
     def __init__(
         self,
         parent: TParent | None = None,
@@ -62,6 +66,7 @@ class CorrectionAdvanceBodyBuilder[TParent](
         )
 
     def build(self) -> KsefInvoiceBody:
+        """Build the corresponding FA(3) domain model."""
         return KsefInvoiceBody(
             **self._state,
             invoice_type=InvoiceType.CORRECTING_ZAL,
@@ -74,6 +79,7 @@ class CorrectionAdvanceBodyBuilder[TParent](
         )
 
     def from_model(self, body: KsefInvoiceBody) -> Self:
+        """Replace the builder state from an existing domain model."""
         BaseBodyBuilder.from_model(self, body)
         self._order = body.order.model_copy(deep=True) if body.order else None
         self._payment = body.payment.model_copy(deep=True) if body.payment else None
@@ -92,6 +98,11 @@ class CorrectionAdvanceBodyBuilder[TParent](
         return self
 
     def done(self) -> TParent:
+        """Attach the built invoice body to the parent invoice builder.
+
+        Raises:
+            ValueError: If this body builder has no parent invoice builder.
+        """
         if self._parent is None or self._on_done is None:
             raise ValueError(
                 "CorrectionAdvanceBodyBuilder requires a parent to call done()."

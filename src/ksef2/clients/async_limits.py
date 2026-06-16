@@ -1,3 +1,5 @@
+"""Async limits branch client."""
+
 from typing import final
 
 from ksef2.core.async_protocols import AsyncMiddleware

@@ -1,3 +1,5 @@
+"""Awaitable async session wrapper used by session factories."""
+
 from collections.abc import Coroutine, Generator
 from types import TracebackType
 from typing import Any, Generic, Protocol, Self, TypeVar, runtime_checkable

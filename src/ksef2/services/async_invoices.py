@@ -1,3 +1,5 @@
+"""Async high-level invoice workflow service."""
+
 import asyncio
 from collections.abc import AsyncIterator, Awaitable, Callable
 from pathlib import Path
@@ -67,6 +69,7 @@ class AsyncInvoicesService:
         filters: InvoicesFilter,
         params: InvoiceMetadataParams | None = None,
     ) -> QueryInvoicesMetadataResponse:
+        """Fetch one invoice metadata page matching the provided filters."""
         return await self._client.query_metadata(filters=filters, params=params)
 
     async def query_metadata_pages(
@@ -103,6 +106,7 @@ class AsyncInvoicesService:
             yield invoice
 
     async def download_invoice(self, *, ksef_number: str) -> bytes:
+        """Download one processed invoice by KSeF number."""
         return await self._client.download_invoice(ksef_number=ksef_number)
 
     async def wait_for_invoice_download(
@@ -171,6 +175,7 @@ class AsyncInvoicesService:
         *,
         reference_number: str,
     ) -> InvoiceExportStatusResponse:
+        """Fetch the current status for a scheduled invoice export."""
         return await self._client.get_export_status(reference_number=reference_number)
 
     async def fetch_package(

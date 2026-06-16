@@ -1,3 +1,5 @@
+"""Async PEPPOL branch client."""
+
 from collections.abc import AsyncIterator
 from typing import final
 

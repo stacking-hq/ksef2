@@ -1,3 +1,5 @@
+"""Async client bound to an open online invoice session."""
+
 import base64
 from types import TracebackType
 from typing import final
@@ -212,6 +214,13 @@ class AsyncOnlineSessionClient:
         )
 
     async def aclose(self) -> None:
+        """Terminate the online session if it is still open.
+
+        Raises:
+            KSeFApiError: If KSeF rejects the session termination request.
+            httpx.HTTPError: If the HTTP transport fails before KSeF returns a
+                response.
+        """
         if self._closed:
             return
 

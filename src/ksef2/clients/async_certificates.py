@@ -1,3 +1,5 @@
+"""Async certificate branch client."""
+
 from collections.abc import AsyncIterator
 from datetime import datetime
 from typing import final

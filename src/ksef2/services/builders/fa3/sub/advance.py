@@ -1,3 +1,5 @@
+"""Fluent builder for advance-payment invoice context."""
+
 from datetime import date
 from decimal import Decimal
 from typing import Annotated, Self, TypedDict
@@ -14,6 +16,8 @@ from ksef2.services.builders.fa3.metadata import builder_param
 
 
 class AdvanceState(TypedDict):
+    """Typed state for Advance fields."""
+
     amount_before_correction: Decimal | None
     currency_exchange_rate_before_correction: Decimal | None
     advance_partial_payments: list[PartialAdvancePayment]
@@ -33,6 +37,8 @@ def _default_state() -> AdvanceState:
 
 
 class AdvanceBuilder[TParent]:
+    """Fluent builder for FA(3) advance-payment details."""
+
     def __init__(
         self,
         parent: TParent,
@@ -46,6 +52,7 @@ class AdvanceBuilder[TParent]:
         )
 
     def from_model(self, advance: AdvancePaymentInvoiceContext) -> Self:
+        """Replace the builder state from an existing domain model."""
         self._state = adapter.validate_python(advance.model_dump())
         return self
 
@@ -61,6 +68,7 @@ class AdvanceBuilder[TParent]:
             ),
         ],
     ) -> Self:
+        """Set the amount before correction value."""
         self._state["amount_before_correction"] = amount
         return self
 
@@ -76,6 +84,7 @@ class AdvanceBuilder[TParent]:
             ),
         ],
     ) -> Self:
+        """Set the currency exchange rate before correction value."""
         self._state["currency_exchange_rate_before_correction"] = exchange_rate
         return self
 
@@ -108,6 +117,7 @@ class AdvanceBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
+        """Add a partial payment entry."""
         self._state["advance_partial_payments"].append(
             PartialAdvancePayment(
                 payment_date=payment_date,
@@ -118,10 +128,12 @@ class AdvanceBuilder[TParent]:
         return self
 
     def add_partial_payment_model(self, partial_payment: PartialAdvancePayment) -> Self:
+        """Add an existing partial-payment domain model."""
         self._state["advance_partial_payments"].append(partial_payment)
         return self
 
     def clear_partial_payments(self) -> Self:
+        """Remove all partial-payment entries."""
         self._state["advance_partial_payments"].clear()
         return self
 
@@ -169,6 +181,7 @@ class AdvanceBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
+        """Add an invoice reference entry."""
         self._state["advance_invoice_references"].append(
             AdvanceInvoiceReference(
                 ksef_id=ksef_id,
@@ -183,20 +196,28 @@ class AdvanceBuilder[TParent]:
     def add_invoice_reference_model(
         self, invoice_reference: AdvanceInvoiceReference
     ) -> Self:
+        """Add an existing invoice-reference domain model."""
         self._state["advance_invoice_references"].append(invoice_reference)
         return self
 
     def clear_invoice_references(self) -> Self:
+        """Remove all invoice-reference entries."""
         self._state["advance_invoice_references"].clear()
         return self
 
     def build(self) -> AdvancePaymentInvoiceContext:
+        """Build the corresponding FA(3) domain model."""
         return AdvancePaymentInvoiceContext(**self._state)
 
     def _is_empty(self) -> bool:
         return self._state == _default_state()
 
     def done(self) -> TParent:
+        """Attach the built advance details to the parent builder and return it.
+
+        Raises:
+            ValueError: If advance details are empty.
+        """
         if self._is_empty():
             raise ValueError(
                 "Advance details are empty. Set at least one field before calling done()."
@@ -206,9 +227,12 @@ class AdvanceBuilder[TParent]:
 
 
 class AdvanceBuilderMixin:
+    """Mixin exposing the Advance sub-builder."""
+
     _advance: AdvancePaymentInvoiceContext | None = None
 
     def advance(self) -> AdvanceBuilder[Self]:
+        """Start an advance invoice body builder or sub-builder."""
         return AdvanceBuilder(self, self._set_advance, self._advance)
 
     def _set_advance(self, value: AdvancePaymentInvoiceContext) -> None:

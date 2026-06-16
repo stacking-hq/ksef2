@@ -1,3 +1,5 @@
+"""FA(3) invoice body builder exports."""
+
 from ksef2.services.builders.fa3.body.advance import AdvanceBodyBuilder
 from ksef2.services.builders.fa3.body.correction import CorrectionBodyBuilder
 from ksef2.services.builders.fa3.body.correction_advance import (

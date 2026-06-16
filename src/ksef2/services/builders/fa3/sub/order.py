@@ -1,3 +1,5 @@
+"""Fluent builder for FA(3) order blocks."""
+
 from decimal import Decimal
 from collections.abc import Sequence
 from typing import Annotated, Self, TypedDict
@@ -17,6 +19,8 @@ from ksef2.services.builders.fa3.metadata import builder_param
 
 
 class OrderState(TypedDict):
+    """Typed state for Order fields."""
+
     total_value: Decimal | None
     order_lines: list[InvoiceOrderLine]
 
@@ -66,6 +70,8 @@ def _coerce_vat_classification(
 
 
 class OrderBuilder[TParent]:
+    """Fluent builder for FA(3) order details."""
+
     def __init__(
         self,
         parent: TParent,
@@ -83,10 +89,12 @@ class OrderBuilder[TParent]:
             self._state["total_value"] = declared_total
 
     def from_model(self, order: InvoiceOrder) -> Self:
+        """Replace the builder state from an existing domain model."""
         self._state = adapter.validate_python(order.model_dump())
         return self
 
     def total_value(self, amount: OrderAmountParam) -> Self:
+        """Set the declared total value for the order."""
         self._state["total_value"] = amount
         return self
 
@@ -266,6 +274,7 @@ class OrderBuilder[TParent]:
             ),
         ] = False,
     ) -> Self:
+        """Add a line entry."""
         self._state["order_lines"].append(
             InvoiceOrderLine(
                 gross_amount=gross_amount,
@@ -294,24 +303,33 @@ class OrderBuilder[TParent]:
         return self
 
     def add_line_model(self, line: InvoiceOrderLine) -> Self:
+        """Add an existing invoice line domain model."""
         self._state["order_lines"].append(line)
         return self
 
     def replace_lines(self, lines: Sequence[InvoiceOrderLine]) -> Self:
+        """Replace all invoice lines."""
         self._state["order_lines"] = list(lines)
         return self
 
     def clear_lines(self) -> Self:
+        """Remove all invoice lines."""
         self._state["order_lines"].clear()
         return self
 
     def build(self) -> InvoiceOrder:
+        """Build the corresponding FA(3) domain model."""
         return InvoiceOrder(**self._state)
 
     def _is_empty(self) -> bool:
         return self._state == _default_state()
 
     def done(self) -> TParent:
+        """Attach the built order details to the parent builder and return it.
+
+        Raises:
+            ValueError: If order details are empty.
+        """
         if self._is_empty():
             raise ValueError(
                 "Order details are empty. Set at least one field before calling done()."
@@ -321,9 +339,12 @@ class OrderBuilder[TParent]:
 
 
 class OrderBuilderMixin:
+    """Mixin exposing the Order sub-builder."""
+
     _order: InvoiceOrder | None = None
 
     def order(self, *, declared_total: Decimal | None = None) -> OrderBuilder[Self]:
+        """Start an order sub-builder."""
         return OrderBuilder(
             self, self._set_order, self._order, declared_total=declared_total
         )

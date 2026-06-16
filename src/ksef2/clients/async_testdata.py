@@ -1,3 +1,5 @@
+"""Async TEST data branch client and cleanup helpers."""
+
 from datetime import date, datetime
 from types import TracebackType
 from typing import Self, final
@@ -264,6 +266,7 @@ class AsyncTemporalTestData:
         subunits: list[SubUnit] | None = None,
         created_date: datetime | None = None,
     ) -> None:
+        """Create a TEST subject and register it for context-manager cleanup."""
         if nip not in self._subjects:
             self._subjects.append(nip)
         await self._client.create_subject(
@@ -275,6 +278,7 @@ class AsyncTemporalTestData:
         )
 
     async def delete_subject(self, *, nip: str) -> None:
+        """Delete a TEST subject and remove it from cleanup tracking."""
         await self._client.delete_subject(nip=nip)
         if nip in self._subjects:
             self._subjects.remove(nip)
@@ -289,6 +293,7 @@ class AsyncTemporalTestData:
         is_deceased: bool = False,
         created_date: datetime | None = None,
     ) -> None:
+        """Create a TEST person and register it for context-manager cleanup."""
         if nip not in self._persons:
             self._persons.append(nip)
         await self._client.create_person(
@@ -301,6 +306,7 @@ class AsyncTemporalTestData:
         )
 
     async def delete_person(self, *, nip: str) -> None:
+        """Delete a TEST person and remove it from cleanup tracking."""
         await self._client.delete_person(nip=nip)
         if nip in self._persons:
             self._persons.remove(nip)
@@ -312,6 +318,7 @@ class AsyncTemporalTestData:
         grant_to: Identifier,
         in_context_of: Identifier,
     ) -> None:
+        """Grant TEST permissions and register them for cleanup."""
         key = (in_context_of, grant_to)
         if key not in self._permissions:
             self._permissions.append(key)
@@ -324,6 +331,7 @@ class AsyncTemporalTestData:
     async def revoke_permissions(
         self, *, revoke_from: Identifier, in_context_of: Identifier
     ) -> None:
+        """Revoke TEST permissions and remove them from cleanup tracking."""
         await self._client.revoke_permissions(
             revoke_from=revoke_from,
             in_context_of=in_context_of,
@@ -333,6 +341,7 @@ class AsyncTemporalTestData:
             self._permissions.remove(key)
 
     async def enable_attachments(self, *, nip: str) -> None:
+        """Enable TEST attachments and register the context for cleanup."""
         if nip not in self._attachments:
             self._attachments.append(nip)
         await self._client.enable_attachments(nip=nip)
@@ -340,6 +349,7 @@ class AsyncTemporalTestData:
     async def revoke_attachments(
         self, *, nip: str, expected_end_date: date | None = None
     ) -> None:
+        """Revoke TEST attachment access and remove it from cleanup tracking."""
         await self._client.revoke_attachments(
             nip=nip,
             expected_end_date=expected_end_date,
@@ -348,11 +358,13 @@ class AsyncTemporalTestData:
             self._attachments.remove(nip)
 
     async def block_context(self, *, context: AuthContextIdentifier) -> None:
+        """Block a TEST context and register it for cleanup."""
         if context not in self._blocked_contexts:
             self._blocked_contexts.append(context)
         await self._client.block_context(context=context)
 
     async def unblock_context(self, *, context: AuthContextIdentifier) -> None:
+        """Unblock a TEST context and remove it from cleanup tracking."""
         await self._client.unblock_context(context=context)
         if context in self._blocked_contexts:
             self._blocked_contexts.remove(context)

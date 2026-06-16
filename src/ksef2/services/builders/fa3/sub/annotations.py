@@ -1,3 +1,5 @@
+"""Fluent builder for FA(3) invoice annotations."""
+
 from datetime import date
 from typing import Annotated, Self, TypedDict
 from collections.abc import Callable
@@ -15,6 +17,8 @@ from ksef2.services.builders.fa3.metadata import builder_param
 
 
 class InvoiceAnnotationsState(TypedDict):
+    """Typed state for FA(3) annotation fields."""
+
     cash_accounting: bool
     self_billing: bool
     reverse_charge_annotation: bool
@@ -40,6 +44,8 @@ def _default_state() -> InvoiceAnnotationsState:
 
 
 class AnnotationsBuilder[TParent]:
+    """Fluent builder for FA(3) invoice annotations."""
+
     def __init__(
         self,
         parent: TParent,
@@ -71,6 +77,7 @@ class AnnotationsBuilder[TParent]:
         )
 
     def from_model(self, annotations: InvoiceAnnotationsContext) -> Self:
+        """Replace the builder state from an existing domain model."""
         self._state = adapter.validate_python(
             {
                 "cash_accounting": annotations.cash_accounting,
@@ -100,6 +107,7 @@ class AnnotationsBuilder[TParent]:
             ),
         ] = True,
     ) -> Self:
+        """Toggle the cash accounting annotation."""
         self._state["cash_accounting"] = enabled
         return self
 
@@ -114,6 +122,7 @@ class AnnotationsBuilder[TParent]:
             ),
         ] = True,
     ) -> Self:
+        """Toggle the self-billing annotation."""
         self._state["self_billing"] = enabled
         return self
 
@@ -128,6 +137,7 @@ class AnnotationsBuilder[TParent]:
             ),
         ] = True,
     ) -> Self:
+        """Toggle the reverse-charge annotation."""
         self._state["reverse_charge_annotation"] = enabled
         return self
 
@@ -142,6 +152,7 @@ class AnnotationsBuilder[TParent]:
             ),
         ] = True,
     ) -> Self:
+        """Toggle the split-payment annotation."""
         self._state["split_payment"] = enabled
         return self
 
@@ -156,6 +167,7 @@ class AnnotationsBuilder[TParent]:
             ),
         ] = True,
     ) -> Self:
+        """Toggle the simplified-procedure annotation."""
         self._state["simplified_procedure"] = enabled
         return self
 
@@ -171,6 +183,7 @@ class AnnotationsBuilder[TParent]:
             ),
         ],
     ) -> Self:
+        """Set the margin procedure annotation."""
         if procedure is None or isinstance(procedure, MarginProcedure):
             self._state["margin_procedure"] = procedure
         else:
@@ -205,6 +218,7 @@ class AnnotationsBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
+        """Set tax-exemption legal basis details."""
         if (
             legal_basis_act is None
             and legal_basis_eu_directive is None
@@ -220,6 +234,7 @@ class AnnotationsBuilder[TParent]:
         return self
 
     def clear_tax_exemption(self) -> Self:
+        """Remove the tax-exemption annotation."""
         self._state["tax_exemption"] = None
         return self
 
@@ -235,6 +250,7 @@ class AnnotationsBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
+        """Set the new-transport supply marker."""
         self._article_42_5_required = article_42_5_required
         return self
 
@@ -379,6 +395,7 @@ class AnnotationsBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
+        """Add a new transport item entry."""
         self._new_transport_items.append(
             NewTransportMeansItem(
                 available_from=available_from,
@@ -403,15 +420,18 @@ class AnnotationsBuilder[TParent]:
         return self
 
     def add_new_transport_item_model(self, item: NewTransportMeansItem) -> Self:
+        """Add a new transport item model entry."""
         self._new_transport_items.append(item)
         return self
 
     def clear_new_transport_items(self) -> Self:
+        """Remove all new-transport-means items."""
         self._new_transport_items.clear()
         self._article_42_5_required = None
         return self
 
     def build(self) -> InvoiceAnnotationsContext:
+        """Build the corresponding FA(3) domain model."""
         new_transport_supply = None
         if self._new_transport_items or self._article_42_5_required is not None:
             new_transport_supply = NewTransportSupply(
@@ -433,6 +453,11 @@ class AnnotationsBuilder[TParent]:
         return self._state == _default_state()
 
     def done(self) -> TParent:
+        """Attach the built annotation details to the parent builder and return it.
+
+        Raises:
+            ValueError: If annotation details are empty.
+        """
         if self._is_empty():
             raise ValueError(
                 "Annotation details are empty. Set at least one field before calling done()."
@@ -442,9 +467,12 @@ class AnnotationsBuilder[TParent]:
 
 
 class AnnotationsBuilderMixin:
+    """Mixin exposing the Annotations sub-builder."""
+
     _annotations: InvoiceAnnotationsContext | None = None
 
     def annotations(self) -> AnnotationsBuilder[Self]:
+        """Start an annotations sub-builder."""
         return AnnotationsBuilder(self, self._set_annotations, self._annotations)
 
     def _set_annotations(self, value: InvoiceAnnotationsContext) -> None:

@@ -1,3 +1,5 @@
+"""Async authentication branch client."""
+
 import asyncio
 from typing import final
 
