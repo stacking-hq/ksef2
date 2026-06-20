@@ -1,0 +1,67 @@
+---
+title: Certyfikaty szyfrowania
+description: Odczytuj publiczne certyfikaty szyfrowania KSeF używane przez zaszyfrowane przepływy faktur i eksportów.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+KSeF publikuje certyfikaty publiczne używane do szyfrowania kluczy sesji i
+materiału eksportów. Wysokopoziomowe pomocniki faktur i batch ładują te
+certyfikaty automatycznie. Użyj `client.encryption` bezpośrednio, gdy chcesz
+sprawdzić, cache'ować albo wstępnie załadować materiał certyfikatu.
+
+## Pobierz certyfikaty
+
+```python
+certificates = client.encryption.get_certificates()
+
+for certificate in certificates:
+    print(certificate.public_key_id, certificate.usage)
+```
+
+Filtruj po zastosowaniu, gdy potrzebujesz tylko jednej rodziny certyfikatów:
+
+```python
+certificates = client.encryption.get_certificates(
+    usage=["symmetric_key_encryption"],
+)
+```
+
+## Jak SDK ich używa
+
+Uwierzytelnione sesje faktur i eksporty wywołują gałąź certyfikatów szyfrowania
+przed zaszyfrowaniem kluczy payloadu:
+
+```python
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    ...
+
+zip_parts = auth.invoices.export_and_download(filters=filters)
+```
+
+<Aside type="tip" title="Preferuj przepływy wysokiego poziomu">
+  Większość aplikacji nie musi wywoływać `client.encryption` bezpośrednio.
+  Użyj go do kontroli startowej, własnego cache albo diagnostyki dostępności
+  certyfikatów szyfrowania.
+</Aside>
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Domyślnie pozwól przepływom faktur ładować certyfikaty leniwie.
+
+2. Opcjonalnie wstępnie załaduj certyfikaty publiczne przy starcie aplikacji.
+
+3. Alarmuj, gdy żaden certyfikat nie obsługuje zastosowania wymaganego przez
+   przepływ.
+
+4. Ponów później zamiast hardcodować dane certyfikatów w aplikacji.
+
+</Steps>
+
+## Referencja
+
+- [Wysyłanie faktur](sending-invoices.mdx)
+- [Pobieranie faktur](downloading-invoices.mdx)
+- [API certyfikatów klucza publicznego](../reference/api/public-key-certificates.md)

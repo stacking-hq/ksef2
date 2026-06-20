@@ -1,41 +1,32 @@
 ---
 title: Faktury
-description: Wysyłka, statusy, metadane, eksporty i pobieranie faktur.
+description: Wysyłaj, wyszukuj, eksportuj i pobieraj faktury przez ksef2.
 ---
 
-Faktury wysyłasz w sesjach online. Zapytania metadanych, eksporty i pobieranie
-faktur są dostępne na `auth.invoices`.
+Użyj sesji online do wysyłki XML. Użyj `auth.invoices` do metadanych, eksportów,
+paczek i pobierania faktur po numerze KSeF.
 
-## Wysłanie faktury
+## Wyślij fakturę
 
 ```python
 from pathlib import Path
+
 from ksef2 import FormSchema
 
 with auth.online_session(form_code=FormSchema.FA3) as session:
-    result = session.send_invoice(invoice_xml=Path("invoice.xml").read_bytes())
-    status = session.wait_for_invoice_ready(
-        invoice_reference_number=result.reference_number,
+    status = session.send_invoice_and_wait(
+        invoice_xml=Path("invoice.xml").read_bytes(),
         timeout=60.0,
     )
     print(status.ksef_number)
-```
-
-## Statusy i UPO
-
-```python
-status = session.get_invoice_status(invoice_reference_number="invoice-reference")
-print(status.status.description)
-
-upo = session.get_invoice_upo_by_ksef_number(ksef_number="KSeF-number")
-print(len(upo))
 ```
 
 ## Metadane
 
 ```python
 from datetime import datetime, timedelta, timezone
-from ksef2.domain.models import InvoicesFilter, InvoiceMetadataParams
+
+from ksef2.domain.models import InvoicesFilter
 
 filters = InvoicesFilter(
     role="seller",
@@ -45,31 +36,28 @@ filters = InvoicesFilter(
     amount_type="brutto",
 )
 
-for page in auth.invoices.query_metadata_pages(
-    filters=filters,
-    params=InvoiceMetadataParams(page_size=250, sort_order="asc"),
-):
-    print(len(page.invoices), page.has_more)
+for invoice in auth.invoices.all_metadata(filters=filters):
+    print(invoice.ksef_number)
 ```
 
-## Eksport
+## Eksport i pobieranie
 
 ```python
-export = auth.invoices.schedule_export(filters=filters)
-package = auth.invoices.wait_for_export_package(
-    reference_number=export.reference_number,
-    timeout=120.0,
-    poll_interval=2.0,
-)
-
-paths = auth.invoices.fetch_package(
-    package=package,
-    export=export,
-    target_directory="downloads",
-)
+zip_parts = auth.invoices.export_and_download(filters=filters)
+print(len(zip_parts))
 ```
 
-## Async
+```python
+xml_bytes = auth.invoices.download_invoice(ksef_number="KSeF-number")
+print(len(xml_bytes))
+```
 
-Te same punkty wejścia istnieją na `AsyncClient`; operacje sieciowe wymagają
-`await`, a sesje używają `async with`.
+## Referencja
+
+- [Wysyłanie faktur](../workflows/sending-invoices.mdx)
+- [Wyszukiwanie faktur](../workflows/querying-invoices.mdx)
+- [Pobieranie faktur](../workflows/downloading-invoices.mdx)
+- [Interactive sending API](../reference/api/interactive-sending.md)
+- [Invoice retrieval API](../reference/api/invoice-retrieval.md)
+- [Status and UPO API](../reference/api/status-upo.md)
+- [Builder FA(3)](fa3-builder.md)

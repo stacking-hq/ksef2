@@ -1,0 +1,135 @@
+---
+title: Workflow Overview
+description: Choose the right ksef2 workflow for the public SDK surface.
+---
+
+import { Aside, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
+
+Use this section when you already know the SDK shape and want to complete a
+specific KSeF task. The quickstart shows one end-to-end path; these workflow
+pages separate the decisions you usually make in production code.
+
+<CardGrid>
+  <LinkCard
+    title="Set up clients"
+    href="client-setup/"
+    description="Choose sync or async, public root branches, and authenticated workflow branches."
+  />
+  <LinkCard
+    title="Authenticate"
+    href="authentication/"
+    description="Choose TEST certificates, KSeF tokens, XAdES certificates, environment variables, or CLI-compatible profiles."
+  />
+  <LinkCard
+    title="Build invoices"
+    href="building-invoices/"
+    description="Generate FA(3) XML with typed Python builders before opening a KSeF session."
+  />
+  <LinkCard
+    title="Send invoices"
+    href="sending-invoices/"
+    description="Submit FA(3) XML through online sessions or batch sessions, then inspect processing results."
+  />
+  <LinkCard
+    title="Query invoices"
+    href="querying-invoices/"
+    description="Build metadata filters, page through results, and poll until newly sent invoices are visible."
+  />
+  <LinkCard
+    title="Download invoices"
+    href="downloading-invoices/"
+    description="Download one processed invoice by KSeF number or schedule encrypted export packages."
+  />
+  <LinkCard
+    title="Check status and UPO"
+    href="status-upo/"
+    description="Poll online or batch status, list session invoices, and retrieve UPO documents."
+  />
+  <LinkCard
+    title="Manage tokens"
+    href="tokens/"
+    description="Generate, list, inspect, and revoke KSeF tokens for automation."
+  />
+  <LinkCard
+    title="Manage permissions"
+    href="permissions/"
+    description="Grant, query, revoke, and monitor KSeF permissions."
+  />
+  <LinkCard
+    title="Manage certificates"
+    href="certificates/"
+    description="Check limits, enroll certificates, retrieve issued material, and revoke certificates."
+  />
+  <LinkCard
+    title="Check limits"
+    href="limits/"
+    description="Read and override context, subject, and API rate limits."
+  />
+  <LinkCard
+    title="Encryption certificates"
+    href="encryption-certificates/"
+    description="Inspect public KSeF certificates used by encrypted invoice and export workflows."
+  />
+  <LinkCard
+    title="PEPPOL providers"
+    href="peppol/"
+    description="Query public PEPPOL provider data from the root client."
+  />
+  <LinkCard
+    title="TEST data"
+    href="test-data/"
+    description="Create sandbox subjects, permissions, attachment flags, and temporal cleanup fixtures."
+  />
+  <LinkCard
+    title="XAdES helpers"
+    href="xades/"
+    description="Load certificate material, generate TEST certificates, and sign XML."
+  />
+</CardGrid>
+
+<Aside type="tip" title="Sync and async use the same workflow">
+  The async client exposes the same branches and method names. Use
+  `AsyncClient`, await network calls, and use `async with` for client and
+  session lifecycles.
+</Aside>
+
+## Typical production order
+
+<Steps>
+
+1. Configure the environment and credentials.
+
+   Use environment variables for secrets and local config for non-secret profile
+   defaults.
+
+2. Authenticate once for the target context.
+
+   The authenticated client exposes `online_session`, `batch`, `invoices`,
+   `tokens`, `permissions`, `certificates`, and other workflow branches.
+
+3. Run the workflow branch that owns the task.
+
+   Use public root branches for encryption certificates, PEPPOL lookup, and
+   TEST data. Use authenticated branches for invoices, sessions, tokens,
+   permissions, certificates, and limits.
+
+4. Poll for KSeF processing or operation status.
+
+   The high-level helpers include polling methods for invoice status, batch
+   completion, permission operations, certificate enrollment, query visibility,
+   and export package readiness.
+
+5. Persist the business result.
+
+   Store KSeF numbers, session references, operation references, export handles,
+   downloaded XML, token references, certificate serial numbers, and UPO
+   documents according to your application’s retention policy.
+
+</Steps>
+
+## Related guides
+
+- [Quickstart](../getting-started/quickstart.md)
+- [Client setup](client-setup.mdx)
+- [Building invoices](building-invoices.mdx)
+- [API reference](../reference/api-signatures.md)

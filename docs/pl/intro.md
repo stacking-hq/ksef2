@@ -1,52 +1,37 @@
 ---
 title: Przegląd
-description: Punkt startowy polskiej dokumentacji KSeF2 SDK.
+description: Punkt startowy polskiej dokumentacji ksef2 SDK.
 ---
 
-KSeF2 to SDK dla Pythona do API KSeF v2. Udostępnia typowane klienty sync i
-async do uwierzytelniania, sesji faktur, zapytań metadanych, eksportów,
-uprawnień, tokenów KSeF, certyfikatów, PEPPOL, danych TEST oraz budowania
-faktur FA(3).
+ksef2 to SDK Pythona dla API KSeF v2. Udostępnia klientów sync i async,
+typowane modele żądań, pomocniki sesji faktur i builder faktur FA(3).
 
-> **Nieoficjalne SDK.** KSeF2 jest społecznościowo utrzymywanym SDK dla
+> **Nieoficjalne SDK.** ksef2 jest społecznościowo utrzymywanym SDK dla
 > Pythona. Nie jest publikowane, zatwierdzane ani wspierane przez Ministerstwo
 > Finansów. Oficjalna dokumentacja KSeF pozostaje źródłem prawdy dla zachowania
 > API.
 
-## Zacznij tutaj
+## Start
 
-- [Instalacja SDK](getting-started/installation.md)
 - [Quickstart](getting-started/quickstart.md)
-- [Wybór sposobu uwierzytelniania](getting-started/authentication.md)
+- [Wybierz przepływ uwierzytelniania](workflows/authentication.mdx)
+- [Wyślij, znajdź i pobierz faktury](workflows/overview.mdx)
 
-## Mapa dokumentacji
+## Główne strony
 
-- **Pierwsze kroki**: instalacja, wybór uwierzytelniania i pierwszy przepływ w
-  środowisku TEST.
-- **Przewodniki**: konkretne zadania, takie jak wysyłka faktur, eksport,
-  zarządzanie tokenami, dane TEST i praca async.
-- **Koncepcje**: decyzje projektowe ważne dla użytkownika, szczególnie async
-  jako źródło prawdy i generowany klient sync.
-- **Reference**: wygenerowana referencja publicznego API, w tym sygnatury,
-  stabilne importy, używane modele, publiczne wyjątki, FA(3) i helpery XAdES.
+- [Przegląd przepływów](workflows/overview.mdx): ścieżki zadaniowe dla
+  klientów, uwierzytelniania, faktur, statusu, tokenów, uprawnień,
+  certyfikatów, limitów, publicznych lookupów, danych TEST i XAdES.
+- [Konfiguracja klienta](workflows/client-setup.mdx): sync albo async, publiczne
+  gałęzie klienta głównego i gałęzie uwierzytelnione.
+- [Budowanie faktur](workflows/building-invoices.mdx): budowanie XML faktury w
+  Pythonie.
+- [Wysyłanie faktur](workflows/sending-invoices.mdx): sesje online albo batch i
+  wysyłka XML do KSeF.
+- [Przepływy administracyjne](workflows/tokens.mdx): zacznij od tokenów, potem
+  używaj uprawnień, certyfikatów i limitów według potrzeb.
 
-## Wejścia do referencji
+## Referencja
 
-- [Referencja API](reference/api-signatures.md): generowane karty źródłowe
-  pogrupowane według oficjalnej struktury przepływów API KSeF tam, gdzie SDK
-  się z nią mapuje.
-- [Generowanie sync](contributing/sync-codegen.md): dlaczego API sync jest
-  lustrzanym odbiciem drzewa async.
-
-## Publiczne API
-
-Za publiczne uznajemy:
-
-- `ksef2`
-- `ksef2.domain.models`
-- `ksef2.fa3`
-- `ksef2.core.xades`
-- stabilne klasy wyjątków eksportowane z `ksef2`
-
-Moduły endpointów, mapperów, transportu i wygenerowanych schematów są
-szczegółami implementacyjnymi, o ile strona referencyjna nie mówi inaczej.
+Użyj [referencji API](reference/api-signatures.md), gdy potrzebujesz sygnatur,
+typów zwracanych, nazw modeli albo dokładnych wariantów sync/async.

@@ -1,0 +1,77 @@
+---
+title: Tokens
+description: Generate, list, inspect, and revoke KSeF tokens through ksef2.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Use `auth.tokens` when an authenticated context needs to create or retire KSeF
+tokens for automation. Treat generated token values as secrets.
+
+## Generate a token
+
+```python
+token = auth.tokens.generate(
+    permissions=["invoice_read"],
+    description="nightly export",
+    timeout=60.0,
+)
+
+print(token.reference_number)
+print(token.token)
+```
+
+<Aside type="caution" title="Token values are shown once">
+  Persist the returned token value immediately in a secret store. Later status
+  and list calls identify tokens by reference number, but they do not replace
+  the secret value.
+</Aside>
+
+## List and inspect tokens
+
+<Tabs syncKey="sdk-token-list">
+  <TabItem label="All pages">
+
+```python
+for page in auth.tokens.list_all():
+    for item in page.tokens:
+        print(item.reference_number, item.status, item.description)
+```
+
+  </TabItem>
+  <TabItem label="Status">
+
+```python
+status = auth.tokens.status(reference_number="token-reference")
+print(status.status)
+```
+
+  </TabItem>
+</Tabs>
+
+## Revoke a token
+
+```python
+auth.tokens.revoke(reference_number="token-reference")
+```
+
+## Recommended flow
+
+<Steps>
+
+1. Choose the smallest permission set required by the automation.
+
+2. Generate the token in the owning authenticated context.
+
+3. Store the token value in a secret store and the reference number in metadata.
+
+4. List or inspect references during audits.
+
+5. Revoke unused or compromised tokens.
+
+</Steps>
+
+## Reference
+
+- [Authentication](authentication.mdx)
+- [Tokens API](../reference/api/tokens.md)

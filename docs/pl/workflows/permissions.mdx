@@ -1,0 +1,121 @@
+---
+title: Uprawnienia
+description: Nadawaj, wyszukuj, odbieraj i monitoruj uprawnienia KSeF z ksef2.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Użyj `auth.permissions` do nadań, cofnięć, wyszukiwania i sprawdzania statusu
+operacji uprawnień. Operacje zwracają referencje; odpytuj te referencje zanim
+uznasz zmianę za zakończoną.
+
+## Nadaj uprawnienia
+
+<Tabs syncKey="sdk-permission-grant">
+  <TabItem label="Osoba">
+
+```python
+operation = auth.permissions.grant_person(
+    subject_type="pesel",
+    subject_value="90010112345",
+    permissions=["invoice_read"],
+    description="Read invoices",
+    first_name="Jan",
+    last_name="Kowalski",
+)
+```
+
+  </TabItem>
+  <TabItem label="Podmiot">
+
+```python
+from ksef2.domain.models import EntityPermission
+
+operation = auth.permissions.grant_entity(
+    subject_value="1234567890",
+    permissions=[EntityPermission(type="invoice_read", can_delegate=False)],
+    description="Accounting office read access",
+    entity_name="Accounting Sp. z o.o.",
+)
+```
+
+  </TabItem>
+  <TabItem label="Autoryzacja">
+
+```python
+operation = auth.permissions.grant_authorization(
+    subject_type="nip",
+    subject_value="1234567890",
+    permission="self_invoicing",
+    description="Self-invoicing agreement",
+    entity_name="Partner Sp. z o.o.",
+)
+```
+
+  </TabItem>
+</Tabs>
+
+## Sprawdź status operacji
+
+```python
+status = auth.permissions.get_operation_status(
+    reference_number=operation.reference_number,
+)
+print(status.status.code, status.status.description)
+```
+
+## Wyszukaj i cofnij
+
+```python
+from ksef2.domain.models import PersonalPermissionsQuery
+
+page = auth.permissions.query_personal(
+    query=PersonalPermissionsQuery(permission_types=["invoice_read"]),
+)
+
+for permission in page.permissions:
+    print(permission.id, permission.permission_state)
+```
+
+Użyj zwróconego identyfikatora uprawnienia do cofnięcia:
+
+```python
+auth.permissions.revoke_common(permission_id="permission-id")
+auth.permissions.revoke_authorization(permission_id="authorization-id")
+```
+
+## Załączniki
+
+```python
+status = auth.permissions.get_attachment_permission_status()
+print(status.is_attachment_allowed)
+```
+
+<Aside type="note" title="Zapytania są celowo wyspecjalizowane">
+  KSeF ma osobne kształty zapytań dla uprawnień personal, person, entity,
+  EU entity, authorization, subordinate entity i subunit. Użyj wygenerowanej
+  referencji, gdy potrzebujesz wszystkich pól filtrów.
+</Aside>
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Nadaj najmniejszy zestaw uprawnień wymagany przez docelowy podmiot.
+
+2. Zapisz referencję operacji zwróconą przez KSeF.
+
+3. Odpytaj status operacji przed pokazaniem uprawnienia w aplikacji.
+
+4. Wyszukaj uprawnienia, aby zebrać identyfikatory do audytu albo cofnięcia.
+
+5. Cofnij po identyfikatorze uprawnienia, gdy dostęp ma się zakończyć.
+
+</Steps>
+
+## Referencja
+
+- [API nadań uprawnień](../reference/api/permission-grants.md)
+- [API wyszukiwania uprawnień](../reference/api/permission-search.md)
+- [API operacji uprawnień](../reference/api/permission-operations.md)
+- [API cofania uprawnień](../reference/api/permission-revokes.md)

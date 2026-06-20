@@ -1,0 +1,108 @@
+---
+title: Querying Invoices
+description: Query invoice metadata with ksef2 filters, pagination helpers, and polling.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Use `auth.invoices` when you need invoice metadata outside a sending session.
+Metadata queries are filter-driven and paginated by KSeF.
+
+## Build a filter
+
+Keep filters narrow. Date ranges, role, and invoice type make queries faster and
+reduce pagination work.
+
+```python
+from datetime import datetime, timedelta, timezone
+
+from ksef2.domain.models import InvoicesFilter
+
+filters = InvoicesFilter(
+    role="seller",
+    date_type="issue_date",
+    date_from=datetime.now(tz=timezone.utc) - timedelta(days=7),
+    date_to=datetime.now(tz=timezone.utc),
+    amount_type="brutto",
+    invoicing_mode="online",
+    invoice_types=["vat"],
+)
+```
+
+## Query one page or all pages
+
+<Tabs syncKey="sdk-query-pages">
+  <TabItem label="One page">
+
+```python
+from ksef2.domain.models import InvoiceMetadataParams
+
+page = auth.invoices.query_metadata(
+    filters=filters,
+    params=InvoiceMetadataParams(sort_order="asc"),
+)
+
+for invoice in page.invoices:
+    print(invoice.ksef_number, invoice.invoice_number)
+```
+
+  </TabItem>
+  <TabItem label="Page iterator">
+
+```python
+for page in auth.invoices.query_metadata_pages(filters=filters):
+    print(len(page.invoices), page.has_more)
+```
+
+  </TabItem>
+  <TabItem label="Item iterator">
+
+```python
+for invoice in auth.invoices.all_metadata(filters=filters):
+    print(invoice.ksef_number, invoice.invoice_number)
+```
+
+  </TabItem>
+</Tabs>
+
+## Wait for a newly sent invoice
+
+KSeF processing is asynchronous. After sending an invoice, poll metadata when
+your next step depends on the invoice becoming visible in retrieval APIs.
+
+```python
+result = auth.invoices.wait_for_invoices(
+    filters=filters,
+    timeout=120.0,
+    poll_interval=2.0,
+)
+
+for invoice in result.invoices:
+    print(invoice.ksef_number)
+```
+
+<Aside type="caution" title="Use the right date field">
+  Match `date_type` to the business question. `issue_date` is usually right for
+  accounting periods. Other date fields answer different KSeF lifecycle
+  questions and can return different sets.
+</Aside>
+
+## Recommended flow
+
+<Steps>
+
+1. Decide which subject role you are querying as.
+
+2. Build a narrow `InvoicesFilter`.
+
+3. Fetch one page for interactive screens or use iterators for background jobs.
+
+4. Persist KSeF numbers needed for later downloads.
+
+</Steps>
+
+## Next workflows
+
+- [Send invoices](sending-invoices.mdx)
+- [Download invoices](downloading-invoices.mdx)
+- [Invoice retrieval API](../reference/api/invoice-retrieval.md)

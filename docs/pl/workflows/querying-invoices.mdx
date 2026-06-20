@@ -1,0 +1,109 @@
+---
+title: Wyszukiwanie faktur
+description: Wyszukuj metadane faktur przez filtry, paginację i polling ksef2.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Użyj `auth.invoices`, gdy potrzebujesz metadanych faktur poza sesją wysyłki.
+Zapytania o metadane są oparte o filtry i paginowane przez KSeF.
+
+## Zbuduj filtr
+
+Filtry powinny być wąskie. Zakres dat, rola i typ faktury ograniczają pracę po
+stronie KSeF i liczbę stron wyników.
+
+```python
+from datetime import datetime, timedelta, timezone
+
+from ksef2.domain.models import InvoicesFilter
+
+filters = InvoicesFilter(
+    role="seller",
+    date_type="issue_date",
+    date_from=datetime.now(tz=timezone.utc) - timedelta(days=7),
+    date_to=datetime.now(tz=timezone.utc),
+    amount_type="brutto",
+    invoicing_mode="online",
+    invoice_types=["vat"],
+)
+```
+
+## Jedna strona albo wszystkie strony
+
+<Tabs syncKey="sdk-query-pages">
+  <TabItem label="Jedna strona">
+
+```python
+from ksef2.domain.models import InvoiceMetadataParams
+
+page = auth.invoices.query_metadata(
+    filters=filters,
+    params=InvoiceMetadataParams(sort_order="asc"),
+)
+
+for invoice in page.invoices:
+    print(invoice.ksef_number, invoice.invoice_number)
+```
+
+  </TabItem>
+  <TabItem label="Strony">
+
+```python
+for page in auth.invoices.query_metadata_pages(filters=filters):
+    print(len(page.invoices), page.has_more)
+```
+
+  </TabItem>
+  <TabItem label="Faktury">
+
+```python
+for invoice in auth.invoices.all_metadata(filters=filters):
+    print(invoice.ksef_number, invoice.invoice_number)
+```
+
+  </TabItem>
+</Tabs>
+
+## Poczekaj na nową fakturę
+
+Przetwarzanie w KSeF jest asynchroniczne. Po wysyłce odpytuj metadane, jeśli
+następny krok zależy od widoczności faktury w API pobierania.
+
+```python
+result = auth.invoices.wait_for_invoices(
+    filters=filters,
+    timeout=120.0,
+    poll_interval=2.0,
+)
+
+for invoice in result.invoices:
+    print(invoice.ksef_number)
+```
+
+<Aside type="caution" title="Dobierz właściwą datę">
+  `date_type` powinien pasować do pytania biznesowego. `issue_date` jest zwykle
+  właściwe dla okresów księgowych. Inne pola dat odpowiadają na inne pytania o
+  cykl życia faktury w KSeF.
+</Aside>
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Wybierz rolę podmiotu, jako który wyszukujesz.
+
+2. Zbuduj wąski `InvoicesFilter`.
+
+3. Pobierz jedną stronę dla ekranów interaktywnych albo iteruj po stronach w
+   zadaniach w tle.
+
+4. Zapisz numery KSeF potrzebne do późniejszego pobrania.
+
+</Steps>
+
+## Następne przepływy
+
+- [Wysyłanie faktur](sending-invoices.mdx)
+- [Pobieranie faktur](downloading-invoices.mdx)
+- [Invoice retrieval API](../reference/api/invoice-retrieval.md)

@@ -1,0 +1,224 @@
+---
+title: Authentication
+description: Configure ksef2 credentials with environment variables, KSeF tokens, XAdES certificates, or CLI-compatible profiles.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Authentication turns a root `Client` into an authenticated client. Use the root
+client to choose the KSeF environment, then choose exactly one authentication
+method for the context you are operating as.
+
+<Aside type="caution" title="Secrets belong in environment variables">
+  Do not commit KSeF tokens, certificate passwords, or private-key passwords to
+  source control. Store paths and profile names in local config, but keep secret
+  values in your process environment.
+</Aside>
+
+## Environment variables
+
+These names are used by examples in this documentation and by `ksef2-cli`
+profiles:
+
+| Variable | Purpose |
+| --- | --- |
+| `KSEF2_ENV` | `test`, `demo`, or `production` for SDK examples. |
+| `KSEF2_NIP` | Taxpayer/context NIP used during authentication. |
+| `KSEF2_TOKEN` | KSeF token for token authentication. |
+| `KSEF2_PROFILE` | CLI profile name selected by `ksef2-cli`; planned SDK profile selection. |
+| `KSEF2_CONFIG` | Optional path to the CLI profile config file. |
+| `KSEF2_KEY_PASSWORD` | Optional encrypted PEM private-key password. |
+| `KSEF2_P12_PASSWORD` | Optional PKCS#12/PFX archive password. |
+
+```bash
+export KSEF2_ENV=test
+export KSEF2_NIP=5261040828
+export KSEF2_TOKEN=replace-with-a-real-ksef-token
+```
+
+The SDK does not read these variables automatically today. Keep the boundary
+explicit in your application:
+
+```python
+import os
+
+from ksef2 import Client, Environment
+
+environment_name = os.environ.get("KSEF2_ENV", "test").upper()
+client = Client(Environment[environment_name])
+```
+
+## Choose an authentication method
+
+<Tabs syncKey="sdk-auth-method">
+  <TabItem label="Token">
+
+Use a KSeF token when your application already has a valid token for the
+context. Token auth works in TEST, DEMO, and PRODUCTION.
+
+```python
+import os
+
+auth = client.authentication.with_token(
+    ksef_token=os.environ["KSEF2_TOKEN"],
+    nip=os.environ["KSEF2_NIP"],
+    context_type="nip",
+)
+```
+
+  </TabItem>
+  <TabItem label="TEST certificate">
+
+Use the SDK-generated TEST certificate for local development. This method is
+only available with `Environment.TEST`.
+
+```python
+import os
+
+auth = client.authentication.with_test_certificate(
+    nip=os.environ["KSEF2_NIP"],
+)
+```
+
+  </TabItem>
+  <TabItem label="PEM XAdES">
+
+Use PEM certificate and private-key files when your certificate material is
+stored separately.
+
+```python
+import os
+
+from ksef2.core.xades import load_certificate_from_pem, load_private_key_from_pem
+
+password = os.environ.get("KSEF2_KEY_PASSWORD")
+cert = load_certificate_from_pem("company.pem")
+private_key = load_private_key_from_pem(
+    "company.key",
+    password=password.encode() if password else None,
+)
+
+auth = client.authentication.with_xades(
+    nip=os.environ["KSEF2_NIP"],
+    cert=cert,
+    private_key=private_key,
+)
+```
+
+  </TabItem>
+  <TabItem label="PKCS#12">
+
+Use a PKCS#12/PFX archive when the certificate and private key are stored in one
+file.
+
+```python
+import os
+
+from ksef2.core.xades import load_certificate_and_key_from_p12
+
+password = os.environ.get("KSEF2_P12_PASSWORD")
+cert, private_key = load_certificate_and_key_from_p12(
+    "company.p12",
+    password=password.encode() if password else None,
+)
+
+auth = client.authentication.with_xades(
+    nip=os.environ["KSEF2_NIP"],
+    cert=cert,
+    private_key=private_key,
+)
+```
+
+  </TabItem>
+</Tabs>
+
+## CLI-compatible profiles
+
+`ksef2-cli` already has local profile support. A profile stores non-secret
+defaults such as environment, NIP, auth method, certificate paths, and the name
+of the environment variable that contains a secret.
+
+```bash
+ksef2 profile create test-company \
+  --env test \
+  --nip 5261040828 \
+  --test-cert
+
+ksef2 profile create prod-token \
+  --env production \
+  --nip "$KSEF2_NIP" \
+  --token-env KSEF2_TOKEN
+```
+
+Select a profile for CLI commands:
+
+```bash
+export KSEF2_PROFILE=prod-token
+ksef2 profile current
+```
+
+<Aside type="note" title="Next release">
+  The SDK will add `client.authentication.with_profile()` so Python code can use
+  the same profile files created by `ksef2-cli`. Until that method is released,
+  read environment variables explicitly as shown above.
+</Aside>
+
+Planned shape:
+
+```python
+from ksef2 import Client
+
+client = Client.from_profile()
+auth = client.authentication.with_profile()
+
+# Or select a named profile explicitly.
+auth = client.authentication.with_profile("prod-token")
+```
+
+## Recommended flow
+
+<Steps>
+
+1. Put secrets into environment variables.
+
+   Use `KSEF2_TOKEN`, `KSEF2_KEY_PASSWORD`, or `KSEF2_P12_PASSWORD`.
+
+2. Keep non-secret defaults in one place.
+
+   Use application config today. Use `ksef2-cli` profiles if you also operate
+   the same environment from the command line.
+
+3. Create the root client for the selected environment.
+
+   Use `Client(Environment.TEST)`, `Client(Environment.DEMO)`, or
+   `Client(Environment.PRODUCTION)`.
+
+4. Authenticate once, then pass the authenticated client into workflows.
+
+   The authenticated client owns access tokens and exposes workflow branches.
+
+</Steps>
+
+## Errors
+
+Catch SDK-classified failures with `KSeFException`. Catch `httpx.HTTPError`
+separately for transport failures before KSeF returns a response.
+
+```python
+import httpx
+
+from ksef2 import KSeFException
+
+try:
+    auth = client.authentication.with_test_certificate(nip="5261040828")
+except KSeFException as exc:
+    print(exc)
+except httpx.HTTPError as exc:
+    print(f"Transport failed: {exc}")
+```
+
+## Next workflows
+
+- [Send invoices](sending-invoices.mdx)
+- [Query invoices](querying-invoices.mdx)
+- [Download invoices](downloading-invoices.mdx)

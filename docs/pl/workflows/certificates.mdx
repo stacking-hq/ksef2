@@ -1,0 +1,94 @@
+---
+title: Certyfikaty
+description: Sprawdzaj limity certyfikatów, rejestruj certyfikaty, wyszukuj wydane certyfikaty i cofaj je.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Użyj `auth.certificates` do cyklu życia certyfikatów KSeF. SDK wysyła CSR i
+żądania cyklu życia; aplikacja albo narzędzia certyfikatowe nadal odpowiadają za
+generowanie kluczy i CSR.
+
+## Sprawdź limity i dane rejestracji
+
+```python
+limits = auth.certificates.get_limits()
+print(limits.can_request, limits.enrollment_remaining)
+
+subject = auth.certificates.get_enrollment_data()
+print(subject.common_name, subject.country_name)
+```
+
+## Zarejestruj i odpytaj status
+
+```python
+enrollment = auth.certificates.enroll(
+    certificate_name="billing-service",
+    certificate_type="authentication",
+    csr="-----BEGIN CERTIFICATE REQUEST-----\n...\n-----END CERTIFICATE REQUEST-----",
+)
+
+status = auth.certificates.get_enrollment_status(
+    reference_number=enrollment.reference_number,
+)
+print(status.status_code, status.certificate_serial_number)
+```
+
+## Pobierz, wyszukaj i cofnij
+
+<Tabs syncKey="sdk-cert-lifecycle">
+  <TabItem label="Wyszukaj">
+
+```python
+for certificate in auth.certificates.all(status="active"):
+    print(certificate.serial_number, certificate.name, certificate.valid_to)
+```
+
+  </TabItem>
+  <TabItem label="Pobierz">
+
+```python
+result = auth.certificates.retrieve(
+    certificate_serial_numbers=["0123456789ABCDEF"],
+)
+```
+
+  </TabItem>
+  <TabItem label="Cofnij">
+
+```python
+auth.certificates.revoke(
+    certificate_serial_number="0123456789ABCDEF",
+    reason="key_compromise",
+)
+```
+
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="Klucze prywatne trzymaj poza przepływem docs">
+  SDK nie potrzebuje klucza prywatnego do samej rejestracji certyfikatu.
+  Wygeneruj i chroń klucze prywatne w narzędziach certyfikatowych, a do KSeF
+  wyślij tylko CSR.
+</Aside>
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Sprawdź limity certyfikatów i rejestracji.
+
+2. Pobierz dane podmiotu do rejestracji.
+
+3. Wygeneruj klucz prywatny i CSR poza SDK.
+
+4. Wyślij rejestrację i zapisz referencję.
+
+5. Odpytuj status, pobierz certyfikat i przechowuj go z jego kluczem prywatnym.
+
+</Steps>
+
+## Referencja
+
+- [Pomocniki XAdES](xades.mdx)
+- [API certyfikatów](../reference/api/certificates.md)

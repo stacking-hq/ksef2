@@ -1,0 +1,81 @@
+---
+title: TEST Data
+description: Create sandbox subjects, people, permissions, attachment flags, and blocked contexts in TEST.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Use `client.testdata` only in `Environment.TEST`. These helpers mutate sandbox
+data so your tests and demos can create known contexts.
+
+## Create and clean up manually
+
+```python
+client.testdata.create_subject(
+    nip="5261040828",
+    subject_type="vat_group",
+    description="Sandbox company",
+)
+
+client.testdata.enable_attachments(nip="5261040828")
+
+client.testdata.delete_subject(nip="5261040828")
+```
+
+## Use temporal cleanup
+
+The temporal helper records mutations and attempts cleanup when the block exits.
+
+<Tabs syncKey="sdk-testdata-temporal">
+  <TabItem label="Subject">
+
+```python
+with client.testdata.temporal() as data:
+    data.create_subject(
+        nip="5261040828",
+        subject_type="vat_group",
+        description="Integration test subject",
+    )
+    data.enable_attachments(nip="5261040828")
+```
+
+  </TabItem>
+  <TabItem label="Permissions">
+
+```python
+from ksef2.domain.models import Identifier, Permission
+
+with client.testdata.temporal() as data:
+    data.grant_permissions(
+        permissions=[Permission(type="invoice_read", description="Read invoices")],
+        grant_to=Identifier(type="nip", value="1111111111"),
+        in_context_of=Identifier(type="nip", value="5261040828"),
+    )
+```
+
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="TEST only">
+  The TEST data branch exists to set up sandbox fixtures. Do not build product
+  workflows that depend on it in DEMO or PRODUCTION.
+</Aside>
+
+## Recommended flow
+
+<Steps>
+
+1. Create subjects, people, permissions, or attachment flags required by a test.
+
+2. Use `temporal()` for fixtures that should be cleaned up automatically.
+
+3. Use direct create/delete methods when setup is shared across many test runs.
+
+4. Keep generated identifiers in test config, not production config.
+
+</Steps>
+
+## Reference
+
+- [Client setup](client-setup.mdx)
+- [TEST data API](../reference/api/testdata.md)

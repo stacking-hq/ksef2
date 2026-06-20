@@ -1,0 +1,49 @@
+---
+title: PEPPOL Providers
+description: Query PEPPOL service providers registered in KSeF.
+---
+
+import { Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Use `client.peppol` to inspect PEPPOL providers. This is a public root-client
+branch and does not require an authenticated client.
+
+## Query providers
+
+<Tabs syncKey="sdk-peppol-query">
+  <TabItem label="One page">
+
+```python
+page = client.peppol.query()
+
+for provider in page.providers:
+    print(provider.id, provider.name)
+```
+
+  </TabItem>
+  <TabItem label="All providers">
+
+```python
+for provider in client.peppol.all():
+    print(provider.id, provider.name, provider.date_created)
+```
+
+  </TabItem>
+</Tabs>
+
+## Recommended flow
+
+<Steps>
+
+1. Query providers from the root client.
+
+2. Cache provider ids and names for user selection or validation.
+
+3. Refresh the cache according to your product's data freshness needs.
+
+</Steps>
+
+## Reference
+
+- [Client setup](client-setup.mdx)
+- [PEPPOL API](../reference/api/peppol.md)

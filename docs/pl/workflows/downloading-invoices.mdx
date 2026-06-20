@@ -1,0 +1,96 @@
+---
+title: Pobieranie faktur
+description: Pobieraj XML faktur bezpośrednio albo przez szyfrowane paczki eksportu ksef2.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Pobieraj bezpośrednio, gdy znasz numer KSeF jednej faktury. Eksportu użyj dla
+większej liczby faktur albo gdy chcesz pobrać zaszyfrowane paczki.
+
+## Pobierz jedną fakturę
+
+```python
+xml_bytes = auth.invoices.download_invoice(ksef_number="numer-KSeF")
+
+with open("invoice.xml", "wb") as handle:
+    handle.write(xml_bytes)
+```
+
+Jeśli faktura została dopiero wysłana, poczekaj aż KSeF udostępni przetworzony
+XML do pobrania:
+
+```python
+xml_bytes = auth.invoices.wait_for_invoice_download(
+    ksef_number="numer-KSeF",
+    timeout=120.0,
+    poll_interval=2.0,
+)
+```
+
+## Eksport wielu faktur
+
+Eksport jest asynchroniczny. Zaplanuj eksport z filtrów, poczekaj na paczkę, a
+następnie pobierz odszyfrowane części ZIP.
+
+<Tabs syncKey="sdk-download-export">
+  <TabItem label="Zapis do plików">
+
+```python
+export = auth.invoices.schedule_export(filters=filters)
+package = auth.invoices.wait_for_export_package(
+    reference_number=export.reference_number,
+    timeout=300.0,
+)
+
+for path in auth.invoices.fetch_package(
+    package=package,
+    export=export,
+    target_directory="downloads",
+):
+    print(path)
+```
+
+  </TabItem>
+  <TabItem label="W pamięci">
+
+```python
+zip_parts = auth.invoices.export_and_download(
+    filters=filters,
+    timeout=300.0,
+)
+
+for part in zip_parts:
+    print(len(part))
+```
+
+  </TabItem>
+</Tabs>
+
+<Aside type="note" title="Szyfrowanie obsługuje SDK">
+  Paczki eksportu są szyfrowane przez KSeF. Pomocniki wysokiego poziomu
+  wczytują ważny certyfikat szyfrowania KSeF, planują eksport, pobierają części
+  paczki i odszyfrowują je przed zwróceniem bajtów albo ścieżek.
+</Aside>
+
+## Po wysyłce faktur
+
+Jeśli przepływ wysyła i potem pobiera faktury, rozdziel te fazy:
+
+<Steps>
+
+1. Wyślij XML przez sesję online albo wsadową.
+
+2. Zapisz numer KSeF albo referencję sesji.
+
+3. Odpytuj status sesji albo metadane do końca przetwarzania.
+
+4. Pobierz po numerze KSeF albo zbuduj filtr eksportu dla tego samego okresu.
+
+</Steps>
+
+## Następne przepływy
+
+- [Wysyłanie faktur](sending-invoices.mdx)
+- [Wyszukiwanie faktur](querying-invoices.mdx)
+- [Invoice retrieval API](../reference/api/invoice-retrieval.md)

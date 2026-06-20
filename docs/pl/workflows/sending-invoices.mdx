@@ -1,0 +1,158 @@
+---
+title: Wysyłanie faktur
+description: Wyślij XML FA(3) przez sesje online albo sesje wsadowe ksef2.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+ksef2 obsługuje dwa przepływy wysyłki:
+
+- **Sesje online** dla krótkiej, interaktywnej wysyłki.
+- **Sesje wsadowe** dla większych zestawów plików XML.
+
+Oba przepływy szyfrują faktury przed wysłaniem i zwracają referencje sesji,
+których możesz użyć do sprawdzania statusu.
+
+## Sesja online
+
+Użyj sesji online, gdy wysyłasz jedną lub kilka faktur i chcesz dostać numer
+KSeF w tym samym procesie.
+
+```python
+from pathlib import Path
+
+from ksef2 import FormSchema
+
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    status = session.send_invoice_and_wait(
+        invoice_xml=Path("invoice.xml").read_bytes(),
+        timeout=60.0,
+        poll_interval=2.0,
+    )
+    print(status.ksef_number)
+```
+
+Po wyjściu z bloku kontekstowego sesja online zostanie zamknięta.
+
+## Ręczne odpytywanie
+
+Niższy poziom jest przydatny, gdy chcesz zapisać referencję faktury albo użyć
+własnej polityki retry.
+
+```python
+from pathlib import Path
+
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    result = session.send_invoice(invoice_xml=Path("invoice.xml").read_bytes())
+    print(result.reference_number)
+
+    status = session.wait_for_invoice_ready(
+        invoice_reference_number=result.reference_number,
+        timeout=120.0,
+    )
+    print(status.ksef_number)
+```
+
+## Sesja wsadowa
+
+Sesja wsadowa wysyła wiele plików XML jako jeden batch. Serwis może przygotować
+paczkę, wysłać wszystkie części, zamknąć sesję i odpytywać status do końca
+przetwarzania.
+
+<Tabs syncKey="sdk-batch-source">
+  <TabItem label="Z plików">
+
+```python
+from pathlib import Path
+
+from ksef2 import FormSchema
+
+prepared = auth.batch.prepare_batch_from_paths(
+    invoice_paths=[
+        Path("invoice-1.xml"),
+        Path("invoice-2.xml"),
+    ],
+    form_code=FormSchema.FA3,
+)
+
+state = auth.batch.submit_prepared_batch(prepared_batch=prepared)
+final_status = auth.batch.wait_for_completion(session=state, timeout=300.0)
+print(final_status.reference_number)
+```
+
+  </TabItem>
+  <TabItem label="Z bajtów">
+
+```python
+from pathlib import Path
+
+from ksef2 import FormSchema
+from ksef2.domain.models import BatchInvoice
+
+state = auth.batch.submit_batch(
+    invoices=[
+        BatchInvoice(
+            file_name="invoice-1.xml",
+            content=Path("invoice-1.xml").read_bytes(),
+        ),
+        BatchInvoice(
+            file_name="invoice-2.xml",
+            content=Path("invoice-2.xml").read_bytes(),
+        ),
+    ],
+    form_code=FormSchema.FA3,
+)
+
+final_status = auth.batch.wait_for_completion(session=state, timeout=300.0)
+print(final_status.reference_number)
+```
+
+  </TabItem>
+</Tabs>
+
+## Sprawdź wyniki
+
+```python
+accepted = auth.batch.list_invoices(session=state)
+failed = auth.batch.list_failed_invoices(session=state)
+
+print(len(accepted.invoices), len(failed.invoices))
+```
+
+Jeśli status końcowy zwraca referencję UPO, pobierz zbiorcze UPO:
+
+```python
+upo_xml = auth.batch.get_upo(
+    session=state,
+    upo_reference_number="referencja-upo-ze-statusu",
+)
+```
+
+<Aside type="tip" title="Zapisuj referencje">
+  Zapisuj `reference_number`, referencje faktur, numery KSeF i referencje UPO
+  poza procesem wysyłki. Są potrzebne do ponowień, audytu i późniejszych
+  pobrań.
+</Aside>
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Uwierzytelnij się w kontekście sprzedawcy.
+
+2. Wybierz sesję online albo sesję wsadową.
+
+3. Wyślij XML i zapisz zwrócone referencje.
+
+4. Odpytuj KSeF do wyniku końcowego.
+
+5. Wyszukaj metadane albo pobierz XML po zakończeniu przetwarzania.
+
+</Steps>
+
+## Następne przepływy
+
+- [Wyszukiwanie faktur](querying-invoices.mdx)
+- [Pobieranie faktur](downloading-invoices.mdx)
+- [Interactive sending API](../reference/api/interactive-sending.md)
+- [Status and UPO API](../reference/api/status-upo.md)

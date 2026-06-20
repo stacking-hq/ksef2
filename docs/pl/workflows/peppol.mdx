@@ -1,0 +1,49 @@
+---
+title: Dostawcy PEPPOL
+description: Wyszukuj dostawców usług PEPPOL zarejestrowanych w KSeF.
+---
+
+import { Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Użyj `client.peppol`, żeby sprawdzać dostawców PEPPOL. To publiczna gałąź
+klienta głównego i nie wymaga klienta uwierzytelnionego.
+
+## Wyszukaj dostawców
+
+<Tabs syncKey="sdk-peppol-query">
+  <TabItem label="Jedna strona">
+
+```python
+page = client.peppol.query()
+
+for provider in page.providers:
+    print(provider.id, provider.name)
+```
+
+  </TabItem>
+  <TabItem label="Wszyscy dostawcy">
+
+```python
+for provider in client.peppol.all():
+    print(provider.id, provider.name, provider.date_created)
+```
+
+  </TabItem>
+</Tabs>
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Wyszukaj dostawców z klienta głównego.
+
+2. Cache'uj identyfikatory i nazwy dostawców do wyboru albo walidacji.
+
+3. Odświeżaj cache zgodnie z wymaganiami świeżości danych w produkcie.
+
+</Steps>
+
+## Referencja
+
+- [Konfiguracja klienta](client-setup.mdx)
+- [API PEPPOL](../reference/api/peppol.md)

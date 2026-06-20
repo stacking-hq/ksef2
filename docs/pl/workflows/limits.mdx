@@ -1,0 +1,91 @@
+---
+title: Limity
+description: Odczytuj i nadpisuj limity kontekstu, podmiotu i API rate limitów KSeF przez ksef2.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Użyj `auth.limits`, żeby sprawdzić efektywne limity KSeF i, gdy pozwalają na to
+poświadczenia, nadpisać limity dla TEST albo kontekstów administracyjnych.
+
+## Odczytaj efektywne limity
+
+<Tabs syncKey="sdk-limits-read">
+  <TabItem label="Sesje">
+
+```python
+context = auth.limits.get_context_limits()
+print(context.online_session.max_invoices)
+print(context.batch_session.max_invoice_size_mb)
+```
+
+  </TabItem>
+  <TabItem label="Podmiot">
+
+```python
+subject = auth.limits.get_subject_limits()
+print(subject.certificate, subject.enrollment)
+```
+
+  </TabItem>
+  <TabItem label="Rate">
+
+```python
+rate = auth.limits.get_api_rate_limits()
+print(rate.invoice_metadata.per_minute)
+```
+
+  </TabItem>
+</Tabs>
+
+## Nadpisz i zresetuj
+
+```python
+from ksef2.domain.models.limits import ContextLimits, SessionLimits
+
+limits = ContextLimits(
+    online_session=SessionLimits(
+        max_invoice_size_mb=10,
+        max_invoice_with_attachment_size_mb=20,
+        max_invoices=100,
+    ),
+    batch_session=SessionLimits(
+        max_invoice_size_mb=10,
+        max_invoice_with_attachment_size_mb=20,
+        max_invoices=1000,
+    ),
+)
+
+auth.limits.set_session_limits(limits=limits)
+auth.limits.reset_session_limits()
+```
+
+Użyj `set_production_rate_limits()`, gdy środowisko podobne do TEST ma
+odzwierciedlać produkcyjne domyślne API rate limity.
+
+<Aside type="caution" title="Nie ukrywaj zmian limitów">
+  Nadpisanie limitów wpływa na inne procesy używające tego samego kontekstu.
+  Trzymaj je w runbookach operacyjnych i resetuj po testach, które wymagają
+  własnych limitów.
+</Aside>
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Odczytaj efektywne limity przed wyborem wielkości batcha albo zachowania
+   pollingu.
+
+2. Używaj domyślnych limitów produkcyjnych, chyba że kontrolowany test wymaga
+   innej wartości.
+
+3. Stosuj nadpisania z jawnego przepływu administracyjnego.
+
+4. Resetuj limity po teście albo zmianie tymczasowej.
+
+</Steps>
+
+## Referencja
+
+- [Wysyłanie faktur](sending-invoices.mdx)
+- [API limitów](../reference/api/limits.md)

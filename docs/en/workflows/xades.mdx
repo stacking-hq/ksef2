@@ -1,0 +1,104 @@
+---
+title: XAdES Helpers
+description: Load certificates and private keys, generate TEST certificates, and sign XML for KSeF authentication.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Use XAdES helpers when you authenticate with certificate material or need to
+sign the authentication token request locally. Higher-level authentication
+methods call these helpers for the common paths.
+
+## Load certificate material
+
+<Tabs syncKey="sdk-xades-load">
+  <TabItem label="PEM">
+
+```python
+import os
+
+from ksef2.core.xades import load_certificate_from_pem, load_private_key_from_pem
+
+password = os.environ.get("KSEF2_KEY_PASSWORD")
+cert = load_certificate_from_pem("company.pem")
+private_key = load_private_key_from_pem(
+    "company.key",
+    password=password.encode() if password else None,
+)
+```
+
+  </TabItem>
+  <TabItem label="PKCS#12">
+
+```python
+import os
+
+from ksef2.core.xades import load_certificate_and_key_from_p12
+
+password = os.environ.get("KSEF2_P12_PASSWORD")
+cert, private_key = load_certificate_and_key_from_p12(
+    "company.p12",
+    password=password.encode() if password else None,
+)
+```
+
+  </TabItem>
+</Tabs>
+
+## Authenticate with XAdES
+
+```python
+auth = client.authentication.with_xades(
+    nip="5261040828",
+    cert=cert,
+    private_key=private_key,
+)
+```
+
+## Generate TEST certificates
+
+```python
+from ksef2.core.xades import generate_test_certificate
+
+cert, private_key = generate_test_certificate(nip="5261040828")
+```
+
+For personal TEST identities, use `generate_personal_test_certificate()`.
+
+## Sign XML directly
+
+```python
+from ksef2.core.xades import build_auth_token_request_xml, sign_xades
+
+xml = build_auth_token_request_xml(
+    challenge="challenge-from-ksef",
+    nip="5261040828",
+)
+signed_xml = sign_xades(xml, cert, private_key)
+```
+
+<Aside type="note" title="Prefer authentication helpers">
+  Most applications should call `client.authentication.with_xades()`. Use direct
+  signing helpers when you need diagnostics, custom certificate loading, or a
+  lower-level integration test.
+</Aside>
+
+## Recommended flow
+
+<Steps>
+
+1. Load certificate material from PEM or PKCS#12.
+
+2. Keep private-key passwords in environment variables.
+
+3. Authenticate through `with_xades()` when possible.
+
+4. Use direct signing helpers only for low-level integration work.
+
+</Steps>
+
+## Reference
+
+- [Authentication](authentication.mdx)
+- [Certificates](certificates.mdx)
+- [XAdES API](../reference/api/xades.md)

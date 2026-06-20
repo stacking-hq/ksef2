@@ -1,0 +1,78 @@
+---
+title: Tokeny
+description: Generuj, listuj, sprawdzaj i cofaj tokeny KSeF przez ksef2.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Użyj `auth.tokens`, gdy uwierzytelniony kontekst ma tworzyć albo wycofywać
+tokeny KSeF dla automatyzacji. Wartości wygenerowanych tokenów traktuj jak
+sekrety.
+
+## Wygeneruj token
+
+```python
+token = auth.tokens.generate(
+    permissions=["invoice_read"],
+    description="nightly export",
+    timeout=60.0,
+)
+
+print(token.reference_number)
+print(token.token)
+```
+
+<Aside type="caution" title="Wartość tokena jest pokazana raz">
+  Zapisz zwróconą wartość tokena od razu w magazynie sekretów. Późniejsze
+  wywołania statusu i listowania identyfikują tokeny po referencji, ale nie
+  odtwarzają sekretnej wartości.
+</Aside>
+
+## Listuj i sprawdzaj tokeny
+
+<Tabs syncKey="sdk-token-list">
+  <TabItem label="Wszystkie strony">
+
+```python
+for page in auth.tokens.list_all():
+    for item in page.tokens:
+        print(item.reference_number, item.status, item.description)
+```
+
+  </TabItem>
+  <TabItem label="Status">
+
+```python
+status = auth.tokens.status(reference_number="token-reference")
+print(status.status)
+```
+
+  </TabItem>
+</Tabs>
+
+## Cofnij token
+
+```python
+auth.tokens.revoke(reference_number="token-reference")
+```
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Wybierz najmniejszy zestaw uprawnień wymagany przez automatyzację.
+
+2. Wygeneruj token w kontekście uwierzytelnionym właściciela.
+
+3. Zapisz wartość tokena w magazynie sekretów, a referencję w metadanych.
+
+4. Listuj albo sprawdzaj referencje podczas audytów.
+
+5. Cofaj nieużywane albo naruszone tokeny.
+
+</Steps>
+
+## Referencja
+
+- [Uwierzytelnianie](authentication.mdx)
+- [API tokenów](../reference/api/tokens.md)

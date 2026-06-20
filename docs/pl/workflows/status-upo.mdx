@@ -1,0 +1,95 @@
+---
+title: Status i UPO
+description: Sprawdzaj status sesji online i batch, listuj faktury sesji i pobieraj dokumenty UPO.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Przetwarzanie w KSeF jest asynchroniczne. Przechowuj referencje sesji i
+referencje faktur, żeby sprawdzać status i pobierać UPO po zakończeniu procesu
+wysyłki.
+
+## Status sesji online
+
+```python
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    result = session.send_invoice(invoice_xml=xml_bytes)
+    invoice_status = session.wait_for_invoice_ready(
+        invoice_reference_number=result.reference_number,
+        timeout=120.0,
+    )
+    upo_xml = session.get_invoice_upo_by_reference(
+        invoice_reference_number=result.reference_number,
+    )
+```
+
+## Status batch
+
+```python
+state = auth.batch.submit_prepared_batch(prepared_batch=prepared)
+final_status = auth.batch.wait_for_completion(session=state, timeout=300.0)
+
+accepted = auth.batch.list_invoices(session=state)
+failed = auth.batch.list_failed_invoices(session=state)
+```
+
+Jeśli KSeF zwróci referencję UPO dla batcha, użyj jej do pobrania dokumentu:
+
+```python
+upo_xml = auth.batch.get_upo(
+    session=state,
+    upo_reference_number="upo-reference-from-status",
+)
+```
+
+## Przeglądanie historycznych sesji
+
+Użyj `auth.invoice_sessions`, gdy musisz znaleźć sesje po restarcie procesu.
+
+<Tabs syncKey="sdk-session-history">
+  <TabItem label="Jedna strona">
+
+```python
+page = auth.invoice_sessions.query(
+    session_type="online",
+    statuses=["processing", "completed"],
+)
+```
+
+  </TabItem>
+  <TabItem label="Wszystkie strony">
+
+```python
+for page in auth.invoice_sessions.all(session_type="batch"):
+    for item in page.sessions:
+        print(item.reference_number, item.status)
+```
+
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="Zapisuj uchwyty przed pollingiem">
+  Zapisz referencje sesji, referencje faktur, numery KSeF i referencje UPO
+  przed długim odpytywaniem. Jeśli worker się zatrzyma, te wartości pozwalają
+  innemu workerowi wznowić sprawdzanie.
+</Aside>
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Zapisz referencje sesji i faktur zwrócone przez KSeF.
+
+2. Odpytuj status sesji albo faktury do osiągnięcia stanu końcowego.
+
+3. Zapisz szczegóły faktur przyjętych i odrzuconych.
+
+4. Pobierz i zapisz odpowiedni dokument UPO.
+
+</Steps>
+
+## Referencja
+
+- [Wysyłanie faktur](sending-invoices.mdx)
+- [API statusu i UPO](../reference/api/status-upo.md)
+- [API aktywnych sesji](../reference/api/active-sessions.md)

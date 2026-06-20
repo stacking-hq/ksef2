@@ -1,0 +1,121 @@
+---
+title: Permissions
+description: Grant, query, revoke, and monitor KSeF permissions with ksef2.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Use `auth.permissions` for permission grants, revocations, search, and
+operation status checks. Permission operations return references; poll those
+references before treating the change as complete.
+
+## Grant permissions
+
+<Tabs syncKey="sdk-permission-grant">
+  <TabItem label="Person">
+
+```python
+operation = auth.permissions.grant_person(
+    subject_type="pesel",
+    subject_value="90010112345",
+    permissions=["invoice_read"],
+    description="Read invoices",
+    first_name="Jan",
+    last_name="Kowalski",
+)
+```
+
+  </TabItem>
+  <TabItem label="Entity">
+
+```python
+from ksef2.domain.models import EntityPermission
+
+operation = auth.permissions.grant_entity(
+    subject_value="1234567890",
+    permissions=[EntityPermission(type="invoice_read", can_delegate=False)],
+    description="Accounting office read access",
+    entity_name="Accounting Sp. z o.o.",
+)
+```
+
+  </TabItem>
+  <TabItem label="Authorization">
+
+```python
+operation = auth.permissions.grant_authorization(
+    subject_type="nip",
+    subject_value="1234567890",
+    permission="self_invoicing",
+    description="Self-invoicing agreement",
+    entity_name="Partner Sp. z o.o.",
+)
+```
+
+  </TabItem>
+</Tabs>
+
+## Check operation status
+
+```python
+status = auth.permissions.get_operation_status(
+    reference_number=operation.reference_number,
+)
+print(status.status.code, status.status.description)
+```
+
+## Query and revoke
+
+```python
+from ksef2.domain.models import PersonalPermissionsQuery
+
+page = auth.permissions.query_personal(
+    query=PersonalPermissionsQuery(permission_types=["invoice_read"]),
+)
+
+for permission in page.permissions:
+    print(permission.id, permission.permission_state)
+```
+
+Use the returned permission id for revocation:
+
+```python
+auth.permissions.revoke_common(permission_id="permission-id")
+auth.permissions.revoke_authorization(permission_id="authorization-id")
+```
+
+## Attachments
+
+```python
+status = auth.permissions.get_attachment_permission_status()
+print(status.is_attachment_allowed)
+```
+
+<Aside type="note" title="Queries are intentionally specific">
+  KSeF has separate query shapes for personal, person, entity, EU entity,
+  authorization, subordinate entity, and subunit permissions. Use the generated
+  reference when you need every filter field.
+</Aside>
+
+## Recommended flow
+
+<Steps>
+
+1. Grant the smallest permission set required by the target subject.
+
+2. Persist the operation reference returned by KSeF.
+
+3. Poll operation status before exposing the permission in your application.
+
+4. Query permissions to collect ids for audits or revocation.
+
+5. Revoke by permission id when access should end.
+
+</Steps>
+
+## Reference
+
+- [Permission grants API](../reference/api/permission-grants.md)
+- [Permission search API](../reference/api/permission-search.md)
+- [Permission operations API](../reference/api/permission-operations.md)
+- [Permission revokes API](../reference/api/permission-revokes.md)

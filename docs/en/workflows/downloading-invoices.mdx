@@ -1,0 +1,97 @@
+---
+title: Downloading Invoices
+description: Download processed invoice XML directly or through encrypted export packages with ksef2.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Use direct download when you already know one KSeF number. Use exports when you
+need many invoices or want the SDK to download encrypted package parts.
+
+## Download one invoice
+
+```python
+xml_bytes = auth.invoices.download_invoice(ksef_number="KSeF-number")
+
+with open("invoice.xml", "wb") as handle:
+    handle.write(xml_bytes)
+```
+
+If the invoice was just sent, poll until KSeF makes the processed XML
+downloadable:
+
+```python
+xml_bytes = auth.invoices.wait_for_invoice_download(
+    ksef_number="KSeF-number",
+    timeout=120.0,
+    poll_interval=2.0,
+)
+```
+
+## Export many invoices
+
+Exports are asynchronous. Schedule an export from filters, wait for the package,
+then fetch decrypted ZIP parts.
+
+<Tabs syncKey="sdk-download-export">
+  <TabItem label="Save files">
+
+```python
+export = auth.invoices.schedule_export(filters=filters)
+package = auth.invoices.wait_for_export_package(
+    reference_number=export.reference_number,
+    timeout=300.0,
+)
+
+for path in auth.invoices.fetch_package(
+    package=package,
+    export=export,
+    target_directory="downloads",
+):
+    print(path)
+```
+
+  </TabItem>
+  <TabItem label="In memory">
+
+```python
+zip_parts = auth.invoices.export_and_download(
+    filters=filters,
+    timeout=300.0,
+)
+
+for part in zip_parts:
+    print(len(part))
+```
+
+  </TabItem>
+</Tabs>
+
+<Aside type="note" title="Encryption is handled by the SDK">
+  Export packages are encrypted by KSeF. The high-level export helpers load a
+  valid KSeF encryption certificate, schedule the export, download the package
+  parts, and decrypt them before returning bytes or saved paths.
+</Aside>
+
+## After sending invoices
+
+If your workflow sends and then downloads invoices, keep the two phases
+separate:
+
+<Steps>
+
+1. Send XML through an online or batch session.
+
+2. Persist the returned KSeF number or session reference.
+
+3. Poll session status or metadata until processing completes.
+
+4. Download by KSeF number, or build an export filter for the same period.
+
+</Steps>
+
+## Next workflows
+
+- [Send invoices](sending-invoices.mdx)
+- [Query invoices](querying-invoices.mdx)
+- [Invoice retrieval API](../reference/api/invoice-retrieval.md)

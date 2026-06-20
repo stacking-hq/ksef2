@@ -1,0 +1,105 @@
+---
+title: Konfiguracja klienta
+description: Utwórz klienta sync albo async, skonfiguruj transport i wybierz uwierzytelnione gałęzie.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Klient główny `Client` przechowuje konfigurację transportu HTTP i udostępnia
+publiczne, nieuwierzytelnione gałęzie. Uwierzytelnij się raz dla kontekstu KSeF,
+a potem przekaż uwierzytelnionego klienta do kodu przepływu.
+
+## Wybierz sync albo async
+
+<Tabs syncKey="sdk-client-kind">
+  <TabItem label="Sync">
+
+```python
+from ksef2 import Client, Environment
+
+with Client(Environment.TEST) as client:
+    auth = client.authentication.with_test_certificate(nip="5261040828")
+```
+
+  </TabItem>
+  <TabItem label="Async">
+
+```python
+from ksef2 import AsyncClient, Environment
+
+async with AsyncClient(Environment.TEST) as client:
+    auth = await client.authentication.with_test_certificate(nip="5261040828")
+```
+
+  </TabItem>
+</Tabs>
+
+Poza lokalnymi przepływami TEST używaj `Environment.DEMO` albo
+`Environment.PRODUCTION`.
+
+## Publiczne gałęzie klienta głównego
+
+Klient główny przydaje się przed uwierzytelnieniem:
+
+```python
+certificates = client.encryption.get_certificates()
+providers = client.peppol.query()
+```
+
+Gałąź tylko dla TEST także jest na kliencie głównym:
+
+```python
+client.testdata.create_subject(
+    nip="5261040828",
+    subject_type="vat_group",
+    description="Sandbox company",
+)
+```
+
+## Gałęzie uwierzytelnione
+
+Po uwierzytelnieniu użyj gałęzi pasującej do zadania:
+
+```python
+invoices = auth.invoices
+batch = auth.batch
+tokens = auth.tokens
+permissions = auth.permissions
+certificates = auth.certificates
+limits = auth.limits
+sessions = auth.sessions
+invoice_sessions = auth.invoice_sessions
+```
+
+<Aside type="note" title="Oddziel klienta głównego od uwierzytelnionego">
+  Klient główny wybiera środowisko i transport. Klient uwierzytelniony trzyma
+  tokeny bearer i gałęzie zależne od kontekstu. Przekazywanie
+  uwierzytelnionego klienta do kodu przepływów trzyma stan auth poza kodem
+  konfiguracji.
+</Aside>
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Odczytaj środowisko i ustawienia transportu na granicy aplikacji.
+
+2. Utwórz jednego klienta głównego dla wybranego środowiska KSeF.
+
+3. Używaj gałęzi głównych tylko do publicznych odczytów albo przygotowania
+   danych TEST.
+
+4. Uwierzytelnij się raz dla kontekstu, który wykonuje operację.
+
+5. Przekaż uwierzytelnionego klienta do przepływów faktur, tokenów, uprawnień,
+   certyfikatów, limitów i sesji.
+
+</Steps>
+
+## Referencja
+
+- [Uwierzytelnianie](authentication.mdx)
+- [Certyfikaty szyfrowania](encryption-certificates.mdx)
+- [Dostawcy PEPPOL](peppol.mdx)
+- [Dane TEST](test-data.mdx)
+- [API cyklu życia klienta](../reference/api/client-lifecycle.md)

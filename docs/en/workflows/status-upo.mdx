@@ -1,0 +1,96 @@
+---
+title: Status and UPO
+description: Check online and batch session status, list session invoices, and download UPO documents.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+KSeF processing is asynchronous. Keep session references and invoice reference
+numbers so you can inspect status and download UPO documents after the sending
+process exits.
+
+## Online session status
+
+```python
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    result = session.send_invoice(invoice_xml=xml_bytes)
+    invoice_status = session.wait_for_invoice_ready(
+        invoice_reference_number=result.reference_number,
+        timeout=120.0,
+    )
+    upo_xml = session.get_invoice_upo_by_reference(
+        invoice_reference_number=result.reference_number,
+    )
+```
+
+## Batch status
+
+```python
+state = auth.batch.submit_prepared_batch(prepared_batch=prepared)
+final_status = auth.batch.wait_for_completion(session=state, timeout=300.0)
+
+accepted = auth.batch.list_invoices(session=state)
+failed = auth.batch.list_failed_invoices(session=state)
+```
+
+If KSeF returns an UPO reference for the batch, use it to download the document:
+
+```python
+upo_xml = auth.batch.get_upo(
+    session=state,
+    upo_reference_number="upo-reference-from-status",
+)
+```
+
+## Historical session browsing
+
+Use `auth.invoice_sessions` when you need to find sessions after process
+restart.
+
+<Tabs syncKey="sdk-session-history">
+  <TabItem label="One page">
+
+```python
+page = auth.invoice_sessions.query(
+    session_type="online",
+    statuses=["processing", "completed"],
+)
+```
+
+  </TabItem>
+  <TabItem label="All pages">
+
+```python
+for page in auth.invoice_sessions.all(session_type="batch"):
+    for item in page.sessions:
+        print(item.reference_number, item.status)
+```
+
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="Persist handles before polling">
+  Store session references, invoice reference numbers, KSeF numbers, and UPO
+  references before long polling. If your worker stops, these values are what
+  let another worker resume inspection.
+</Aside>
+
+## Recommended flow
+
+<Steps>
+
+1. Persist session and invoice references returned by KSeF.
+
+2. Poll the session or invoice status until it reaches a terminal state.
+
+3. Persist accepted and failed invoice details.
+
+4. Download and store the relevant UPO document.
+
+</Steps>
+
+## Reference
+
+- [Sending invoices](sending-invoices.mdx)
+- [Status and UPO API](../reference/api/status-upo.md)
+- [Active sessions API](../reference/api/active-sessions.md)

@@ -1,0 +1,158 @@
+---
+title: Sending Invoices
+description: Send FA(3) XML through ksef2 online sessions or batch sessions.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+ksef2 supports two sending workflows:
+
+- **Online sessions** for interactive, short-lived submission.
+- **Batch sessions** for larger sets of invoice XML files.
+
+Both workflows encrypt invoice payloads before upload and return session
+references that you can use for status checks.
+
+## Online session
+
+Use an online session when you want to send one or a few invoices and get a KSeF
+number back in the same process.
+
+```python
+from pathlib import Path
+
+from ksef2 import FormSchema
+
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    status = session.send_invoice_and_wait(
+        invoice_xml=Path("invoice.xml").read_bytes(),
+        timeout=60.0,
+        poll_interval=2.0,
+    )
+    print(status.ksef_number)
+```
+
+The context manager closes the online session when the block exits.
+
+## Poll manually
+
+Use the lower-level calls when you need to persist the invoice reference number
+or attach your own retry policy.
+
+```python
+from pathlib import Path
+
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    result = session.send_invoice(invoice_xml=Path("invoice.xml").read_bytes())
+    print(result.reference_number)
+
+    status = session.wait_for_invoice_ready(
+        invoice_reference_number=result.reference_number,
+        timeout=120.0,
+    )
+    print(status.ksef_number)
+```
+
+## Batch session
+
+Use batch sessions when you need to submit many XML files as one batch. The
+service can prepare a package, upload all parts, close the session, and then
+poll until processing finishes.
+
+<Tabs syncKey="sdk-batch-source">
+  <TabItem label="From paths">
+
+```python
+from pathlib import Path
+
+from ksef2 import FormSchema
+
+prepared = auth.batch.prepare_batch_from_paths(
+    invoice_paths=[
+        Path("invoice-1.xml"),
+        Path("invoice-2.xml"),
+    ],
+    form_code=FormSchema.FA3,
+)
+
+state = auth.batch.submit_prepared_batch(prepared_batch=prepared)
+final_status = auth.batch.wait_for_completion(session=state, timeout=300.0)
+print(final_status.reference_number)
+```
+
+  </TabItem>
+  <TabItem label="From bytes">
+
+```python
+from pathlib import Path
+
+from ksef2 import FormSchema
+from ksef2.domain.models import BatchInvoice
+
+state = auth.batch.submit_batch(
+    invoices=[
+        BatchInvoice(
+            file_name="invoice-1.xml",
+            content=Path("invoice-1.xml").read_bytes(),
+        ),
+        BatchInvoice(
+            file_name="invoice-2.xml",
+            content=Path("invoice-2.xml").read_bytes(),
+        ),
+    ],
+    form_code=FormSchema.FA3,
+)
+
+final_status = auth.batch.wait_for_completion(session=state, timeout=300.0)
+print(final_status.reference_number)
+```
+
+  </TabItem>
+</Tabs>
+
+## Inspect results
+
+```python
+accepted = auth.batch.list_invoices(session=state)
+failed = auth.batch.list_failed_invoices(session=state)
+
+print(len(accepted.invoices), len(failed.invoices))
+```
+
+If the final status exposes an UPO reference, download the collective UPO with:
+
+```python
+upo_xml = auth.batch.get_upo(
+    session=state,
+    upo_reference_number="upo-reference-from-status",
+)
+```
+
+<Aside type="tip" title="Persist references">
+  Store `reference_number`, invoice reference numbers, KSeF numbers, and UPO
+  references outside the process that sent the invoices. They are the handles
+  you need for retries, audits, and later downloads.
+</Aside>
+
+## Recommended flow
+
+<Steps>
+
+1. Authenticate for the seller context.
+
+2. Choose online or batch sending.
+
+3. Send XML and persist returned references.
+
+4. Poll until KSeF returns a terminal result.
+
+5. Query metadata or download invoice XML after KSeF processing completes.
+
+</Steps>
+
+## Next workflows
+
+- [Query invoices](querying-invoices.mdx)
+- [Download invoices](downloading-invoices.mdx)
+- [Interactive sending API](../reference/api/interactive-sending.md)
+- [Status and UPO API](../reference/api/status-upo.md)

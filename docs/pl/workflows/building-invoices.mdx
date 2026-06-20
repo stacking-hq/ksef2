@@ -1,0 +1,114 @@
+---
+title: Budowanie faktur
+description: Zbuduj XML faktury FA(3) typowanymi pomocnikami ksef2 przed wysyłką do KSeF.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+Użyj `ksef2.fa3`, gdy aplikacja ma dane faktury jako obiekty Pythona i chcesz,
+żeby SDK wygenerowało XML FA(3). Użyj przepływów wysyłki, gdy masz już XML z
+innego systemu.
+
+## Zbuduj fakturę standardową
+
+```python
+from datetime import date
+from decimal import Decimal
+
+from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+
+builder = (
+    FA3InvoiceBuilder()
+    .header(system_info="billing-service")
+    .seller(
+        name="ACME S.A.",
+        tax_id="1234567890",
+        country_code="PL",
+        address_line_1="ul. Przykladowa 123",
+    )
+    .buyer(
+        name="XYZ GmbH",
+        country_code="DE",
+        address_line_1="Unter den Linden 1",
+    )
+    .standard()
+        .issue_place("Warszawa")
+        .issue_date(date(2026, 3, 29))
+        .invoice_number("FV/2026/03/0001")
+        .rows()
+            .add_line(
+                name="Consulting service",
+                supply_date=date(2026, 3, 29),
+                unit_of_measure="h",
+                quantity=Decimal("10"),
+                unit_price_net=Decimal("100.00"),
+                vat_rate=VatRate.VAT_23,
+            )
+        .done()
+    .done()
+)
+
+xml_bytes = builder.to_xml().encode("utf-8")
+```
+
+Każde `.done()` wraca do poprzedniego poziomu buildera.
+
+## Wybierz rodzaj faktury
+
+- `standard()`
+- `simplified()`
+- `correction()`
+- `advance()`
+- `settlement()`
+- `correction_advance()`
+- `correction_settlement()`
+
+## Zapisuj wersje robocze
+
+Zapisuj stan buildera, gdy edycja faktury może trwać przez wiele żądań albo
+sesji użytkownika.
+
+```python
+from ksef2.fa3 import FA3InvoiceBuilder, KsefInvoiceDraft
+
+json_text = builder.dump_state_json(indent=2)
+draft = KsefInvoiceDraft.model_validate_json(json_text)
+restored = FA3InvoiceBuilder.from_state(draft)
+```
+
+## Wyślij wynik buildera
+
+```python
+from ksef2 import FormSchema
+
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    status = session.send_invoice_and_wait(invoice_xml=xml_bytes)
+    print(status.ksef_number)
+```
+
+<Aside type="tip" title="Budowanie i wysyłka to oddzielne przepływy">
+  Generowanie XML traktuj jako pracę po stronie aplikacji. Wysyłkę online albo
+  batch traktuj jako pracę po stronie KSeF. Gdy retry ma znaczenie, zapisz XML
+  albo stan draftu przed otwarciem sesji KSeF.
+</Aside>
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Przenieś dane aplikacji do buildera FA(3).
+
+2. Wybierz rodzaj faktury i uzupełnij wymagane sekcje zagnieżdżone.
+
+3. Zapisz stan draftu, jeśli użytkownicy mogą przerwać edycję.
+
+4. Wyrenderuj XML metodą `to_xml()`.
+
+5. Wyślij XML przez przepływ online albo batch.
+
+</Steps>
+
+## Referencja
+
+- [Wysyłanie faktur](sending-invoices.mdx)
+- [Referencja API FA(3)](../reference/api/fa3.md)

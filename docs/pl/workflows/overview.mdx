@@ -1,0 +1,135 @@
+---
+title: Przegląd przepływów
+description: Wybierz właściwy przepływ ksef2 dla publicznej powierzchni SDK.
+---
+
+import { Aside, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
+
+Ta sekcja jest dla sytuacji, w których znasz już podstawowy kształt SDK i
+chcesz wykonać konkretne zadanie w KSeF. Quickstart pokazuje jedną ścieżkę od
+początku do końca; tutaj rozbijamy typowe decyzje produkcyjne.
+
+<CardGrid>
+  <LinkCard
+    title="Skonfiguruj klientów"
+    href="client-setup/"
+    description="Wybierz sync albo async, publiczne gałęzie klienta głównego i uwierzytelnione gałęzie przepływów."
+  />
+  <LinkCard
+    title="Uwierzytelnij się"
+    href="authentication/"
+    description="Wybierz certyfikat TEST, token KSeF, certyfikat XAdES, zmienne środowiskowe albo profile kompatybilne z CLI."
+  />
+  <LinkCard
+    title="Zbuduj faktury"
+    href="building-invoices/"
+    description="Wygeneruj XML FA(3) typowanymi builderami Pythona przed otwarciem sesji KSeF."
+  />
+  <LinkCard
+    title="Wyślij faktury"
+    href="sending-invoices/"
+    description="Wyślij XML FA(3) przez sesję online albo sesję wsadową i sprawdź wynik przetwarzania."
+  />
+  <LinkCard
+    title="Wyszukaj faktury"
+    href="querying-invoices/"
+    description="Zbuduj filtry metadanych, przejdź po stronach wyników i czekaj na widoczność nowych faktur."
+  />
+  <LinkCard
+    title="Pobierz faktury"
+    href="downloading-invoices/"
+    description="Pobierz jedną fakturę po numerze KSeF albo zaplanuj szyfrowany eksport paczek."
+  />
+  <LinkCard
+    title="Sprawdź status i UPO"
+    href="status-upo/"
+    description="Odpytuj status online albo batch, listuj faktury sesji i pobieraj dokumenty UPO."
+  />
+  <LinkCard
+    title="Zarządzaj tokenami"
+    href="tokens/"
+    description="Generuj, listuj, sprawdzaj i cofaj tokeny KSeF dla automatyzacji."
+  />
+  <LinkCard
+    title="Zarządzaj uprawnieniami"
+    href="permissions/"
+    description="Nadawaj, wyszukuj, odbieraj i monitoruj uprawnienia KSeF."
+  />
+  <LinkCard
+    title="Zarządzaj certyfikatami"
+    href="certificates/"
+    description="Sprawdzaj limity, rejestruj certyfikaty, pobieraj wydane materiały i cofaj certyfikaty."
+  />
+  <LinkCard
+    title="Sprawdź limity"
+    href="limits/"
+    description="Odczytuj i nadpisuj limity kontekstu, podmiotu oraz API rate limity."
+  />
+  <LinkCard
+    title="Certyfikaty szyfrowania"
+    href="encryption-certificates/"
+    description="Sprawdzaj publiczne certyfikaty KSeF używane w szyfrowanych przepływach faktur i eksportów."
+  />
+  <LinkCard
+    title="Dostawcy PEPPOL"
+    href="peppol/"
+    description="Wyszukuj publiczne dane dostawców PEPPOL z klienta głównego."
+  />
+  <LinkCard
+    title="Dane TEST"
+    href="test-data/"
+    description="Twórz sandboxowe podmioty, uprawnienia, flagi załączników i fixture'y z temporal cleanup."
+  />
+  <LinkCard
+    title="Pomocniki XAdES"
+    href="xades/"
+    description="Ładuj materiał certyfikatu, generuj certyfikaty TEST i podpisuj XML."
+  />
+</CardGrid>
+
+<Aside type="tip" title="Sync i async mają ten sam przepływ">
+  Klient async ma te same gałęzie i nazwy metod. Użyj `AsyncClient`, wywołania
+  sieciowe poprzedź `await`, a cykl życia klienta i sesji obsłuż przez
+  `async with`.
+</Aside>
+
+## Typowa kolejność
+
+<Steps>
+
+1. Skonfiguruj środowisko i dane uwierzytelniające.
+
+   Sekrety trzymaj w zmiennych środowiskowych, a niesekretne ustawienia w
+   lokalnej konfiguracji.
+
+2. Uwierzytelnij się dla wybranego kontekstu.
+
+   Uwierzytelniony klient udostępnia `online_session`, `batch`, `invoices`,
+   `tokens`, `permissions`, `certificates` i inne gałęzie przepływów.
+
+3. Uruchom gałąź przepływu, która odpowiada za zadanie.
+
+   Użyj publicznych gałęzi klienta głównego do certyfikatów szyfrowania, lookupu
+   PEPPOL i danych TEST. Użyj gałęzi uwierzytelnionych do faktur, sesji,
+   tokenów, uprawnień, certyfikatów i limitów.
+
+4. Poczekaj na przetwarzanie w KSeF albo status operacji.
+
+   Pomocniki wysokiego poziomu potrafią odpytywać status faktury, zakończenie
+   batcha, operacje uprawnień, rejestrację certyfikatu, widoczność w metadanych
+   i gotowość paczki eksportu.
+
+5. Zapisz wynik biznesowy.
+
+   Zapisuj numery KSeF, referencje sesji, referencje operacji, uchwyty
+   eksportu, pobrany XML, referencje tokenów, numery seryjne certyfikatów i UPO
+   zgodnie z polityką retencji aplikacji.
+
+</Steps>
+
+## Powiązane strony
+
+- [Quickstart](../getting-started/quickstart.md)
+- [Konfiguracja klienta](client-setup.mdx)
+- [Budowanie faktur](building-invoices.mdx)
+- [Referencja API](../reference/api-signatures.md)

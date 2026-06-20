@@ -1,0 +1,88 @@
+---
+title: Limits
+description: Read and override KSeF context, subject, and API rate limits through ksef2.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Use `auth.limits` to inspect effective KSeF limits and, where your credentials
+allow it, override limits for TEST or administrative contexts.
+
+## Read effective limits
+
+<Tabs syncKey="sdk-limits-read">
+  <TabItem label="Sessions">
+
+```python
+context = auth.limits.get_context_limits()
+print(context.online_session.max_invoices)
+print(context.batch_session.max_invoice_size_mb)
+```
+
+  </TabItem>
+  <TabItem label="Subject">
+
+```python
+subject = auth.limits.get_subject_limits()
+print(subject.certificate, subject.enrollment)
+```
+
+  </TabItem>
+  <TabItem label="Rate">
+
+```python
+rate = auth.limits.get_api_rate_limits()
+print(rate.invoice_metadata.per_minute)
+```
+
+  </TabItem>
+</Tabs>
+
+## Override and reset
+
+```python
+from ksef2.domain.models.limits import ContextLimits, SessionLimits
+
+limits = ContextLimits(
+    online_session=SessionLimits(
+        max_invoice_size_mb=10,
+        max_invoice_with_attachment_size_mb=20,
+        max_invoices=100,
+    ),
+    batch_session=SessionLimits(
+        max_invoice_size_mb=10,
+        max_invoice_with_attachment_size_mb=20,
+        max_invoices=1000,
+    ),
+)
+
+auth.limits.set_session_limits(limits=limits)
+auth.limits.reset_session_limits()
+```
+
+Use `set_production_rate_limits()` when a TEST-like environment should mirror
+production API rate defaults.
+
+<Aside type="caution" title="Do not hide limit changes">
+  Limit overrides affect other processes using the same context. Keep them in
+  operational runbooks and reset them after tests that need custom limits.
+</Aside>
+
+## Recommended flow
+
+<Steps>
+
+1. Read effective limits before choosing batch size or polling behavior.
+
+2. Use production defaults unless a controlled test needs a different limit.
+
+3. Apply overrides from an explicit admin workflow.
+
+4. Reset limits after the test or temporary change.
+
+</Steps>
+
+## Reference
+
+- [Sending invoices](sending-invoices.mdx)
+- [Limits API](../reference/api/limits.md)

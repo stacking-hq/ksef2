@@ -1,0 +1,94 @@
+---
+title: Certificates
+description: Check certificate limits, enroll certificates, query issued certificates, and revoke certificates.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Use `auth.certificates` for the KSeF certificate lifecycle. The SDK sends CSR
+and lifecycle requests; your application or certificate tooling still owns key
+generation and CSR creation.
+
+## Check limits and enrollment data
+
+```python
+limits = auth.certificates.get_limits()
+print(limits.can_request, limits.enrollment_remaining)
+
+subject = auth.certificates.get_enrollment_data()
+print(subject.common_name, subject.country_name)
+```
+
+## Enroll and poll
+
+```python
+enrollment = auth.certificates.enroll(
+    certificate_name="billing-service",
+    certificate_type="authentication",
+    csr="-----BEGIN CERTIFICATE REQUEST-----\n...\n-----END CERTIFICATE REQUEST-----",
+)
+
+status = auth.certificates.get_enrollment_status(
+    reference_number=enrollment.reference_number,
+)
+print(status.status_code, status.certificate_serial_number)
+```
+
+## Retrieve, query, and revoke
+
+<Tabs syncKey="sdk-cert-lifecycle">
+  <TabItem label="Query">
+
+```python
+for certificate in auth.certificates.all(status="active"):
+    print(certificate.serial_number, certificate.name, certificate.valid_to)
+```
+
+  </TabItem>
+  <TabItem label="Retrieve">
+
+```python
+result = auth.certificates.retrieve(
+    certificate_serial_numbers=["0123456789ABCDEF"],
+)
+```
+
+  </TabItem>
+  <TabItem label="Revoke">
+
+```python
+auth.certificates.revoke(
+    certificate_serial_number="0123456789ABCDEF",
+    reason="key_compromise",
+)
+```
+
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="Keep private keys outside the docs workflow">
+  The SDK never needs to see a private key for certificate enrollment itself.
+  Generate and protect private keys in your certificate tooling, then submit
+  only the CSR to KSeF.
+</Aside>
+
+## Recommended flow
+
+<Steps>
+
+1. Check certificate and enrollment quotas.
+
+2. Fetch enrollment subject data.
+
+3. Generate a private key and CSR outside the SDK.
+
+4. Submit enrollment and persist the reference number.
+
+5. Poll status, retrieve the certificate, and store it with its private key.
+
+</Steps>
+
+## Reference
+
+- [XAdES helpers](xades.mdx)
+- [Certificates API](../reference/api/certificates.md)

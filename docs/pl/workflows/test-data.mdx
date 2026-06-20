@@ -1,0 +1,84 @@
+---
+title: Dane TEST
+description: Twórz sandboxowe podmioty, osoby, uprawnienia, flagi załączników i blokady kontekstów w TEST.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Używaj `client.testdata` tylko w `Environment.TEST`. Te pomocniki modyfikują
+dane sandboxa, dzięki czemu testy i demo mogą tworzyć znane konteksty.
+
+## Twórz i sprzątaj ręcznie
+
+```python
+client.testdata.create_subject(
+    nip="5261040828",
+    subject_type="vat_group",
+    description="Sandbox company",
+)
+
+client.testdata.enable_attachments(nip="5261040828")
+
+client.testdata.delete_subject(nip="5261040828")
+```
+
+## Użyj temporal cleanup
+
+Pomocnik temporal zapisuje mutacje i próbuje je posprzątać przy wyjściu z bloku.
+
+<Tabs syncKey="sdk-testdata-temporal">
+  <TabItem label="Podmiot">
+
+```python
+with client.testdata.temporal() as data:
+    data.create_subject(
+        nip="5261040828",
+        subject_type="vat_group",
+        description="Integration test subject",
+    )
+    data.enable_attachments(nip="5261040828")
+```
+
+  </TabItem>
+  <TabItem label="Uprawnienia">
+
+```python
+from ksef2.domain.models import Identifier, Permission
+
+with client.testdata.temporal() as data:
+    data.grant_permissions(
+        permissions=[Permission(type="invoice_read", description="Read invoices")],
+        grant_to=Identifier(type="nip", value="1111111111"),
+        in_context_of=Identifier(type="nip", value="5261040828"),
+    )
+```
+
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="Tylko TEST">
+  Gałąź danych TEST istnieje do przygotowania fixture'ów sandboxa. Nie buduj
+  przepływów produktu zależnych od niej w DEMO albo PRODUCTION.
+</Aside>
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Utwórz podmioty, osoby, uprawnienia albo flagi załączników wymagane przez
+   test.
+
+2. Użyj `temporal()` dla fixture'ów, które powinny zostać posprzątane
+   automatycznie.
+
+3. Użyj bezpośrednich metod create/delete, gdy setup jest współdzielony przez
+   wiele uruchomień testów.
+
+4. Trzymaj wygenerowane identyfikatory w konfiguracji testów, nie produkcji.
+
+</Steps>
+
+## Referencja
+
+- [Konfiguracja klienta](client-setup.mdx)
+- [API danych TEST](../reference/api/testdata.md)

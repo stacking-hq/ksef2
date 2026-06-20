@@ -1,0 +1,66 @@
+---
+title: Encryption Certificates
+description: Read public KSeF encryption certificates used by encrypted invoice and export workflows.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+KSeF publishes public certificates used to encrypt session keys and export
+material. High-level invoice and batch helpers load these certificates
+automatically. Use `client.encryption` directly when you need to inspect,
+cache, or pre-load certificate material.
+
+## Fetch certificates
+
+```python
+certificates = client.encryption.get_certificates()
+
+for certificate in certificates:
+    print(certificate.public_key_id, certificate.usage)
+```
+
+Filter by usage when you only need one certificate family:
+
+```python
+certificates = client.encryption.get_certificates(
+    usage=["symmetric_key_encryption"],
+)
+```
+
+## How the SDK uses them
+
+Authenticated invoice sessions and exports call the encryption certificate
+branch before encrypting payload keys:
+
+```python
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    ...
+
+zip_parts = auth.invoices.export_and_download(filters=filters)
+```
+
+<Aside type="tip" title="Prefer high-level workflows">
+  Most applications do not need to call `client.encryption` directly. Use it
+  when you want startup checks, custom caching, or diagnostics for encryption
+  certificate availability.
+</Aside>
+
+## Recommended flow
+
+<Steps>
+
+1. Let high-level invoice workflows load certificates lazily by default.
+
+2. Optionally pre-load public certificates during application startup.
+
+3. Alert if no certificate supports the usage required by your workflow.
+
+4. Retry later rather than hard-coding certificate data in your application.
+
+</Steps>
+
+## Reference
+
+- [Sending invoices](sending-invoices.mdx)
+- [Downloading invoices](downloading-invoices.mdx)
+- [Public key certificates API](../reference/api/public-key-certificates.md)

@@ -1,20 +1,24 @@
 ---
 title: Quickstart
-description: Wyślij i pobierz faktury klientem ksef2.
+description: Send and query invoices with sync or async ksef2 clients.
 ---
 
-Ten przykład pokazuje podstawowy przepływ w środowisku TEST: klient,
-uwierzytelnienie, wysyłka faktury FA(3) i eksport metadanych.
+This page shows the shape of the SDK in the TEST environment. You create a
+client, authenticate, send one FA(3) invoice, then query recent invoice
+metadata.
 
-## Instalacja
+## Install
 
 ```bash
 pip install ksef2
 ```
 
-ksef2 wymaga Pythona 3.12 lub nowszego.
+ksef2 requires Python 3.12 or newer.
 
-## Wyślij fakturę
+## Send an invoice
+
+Use `Client` in scripts and command-line tools. Use `AsyncClient` only when your
+application already owns an event loop.
 
 ```python
 from datetime import datetime, timedelta, timezone
@@ -57,7 +61,10 @@ for path in auth.invoices.fetch_package(
     print(path)
 ```
 
-## Wersja async
+## Async shape
+
+The async client uses the same branches and method names. Await network calls
+and use async context managers for client/session lifecycles.
 
 ```python
 import asyncio
@@ -65,10 +72,12 @@ from pathlib import Path
 
 from ksef2 import AsyncClient, Environment, FormSchema
 
+NIP = "5261040828"
+
 
 async def main() -> None:
     async with AsyncClient(Environment.TEST) as client:
-        auth = await client.authentication.with_test_certificate(nip="5261040828")
+        auth = await client.authentication.with_test_certificate(nip=NIP)
 
         async with auth.online_session(form_code=FormSchema.FA3) as session:
             status = await session.send_invoice_and_wait(
@@ -81,11 +90,21 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-## Co dalej
+## What happened
 
-- [Konfiguracja klienta](../workflows/client-setup.mdx)
-- [Budowanie faktur](../workflows/building-invoices.mdx)
-- [Uwierzytelnianie](../workflows/authentication.mdx)
-- [Wysyłanie faktur](../workflows/sending-invoices.mdx)
-- [Pobieranie faktur](../workflows/downloading-invoices.mdx)
-- [Referencja API](../reference/api-signatures.md)
+1. The root client selected the TEST environment.
+2. `with_test_certificate()` created a TEST-only XAdES certificate and returned
+   an authenticated client.
+3. `online_session()` opened an invoice session with encryption material.
+4. `send_invoice_and_wait()` sent XML and waited until KSeF assigned a number.
+5. `auth.invoices` handled metadata export and package download outside the
+   sending session.
+
+## Related pages
+
+- [Client setup](../workflows/client-setup.mdx)
+- [Building invoices](../workflows/building-invoices.mdx)
+- [Authentication workflow](../workflows/authentication.mdx)
+- [Sending invoices](../workflows/sending-invoices.mdx)
+- [Downloading invoices](../workflows/downloading-invoices.mdx)
+- [API reference](../reference/api-signatures.md)
