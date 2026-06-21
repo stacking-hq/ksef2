@@ -57,6 +57,16 @@ for path in auth.invoices.fetch_package(
     print(path)
 ```
 
+Przy powtarzalnej pracy lokalnej lub produkcyjnej utwórz profil kompatybilny z
+CLI i użyj tego samego profilu z Pythona:
+
+```python
+from ksef2 import Client, Environment
+
+client = Client(Environment.PRODUCTION)
+auth = client.authentication.with_profile("prod-token")
+```
+
 ## Wersja async
 
 ```python

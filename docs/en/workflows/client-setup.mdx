@@ -37,6 +37,16 @@ async with AsyncClient(Environment.TEST) as client:
 Use `Environment.DEMO` or `Environment.PRODUCTION` outside local TEST
 workflows.
 
+When credentials live in a CLI-compatible profile, create the root client for
+the profile environment and authenticate through `with_profile()`:
+
+```python
+from ksef2 import Client, Environment
+
+client = Client(Environment.PRODUCTION)
+auth = client.authentication.with_profile("prod-token")
+```
+
 ## Public root branches
 
 The root client is useful before authentication:

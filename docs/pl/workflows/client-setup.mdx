@@ -37,6 +37,17 @@ async with AsyncClient(Environment.TEST) as client:
 Poza lokalnymi przepływami TEST używaj `Environment.DEMO` albo
 `Environment.PRODUCTION`.
 
+Gdy dane uwierzytelniające są zapisane w profilu kompatybilnym z CLI, utwórz
+klienta głównego dla środowiska profilu i uwierzytelnij się przez
+`with_profile()`:
+
+```python
+from ksef2 import Client, Environment
+
+client = Client(Environment.PRODUCTION)
+auth = client.authentication.with_profile("prod-token")
+```
+
 ## Publiczne gałęzie klienta głównego
 
 Klient główny przydaje się przed uwierzytelnieniem:
