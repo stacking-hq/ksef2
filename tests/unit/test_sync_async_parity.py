@@ -14,6 +14,7 @@ PACKAGES = ("ksef2.clients", "ksef2.endpoints", "ksef2.services")
 
 SKIPPED_MODULES = {
     "ksef2.clients._metadata_pagination": "shared pagination helpers, not a public sync facade",
+    "ksef2.clients.profiles": "shared profile configuration models, not a public sync facade",
     "ksef2.endpoints.shared": "shared endpoint helper protocols, not a public sync facade",
     "ksef2.services.auth": "sync-only authentication helper module with no async facade class",
     "ksef2.services.batch_preparation": "shared batch preparation helpers, not a public sync facade",

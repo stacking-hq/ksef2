@@ -1,3 +1,14 @@
+## v0.18.0 (2026-06-21)
+
+### Feat
+
+- **profiles**: add public profile store API
+- **auth**: authenticate from ksef2-cli compatible profiles
+
+### Docs
+
+- expand English and Polish SDK profile documentation
+
 ## v0.17.1 (2026-06-16)
 
 ### Docs

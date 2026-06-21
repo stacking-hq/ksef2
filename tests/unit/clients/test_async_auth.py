@@ -1,5 +1,5 @@
 import asyncio
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from cryptography.x509 import Certificate
@@ -12,6 +12,7 @@ from ksef2.core.exceptions import (
     KSeFAuthError,
     KSeFAuthPollingTimeoutError,
     KSeFUnsupportedEnvironmentError,
+    KSeFValidationError,
     NoCertificateAvailableError,
 )
 from ksef2.core.routes import AuthRoutes
@@ -281,3 +282,75 @@ class TestAsyncAuthClient:
         assert kwargs["verify_chain"] is True
         assert kwargs["timeout"] == 5.0
         assert kwargs["poll_interval"] == 2.0
+
+    def test_with_profile_uses_active_token_profile(
+        self,
+        async_fake_transport: AsyncFakeTransport,
+        domain_auth_tokens: BaseFactory[AuthTokens],
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+    ) -> None:
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            """
+            active_profile = "prod-token"
+
+            [profiles.prod-token]
+            environment = "production"
+            nip = "5261040828"
+            poll_interval = 2.0
+            max_poll_attempts = 10
+
+            [profiles.prod-token.auth]
+            type = "token"
+            token_env = "KSEF2_TOKEN"
+            context_type = "nip"
+            """,
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("KSEF2_TOKEN", "secret-token")
+        client = _build_auth_client(
+            async_fake_transport,
+            environment=Environment.PRODUCTION,
+        )
+        expected = AsyncAuthenticatedClient(
+            transport=async_fake_transport,
+            auth_tokens=domain_auth_tokens.build(),
+            certificate_store=CertificateStore(),
+        )
+        mock_with_token = AsyncMock(return_value=expected)
+
+        with patch.object(AsyncAuthClient, "with_token", mock_with_token):
+            result = asyncio.run(client.with_profile(config_path=config_path))
+
+        assert result is expected
+        mock_with_token.assert_awaited_once_with(
+            ksef_token="secret-token",
+            nip="5261040828",
+            context_type="nip",
+            timeout=20.0,
+            poll_interval=2.0,
+        )
+
+    def test_with_profile_rejects_environment_mismatch(
+        self,
+        async_fake_transport: AsyncFakeTransport,
+        tmp_path,
+    ) -> None:
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            """
+            [profiles.prod-token]
+            environment = "production"
+            nip = "5261040828"
+
+            [profiles.prod-token.auth]
+            type = "token"
+            token_env = "KSEF2_TOKEN"
+            """,
+            encoding="utf-8",
+        )
+        client = _build_auth_client(async_fake_transport, environment=Environment.TEST)
+
+        with pytest.raises(KSeFValidationError, match="profile 'prod-token' uses"):
+            asyncio.run(client.with_profile("prod-token", config_path=config_path))

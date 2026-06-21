@@ -24,7 +24,7 @@ Te nazwy są używane w przykładach i przez profile `ksef2-cli`:
 | `KSEF2_ENV` | `test`, `demo` albo `production` w przykładach SDK. |
 | `KSEF2_NIP` | NIP podatnika/kontekstu używany przy uwierzytelnianiu. |
 | `KSEF2_TOKEN` | Token KSeF dla uwierzytelniania tokenem. |
-| `KSEF2_PROFILE` | Nazwa profilu wybierana przez `ksef2-cli`; planowany wybór profilu SDK. |
+| `KSEF2_PROFILE` | Nazwa profilu wybierana przez `ksef2-cli` i uwierzytelnianie profilami w SDK. |
 | `KSEF2_CONFIG` | Opcjonalna ścieżka do pliku konfiguracji profili CLI. |
 | `KSEF2_KEY_PASSWORD` | Opcjonalne hasło zaszyfrowanego klucza PEM. |
 | `KSEF2_P12_PASSWORD` | Opcjonalne hasło archiwum PKCS#12/PFX. |
@@ -35,8 +35,9 @@ export KSEF2_NIP=5261040828
 export KSEF2_TOKEN=podmien-na-prawdziwy-token-ksef
 ```
 
-SDK nie czyta jeszcze tych zmiennych automatycznie. Granicę konfiguracji trzymaj
-jawną w aplikacji:
+SDK czyta `KSEF2_PROFILE` i `KSEF2_CONFIG`, gdy używasz
+`client.authentication.with_profile()`. Przy bezpośrednim uwierzytelnianiu
+tokenem albo certyfikatem trzymaj granicę konfiguracji jawną w aplikacji:
 
 ```python
 import os
@@ -154,23 +155,34 @@ export KSEF2_PROFILE=prod-token
 ksef2 profile current
 ```
 
-<Aside type="note" title="Następne wydanie">
-  SDK dostanie `client.authentication.with_profile()`, żeby kod Pythona mógł
-  używać tych samych profili co `ksef2-cli`. Do czasu wydania tej metody czytaj
-  zmienne środowiskowe jawnie, jak w przykładach powyżej.
-</Aside>
-
-Planowany kształt:
+Użyj tego samego pliku profili w kodzie SDK:
 
 ```python
-from ksef2 import Client
+from ksef2 import Client, Environment
+from ksef2.profiles import Profile, ProfileStore, TokenProfileAuth
 
-client = Client.from_profile()
+store = ProfileStore.default()
+store.save(
+    "prod-token",
+    Profile(
+        environment=Environment.PRODUCTION,
+        nip="5261040828",
+        auth=TokenProfileAuth(token_env="KSEF2_TOKEN"),
+    ),
+    activate=True,
+    overwrite=True,
+)
+
+client = Client(Environment.PRODUCTION)
 auth = client.authentication.with_profile()
 
 # Albo jawnie wybrany profil.
 auth = client.authentication.with_profile("prod-token")
 ```
+
+Środowisko klienta głównego musi zgadzać się ze środowiskiem wybranego profilu.
+Przekaż `config_path="..."`, gdy plik profili nie znajduje się w domyślnej
+lokalizacji `~/.config/ksef2-cli/config.toml`.
 
 ## Zalecany przepływ
 
@@ -182,8 +194,8 @@ auth = client.authentication.with_profile("prod-token")
 
 2. Trzymaj niesekretne ustawienia w jednym miejscu.
 
-   Dzisiaj może to być konfiguracja aplikacji. Jeśli używasz też CLI, skorzystaj
-   z profili `ksef2-cli`.
+   Dla w pełni własnych konfiguracji użyj konfiguracji aplikacji. Jeśli to samo
+   środowisko obsługujesz też z terminala, skorzystaj z profili `ksef2-cli`.
 
 3. Utwórz klienta głównego dla środowiska.
 

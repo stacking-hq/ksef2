@@ -25,7 +25,7 @@ profiles:
 | `KSEF2_ENV` | `test`, `demo`, or `production` for SDK examples. |
 | `KSEF2_NIP` | Taxpayer/context NIP used during authentication. |
 | `KSEF2_TOKEN` | KSeF token for token authentication. |
-| `KSEF2_PROFILE` | CLI profile name selected by `ksef2-cli`; planned SDK profile selection. |
+| `KSEF2_PROFILE` | CLI profile name selected by `ksef2-cli` and SDK profile auth. |
 | `KSEF2_CONFIG` | Optional path to the CLI profile config file. |
 | `KSEF2_KEY_PASSWORD` | Optional encrypted PEM private-key password. |
 | `KSEF2_P12_PASSWORD` | Optional PKCS#12/PFX archive password. |
@@ -36,8 +36,9 @@ export KSEF2_NIP=5261040828
 export KSEF2_TOKEN=replace-with-a-real-ksef-token
 ```
 
-The SDK does not read these variables automatically today. Keep the boundary
-explicit in your application:
+The SDK reads `KSEF2_PROFILE` and `KSEF2_CONFIG` when you use
+`client.authentication.with_profile()`. For direct token or certificate auth,
+keep the boundary explicit in your application:
 
 ```python
 import os
@@ -157,23 +158,34 @@ export KSEF2_PROFILE=prod-token
 ksef2 profile current
 ```
 
-<Aside type="note" title="Next release">
-  The SDK will add `client.authentication.with_profile()` so Python code can use
-  the same profile files created by `ksef2-cli`. Until that method is released,
-  read environment variables explicitly as shown above.
-</Aside>
-
-Planned shape:
+Use the same profile file from SDK code:
 
 ```python
-from ksef2 import Client
+from ksef2 import Client, Environment
+from ksef2.profiles import Profile, ProfileStore, TokenProfileAuth
 
-client = Client.from_profile()
+store = ProfileStore.default()
+store.save(
+    "prod-token",
+    Profile(
+        environment=Environment.PRODUCTION,
+        nip="5261040828",
+        auth=TokenProfileAuth(token_env="KSEF2_TOKEN"),
+    ),
+    activate=True,
+    overwrite=True,
+)
+
+client = Client(Environment.PRODUCTION)
 auth = client.authentication.with_profile()
 
 # Or select a named profile explicitly.
 auth = client.authentication.with_profile("prod-token")
 ```
+
+The root client environment must match the selected profile environment. Pass
+`config_path="..."` when the profile file is not at the default
+`~/.config/ksef2-cli/config.toml` location.
 
 ## Recommended flow
 
@@ -185,8 +197,8 @@ auth = client.authentication.with_profile("prod-token")
 
 2. Keep non-secret defaults in one place.
 
-   Use application config today. Use `ksef2-cli` profiles if you also operate
-   the same environment from the command line.
+   Use application config for fully custom setups, or `ksef2-cli` profiles when
+   the same environment is also operated from the command line.
 
 3. Create the root client for the selected environment.
 

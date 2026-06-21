@@ -17,6 +17,7 @@ from ksef2.core.exceptions import (
     KSeFAuthError,
     KSeFAuthPollingTimeoutError,
     KSeFUnsupportedEnvironmentError,
+    KSeFValidationError,
     NoCertificateAvailableError,
 )
 from ksef2.core.routes import AuthRoutes
@@ -361,6 +362,182 @@ class TestAuthClient:
             match="with_test_certificate\\(\\) is only available for Environment.TEST",
         ):
             _ = client.with_test_certificate(nip="1234567890")
+
+    @patch.object(AuthClient, "with_token")
+    def test_with_profile_uses_active_token_profile(
+        self,
+        mock_with_token: MagicMock,
+        fake_transport: FakeTransport,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+    ) -> None:
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            """
+            active_profile = "prod-token"
+
+            [profiles.prod-token]
+            environment = "production"
+            nip = "5261040828"
+            poll_interval = 1.5
+            max_poll_attempts = 12
+
+            [profiles.prod-token.auth]
+            type = "token"
+            token_env = "KSEF2_TOKEN"
+            context_type = "nip"
+            """,
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("KSEF2_TOKEN", "secret-token")
+        client = _build_auth_client(fake_transport, environment=Environment.PRODUCTION)
+        expected = MagicMock(spec=AuthenticatedClient)
+        mock_with_token.return_value = expected
+
+        result = client.with_profile(config_path=config_path)
+
+        assert result is expected
+        mock_with_token.assert_called_once_with(
+            ksef_token="secret-token",
+            nip="5261040828",
+            context_type="nip",
+            timeout=18.0,
+            poll_interval=1.5,
+        )
+
+    @patch.object(AuthClient, "with_test_certificate")
+    def test_with_profile_uses_named_test_certificate_profile(
+        self,
+        mock_with_test_certificate: MagicMock,
+        fake_transport: FakeTransport,
+        tmp_path,
+    ) -> None:
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            """
+            [profiles.test-company]
+            environment = "test"
+            nip = "5261040828"
+
+            [profiles.test-company.auth]
+            type = "test_certificate"
+            """,
+            encoding="utf-8",
+        )
+        client = _build_auth_client(fake_transport, environment=Environment.TEST)
+        expected = MagicMock(spec=AuthenticatedClient)
+        mock_with_test_certificate.return_value = expected
+
+        result = client.with_profile(
+            "test-company",
+            config_path=config_path,
+            timeout=5.0,
+            poll_interval=0.5,
+            verify_chain=True,
+        )
+
+        assert result is expected
+        mock_with_test_certificate.assert_called_once_with(
+            nip="5261040828",
+            verify_chain=True,
+            timeout=5.0,
+            poll_interval=0.5,
+        )
+
+    @patch.object(AuthClient, "with_xades")
+    @patch("ksef2.clients.auth.load_profile_pem_credentials")
+    def test_with_profile_uses_pem_xades_profile(
+        self,
+        mock_load_pem_credentials: MagicMock,
+        mock_with_xades: MagicMock,
+        fake_transport: FakeTransport,
+        tmp_path,
+    ) -> None:
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            """
+            [profiles.demo-pem]
+            environment = "demo"
+            nip = "5261040828"
+
+            [profiles.demo-pem.auth]
+            type = "xades_pem"
+            cert = "company.pem"
+            key = "company.key"
+            """,
+            encoding="utf-8",
+        )
+        client = _build_auth_client(fake_transport, environment=Environment.DEMO)
+        expected = MagicMock(spec=AuthenticatedClient)
+        mock_load_pem_credentials.return_value = ("cert", "private-key")
+        mock_with_xades.return_value = expected
+
+        result = client.with_profile(
+            "demo-pem",
+            config_path=config_path,
+            verify_chain=True,
+        )
+
+        assert result is expected
+        mock_load_pem_credentials.assert_called_once()
+        _, loader_kwargs = mock_load_pem_credentials.call_args
+        assert loader_kwargs["profile_name"] == "demo-pem"
+        mock_with_xades.assert_called_once_with(
+            nip="5261040828",
+            cert="cert",
+            private_key="private-key",
+            verify_chain=True,
+            timeout=60.0,
+            poll_interval=1.0,
+        )
+
+    def test_with_profile_rejects_environment_mismatch(
+        self,
+        fake_transport: FakeTransport,
+        tmp_path,
+    ) -> None:
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            """
+            [profiles.prod-token]
+            environment = "production"
+            nip = "5261040828"
+
+            [profiles.prod-token.auth]
+            type = "token"
+            token_env = "KSEF2_TOKEN"
+            """,
+            encoding="utf-8",
+        )
+        client = _build_auth_client(fake_transport, environment=Environment.TEST)
+
+        with pytest.raises(KSeFValidationError, match="profile 'prod-token' uses"):
+            _ = client.with_profile("prod-token", config_path=config_path)
+
+    def test_with_profile_requires_token_environment_variable(
+        self,
+        fake_transport: FakeTransport,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+    ) -> None:
+        config_path = tmp_path / "config.toml"
+        config_path.write_text(
+            """
+            [profiles.prod-token]
+            environment = "production"
+            nip = "5261040828"
+
+            [profiles.prod-token.auth]
+            type = "token"
+            token_env = "KSEF2_TOKEN"
+            """,
+            encoding="utf-8",
+        )
+        monkeypatch.delenv("KSEF2_TOKEN", raising=False)
+        client = _build_auth_client(fake_transport, environment=Environment.PRODUCTION)
+
+        with pytest.raises(KSeFValidationError, match="KSEF2_TOKEN is not set"):
+            _ = client.with_profile("prod-token", config_path=config_path)
 
 
 class TestSessionManagementClient:
