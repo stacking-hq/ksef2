@@ -3,12 +3,21 @@
 
 """Authentication branch client."""
 
+from pathlib import Path
 from typing import final
 
 from cryptography.x509 import Certificate
 
 from ksef2.clients.authenticated import AuthenticatedClient
 from ksef2.clients.encryption import EncryptionClient
+from ksef2.clients.profiles import (
+    ProfileAuthType,
+    load_cli_profile,
+    load_profile_p12_credentials,
+    load_profile_pem_credentials,
+    profile_context_type,
+    resolve_profile_secret,
+)
 from ksef2.config import Environment
 from ksef2.core import exceptions
 from ksef2.core.crypto import encrypt_token
@@ -207,6 +216,96 @@ class AuthClient:
             timeout=timeout,
             poll_interval=poll_interval,
         )
+
+    def with_profile(
+        self,
+        name: str | None = None,
+        *,
+        config_path: str | Path | None = None,
+        timeout: float | None = None,
+        poll_interval: float | None = None,
+        verify_chain: bool = False,
+    ) -> AuthenticatedClient:
+        """Authenticate with a local ``ksef2-cli`` profile.
+
+        Profile selection follows the CLI order: explicit ``name``,
+        ``KSEF2_PROFILE``, then ``active_profile`` from the local CLI config.
+        The profile environment must match the root client environment.
+        """
+        profile_name, profile = load_cli_profile(name, config_path=config_path)
+        if profile.sdk_environment is not self._environment:
+            raise exceptions.KSeFValidationError(
+                f"ksef2-cli profile {profile_name!r} uses "
+                f"Environment.{profile.sdk_environment.name}, but this client uses "
+                f"Environment.{self._environment.name}.",
+                profile_name=profile_name,
+                profile_environment=profile.sdk_environment.name,
+                client_environment=self._environment.name,
+            )
+
+        effective_poll_interval = poll_interval
+        if effective_poll_interval is None:
+            effective_poll_interval = profile.poll_interval or 1.0
+
+        effective_timeout = timeout
+        if effective_timeout is None and profile.max_poll_attempts is not None:
+            effective_timeout = profile.max_poll_attempts * effective_poll_interval
+        if effective_timeout is None:
+            effective_timeout = 60.0
+
+        auth = profile.auth
+        match auth.type:
+            case ProfileAuthType.TOKEN:
+                token = resolve_profile_secret(
+                    auth.token_env,
+                    label="KSeF token",
+                    profile_name=profile_name,
+                )
+                if token is None:
+                    raise exceptions.KSeFValidationError(
+                        f"ksef2-cli profile {profile_name!r} requires auth.token_env.",
+                        profile_name=profile_name,
+                    )
+                return self.with_token(
+                    ksef_token=token,
+                    nip=profile.nip,
+                    context_type=profile_context_type(auth),
+                    timeout=effective_timeout,
+                    poll_interval=effective_poll_interval,
+                )
+            case ProfileAuthType.TEST_CERTIFICATE:
+                return self.with_test_certificate(
+                    nip=profile.nip,
+                    verify_chain=verify_chain,
+                    timeout=effective_timeout,
+                    poll_interval=effective_poll_interval,
+                )
+            case ProfileAuthType.XADES_PEM:
+                cert, private_key = load_profile_pem_credentials(
+                    profile,
+                    profile_name=profile_name,
+                )
+                return self.with_xades(
+                    nip=profile.nip,
+                    cert=cert,
+                    private_key=private_key,
+                    verify_chain=verify_chain,
+                    timeout=effective_timeout,
+                    poll_interval=effective_poll_interval,
+                )
+            case ProfileAuthType.XADES_P12:
+                cert, private_key = load_profile_p12_credentials(
+                    profile,
+                    profile_name=profile_name,
+                )
+                return self.with_xades(
+                    nip=profile.nip,
+                    cert=cert,
+                    private_key=private_key,
+                    verify_chain=verify_chain,
+                    timeout=effective_timeout,
+                    poll_interval=effective_poll_interval,
+                )
 
     def refresh(self, *, refresh_token: str) -> RefreshedToken:
         """Exchange a refresh token for a new access token."""

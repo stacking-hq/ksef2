@@ -97,6 +97,14 @@ def test_common_domain_models_import() -> None:
     assert InvoiceMetadataParams.__name__ == "InvoiceMetadataParams"
 
 
+def test_public_profiles_import() -> None:
+    from ksef2.profiles import Profile, ProfileStore, TokenProfileAuth
+
+    assert Profile.__name__ == "ProfileConfig"
+    assert ProfileStore.__name__ == "ProfileStore"
+    assert TokenProfileAuth.__name__ == "TokenProfileAuth"
+
+
 def test_middlewares_import() -> None:
     from ksef2.core import middlewares
 
