@@ -1,3 +1,9 @@
+## v0.18.1 (2026-06-22)
+
+### Docs
+
+- sync README OpenAPI target version with KSeF API 2.6.1
+
 ## v0.18.0 (2026-06-21)
 
 ### Feat
