@@ -25,7 +25,7 @@
   <p>
     <img src="https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/stacking-hq/ksef2/main/coverage.json&query=$.message&label=KSeF%20API%20coverage&color=$.color" alt="KSeF API coverage">
     <a href="https://github.com/stacking-hq/ksef2/actions/workflows/test-coverage.yml"><img src="https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/stacking-hq/ksef2/main/test-coverage.json&query=$.message&label=Unit%20test%20coverage&color=$.color" alt="Unit test coverage"></a>
-    <a href="https://github.com/stacking-hq/ksef2/actions/workflows/integration-tests.yml"><img src="https://github.com/stacking-hq/ksef2/actions/workflows/integration-tests.yml/badge.svg" alt="Integration tests"></a>
+    <a href="https://github.com/stacking-hq/ksef2/actions/workflows/integration-tests.yml"><img src="https://github.com/stacking-hq/ksef2/actions/workflows/integration-tests.yml/badge.svg" alt="Integration tests"></a><br>
     <a href="https://github.com/pre-commit/pre-commit"><img src="https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit" alt="pre-commit enabled"></a>
     <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT license"></a>
