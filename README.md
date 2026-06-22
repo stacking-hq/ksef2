@@ -49,7 +49,7 @@ This project is not published, endorsed, or supported by Poland's Ministry of
 Finance. Official KSeF [documentation](https://api-test.ksef.mf.gov.pl/docs/v2/)
 remains the source of truth for API behavior.
 
-The SDK currently targets KSeF OpenAPI version `2.6.0`.
+The SDK currently targets KSeF OpenAPI version `2.6.1`.
 
 ## Install
 
