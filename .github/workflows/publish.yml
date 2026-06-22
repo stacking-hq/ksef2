@@ -16,8 +16,16 @@ jobs:
 
       - uses: astral-sh/setup-uv@v4
 
-      - name: Build
-        run: uv build
+      - uses: extractions/setup-just@v2
+
+      - name: Install Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: just sync
+
+      - name: Release check
+        run: just release-check
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

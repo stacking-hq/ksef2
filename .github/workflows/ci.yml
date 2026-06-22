@@ -11,6 +11,8 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.12", "3.13"]
+    env:
+      UV_PYTHON: ${{ matrix.python-version }}
 
     steps:
       - uses: actions/checkout@v4
@@ -25,17 +27,5 @@ jobs:
       - name: Install dependencies
         run: just sync
 
-      - name: Lint
-        run: just lint
-
-      - name: Format check
-        run: just format-check
-
-      - name: Type check
-        run: just typecheck
-
-      - name: Test
-        run: just test
-
-      - name: Test with runtime checks
-        run: just test-runtime-checks
+      - name: Release check
+        run: just release-check

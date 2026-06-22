@@ -36,7 +36,7 @@ DEMO i PRODUCTION wymagają prawdziwego certyfikatu albo istniejącego tokenu
 KSeF.
 
 ```python
-from ksef2.core.xades import load_certificate_from_pem, load_private_key_from_pem
+from ksef2.xades import load_certificate_from_pem, load_private_key_from_pem
 
 cert = load_certificate_from_pem("company.pem")
 key = load_private_key_from_pem("company.key")
@@ -90,6 +90,9 @@ except httpx.HTTPError as exc:
 ## Referencja
 
 - [Przepływ uwierzytelniania](../workflows/authentication.mdx)
+- [Kontrakt publicznego API](public-api.md)
+- [Obsługa błędów](errors.md)
+- [Low-level API](../raw/overview.md)
 - [Access API](../reference/api/access.md)
 - [Active sessions API](../reference/api/active-sessions.md)
 - [Errors reference](../reference/api/errors.md)

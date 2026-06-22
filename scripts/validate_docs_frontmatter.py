@@ -31,10 +31,7 @@ def main() -> int:
         relative = path.relative_to(docs_dir)
         if relative.parts and relative.parts[0] == "assets":
             continue
-        if path.suffix == ".mdx":
-            errors.append(f"{relative}: product docs must be Markdown, not MDX")
-            continue
-        if path.suffix != ".md":
+        if path.suffix not in {".md", ".mdx"}:
             continue
         if relative.name == "README.md" and len(relative.parts) == 1:
             continue

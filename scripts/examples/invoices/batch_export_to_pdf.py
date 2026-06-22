@@ -17,7 +17,7 @@ from scripts.examples._common import repo_root
 
 @dataclass
 class ExampleConfig:
-    source_dir: Path = repo_root() / "docs" / "assets" / "sample_invoices" / "fa3"
+    source_dir: Path = repo_root() / "schemas" / "FA3" / "samples"
     output_dir: Path = repo_root() / "output" / "pdf_exports"
 
 

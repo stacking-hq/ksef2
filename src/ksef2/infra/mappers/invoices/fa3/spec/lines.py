@@ -5,9 +5,9 @@ from decimal import Decimal
 from functools import singledispatch
 from typing import overload
 
+from ksef2.domain.models.fa3.body import MarginProcedure
 from ksef2.domain.models.fa3.body import InvoiceRow, TaxRegime, VatClassification
 from ksef2.domain.models.fa3.body.order import AdvanceOrderLine
-from ksef2.domain.models.fa3.drafts import MarginProcedure
 from ksef2.infra.mappers.helpers import to_aware_datetime
 from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import (
     Twybor1,

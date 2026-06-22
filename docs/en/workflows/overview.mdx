@@ -21,11 +21,6 @@ pages separate the decisions you usually make in production code.
     description="Choose TEST certificates, KSeF tokens, XAdES certificates, environment variables, or CLI-compatible profiles."
   />
   <LinkCard
-    title="Build invoices"
-    href="../building-invoices/"
-    description="Generate FA(3) XML with typed Python builders before opening a KSeF session."
-  />
-  <LinkCard
     title="Send invoices"
     href="../sending-invoices/"
     description="Submit FA(3) XML through online sessions or batch sessions, then inspect processing results."
@@ -85,6 +80,11 @@ pages separate the decisions you usually make in production code.
     href="../xades/"
     description="Load certificate material, generate TEST certificates, and sign XML."
   />
+  <LinkCard
+    title="Low-level API"
+    href="../../raw/overview/"
+    description="Drop to schema-native endpoint wrappers for custom signing, encryption custody, or payload debugging."
+  />
 </CardGrid>
 
 <Aside type="tip" title="Sync and async use the same workflow">
@@ -131,5 +131,5 @@ pages separate the decisions you usually make in production code.
 
 - [Quickstart](../getting-started/quickstart.md)
 - [Client setup](client-setup.mdx)
-- [Building invoices](building-invoices.mdx)
+- [Low-level API](../raw/overview.md)
 - [API reference](../reference/api-signatures.md)

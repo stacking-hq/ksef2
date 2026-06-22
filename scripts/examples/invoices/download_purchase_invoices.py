@@ -22,7 +22,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from ksef2 import Client, Environment
-from ksef2.core.xades import load_certificate_from_pem, load_private_key_from_pem
+from ksef2.xades import load_certificate_from_pem, load_private_key_from_pem
 from ksef2.domain.models import InvoicesFilter
 from scripts.examples._common import repo_root
 

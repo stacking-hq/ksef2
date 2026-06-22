@@ -7,8 +7,8 @@
 <p align="center">
   Built against the published KSeF OpenAPI specification and checked daily so
   the SDK stays aligned with API changes.<br>
-  100% endpoint coverage, sync and async clients, FA(3) invoice building, and
-  tools for authentication, sessions, exports, tokens, permissions, and
+  100% endpoint coverage, sync and async clients, low-level endpoint access,
+  and tools for authentication, sessions, exports, tokens, permissions, and
   certificates.
 </p>
 
@@ -43,7 +43,7 @@
 `ksef2` is a community-maintained Python SDK for Poland's KSeF v2 API. It is
 designed for developers building custom integrations, automations, back-office
 tools, and invoice-processing pipelines around KSeF without hand-writing HTTP
-requests, polling loops, encryption handling, or FA(3) XML.
+requests, polling loops, or encryption handling.
 
 This project is not published, endorsed, or supported by Poland's Ministry of
 Finance. Official KSeF [documentation](https://api-test.ksef.mf.gov.pl/docs/v2/)
@@ -88,7 +88,7 @@ Use the authentication method that matches the environment you are working with.
 
 ```python
 from ksef2 import Client, Environment
-from ksef2.core.xades import (
+from ksef2.xades import (
     load_certificate_from_pem,
     load_private_key_from_pem
 )
@@ -216,61 +216,6 @@ print(status.ksef_number)
 
 Use `auth.invoices` for metadata queries, exports, package downloads, and direct
 invoice downloads after KSeF assigns invoice numbers.
-
-## Build valid FA(3) invoices
-
-Use `ksef2.fa3` when you want to generate FA(3) XML from typed Python builders
-instead of composing XML by hand.
-
-```python
-from datetime import date
-from decimal import Decimal
-
-from ksef2 import FormSchema
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
-
-builder = (
-    FA3InvoiceBuilder()
-    .header(system_info="my app")
-    .seller(
-        name="ACME S.A.",
-        tax_id="1234567890",
-        country_code="PL",
-        address_line_1="ul. Przykladowa 123",
-    )
-    .buyer(
-        name="XYZ GmbH",
-        country_code="DE",
-        address_line_1="Unter den Linden 1",
-    )
-    .standard()
-        .issue_place("Warszawa")
-        .issue_date(date(2026, 3, 29))
-        .invoice_number("FV/2026/03/0001")
-        .rows()
-            .add_line(
-                name="Consulting service",
-                supply_date=date(2026, 3, 29),
-                unit_of_measure="h",
-                quantity=Decimal("10"),
-                unit_price_net=Decimal("100.00"),
-                vat_rate=VatRate.VAT_23,
-            )
-        .done()
-    .done()
-)
-
-invoice_xml = builder.to_xml()
-
-with auth.online_session(form_code=FormSchema.FA3) as session:
-    status = session.send_invoice_and_wait(
-        invoice_xml=invoice_xml.encode("utf-8"),
-    )
-    print(status.ksef_number)
-```
-
-The builder can also return a domain model with `build()` or the generated
-FA(3) schema model with `to_spec()`.
 
 ## Documentation
 

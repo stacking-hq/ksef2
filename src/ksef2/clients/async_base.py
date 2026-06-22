@@ -7,6 +7,7 @@ from typing import Self, final
 import httpx
 
 from ksef2.clients.async_auth import AsyncAuthClient
+from ksef2.clients.async_authenticated import AsyncAuthenticatedClient
 from ksef2.clients.async_encryption import AsyncEncryptionClient
 from ksef2.clients.async_peppol import AsyncPeppolClient
 from ksef2.clients.async_testdata import AsyncTestDataClient
@@ -20,6 +21,8 @@ from ksef2.core.middlewares.async_lifecycle import (
     AsyncClientLifecycleState,
 )
 from ksef2.core.middlewares.async_retry import AsyncRetryMiddleware
+from ksef2.domain.models.auth import AuthTokens
+from ksef2.raw.async_facade import AsyncRawClient
 
 
 @final
@@ -129,6 +132,22 @@ class AsyncClient:
             )
         return AsyncTestDataClient(self._transport)
 
+    @cached_property
+    def raw(self) -> AsyncRawClient:
+        """Return raw unauthenticated endpoints for advanced async integrations."""
+        self._ensure_open()
+        return AsyncRawClient(self._transport, self._environment)
+
+    def authenticated(self, auth_tokens: AuthTokens) -> AsyncAuthenticatedClient:
+        """Bind caller-supplied auth tokens to an authenticated async SDK client."""
+        self._ensure_open()
+        return AsyncAuthenticatedClient(
+            transport=self._transport,
+            auth_tokens=auth_tokens,
+            certificate_store=self._certificate_store,
+            environment=self._environment,
+        )
+
     async def aclose(self) -> None:
         """Close owned resources and invalidate cached child clients."""
         if self._lifecycle_state.closed:
@@ -136,7 +155,7 @@ class AsyncClient:
 
         self._lifecycle_state.closed = True
 
-        for name in ("authentication", "encryption", "peppol", "testdata"):
+        for name in ("authentication", "encryption", "peppol", "testdata", "raw"):
             self.__dict__.pop(name, None)
 
         await self._http_transport.aclose()

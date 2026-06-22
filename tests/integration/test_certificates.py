@@ -10,7 +10,7 @@ from cryptography.x509.oid import NameOID, ObjectIdentifier
 from ksef2 import Client, Environment
 from ksef2.clients.authenticated import AuthenticatedClient
 from ksef2.core.tools import generate_nip, generate_pesel
-from ksef2.core.xades import generate_test_certificate
+from ksef2.xades import generate_test_certificate
 from ksef2.domain.models.certificates import (
     CertificateEnrollmentData,
     CertificateLimitsResponse,

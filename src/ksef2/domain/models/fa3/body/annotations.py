@@ -1,11 +1,20 @@
 """FA(3) invoice annotation domain models."""
 
 from datetime import date
+from enum import StrEnum
 
 from pydantic import Field, model_validator
 
 from ksef2.domain.models import KSeFBaseModel
-from ksef2.domain.models.fa3.drafts import MarginProcedure
+
+
+class MarginProcedure(StrEnum):
+    """Margin procedure variants supported by FA(3) annotations."""
+
+    TRAVEL_AGENCY = "travel_agency"
+    USED_GOODS = "used_goods"
+    ARTWORKS = "artworks"
+    COLLECTIBLES_AND_ANTIQUES = "collectibles_and_antiques"
 
 
 class InvoiceTaxExemption(KSeFBaseModel):

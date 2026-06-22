@@ -1,19 +1,17 @@
 """End-to-end tests that execute the example scripts against Environment.TEST.
 
 Each test imports and calls the main() function of a self-contained example.
-No pre-configured credentials are required — examples provision their own test
-subjects via the testdata API and clean up automatically via temporal().
+Invoice-submission examples require a caller-provided FA(3) XML fixture.
 
 Skipped examples (require external config not available in CI):
   - auth/auth_xades_demo.py    — needs MCU certificate files
 """
 
+import os
 from pathlib import Path
 
 import pytest
 
-from ksef2 import Client
-from ksef2.core.exceptions import KSeFExportTimeoutError
 import scripts.examples.auth.auth_refresh as auth_refresh_example
 import scripts.examples.auth.auth_xades as auth_xades_example
 import scripts.examples.auth.token_management as token_management_example
@@ -26,12 +24,19 @@ import scripts.examples.limits.limits_query as limits_query_example
 import scripts.examples.permissions.grant_permissions as grant_permissions_example
 import scripts.examples.permissions.query_permissions as query_permissions_example
 import scripts.examples.quickstart as quickstart_example
-import scripts.examples.scenarios.session_workflow as session_workflow_example
 import scripts.examples.session.session_management as session_management_example
 import scripts.examples.session.session_resume as session_resume_example
 import scripts.examples.testdata.attachments as attachments_example
 import scripts.examples.testdata.block_context as block_context_example
 import scripts.examples.testdata.setup_test_data as setup_test_data_example
+from ksef2 import Client
+from ksef2.core.exceptions import KSeFExportTimeoutError
+
+_requires_invoice_fixture = pytest.mark.skipif(
+    not os.environ.get("KSEF2_EXAMPLE_INVOICE_XML")
+    or not os.environ.get("KSEF2_EXAMPLE_SELLER_NIP"),
+    reason="invoice examples require KSEF2_EXAMPLE_INVOICE_XML and KSEF2_EXAMPLE_SELLER_NIP",
+)
 
 # ── auth ──────────────────────────────────────────────────────────────────────
 
@@ -86,21 +91,11 @@ def test_example_session_resume() -> None:
     session_resume_example.main()
 
 
-@pytest.mark.integration
-def test_example_session_workflow() -> None:
-    """Full online session workflow including invoice operations.
-
-    Covers: testdata setup → XAdES auth → open session → list invoices →
-    send invoice → list failed invoices → get UPO → download invoice →
-    list sessions.
-    """
-    session_workflow_example.main()
-
-
 # ── invoices ──────────────────────────────────────────────────────────────────
 
 
 @pytest.mark.integration
+@_requires_invoice_fixture
 def test_example_quickstart() -> None:
     """Quickstart: authenticate and send an invoice (context manager + manual).
 
@@ -111,6 +106,7 @@ def test_example_quickstart() -> None:
 
 
 @pytest.mark.integration
+@_requires_invoice_fixture
 def test_example_send_invoice() -> None:
     """Send a single invoice and immediately download it by KSeF number.
 
@@ -121,6 +117,7 @@ def test_example_send_invoice() -> None:
 
 
 @pytest.mark.integration
+@_requires_invoice_fixture
 def test_example_send_query_export_download(capsys: pytest.CaptureFixture[str]) -> None:
     """Full invoice lifecycle: send, query status, schedule export, download.
 
@@ -139,39 +136,17 @@ def test_example_send_query_export_download(capsys: pytest.CaptureFixture[str]) 
 
 
 @pytest.mark.integration
+@_requires_invoice_fixture
 def test_example_send_batch() -> None:
     """Prepare, upload, and process a batch session end to end."""
     send_batch_example.main()
 
 
 @pytest.mark.integration
+@_requires_invoice_fixture
 def test_example_submit_batch() -> None:
     """Prepare and submit a batch in one high-level call."""
     submit_batch_example.main()
-
-
-@pytest.mark.integration
-def test_example_download_and_export_to_pdf(tmp_path: Path) -> None:
-    """Send an invoice, download it, and export to PDF.
-
-    Covers: testdata setup → send invoice as seller → authenticate as buyer →
-    wait for invoice → export and download package → render each invoice to PDF.
-    """
-    import scripts.examples.scenarios.download_and_export_to_pdf as pdf_export_example
-
-    pdf_export_example.run(
-        pdf_export_example.ExampleConfig(
-            template_path=(
-                Path(__file__).parents[2]
-                / "docs"
-                / "assets"
-                / "sample_invoices"
-                / "fa3"
-                / "invoice-template-fa-3-with-custom-subject_2.xml"
-            ),
-            downloads_dir=tmp_path,
-        )
-    )
 
 
 @pytest.mark.integration
@@ -184,13 +159,7 @@ def test_example_batch_export_to_pdf(tmp_path: Path) -> None:
 
     batch_pdf_example.run(
         batch_pdf_example.ExampleConfig(
-            source_dir=(
-                Path(__file__).parents[2]
-                / "docs"
-                / "assets"
-                / "sample_invoices"
-                / "fa3"
-            ),
+            source_dir=(Path(__file__).parents[2] / "schemas" / "FA3" / "samples"),
             output_dir=tmp_path,
         )
     )

@@ -90,7 +90,7 @@ stored separately.
 ```python
 import os
 
-from ksef2.core.xades import load_certificate_from_pem, load_private_key_from_pem
+from ksef2.xades import load_certificate_from_pem, load_private_key_from_pem
 
 password = os.environ.get("KSEF2_KEY_PASSWORD")
 cert = load_certificate_from_pem("company.pem")
@@ -115,7 +115,7 @@ file.
 ```python
 import os
 
-from ksef2.core.xades import load_certificate_and_key_from_p12
+from ksef2.xades import load_certificate_and_key_from_p12
 
 password = os.environ.get("KSEF2_P12_PASSWORD")
 cert, private_key = load_certificate_and_key_from_p12(

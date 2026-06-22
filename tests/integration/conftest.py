@@ -23,7 +23,7 @@ if sys.platform == "darwin":
 from ksef2 import Client
 from ksef2.clients.testdata import TemporalTestData
 from ksef2.config import Environment
-from ksef2.core.xades import generate_test_certificate
+from ksef2.xades import generate_test_certificate
 from ksef2.clients.authenticated import AuthenticatedClient
 from ksef2.logging import get_logger
 

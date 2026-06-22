@@ -113,7 +113,6 @@ asyncio.run(main())
 ## Related pages
 
 - [Client setup](../workflows/client-setup.mdx)
-- [Building invoices](../workflows/building-invoices.mdx)
 - [Authentication workflow](../workflows/authentication.mdx)
 - [Sending invoices](../workflows/sending-invoices.mdx)
 - [Downloading invoices](../workflows/downloading-invoices.mdx)

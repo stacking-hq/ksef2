@@ -24,7 +24,6 @@ from ksef2.core.crypto import encrypt_token
 from ksef2.core.polling import poll_until
 from ksef2.core.protocols import Middleware
 from ksef2.core.stores import CertificateStore
-from ksef2.core.xades import XAdESPrivateKey, generate_test_certificate
 from ksef2.domain.models.auth import (
     AuthOperationStatus,
     AuthTokens,
@@ -34,6 +33,7 @@ from ksef2.domain.models.auth import (
 )
 from ksef2.endpoints.auth import AuthEndpoints
 from ksef2.infra.mappers.auth import from_spec, to_spec
+from ksef2.xades import XAdESPrivateKey, generate_test_certificate
 
 
 def _build_signed_xades(
@@ -43,7 +43,7 @@ def _build_signed_xades(
     cert: Certificate,
     private_key: XAdESPrivateKey,
 ) -> bytes:
-    from ksef2.core.xades import build_auth_token_request_xml, sign_xades
+    from ksef2.xades import build_auth_token_request_xml, sign_xades
 
     xml_bytes = build_auth_token_request_xml(challenge, nip)
     return sign_xades(xml_bytes, cert, private_key)
@@ -325,6 +325,7 @@ class AuthClient:
             transport=self._transport,
             auth_tokens=auth_tokens,
             certificate_store=self._certificate_store,
+            environment=self._environment,
         )
 
     def _ensure_certificates(self) -> None:

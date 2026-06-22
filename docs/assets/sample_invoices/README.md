@@ -1,1 +1,0 @@
-Sample invoices were sourced from [CIRFMF/ksef-client-java](https://github.com/CIRFMF/ksef-client-java/tree/main/demo-web-app/src/integrationTest/resources/xml/invoices/sample).

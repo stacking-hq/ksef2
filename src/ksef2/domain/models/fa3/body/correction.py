@@ -6,7 +6,7 @@ from typing import Literal
 from pydantic import Field, field_validator, model_validator
 
 from ksef2.domain.models import KSeFBaseModel
-from ksef2.domain.models.fa3.drafts import CorrectedInvoiceReference
+from ksef2.domain.models.fa3.references import CorrectedInvoiceReference
 from ksef2.domain.models.fa3.party import InvoiceAddress
 
 CorrectionEffectType = Literal[

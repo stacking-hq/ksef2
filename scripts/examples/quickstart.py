@@ -1,7 +1,8 @@
 """Send a minimal invoice in the TEST environment.
 
 Prerequisites:
-- none; the script uses a generated TEST certificate identity
+- set KSEF2_EXAMPLE_SELLER_NIP to the TEST seller NIP
+- set KSEF2_EXAMPLE_INVOICE_XML to a FA(3) XML file valid for that seller
 
 What it demonstrates:
 - authenticating in TEST
@@ -10,42 +11,26 @@ What it demonstrates:
 """
 
 from dataclasses import dataclass
-from datetime import date
 from pathlib import Path
 
 from ksef2 import Client, Environment, FormSchema
-from ksef2.core.invoices import InvoiceTemplater
-from ksef2.core.tools import generate_nip
-from scripts.examples._common import repo_root
+from scripts.examples._common import example_invoice_xml_path, example_seller_nip
 
 
 @dataclass
 class ExampleConfig:
     environment: Environment = Environment.TEST
-    template_path: Path = (
-        repo_root()
-        / "docs"
-        / "assets"
-        / "sample_invoices"
-        / "fa3"
-        / "invoice-template_v3.xml"
-    )
+    seller_nip: str | None = None
+    invoice_path: Path | None = None
 
 
 def run(config: ExampleConfig) -> None:
     client = Client(config.environment)
-    valid_nip = generate_nip()
-    template_xml = config.template_path.read_text(encoding="utf-8")
+    seller_nip = config.seller_nip or example_seller_nip()
+    invoice_path = config.invoice_path or example_invoice_xml_path()
+    invoice_xml = invoice_path.read_bytes()
 
-    auth = client.authentication.with_test_certificate(nip=valid_nip)
-    invoice_xml = InvoiceTemplater.create(
-        template_xml,
-        {
-            "#nip#": valid_nip,
-            "#invoicing_date#": date.today().isoformat(),
-            "#invoice_number#": f"DEMO-{date.today():%Y%m%d}-{valid_nip[-4:]}",
-        },
-    )
+    auth = client.authentication.with_test_certificate(nip=seller_nip)
 
     with auth.online_session(form_code=FormSchema.FA3) as session:
         result = session.send_invoice(invoice_xml=invoice_xml)

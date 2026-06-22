@@ -8,6 +8,7 @@ from ksef2.domain.models.fa3.body.advance_payment import (
 from ksef2.domain.models.fa3.body.annotations import (
     InvoiceAnnotationsContext,
     InvoiceTaxExemption,
+    MarginProcedure,
     NewTransportMeansItem,
     NewTransportSupply,
 )
@@ -84,6 +85,7 @@ __all__ = [
     "InvoiceProcedure",
     "InvoiceType",
     "InvoiceSummaryOverrides",
+    "MarginProcedure",
     "KsefInvoiceBody",
     "Decimal",
     "PartialPayment",

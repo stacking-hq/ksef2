@@ -19,7 +19,7 @@ from ksef2 import Client, FormSchema
 from ksef2.clients.authenticated import AuthenticatedClient
 from ksef2.clients.online import OnlineSessionClient
 from ksef2.core.tools import generate_nip
-from ksef2.core.xades import generate_test_certificate
+from ksef2.xades import generate_test_certificate
 from ksef2.domain.models.permissions import (
     AuthorizationPermissionsQuery,
     AuthorizationPermissionsQueryResponse,

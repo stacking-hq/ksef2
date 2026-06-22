@@ -24,7 +24,7 @@ from ksef2.domain.models.fa3.body.settlement import (
     SettlementCharge,
     SettlementDeduction,
 )
-from ksef2.domain.models.fa3.drafts import (
+from ksef2.domain.models.fa3.references import (
     AdvanceInvoiceReference,
     CorrectedInvoiceReference,
 )

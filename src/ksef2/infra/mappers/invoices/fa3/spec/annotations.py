@@ -7,10 +7,10 @@ from typing import overload
 from ksef2.domain.models.fa3.body import (
     InvoiceAnnotationsContext,
     InvoiceTaxExemption,
+    MarginProcedure,
     NewTransportMeansItem,
     NewTransportSupply,
 )
-from ksef2.domain.models.fa3.drafts import MarginProcedure
 from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import (
     Twybor12,
 )

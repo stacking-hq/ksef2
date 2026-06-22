@@ -7,8 +7,8 @@
 <p align="center">
   Budowane na podstawie opublikowanej specyfikacji OpenAPI KSeF i sprawdzane
   codziennie, żeby SDK nie rozjeżdżało się ze zmianami API.<br>
-  100% pokrycia endpointów, klienci sync i async, budowanie faktur FA(3), oraz
-  narzędzia do uwierzytelniania, sesji, eksportów, tokenów, uprawnień i
+  100% pokrycia endpointów, klienci sync i async, low-level dostęp do endpointów
+  oraz narzędzia do uwierzytelniania, sesji, eksportów, tokenów, uprawnień i
   certyfikatów.
 </p>
 
@@ -43,7 +43,7 @@
 `ksef2` to społecznościowo utrzymywane SDK Pythona dla polskiego API KSeF v2.
 Jest przeznaczone dla developerów budujących integracje, automatyzacje, narzędzia
 back-office i pipeline'y przetwarzania faktur wokół KSeF bez ręcznego pisania
-żądań HTTP, pętli pollingu, obsługi szyfrowania albo XML FA(3).
+żądań HTTP, pętli pollingu albo obsługi szyfrowania.
 
 Projekt nie jest publikowany, zatwierdzany ani wspierany przez Ministerstwo
 Finansów. Oficjalna [dokumentacja KSeF](https://api-test.ksef.mf.gov.pl/docs/v2/)
@@ -219,61 +219,6 @@ print(status.ksef_number)
 
 Po nadaniu numeru KSeF używaj `auth.invoices` do zapytań metadanych, eksportów,
 pobierania paczek i bezpośredniego pobierania faktur.
-
-## Budowanie poprawnych faktur FA(3)
-
-Użyj `ksef2.fa3`, gdy chcesz generować XML FA(3) z typowanych builderów Pythona,
-zamiast składać XML ręcznie.
-
-```python
-from datetime import date
-from decimal import Decimal
-
-from ksef2 import FormSchema
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
-
-builder = (
-    FA3InvoiceBuilder()
-    .header(system_info="my app")
-    .seller(
-        name="ACME S.A.",
-        tax_id="1234567890",
-        country_code="PL",
-        address_line_1="ul. Przykladowa 123",
-    )
-    .buyer(
-        name="XYZ GmbH",
-        country_code="DE",
-        address_line_1="Unter den Linden 1",
-    )
-    .standard()
-        .issue_place("Warszawa")
-        .issue_date(date(2026, 3, 29))
-        .invoice_number("FV/2026/03/0001")
-        .rows()
-            .add_line(
-                name="Consulting service",
-                supply_date=date(2026, 3, 29),
-                unit_of_measure="h",
-                quantity=Decimal("10"),
-                unit_price_net=Decimal("100.00"),
-                vat_rate=VatRate.VAT_23,
-            )
-        .done()
-    .done()
-)
-
-invoice_xml = builder.to_xml()
-
-with auth.online_session(form_code=FormSchema.FA3) as session:
-    status = session.send_invoice_and_wait(
-        invoice_xml=invoice_xml.encode("utf-8"),
-    )
-    print(status.ksef_number)
-```
-
-Builder może też zwrócić model domenowy przez `build()` albo wygenerowany model
-schematu FA(3) przez `to_spec()`.
 
 ## Dokumentacja
 

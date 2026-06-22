@@ -10,20 +10,16 @@ Run with:
 
 from __future__ import annotations
 
-import time
-from pathlib import Path
-
 import pytest
 
-from ksef2 import Client, FormSchema, Environment
+from ksef2 import Client, Environment, FormSchema
 from ksef2.clients.authenticated import AuthenticatedClient
-from ksef2.core.invoices import InvoiceTemplater
 from ksef2.core.tools import generate_nip, generate_pesel
-from ksef2.core.xades import generate_test_certificate
+from ksef2.xades import generate_test_certificate
 from ksef2.domain.models.session import (
     ListSessionsResponse,
-    SessionInvoiceStatusResponse,
     SessionInvoicesResponse,
+    SessionInvoiceStatusResponse,
     SessionStatusEnum,
     SessionStatusResponse,
 )
@@ -31,36 +27,31 @@ from ksef2.domain.models.testdata import (
     Identifier,
     Permission,
 )
-
-INVOICE_TEMPLATE_PATH = (
-    Path(__file__).resolve().parents[2]
-    / "docs"
-    / "assets"
-    / "sample_invoices"
-    / "fa3"
-    / "invoice-template-fa-3-with-custom-subject_2.xml"
-)
+from tests.integration.conftest import KSeFCredentials
+from tests.integration.invoice_payload import invoice_seller_nip
+from tests.integration.invoice_payload import load_test_invoice_xml
 
 
 @pytest.fixture(scope="module")
-def session_with_invoice():
+def session_with_invoice(ksef_credentials: KSeFCredentials):
     """Open an online session, send one invoice, close the session, return context.
 
     Yields (client, access_token, session_ref, invoice_ref, session).
     """
     client = Client(environment=Environment.TEST)
 
-    seller_nip = generate_nip()
+    seller_nip = invoice_seller_nip(ksef_credentials.subject_nip)
     buyer_nip = generate_nip()
     person_nip = generate_nip()
     person_pesel = generate_pesel()
 
     with client.testdata.temporal() as temp:
-        temp.create_subject(
-            nip=seller_nip,
-            subject_type="enforcement_authority",
-            description="Integration test seller",
-        )
+        if seller_nip != ksef_credentials.subject_nip:
+            temp.create_subject(
+                nip=seller_nip,
+                subject_type="enforcement_authority",
+                description="Integration test seller",
+            )
         temp.create_subject(
             nip=buyer_nip,
             subject_type="enforcement_authority",
@@ -95,17 +86,7 @@ def session_with_invoice():
         access_token = auth.access_token
 
         with auth.online_session(form_code=FormSchema.FA3) as session:
-            template_xml = INVOICE_TEMPLATE_PATH.read_text(encoding="utf-8")
-            invoice_xml = InvoiceTemplater.create(
-                template_xml,
-                {
-                    "#nip#": seller_nip,
-                    "#subject2nip#": buyer_nip,
-                    "#invoicing_date#": "2026-02-15",
-                    "#invoice_number#": str(int(time.time())),
-                },
-            )
-            result = session.send_invoice(invoice_xml=invoice_xml)
+            result = session.send_invoice(invoice_xml=load_test_invoice_xml())
             invoice_ref = result.reference_number
             session_ref = session.get_state().reference_number
 

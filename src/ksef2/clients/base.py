@@ -7,12 +7,15 @@ from typing import final, Self
 import httpx
 
 from ksef2.clients.auth import AuthClient
+from ksef2.clients.authenticated import AuthenticatedClient
 from ksef2.clients import encryption, peppol
 from ksef2.clients.testdata import TestDataClient
 from ksef2.config import Environment, TransportConfig
 from ksef2.core import exceptions, middlewares, stores
 from ksef2.core.http_config import build_http_client_kwargs
 from ksef2.core.http import HttpTransport
+from ksef2.domain.models.auth import AuthTokens
+from ksef2.raw.facade import RawClient
 
 
 @final
@@ -119,6 +122,22 @@ class Client:
         self._ensure_open()
         return peppol.PeppolClient(self._transport)
 
+    @cached_property
+    def raw(self) -> RawClient:
+        """Return raw unauthenticated endpoints for advanced integrations."""
+        self._ensure_open()
+        return RawClient(self._transport, self._environment)
+
+    def authenticated(self, auth_tokens: AuthTokens) -> AuthenticatedClient:
+        """Bind caller-supplied auth tokens to an authenticated SDK client."""
+        self._ensure_open()
+        return AuthenticatedClient(
+            transport=self._transport,
+            auth_tokens=auth_tokens,
+            certificate_store=self._certificate_store,
+            environment=self._environment,
+        )
+
     def close(self) -> None:
         """Close owned resources and invalidate cached child clients."""
         if self._lifecycle_state.closed:
@@ -126,7 +145,7 @@ class Client:
 
         self._lifecycle_state.closed = True
 
-        for name in ("authentication", "encryption", "testdata", "peppol"):
+        for name in ("authentication", "encryption", "testdata", "peppol", "raw"):
             self.__dict__.pop(name, None)
 
         if self._owns_http_client:

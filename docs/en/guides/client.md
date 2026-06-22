@@ -36,7 +36,7 @@ auth = client.authentication.with_test_certificate(nip="5261040828")
 DEMO and PRODUCTION require a real certificate or an existing KSeF token.
 
 ```python
-from ksef2.core.xades import load_certificate_from_pem, load_private_key_from_pem
+from ksef2.xades import load_certificate_from_pem, load_private_key_from_pem
 
 cert = load_certificate_from_pem("company.pem")
 key = load_private_key_from_pem("company.key")
@@ -102,6 +102,9 @@ Common specialized SDK exceptions include `KSeFAuthError`,
 ## Reference
 
 - [Authentication workflow](../workflows/authentication.mdx)
+- [Public API contract](public-api.md)
+- [Error handling](errors.md)
+- [Low-level API](../raw/overview.md)
 - [Access API](../reference/api/access.md)
 - [Active sessions API](../reference/api/active-sessions.md)
 - [Errors reference](../reference/api/errors.md)

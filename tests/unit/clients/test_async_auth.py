@@ -17,7 +17,7 @@ from ksef2.core.exceptions import (
 )
 from ksef2.core.routes import AuthRoutes
 from ksef2.core.stores import CertificateStore
-from ksef2.core.xades import generate_test_certificate
+from ksef2.xades import generate_test_certificate
 from ksef2.domain.models.auth import AuthTokens
 from ksef2.domain.models.encryption import PublicKeyCertificate
 from ksef2.infra.schema.api.supp.auth import InitTokenAuthenticationRequest
@@ -189,11 +189,11 @@ class TestAsyncAuthClient:
         assert not hasattr(exc_info.value, "status_code")
 
     @patch(
-        "ksef2.core.xades.sign_xades",
+        "ksef2.xades.sign_xades",
         return_value=b"<SignedXML />",
     )
     @patch(
-        "ksef2.core.xades.build_auth_token_request_xml",
+        "ksef2.xades.build_auth_token_request_xml",
         return_value=b"<AuthTokenRequest />",
     )
     def test_with_xades(

@@ -27,6 +27,7 @@ test-coverage:
 release-check:
     just lint
     just format-check
+    just check-ksef-api-version
     just check-gen-sync
     just typecheck
     just test
@@ -60,6 +61,9 @@ typecheck:
 
 sync-ksef-api-version:
     uv run python scripts/sync_ksef_api_version.py
+
+check-ksef-api-version:
+    uv run python scripts/sync_ksef_api_version.py --check
 
 
 fetch-spec:

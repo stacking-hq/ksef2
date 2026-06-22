@@ -1,21 +1,19 @@
 """Integration tests for batch session endpoints."""
 
-from datetime import datetime, timezone
-from pathlib import Path
-
 import pytest
 
 from ksef2 import Client, Environment
-from ksef2.core.invoices import InvoiceTemplater
-from ksef2.core.tools import generate_nip
+from ksef2.domain.models import BatchSessionState
 from ksef2.domain.models.batch import (
-    BatchInvoice,
     BatchFileInfo,
     BatchFilePart,
+    BatchInvoice,
     PartUploadRequest,
 )
-from ksef2.domain.models import BatchSessionState
 from ksef2.domain.models.session import FormSchema
+from tests.integration.conftest import KSeFCredentials
+from tests.integration.invoice_payload import invoice_seller_nip
+from tests.integration.invoice_payload import load_test_invoice_xml
 
 
 @pytest.mark.integration
@@ -27,40 +25,23 @@ class TestBatchSession:
     - POST /sessions/batch/{referenceNumber}/close (close batch session)
     """
 
-    def test_open_batch_session(
-        self,
-    ) -> None:
+    def test_open_batch_session(self, ksef_credentials: KSeFCredentials) -> None:
         """Open, upload, close, and inspect a real batch session."""
         client = Client(environment=Environment.TEST)
-        seller_nip = generate_nip()
-        template_path = (
-            Path(__file__).parents[2]
-            / "docs"
-            / "assets"
-            / "sample_invoices"
-            / "fa3"
-            / "invoice-template_v3.xml"
-        )
-        template_xml = template_path.read_text(encoding="utf-8")
-        now = datetime.now(tz=timezone.utc)
+        seller_nip = invoice_seller_nip(ksef_credentials.subject_nip)
+        invoice_xml = load_test_invoice_xml()
 
         with client.testdata.temporal() as temp:
-            temp.create_subject(
-                nip=seller_nip,
-                subject_type="enforcement_authority",
-                description="Integration batch session seller",
-            )
+            if seller_nip != ksef_credentials.subject_nip:
+                temp.create_subject(
+                    nip=seller_nip,
+                    subject_type="enforcement_authority",
+                    description="Integration batch session seller",
+                )
             auth = client.authentication.with_test_certificate(nip=seller_nip)
             invoice = BatchInvoice(
                 file_name="invoice-01.xml",
-                content=InvoiceTemplater.create(
-                    template_xml,
-                    {
-                        "#nip#": seller_nip,
-                        "#invoicing_date#": now.date().isoformat(),
-                        "#invoice_number#": f"IT-BATCH-{now:%Y%m%d%H%M%S}",
-                    },
-                ),
+                content=invoice_xml,
             )
 
             prepared_batch = auth.batch.prepare_batch(

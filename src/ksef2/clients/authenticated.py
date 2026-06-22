@@ -16,6 +16,7 @@ from ksef2.clients.online import OnlineSessionClient
 from ksef2.clients.permissions import PermissionsClient
 from ksef2.clients.session_management import SessionManagementClient
 from ksef2.clients.tokens import TokensClient
+from ksef2.config import Environment
 from ksef2.core import exceptions
 from ksef2.core.crypto import encrypt_symmetric_key, generate_session_key
 from ksef2.core.middlewares.auth import BearerTokenMiddleware
@@ -36,6 +37,7 @@ from ksef2.domain.models.session import (
 from ksef2.endpoints.session import SessionEndpoints
 from ksef2.infra.mappers.sessions import from_spec as session_from_spec
 from ksef2.infra.mappers.sessions import to_spec as session_to_spec
+from ksef2.raw.facade import RawAuthenticatedClient
 from ksef2.services.batch import BatchService
 from ksef2.services.invoices import InvoicesService
 
@@ -60,10 +62,12 @@ class AuthenticatedClient:
         transport: Middleware,
         auth_tokens: AuthTokens,
         certificate_store: CertificateStore,
+        environment: Environment = Environment.PRODUCTION,
     ) -> None:
         self._transport = transport
         self._auth_tokens = auth_tokens
         self._certificate_store = certificate_store
+        self._environment = environment
         self._authed_transport = BearerTokenMiddleware(
             transport, auth_tokens.access_token.token
         )
@@ -400,3 +404,12 @@ class AuthenticatedClient:
     def permissions(self) -> PermissionsClient:
         """Return the authenticated permissions branch."""
         return PermissionsClient(self._authed_transport)
+
+    @cached_property
+    def raw(self) -> RawAuthenticatedClient:
+        """Return raw authenticated endpoints for advanced integrations."""
+        return RawAuthenticatedClient(
+            transport=self._transport,
+            authed_transport=self._authed_transport,
+            environment=self._environment,
+        )

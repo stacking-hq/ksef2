@@ -4,8 +4,8 @@ description: Start here for the ksef2 Python SDK documentation.
 ---
 
 ksef2 is a Python SDK for Poland's KSeF v2 API. It gives you sync and async
-clients, typed request models, invoice session helpers, and an FA(3) invoice
-builder.
+clients, typed request models, invoice session helpers, and low-level endpoint
+access.
 
 > **Unofficial SDK.** ksef2 is a community-maintained Python SDK. It is not
 > published, endorsed, or supported by Poland's Ministry of Finance. Use the
@@ -24,12 +24,16 @@ builder.
   limits, public lookup, TEST data, and XAdES.
 - [Client setup](workflows/client-setup.mdx): choose sync or async, public root
   branches, and authenticated workflow branches.
-- [Building invoices](workflows/building-invoices.mdx): build invoice XML with
-  typed Python helpers.
+- [Public API contract](guides/public-api.md): stable import paths and internal
+  package boundaries for application code.
+- [Error handling](guides/errors.md): catch SDK exceptions, inspect KSeF error
+  payloads, and handle polling timeouts.
 - [Sending invoices](workflows/sending-invoices.mdx): open online or batch
   sessions and submit XML to KSeF.
 - [Admin workflows](workflows/tokens.mdx): start with tokens, then use
   permissions, certificates, and limits as needed.
+- [Low-level API](raw/overview.md): use schema-native endpoint wrappers for
+  custom signing, encryption custody, or exact KSeF payload debugging.
 
 ## Reference
 

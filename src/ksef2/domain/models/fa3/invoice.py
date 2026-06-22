@@ -15,52 +15,8 @@ from ksef2.domain.models.fa3.party import InvoiceEntity
 from ksef2.domain.models.fa3.third_party import InvoiceThirdParty
 
 
-class KsefInvoiceDraft(KSeFBaseModel):
-    """Serializable editable snapshot of FA(3) builder state."""
-
-    header: Annotated[
-        InvoiceHeader | None, Field(description="Draft header state.")
-    ] = None
-    seller: Annotated[
-        InvoiceEntity | None, Field(description="Draft seller state.")
-    ] = None
-    buyer: Annotated[InvoiceEntity | None, Field(description="Draft buyer state.")] = (
-        None
-    )
-    third_parties: Annotated[
-        list[InvoiceThirdParty], Field(description="Draft third-party state.")
-    ] = Field(default_factory=list)
-    body: Annotated[
-        KsefInvoiceBody | None, Field(description="Draft invoice body state.")
-    ] = None
-    footer: Annotated[
-        InvoiceFooter | None, Field(description="Draft footer state.")
-    ] = None
-    attachment: Annotated[
-        Attachment | None, Field(description="Draft attachment state.")
-    ] = None
-
-    @classmethod
-    def from_invoice(cls, invoice: "KsefInvoice") -> "KsefInvoiceDraft":
-        """Create an editable draft snapshot from a complete invoice."""
-        return cls(
-            header=invoice.header.model_copy(deep=True),
-            seller=invoice.seller.model_copy(deep=True),
-            buyer=invoice.buyer.model_copy(deep=True),
-            third_parties=[
-                third_party.model_copy(deep=True)
-                for third_party in invoice.third_parties
-            ],
-            body=invoice.body.model_copy(deep=True),
-            footer=invoice.footer.model_copy(deep=True) if invoice.footer else None,
-            attachment=(
-                invoice.attachment.model_copy(deep=True) if invoice.attachment else None
-            ),
-        )
-
-
 class KsefInvoice(KSeFBaseModel):
-    """Root public aggregate for a minimal FA(3) invoice draft."""
+    """Root public aggregate for a FA(3) invoice."""
 
     header: Annotated[InvoiceHeader, Field(description="Maps to Faktura.Naglowek")]
 

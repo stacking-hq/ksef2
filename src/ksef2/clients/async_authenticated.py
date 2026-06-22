@@ -14,6 +14,7 @@ from ksef2.clients.async_online import AsyncOnlineSessionClient
 from ksef2.clients.async_permissions import AsyncPermissionsClient
 from ksef2.clients.async_session_management import AsyncSessionManagementClient
 from ksef2.clients.async_tokens import AsyncTokensClient
+from ksef2.config import Environment
 from ksef2.core.async_protocols import AsyncMiddleware
 from ksef2.core import exceptions
 from ksef2.core.crypto import encrypt_symmetric_key, generate_session_key
@@ -34,6 +35,7 @@ from ksef2.domain.models.session import (
 from ksef2.endpoints.async_session import AsyncSessionEndpoints
 from ksef2.infra.mappers.sessions import from_spec as session_from_spec
 from ksef2.infra.mappers.sessions import to_spec as session_to_spec
+from ksef2.raw.async_facade import AsyncRawAuthenticatedClient
 from ksef2.services.async_batch import AsyncBatchService
 from ksef2.services.async_invoices import AsyncInvoicesService
 
@@ -58,10 +60,12 @@ class AsyncAuthenticatedClient:
         transport: AsyncMiddleware,
         auth_tokens: AuthTokens,
         certificate_store: CertificateStore,
+        environment: Environment = Environment.PRODUCTION,
     ) -> None:
         self._transport = transport
         self._auth_tokens = auth_tokens
         self._certificate_store = certificate_store
+        self._environment = environment
         self._authed_transport = AsyncBearerTokenMiddleware(
             transport, auth_tokens.access_token.token
         )
@@ -402,3 +406,12 @@ class AsyncAuthenticatedClient:
     def permissions(self) -> AsyncPermissionsClient:
         """Return the authenticated permissions branch."""
         return AsyncPermissionsClient(self._authed_transport)
+
+    @cached_property
+    def raw(self) -> AsyncRawAuthenticatedClient:
+        """Return raw authenticated endpoints for advanced async integrations."""
+        return AsyncRawAuthenticatedClient(
+            transport=self._transport,
+            authed_transport=self._authed_transport,
+            environment=self._environment,
+        )

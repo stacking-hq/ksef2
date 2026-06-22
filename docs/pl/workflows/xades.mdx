@@ -17,7 +17,7 @@ uwierzytelniania wyższego poziomu wywołują te pomocniki dla typowych ścieże
 ```python
 import os
 
-from ksef2.core.xades import load_certificate_from_pem, load_private_key_from_pem
+from ksef2.xades import load_certificate_from_pem, load_private_key_from_pem
 
 password = os.environ.get("KSEF2_KEY_PASSWORD")
 cert = load_certificate_from_pem("company.pem")
@@ -33,7 +33,7 @@ private_key = load_private_key_from_pem(
 ```python
 import os
 
-from ksef2.core.xades import load_certificate_and_key_from_p12
+from ksef2.xades import load_certificate_and_key_from_p12
 
 password = os.environ.get("KSEF2_P12_PASSWORD")
 cert, private_key = load_certificate_and_key_from_p12(
@@ -58,7 +58,7 @@ auth = client.authentication.with_xades(
 ## Generuj certyfikaty TEST
 
 ```python
-from ksef2.core.xades import generate_test_certificate
+from ksef2.xades import generate_test_certificate
 
 cert, private_key = generate_test_certificate(nip="5261040828")
 ```
@@ -68,7 +68,7 @@ Dla osobistych tożsamości TEST użyj `generate_personal_test_certificate()`.
 ## Podpisz XML bezpośrednio
 
 ```python
-from ksef2.core.xades import build_auth_token_request_xml, sign_xades
+from ksef2.xades import build_auth_token_request_xml, sign_xades
 
 xml = build_auth_token_request_xml(
     challenge="challenge-from-ksef",

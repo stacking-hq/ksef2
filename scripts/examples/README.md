@@ -14,12 +14,13 @@ uv run -m scripts.examples.quickstart
 uv run -m scripts.examples.invoices.send_invoice
 uv run -m scripts.examples.invoices.send_batch
 uv run -m scripts.examples.invoices.submit_batch
-uv run --extra pdf -m scripts.examples.invoices.build_fa3_invoice
-uv run --extra pdf -m scripts.examples.invoices.build_fa3_invoice_builder
-uv run -m scripts.examples.scenarios.download_purchase_invoices
+uv run --extra pdf -m scripts.examples.invoices.batch_export_to_pdf
 ```
 
-For FA(3) builder output plus PDF visualization, start with:
+Invoice-submission examples read caller-provided XML:
 
-- `uv run --extra pdf -m scripts.examples.invoices.build_fa3_invoice`
-- `uv run --extra pdf -m scripts.examples.invoices.build_fa3_invoice_builder`
+```bash
+export KSEF2_EXAMPLE_SELLER_NIP=5261040828
+export KSEF2_EXAMPLE_INVOICE_XML=/path/to/invoice.xml
+uv run -m scripts.examples.invoices.send_invoice
+```

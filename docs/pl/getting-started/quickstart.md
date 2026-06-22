@@ -94,7 +94,6 @@ asyncio.run(main())
 ## Co dalej
 
 - [Konfiguracja klienta](../workflows/client-setup.mdx)
-- [Budowanie faktur](../workflows/building-invoices.mdx)
 - [Uwierzytelnianie](../workflows/authentication.mdx)
 - [Wysyłanie faktur](../workflows/sending-invoices.mdx)
 - [Pobieranie faktur](../workflows/downloading-invoices.mdx)

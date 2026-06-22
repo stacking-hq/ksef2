@@ -12,7 +12,7 @@ from ksef2.clients.auth import AuthClient
 from ksef2.clients.authenticated import AuthenticatedClient
 from ksef2.clients.session_management import SessionManagementClient
 from ksef2.config import Environment
-from ksef2.core.xades import generate_test_certificate
+from ksef2.xades import generate_test_certificate
 from ksef2.core.exceptions import (
     KSeFAuthError,
     KSeFAuthPollingTimeoutError,
@@ -207,11 +207,11 @@ class TestAuthClient:
         assert not hasattr(exc_info.value, "status_code")
 
     @patch(
-        "ksef2.core.xades.sign_xades",
+        "ksef2.xades.sign_xades",
         return_value=b"<SignedXML />",
     )
     @patch(
-        "ksef2.core.xades.build_auth_token_request_xml",
+        "ksef2.xades.build_auth_token_request_xml",
         return_value=b"<AuthTokenRequest />",
     )
     def test_with_xades(
@@ -258,11 +258,11 @@ class TestAuthClient:
         assert xades_call.params["verifyCertificateChain"] == "true"
 
     @patch(
-        "ksef2.core.xades.sign_xades",
+        "ksef2.xades.sign_xades",
         return_value=b"<SignedXML />",
     )
     @patch(
-        "ksef2.core.xades.build_auth_token_request_xml",
+        "ksef2.xades.build_auth_token_request_xml",
         return_value=b"<AuthTokenRequest />",
     )
     def test_with_xades_accepts_ec_private_key(

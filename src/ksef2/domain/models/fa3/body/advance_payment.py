@@ -6,7 +6,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from pydantic import Field, field_validator, model_validator
 
 from ksef2.domain.models import KSeFBaseModel
-from ksef2.domain.models.fa3.drafts import AdvanceInvoiceReference
+from ksef2.domain.models.fa3.references import AdvanceInvoiceReference
 
 
 def round_pln(value: Decimal) -> Decimal:

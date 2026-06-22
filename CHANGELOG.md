@@ -1,8 +1,22 @@
-## v0.18.1 (2026-06-22)
+## v0.19.0 (2026-06-23)
+
+### Feat
+
+- expose the low-level `ksef2.raw` endpoint API and public raw mappers
+- add the public `ksef2.xades` facade for certificate and XAdES helpers
 
 ### Docs
 
 - sync README OpenAPI target version with KSeF API 2.6.1
+- document the low-level API, public API contract, error handling, and sync code generation
+
+### Refactor
+
+- remove the FA(3) invoice builder and legacy generated sample-invoice helpers
+
+### Build
+
+- run `just release-check` in CI and the PyPI publish workflow
 
 ## v0.18.0 (2026-06-21)
 
@@ -293,7 +307,6 @@
 - update example scripts and add session workflow
 - add invoice status, UPO endpoints, and session query support
 - add UPO_NOT_FOUND and NOT_PROCESSED_YET exception codes
-- add InvoiceFactory for template-based invoice creation
 
 ### Fix
 

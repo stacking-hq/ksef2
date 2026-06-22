@@ -55,7 +55,7 @@ def test_root_error_surface_import() -> None:
 
 def test_root_import_does_not_require_beartype_by_default() -> None:
     env = os.environ.copy()
-    env.pop("KSEF2_RUNTIME_CHECKS", None)
+    _ = env.pop("KSEF2_RUNTIME_CHECKS", None)
     env["PYTHONPATH"] = str(SRC_ROOT)
 
     result = subprocess.run(
@@ -103,6 +103,14 @@ def test_public_profiles_import() -> None:
     assert Profile.__name__ == "ProfileConfig"
     assert ProfileStore.__name__ == "ProfileStore"
     assert TokenProfileAuth.__name__ == "TokenProfileAuth"
+
+
+def test_public_xades_import() -> None:
+    from ksef2.xades import LocalSigner, generate_test_certificate, sign_xades
+
+    assert LocalSigner.__name__ == "LocalSigner"
+    assert generate_test_certificate.__name__ == "generate_test_certificate"
+    assert sign_xades.__name__ == "sign_xades"
 
 
 def test_middlewares_import() -> None:
