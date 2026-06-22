@@ -132,9 +132,10 @@ auth = client.authentication.with_xades(
 
 ## Profile kompatybilne z CLI
 
-`ksef2-cli` ma już obsługę lokalnych profili. Profil przechowuje niesekretne
-ustawienia: środowisko, NIP, metodę uwierzytelnienia, ścieżki certyfikatów i
-nazwę zmiennej środowiskowej z sekretem.
+`ksef2-cli` i SDK używają tego samego lokalnego pliku profili. Profil
+przechowuje niesekretne ustawienia: środowisko, NIP, metodę uwierzytelnienia,
+ścieżki certyfikatów, ustawienia pollingu i nazwę zmiennej środowiskowej z
+sekretem. Nie zapisuje wartości tokenów ani haseł certyfikatów.
 
 ```bash
 ksef2 profile create test-company \
@@ -148,14 +149,46 @@ ksef2 profile create prod-token \
   --token-env KSEF2_TOKEN
 ```
 
-Wybierz profil dla komend CLI:
+Wybierz aktywny profil dla kolejnych komend CLI:
+
+```bash
+ksef2 profile use prod-token
+ksef2 --json profile current
+```
+
+Albo wybierz profil dla jednej powłoki lub jednej komendy:
 
 ```bash
 export KSEF2_PROFILE=prod-token
-ksef2 profile current
+ksef2 --json auth login
+
+ksef2 --profile test-company --json auth login
 ```
 
-Użyj tego samego pliku profili w kodzie SDK:
+Kolejność wyboru profilu jest taka sama w CLI i SDK:
+
+1. Jawna nazwa profilu.
+2. `KSEF2_PROFILE`.
+3. `active_profile` w lokalnym pliku konfiguracji.
+
+Użyj `KSEF2_CONFIG` albo `config_path="..."`, gdy plik profili nie znajduje się
+w domyślnej lokalizacji `~/.config/ksef2-cli/config.toml`.
+
+Użyj istniejącego profilu w kodzie SDK:
+
+```python
+from ksef2 import Client, Environment
+
+client = Client(Environment.PRODUCTION)
+auth = client.authentication.with_profile()
+
+# Albo jawnie wybrany profil.
+auth = client.authentication.with_profile("prod-token")
+```
+
+Środowisko klienta głównego musi zgadzać się ze środowiskiem wybranego profilu.
+
+Utwórz albo zaktualizuj ten sam plik profili z kodu SDK:
 
 ```python
 from ksef2 import Client, Environment
@@ -172,17 +205,17 @@ store.save(
     activate=True,
     overwrite=True,
 )
-
-client = Client(Environment.PRODUCTION)
-auth = client.authentication.with_profile()
-
-# Albo jawnie wybrany profil.
-auth = client.authentication.with_profile("prod-token")
 ```
 
-Środowisko klienta głównego musi zgadzać się ze środowiskiem wybranego profilu.
-Przekaż `config_path="..."`, gdy plik profili nie znajduje się w domyślnej
-lokalizacji `~/.config/ksef2-cli/config.toml`.
+Klient asynchroniczny używa tego samego pliku profili i tej samej kolejności
+wyboru:
+
+```python
+from ksef2 import AsyncClient, Environment
+
+async with AsyncClient(Environment.PRODUCTION) as client:
+    auth = await client.authentication.with_profile("prod-token")
+```
 
 ## Zalecany przepływ
 

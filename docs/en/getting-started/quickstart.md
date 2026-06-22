@@ -61,6 +61,16 @@ for path in auth.invoices.fetch_package(
     print(path)
 ```
 
+For repeated local or production work, create a CLI-compatible profile and use
+the same profile from Python:
+
+```python
+from ksef2 import Client, Environment
+
+client = Client(Environment.PRODUCTION)
+auth = client.authentication.with_profile("prod-token")
+```
+
 ## Async shape
 
 The async client uses the same branches and method names. Await network calls
