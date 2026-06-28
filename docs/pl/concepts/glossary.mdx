@@ -1,0 +1,129 @@
+---
+title: Słownik
+description: Krótkie definicje pojęć KSeF, SDK, faktur, podpisu i przepływów używanych w dokumentacji ksef2.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside type="tip" title="Pojęcia używają nazw SDK">
+  Definicje preferują publiczne nazwy SDK, takie jak `Environment.TEST`,
+  `FormSchema.FA3`, `permanent_storage_date` i `reference_number`, zamiast
+  surowych nazw pól OpenAPI.
+</Aside>
+
+## Access token
+
+Token bearer uzyskany podczas uwierzytelniania i używany przez klienta
+uwierzytelnionego do wywołań API KSeF.
+
+## Batch session
+
+Sesja KSeF używana do uploadu przygotowanych zaszyfrowanych części paczki faktur
+i uruchomienia przetwarzania przez zamknięcie sesji.
+
+## HWM
+
+High Water Mark. Znacznik KSeF oznaczający, że dane faktur są kompletne do
+wartości `permanent_storage_date`, używany przy niezawodnej synchronizacji
+przyrostowej.
+
+## DEMO
+
+Nieprodukcyjne środowisko KSeF używane do testów integracyjnych z
+nieprodukcyjnymi credentialami.
+
+## Environment
+
+Wartość SDK wybierająca bazowy URL API KSeF i granicę operacyjną:
+`Environment.TEST`, `Environment.DEMO` albo `Environment.PRODUCTION`.
+
+## Export
+
+Asynchroniczny przepływ KSeF przygotowujący metadane albo treść faktur pasujące
+do filtrów jako zaszyfrowaną paczkę do pobrania.
+
+## Export handle
+
+Obiekt SDK zawierający numer referencyjny eksportu i lokalny materiał
+deszyfrujący potrzebny do pobrania oraz odszyfrowania paczki.
+
+## FA(3)
+
+Schemat formularza faktury reprezentowany przez `FormSchema.FA3` przy otwieraniu
+sesji faktur online albo batch.
+
+## Klient główny
+
+Nieuwierzytelniony `Client` albo `AsyncClient`, który posiada środowisko,
+transport HTTP, publiczne gałęzie odczytowe i punkt wejścia do uwierzytelniania.
+
+## Klient uwierzytelniony
+
+Gałąź klienta SDK zwrócona przez uwierzytelnianie. Jest powiązana z jednym
+środowiskiem, jednym kontekstem KSeF i parą access/refresh token.
+
+## Kontekst
+
+Podatnik albo jednostka reprezentowana podczas uwierzytelniania, zwykle wybrana
+przez NIP albo inny obsługiwany identyfikator kontekstu.
+
+## Metadata
+
+Wyszukiwalne informacje o fakturze zwracane przez API zapytań. Metadane nie są
+dokumentem XML faktury.
+
+## NIP
+
+Polski numer identyfikacji podatkowej, często używany jako identyfikator
+podatnika albo kontekstu.
+
+## Numer KSeF
+
+Identyfikator nadany przez KSeF po skutecznym przetworzeniu faktury. Zapisuj go
+do pobierania, uzgodnień, wsparcia i przepływów UPO.
+
+## Numer referencyjny
+
+Uchwyt KSeF dla pracy asynchronicznej albo stanowej, takiej jak
+uwierzytelnianie, sesje, wysyłki faktur, eksporty, tokeny, operacje uprawnień i
+rejestracja certyfikatów.
+
+## `permanent_storage_date`
+
+Data metadanych używana przez trwały zapis KSeF i model synchronizacji High
+Water Mark.
+
+## Podmiot uwierzytelniający
+
+Osoba, jednostka, fingerprint certyfikatu albo materiał tokenu, który potwierdza
+tożsamość przy uwierzytelnianiu do kontekstu KSeF.
+
+## Online session
+
+Sesja KSeF używana do wysyłania pojedynczych zaszyfrowanych faktur oraz
+sprawdzania ich statusu i UPO w ramach sesji.
+
+## PEPPOL
+
+Publiczny obszar lookupu dostawców wystawiony przez klienta głównego. Jest
+oddzielny od uwierzytelnionego stanu przetwarzania faktur KSeF.
+
+## Profile
+
+Nazwana lokalna konfiguracja credentiali zgodna z `ksef2-cli` i
+uwierzytelnianiem SDK przez `with_profile()`.
+
+## TEST
+
+Sandboxowe środowisko KSeF używane do lokalnego developmentu, CI, danych TEST i
+certyfikatów TEST generowanych przez SDK.
+
+## UPO
+
+Urzędowe poświadczenie dostępne po osiągnięciu wymaganego stanu przetworzenia
+przez odpowiedni przepływ sesji albo faktury.
+
+## XAdES
+
+Format podpisu cyfrowego XML używany w przepływach uwierzytelniania
+certyfikatem.

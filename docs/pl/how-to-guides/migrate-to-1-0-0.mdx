@@ -1,0 +1,191 @@
+---
+title: Migracja do ksef2 1.0.0
+description: Przenieś kod aplikacyjny z wersji pre-1.0 na stabilną publiczną powierzchnię SDK ksef2.
+---
+
+import { Aside, LinkCard, Steps } from '@astrojs/starlight/components';
+
+Użyj tego przewodnika, gdy aplikacja była budowana na wersji ksef2 sprzed 1.0 i
+chcesz przenieść ją na udokumentowany publiczny kontrakt 1.x.
+
+<Aside type="caution" title="Najpierw zweryfikuj w KSeF TEST albo DEMO">
+  1.0 stabilizuje udokumentowaną powierzchnię aplikacyjną SDK. Nie zamraża
+  zachowania API Ministerstwa Finansów, uprawnień podatnika, credentiali ani
+  kształtów wygenerowanych modeli OpenAPI.
+</Aside>
+
+## 1. Przypnij okno aktualizacji
+
+Zainstaluj jawnie linię 1.x i uruchom testy integracyjne przeciw temu samemu
+środowisku KSeF, którego użyje aplikacja:
+
+```bash
+pip install "ksef2>=1.0,<2"
+# albo
+uv add "ksef2>=1.0,<2"
+```
+
+Pozostań na Pythonie 3.12 albo nowszym.
+
+## 2. Przenieś importy na ścieżki publiczne
+
+Zastąp importy z modułów internal zanim zmienisz zachowanie przepływów.
+
+| Ścieżka pre-1.0 albo internal | Użyj w 1.0 |
+| --- | --- |
+| `ksef2.core.xades` | `ksef2.xades` |
+| `ksef2.core.exceptions` w obsłudze błędów aplikacji | eksporty z root `ksef2`, na przykład `KSeFApiError`, `KSeFRateLimitError` i `KSeFException` |
+| `ksef2.config` dla typowej konfiguracji | eksporty z root `ksef2`, na przykład `Environment`, `TransportConfig` i `RetryConfig` |
+| `ksef2.infra.schema.api.spec` | `from ksef2.raw import spec` |
+| `ksef2.infra.schema.api.supp` | `from ksef2.raw import supp` |
+| `ksef2.infra.mappers.*` | wysokopoziomowe modele SDK albo udokumentowane mosty pod `ksef2.raw.mappers` |
+| `ksef2.endpoints.*` | wysokopoziomowe gałęzie klienta albo `client.raw` / `auth.raw` |
+| stare importy buildera FA(3) albo helpery sample-invoice | `ksef2.fa3.FA3InvoiceBuilder` i publiczne modele `ksef2.fa3` |
+
+Jeśli import internal nie ma publicznego odpowiednika, przenieś kod do
+najbliższej udokumentowanej gałęzi przepływu zamiast kopiować implementację
+internal.
+
+## 3. Oprzyj przepływy o gałęzie uwierzytelnione
+
+Normalny kształt to klient root, uwierzytelnienie, a potem gałąź
+uwierzytelniona:
+
+```python
+from ksef2 import Client, Environment, FormSchema
+
+client = Client(Environment.TEST)
+auth = client.authentication.with_token(
+    ksef_token="twoj-token-ksef",
+    nip="5261040828",
+)
+
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    status = session.send_invoice_and_wait(
+        invoice_xml=b"<Faktura>...</Faktura>",
+        timeout=60.0,
+    )
+
+invoice_xml = auth.invoices.wait_for_invoice_download(
+    ksef_number=status.ksef_number,
+    timeout=120.0,
+)
+```
+
+Używaj `auth.invoices`, `auth.tokens`, `auth.permissions`, `auth.certificates` i
+`auth.limits` do pracy uwierzytelnionej. Używaj `client.encryption`,
+`client.peppol` oraz dostępnego tylko w TEST `client.testdata` do pracy
+publicznej albo przygotowawczej na kliencie root.
+
+## 4. Zaktualizuj obsługę błędów
+
+Łap błędy sklasyfikowane przez SDK publicznymi klasami wyjątków, a błędy
+transportu trzymaj osobno:
+
+```python
+import httpx
+
+from ksef2 import KSeFApiError, KSeFException, KSeFRateLimitError
+
+try:
+    result = auth.invoices.query_metadata(filters=filters)
+except KSeFRateLimitError as exc:
+    retry_after = exc.retry_after
+except KSeFApiError as exc:
+    status_code = exc.status_code
+    exception_code = exc.exception_code
+except KSeFException as exc:
+    context = exc.context
+except httpx.HTTPError as exc:
+    transport_error = exc
+```
+
+Wyjątki timeoutów pollingu oznaczają wygaśnięcie lokalnego deadline'u. Same w
+sobie nie dowodzą, że zdalna operacja KSeF nie powiodła się. Zapisuj referencje
+przed czekaniem, żeby inny proces mógł wznowić polling.
+
+## 5. Sprawdź integracje low-level
+
+Trzymaj kod low-level w obsługiwanej powierzchni raw:
+
+```python
+from ksef2.raw import spec, supp
+from ksef2.raw.mappers import auth as auth_mapper
+```
+
+Ścieżka importu `ksef2.raw` jest stabilna, ale pola modeli podążają za
+sprawdzoną wersją OpenAPI KSeF. Gdy Ministerstwo Finansów zmieni schemę,
+kształty modeli raw mogą zmienić się w minor release SDK.
+
+## 6. Zaktualizuj użycie buildera FA(3)
+
+Nowy kod budowania faktur opieraj o publiczną fasadę FA(3):
+
+```python
+from ksef2.fa3 import FA3InvoiceBuilder, KsefInvoiceDraft, VatRate
+```
+
+Gdy użytkownicy mogą przerwać edycję faktury, zapisuj wygenerowany XML albo stan
+`KsefInvoiceDraft`. Nie zapisuj prywatnych atrybutów buildera. Założenia
+biznesowe weryfikuj z oficjalnymi regułami FA(3) i wymaganiami księgowymi
+własnej organizacji.
+
+## 7. Zamień stare linki dokumentacji
+
+Publiczna dokumentacja nie używa już starych tras `intro`, `workflows` ani
+`api-signatures`.
+
+| Stara trasa | Aktualna trasa |
+| --- | --- |
+| `/ksef2/pl/sdk/intro/` | `/ksef2/pl/sdk/getting-started/overview/` |
+| `/ksef2/pl/sdk/workflows/overview/` | `/ksef2/pl/sdk/how-to-guides/overview/` dla zadań albo `/ksef2/pl/sdk/concepts/overview/` dla pojęć |
+| `/ksef2/sdk/reference/api-signatures/` | `/ksef2/sdk/reference/api/` |
+| `/ksef2/pl/sdk/raw/overview/` | `/ksef2/pl/sdk/reference/low-level/overview/` |
+
+## Checklista końcowa
+
+<Steps>
+
+1. Wyszukaj w kodzie aplikacji `ksef2.core`, `ksef2.infra` i
+   `ksef2.endpoints`.
+
+   Zastąp je udokumentowanymi importami publicznymi albo wysokopoziomowymi
+   gałęziami klienta.
+
+2. Uruchom testy uwierzytelniania, wysyłki, zapytań, pobierania i administracji
+   w TEST albo DEMO.
+
+   Zwróć szczególną uwagę na credentiale, kontekst podatnika, uprawnienia i
+   referencje zapisywane przed pollingiem.
+
+3. Przejrzyj logowanie.
+
+   Nie loguj tokenów, kluczy prywatnych, haseł, surowego XML faktury ani
+   zserializowanego stanu sesji, chyba że polityka retencji jawnie na to
+   pozwala.
+
+4. Sprawdź oficjalną dokumentację KSeF dla zachowania, którego właścicielem jest
+   Ministerstwo Finansów.
+
+   SDK opakowuje API; nie jest autorytetem dla prawnego ani operacyjnego
+   zachowania KSeF.
+
+</Steps>
+
+## Powiązane strony
+
+<LinkCard
+  title="Release notes 1.0.0"
+  href="../reference/release-notes-1-0-0.mdx"
+  description="Sprawdź, co jest stabilne, publiczne ale niższopoziomowe, oraz poza kontraktem 1.x."
+/>
+<LinkCard
+  title="Kontrakt publicznego API"
+  href="../reference/public-api.mdx"
+  description="Przejrzyj stabilne importy i granice internal."
+/>
+<LinkCard
+  title="Operacje"
+  href="../reference/operations.mdx"
+  description="Przejrzyj retry, timeouty, rate limity, granice logowania i wznawialne referencje."
+/>

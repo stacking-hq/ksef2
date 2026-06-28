@@ -1,0 +1,145 @@
+---
+title: Clients and Lifecycle
+description: Understand root clients, authenticated clients, session handles, and resource ownership in ksef2.
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+The SDK has a small object hierarchy. Each object represents a different
+lifecycle boundary, not just a different namespace.
+
+```text
+Client or AsyncClient
+  -> public root branches
+  -> authentication
+    -> AuthenticatedClient for one KSeF context
+      -> sessions, invoices, tokens, permissions, certificates, limits
+        -> online session, batch session, export handle
+```
+
+The root client chooses the KSeF environment and owns transport resources. The
+authenticated client carries access to one context. Session clients and export
+handles are narrower workflow objects that should not be reused as general SDK
+entry points.
+
+## The object model
+
+| Object | What it owns | What to reuse |
+| --- | --- | --- |
+| `Client` / `AsyncClient` | Environment, HTTP transport, retry settings, TLS/proxy configuration, and public certificate cache. | Reuse while several operations share the same environment and transport policy. |
+| Authenticated client | Access and refresh tokens for one login context. | Reuse while several operations belong to the same taxpayer context and credential state. |
+| Online session client | One remote online-session reference plus session encryption material. | Use for one sending workflow, then close the session. |
+| Batch session client or batch state | One batch upload workflow and package encryption material. | Use until upload, close, status polling, and UPO retrieval are complete. |
+| Export handle | Export reference number plus local AES material needed to decrypt package parts. | Keep only until the export package has been downloaded and persisted. |
+
+This is the main lifecycle rule: reuse root and authenticated clients when the
+environment and context match; treat session and export objects as workflow
+handles.
+
+## Root clients
+
+The root client is the boundary around SDK-managed HTTP resources. It exposes
+public branches that do not need authentication, such as encryption certificate
+lookup and PEPPOL provider lookup. It also exposes `authentication`, which is
+how you enter an authenticated KSeF context.
+
+Create a root client for one environment: TEST, DEMO, or PRODUCTION. Do not
+switch one client between environments. If an application talks to more than one
+environment, give each environment its own root client and its own lifecycle.
+
+Closing the root client releases the underlying HTTP resources when the SDK owns
+them. If you pass your own `httpx` client into the SDK, the application that
+created that `httpx` client still owns closing it.
+
+## Authenticated clients
+
+Authentication turns a root client into an authenticated client for one KSeF
+context. That context is usually a taxpayer NIP plus a credential that proves
+permission to operate there.
+
+The authenticated client is the entry point for protected branches:
+
+| Branch | Kind of workflow |
+| --- | --- |
+| `online_session` | Interactive invoice sending. |
+| `batch` | Batch invoice package preparation, upload, status, and UPO retrieval. |
+| `invoices` | Metadata queries, direct downloads, exports, and export package downloads. |
+| `tokens` | KSeF token generation, listing, status, and revocation. |
+| `permissions` | Permission grants, queries, revokes, and operation status. |
+| `certificates` | KSeF-issued certificate enrollment, retrieval, limits, and revocation. |
+| `limits` | Context, subject, and API rate-limit reads or overrides. |
+| `sessions` / `invoice_sessions` | Authentication-session and invoice-session inspection. |
+
+An authenticated client can be reused across workflow functions when they belong
+to the same KSeF context. Passing that authenticated client into workflow code
+keeps transport setup and credential setup away from the business operation.
+
+## Session handles
+
+Online and batch session clients are not general authenticated clients. They are
+handles for one remote KSeF session reference and the local encryption material
+used by that session.
+
+An online session should be closed when no more invoices will be sent. Closing
+the session tells KSeF the sending phase is done and allows the session to move
+toward final status and UPO availability.
+
+A batch workflow also has a close boundary. KSeF starts processing only after
+the encrypted package parts have been uploaded and the batch session is closed.
+
+<Aside type="caution" title="References outlive Python objects">
+  The Python session object can disappear while KSeF keeps processing. Persist
+  the session reference number, invoice references, KSeF numbers, and UPO
+  references needed to resume status checks later.
+</Aside>
+
+## Sync and async
+
+`Client` and `AsyncClient` expose the same conceptual branches. The async client
+changes the calling style: network calls are awaited and lifecycle blocks use
+async context managers. It does not change the KSeF workflow model.
+
+Choose the sync client for scripts, CLI tools, synchronous workers, and
+applications that do not already own an event loop. Choose the async client when
+your application is already async, such as an async web service or async worker.
+
+## What to persist
+
+Do not persist root clients, authenticated clients, or session client objects.
+Persist identifiers and artifacts:
+
+- environment and profile name;
+- login context identifier;
+- session reference number;
+- invoice reference number;
+- KSeF number;
+- export reference and protected export handle material while the export is
+  still being downloaded;
+- UPO XML bytes or storage location;
+- last observed status payload for support and audit.
+
+Client objects are process resources. References and artifacts are application
+state.
+
+## Related pages
+
+<LinkCard
+  title="Client setup"
+  href="../how-to-guides/client-setup.mdx"
+  description="Create sync and async root clients and configure lifecycle boundaries in code."
+/>
+<LinkCard
+  title="Authentication methods"
+  href="authentication-methods.mdx"
+  description="Choose token, XAdES, TEST certificate, or profile-based authentication."
+/>
+<LinkCard
+  title="Sessions"
+  href="sessions.mdx"
+  description="Understand online sessions, batch sessions, session state, and session history."
+/>
+<LinkCard
+  title="Client lifecycle reference"
+  href="../reference/client-lifecycle.mdx"
+  description="Check the reference contract for client ownership and close behavior."
+/>

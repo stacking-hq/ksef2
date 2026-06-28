@@ -1,0 +1,149 @@
+---
+title: Use TEST Data
+description: Create sandbox subjects, people, permissions, attachment flags, and blocked contexts in TEST.
+---
+
+import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Use `client.testdata` only with `Environment.TEST`. These helpers mutate KSeF
+sandbox data so tests and demos can create known contexts.
+
+## Create sandbox data manually
+
+Use direct methods for shared fixtures that should survive multiple test runs.
+
+<Tabs syncKey="sdk-testdata-manual">
+  <TabItem label="Subject">
+
+```python
+client.testdata.create_subject(
+    nip="5261040828",
+    subject_type="vat_group",
+    description="Sandbox company",
+)
+
+client.testdata.enable_attachments(nip="5261040828")
+```
+
+  </TabItem>
+  <TabItem label="Person">
+
+```python
+client.testdata.create_person(
+    nip="5261040828",
+    pesel="90010112345",
+    description="Sandbox person",
+)
+```
+
+  </TabItem>
+  <TabItem label="Block context">
+
+```python
+from ksef2.models import AuthContextIdentifier
+
+context = AuthContextIdentifier(type="nip", value="5261040828")
+
+client.testdata.block_context(context=context)
+client.testdata.unblock_context(context=context)
+```
+
+  </TabItem>
+</Tabs>
+
+Delete shared fixtures explicitly when they are no longer needed:
+
+```python
+client.testdata.delete_person(nip="5261040828")
+client.testdata.delete_subject(nip="5261040828")
+```
+
+## Use temporal cleanup
+
+`temporal()` records mutations and attempts best-effort cleanup when the block
+exits.
+
+<Tabs syncKey="sdk-testdata-temporal">
+  <TabItem label="Subject and attachments">
+
+```python
+with client.testdata.temporal() as data:
+    data.create_subject(
+        nip="5261040828",
+        subject_type="vat_group",
+        description="Integration test subject",
+    )
+    data.enable_attachments(nip="5261040828")
+```
+
+  </TabItem>
+  <TabItem label="Permissions">
+
+```python
+from ksef2.models import Identifier, Permission
+
+with client.testdata.temporal() as data:
+    data.grant_permissions(
+        permissions=[
+            Permission(type="invoice_read", description="Read invoices"),
+        ],
+        grant_to=Identifier(type="nip", value="1111111111"),
+        in_context_of=Identifier(type="nip", value="5261040828"),
+    )
+```
+
+  </TabItem>
+  <TabItem label="Blocked context">
+
+```python
+from ksef2.models import AuthContextIdentifier
+
+context = AuthContextIdentifier(type="nip", value="5261040828")
+
+with client.testdata.temporal() as data:
+    data.block_context(context=context)
+```
+
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="TEST only">
+  The TEST data branch exists to prepare sandbox fixtures. Do not build product
+  workflows that depend on it in DEMO or PRODUCTION.
+</Aside>
+
+## Recommended flow
+
+<Steps>
+
+1. Create only the subjects, people, permissions, attachment flags, or blocked
+   contexts required by the test.
+
+2. Use `temporal()` for fixtures that should be cleaned up automatically.
+
+3. Use direct create/delete methods for fixtures shared across many test runs.
+
+4. Keep generated identifiers in test configuration, not production
+   configuration.
+
+</Steps>
+
+## Next workflows
+
+<LinkCard
+  title="Client setup"
+  href="client-setup.mdx"
+  description="Create a TEST root client before using the testdata branch."
+/>
+
+<LinkCard
+  title="Authenticate"
+  href="authenticate.mdx"
+  description="Authenticate against TEST contexts created by testdata helpers."
+/>
+
+<LinkCard
+  title="Configure permissions"
+  href="configure-permissions.mdx"
+  description="Use production permission APIs after testing grant shapes in TEST."
+/>

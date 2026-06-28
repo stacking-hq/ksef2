@@ -1,0 +1,86 @@
+---
+title: Wyszukaj dostawców PEPPOL
+description: Wyszukuj dostawców usług PEPPOL zarejestrowanych w KSeF.
+---
+
+import { LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Użyj `client.peppol`, gdy potrzebujesz publicznej listy dostawców usług PEPPOL
+zarejestrowanych w KSeF. To gałąź klienta głównego i nie wymaga
+uwierzytelniania.
+
+## Wyszukaj dostawców
+
+<Tabs syncKey="sdk-peppol-query">
+  <TabItem label="Jedna strona">
+
+```python
+page = client.peppol.query()
+
+# ListPeppolProvidersResponse
+# {
+#   "has_more": false,
+#   "providers": [
+#     {
+#       "id": "PPL123456",
+#       "name": "Example PEPPOL Provider",
+#       "date_created": "2026-06-25T10:00:00Z"
+#     }
+#   ]
+# }
+
+for provider in page.providers:
+    print(provider.id, provider.name)
+```
+
+  </TabItem>
+  <TabItem label="Wszyscy dostawcy">
+
+```python
+for provider in client.peppol.all():
+    print(provider.id, provider.name, provider.date_created)
+```
+
+  </TabItem>
+</Tabs>
+
+## Cache'uj wybory dostawców
+
+Rekordy dostawców są danymi referencyjnymi. Odpytaj je z KSeF, a potem cache'uj
+id i nazwę wyświetlaną do wyboru użytkownika albo walidacji w produkcie.
+
+```python
+providers_by_id = {
+    provider.id: provider.name
+    for provider in client.peppol.all()
+}
+```
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Wyszukaj dostawców z klienta głównego.
+
+2. Zapisz id i nazwy dostawców w cache'u danych referencyjnych aplikacji.
+
+3. Używaj id dostawców przy walidacji wyborów użytkownika albo danych
+   związanych z PEPPOL.
+
+4. Odświeżaj cache zgodnie z wymaganiami świeżości danych w produkcie.
+
+</Steps>
+
+## Następne przepływy
+
+<LinkCard
+  title="Konfiguracja klienta"
+  href="client-setup.mdx"
+  description="Utwórz klienta głównego używanego do publicznych zapytań o dostawców PEPPOL."
+/>
+
+<LinkCard
+  title="PEPPOL"
+  href="../concepts/peppol.mdx"
+  description="Zrozum, gdzie dane dostawców PEPPOL pasują do powierzchni SDK."
+/>

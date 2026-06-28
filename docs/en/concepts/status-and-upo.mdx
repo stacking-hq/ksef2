@@ -1,0 +1,168 @@
+---
+title: Status and UPO
+description: Understand status surfaces, polling, UPO documents, and local timeouts in ksef2 workflows.
+---
+
+import { Aside, LinkCard, Steps } from '@astrojs/starlight/components';
+
+KSeF workflows are asynchronous. Many SDK calls start work and return a
+reference number; a different call tells you what happened later.
+
+Do not reduce this to one `done` flag. Each status surface answers a different
+question and has a different reference number.
+
+## Which status do you need?
+
+| Question | SDK surface | Typical handle |
+| --- | --- | --- |
+| Did authentication finish? | `client.authentication` | authentication operation reference |
+| Is an online or batch session still processing? | session client or `auth.batch` | session reference number |
+| Did one submitted invoice succeed or fail? | online/batch session invoice status | invoice reference number |
+| Are processed invoices visible for search? | `auth.invoices` metadata queries | filters, pagination, KSeF number |
+| Is an export package ready? | `auth.invoices` export status | export reference number |
+| Is a token active or revoked? | `auth.tokens` | token operation/reference number |
+| Did a permission operation finish? | `auth.permissions` | permission operation reference |
+
+Use the surface that matches the question. A session can be complete while one
+invoice inside it failed. An export can still be preparing even though invoice
+metadata is already visible. A token operation can finish independently from any
+invoice-sending session.
+
+## Session status
+
+Session status is KSeF's summary of a remote online or batch workflow. After
+processing, it can include counters and UPO page references.
+
+```python
+status = session.get_status()
+print(
+    status.status.code,
+    status.invoice_count,
+    status.successful_invoice_count,
+    status.failed_invoice_count,
+)
+```
+
+The status code belongs to the session workflow, not necessarily to every
+invoice inside it. A session summary can say that processing completed and still
+report failed invoices in `failed_invoice_count`. Inspect session invoices when
+you need per-invoice details.
+
+```python
+failed = session.list_failed_invoices()
+for invoice in failed.invoices:
+    print(invoice.reference_number, invoice.status.code, invoice.status.details)
+```
+
+## Invoice status
+
+Invoice status is scoped to one invoice in one session. For online sending, you
+usually get the invoice reference number immediately from `send_invoice()`. For
+batch sending, per-invoice status becomes visible after KSeF processes the
+uploaded package.
+
+An accepted invoice status has a `ksef_number`. A failed invoice status carries
+the KSeF status code, description, and optional details.
+
+```python
+invoice_status = session.get_invoice_status(
+    invoice_reference_number=sent.reference_number,
+)
+print(invoice_status.ksef_number, invoice_status.status.description)
+```
+
+## UPO documents
+
+UPO is the official confirmation document. It is XML signed by the Ministry of
+Finance. Treat the returned bytes as an audit artifact and store them durably.
+
+UPO is not available at send time:
+
+<Steps>
+
+1. Send or upload invoice data.
+
+2. Wait until KSeF processes the invoice or session.
+
+3. Read the UPO reference or use the invoice reference/KSeF number.
+
+4. Download and store the UPO XML bytes.
+
+</Steps>
+
+The SDK exposes the common UPO paths through session clients:
+
+```python
+invoice_upo = session.get_invoice_upo_by_reference(
+    invoice_reference_number=sent.reference_number,
+)
+
+batch_upo = auth.batch.get_upo(
+    session=batch_state.reference_number,
+    upo_reference_number="upo-reference-from-session-status",
+)
+```
+
+Status responses can also expose UPO page data such as
+`download_url_expiration_date`. Use references for SDK calls and store the
+downloaded XML once you have it.
+
+## Polling and timeouts
+
+Wait helpers poll KSeF until one of three things happens:
+
+- the target state appears;
+- KSeF reports a terminal failure that the SDK can classify;
+- the local timeout expires.
+
+A local timeout does not prove the remote operation failed. It only means the
+target state was not observed before your deadline.
+
+<Aside type="note" title="Timeouts are local deadlines">
+  After a timeout, resume with the stored reference number instead of sending
+  the same invoice again blindly. The original remote workflow may still finish.
+</Aside>
+
+Choose polling settings based on the workflow:
+
+| Workflow | Typical wait helper |
+| --- | --- |
+| Online invoice acceptance | `session.wait_for_invoice_ready()` or `send_invoice_and_wait()` |
+| Batch processing | `auth.batch.wait_for_completion()` |
+| Export package readiness | `auth.invoices.wait_for_export_package()` |
+| Token generation or inspection | `auth.tokens.generate()` or `auth.tokens.status()` |
+
+## What to persist
+
+Persist enough information to inspect status later without the original Python
+object:
+
+- the session reference number;
+- the invoice reference number;
+- the KSeF number after acceptance;
+- the UPO reference or UPO XML bytes;
+- the export or operation reference number for non-session workflows;
+- the last observed status payload for audit.
+
+## Related pages
+
+<LinkCard
+  title="Get status and UPO"
+  href="../how-to-guides/get-status-and-upo.mdx"
+  description="Poll online and batch sessions and retrieve UPO XML."
+/>
+<LinkCard
+  title="Sessions"
+  href="sessions.mdx"
+  description="Understand the remote workflow contexts that expose status."
+/>
+<LinkCard
+  title="Invoice lifecycle"
+  href="invoice-lifecycle.mdx"
+  description="Follow an invoice from submission through KSeF number, metadata, download, and UPO."
+/>
+<LinkCard
+  title="Error handling"
+  href="../reference/errors.mdx"
+  description="Handle rejected, failed, expired, and retryable KSeF operations."
+/>

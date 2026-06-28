@@ -1,0 +1,482 @@
+---
+title: Zbuduj faktury FA(3)
+description: Wygeneruj pełne modele faktur FA(3) i XML przez fluent builder.
+---
+
+import { Aside, LinkCard, Steps } from '@astrojs/starlight/components';
+
+Użyj `FA3InvoiceBuilder`, gdy aplikacja ma dane faktury jako obiekty Pythona i
+chcesz, żeby SDK zbudowało typowany model FA(3) oraz XML. Builder używa
+publicznych nazw pól SDK, a potem tworzy ten sam agregat `KsefInvoice`, którego
+używają mappery FA(3).
+
+<Aside type="tip" title="Builder obejmuje zaawansowane ścieżki faktur">
+  `FA3InvoiceBuilder` jest publicznym zagnieżdżonym builderem dla faktur
+  standardowych, uproszczonych, korekt, zaliczek, rozliczeń zaliczek,
+  korekt zaliczek i korekt rozliczeń. Bezpośrednie budowanie `KsefInvoice`
+  wybierz tylko wtedy, gdy masz już instancje modeli albo celowo omijasz DSL.
+</Aside>
+
+## Kształt buildera
+
+Builder ma trzy poziomy:
+
+| Poziom | Co zawiera | Typowe metody |
+| --- | --- | --- |
+| Root faktury | Nagłówek, sprzedawcę, nabywcę, podmioty trzecie, stopkę, załącznik i finalny wynik. | `header()`, `seller()`, `buyer()`, `third_party()`, `footer()`, `attachment()`, `build()`, `to_xml()` |
+| Ścieżka body | Rodzaj faktury FA(3) i pola wspólne dla body. | `standard()`, `simplified()`, `correction()`, `advance()`, `settlement()`, `correction_advance()`, `correction_settlement()` |
+| Sekcje zagnieżdżone | Powtarzalne albo opcjonalne szczegóły body. | `rows()`, `payment()`, `annotations()`, `correction()`, `order()`, `advance()`, `settlement()`, `transaction()` |
+
+Każdy zagnieżdżony builder wraca do rodzica przez `.done()`. Root builder może
+zwrócić publiczny model przez `build()`, wygenerowany model schemy FA(3) przez
+`to_spec()` albo tekst XML przez `to_xml()`.
+
+## Zbuduj fakturę standardową
+
+Najpierw ustaw strony faktury na root builderze, wybierz ścieżkę `.standard()`,
+a potem uzupełnij sekcje zagnieżdżone.
+
+```python
+from datetime import date
+from decimal import Decimal
+
+from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+
+builder = (
+    FA3InvoiceBuilder()
+    .header(system_info="ksef2 builder guide")
+    .seller(
+        name="Demo Seller Sp. z o.o.",
+        tax_id="5261040828",
+        country_code="PL",
+        address_line_1="Prosta 1",
+        address_line_2="00-001 Warszawa",
+    )
+    .buyer(
+        name="Demo Buyer Sp. z o.o.",
+        tax_id="5250001009",
+        country_code="PL",
+        address_line_1="Kwiatowa 2",
+        address_line_2="00-002 Warszawa",
+    )
+    .standard()
+        .issue_date(date(2026, 6, 24))
+        .issue_place("Warszawa")
+        .invoice_number("FV/1/2026")
+        .rows()
+            .add_line(
+                name="Usługa wdrożeniowa",
+                quantity=Decimal("2"),
+                unit_price_net=Decimal("150.00"),
+                vat_rate=VatRate.VAT_23,
+            )
+            .add_line(
+                name="Pakiet wsparcia",
+                quantity=Decimal("1"),
+                unit_price_net=Decimal("50.00"),
+                vat_rate=VatRate.VAT_8,
+            )
+        .done()
+        .payment()
+            .via("bank_transfer")
+            .due_on(date(2026, 7, 8))
+            .bank_account("PL10101010101010101010101010")
+        .done()
+        .annotations()
+            .split_payment()
+        .done()
+    .done()
+)
+```
+
+Wywołaj `build()`, gdy potrzebujesz typowanego publicznego modelu faktury.
+
+```python
+invoice = builder.build()
+
+print(invoice.body.invoice_number)
+# FV/1/2026
+print(invoice.total_net)
+# 350.00
+print(invoice.total_vat)
+# 73.00
+print(invoice.total_gross)
+# 423.00
+```
+
+## Wybierz ścieżkę faktury
+
+Po `header()`, `seller()` i `buyer()` wybierz jeden selektor body:
+
+| Selektor | Zastosowanie | Typowe sekcje zagnieżdżone |
+| --- | --- | --- |
+| `standard()` | Zwykłe faktury VAT. | `rows()`, `payment()`, `annotations()`, `transaction()`, `settlement()` |
+| `simplified()` | Faktury uproszczone. | `rows()`, `payment()`, `annotations()`, `settlement()` |
+| `correction()` | Korekty wcześniejszych faktur. | `rows()`, `correction()`, `payment()`, `annotations()` |
+| `advance()` | Faktury zaliczkowe. | `order()`, `payment()`, `advance()`, `annotations()`, `transaction()` |
+| `settlement()` | Faktury rozliczające zaliczki. | `rows()`, `payment()`, `advance()`, `settlement()`, `transaction()` |
+| `correction_advance()` | Korekty faktur zaliczkowych. | `order()`, `correction()`, `advance()`, `payment()` |
+| `correction_settlement()` | Korekty faktur rozliczających. | `rows()`, `correction()`, `advance()`, `settlement()`, `payment()` |
+
+Wszystkie selektory body mają wspólne metody, między innymi `currency()`,
+`issue_date()`, `issue_place()`, `invoice_number()`, `date_of_supply()`,
+`billing_period()`, `add_description()`, `mark_fp()`,
+`related_party_transaction()` i `summary_overrides()`.
+
+## Dodaj pozycje faktury
+
+Użyj `rows().add_line()` dla zwykłych danych aplikacji. Builder wylicza brakujące
+sumy pozycji z `quantity`, jednej ceny jednostkowej i klasyfikacji VAT. Przekaż
+`unit_price_net` albo `unit_price_gross`, ale nie oba naraz.
+
+```python
+builder = (
+    FA3InvoiceBuilder()
+    .header(system_info="rows example")
+    .seller(
+        name="Demo Seller Sp. z o.o.",
+        tax_id="5261040828",
+        country_code="PL",
+        address_line_1="Prosta 1",
+    )
+    .buyer(
+        name="Demo Buyer Sp. z o.o.",
+        tax_id="5250001009",
+        country_code="PL",
+        address_line_1="Kwiatowa 2",
+    )
+    .standard()
+        .issue_date(date(2026, 6, 24))
+        .invoice_number("FV/2/2026")
+        .rows()
+            .add_line(
+                name="Usługa w cenie brutto",
+                quantity=Decimal("2"),
+                unit_price_gross=Decimal("123.00"),
+                vat_rate=VatRate.VAT_23,
+            )
+        .done()
+    .done()
+)
+```
+
+Użyj `add_line_model()` albo `replace_lines()`, gdy inna warstwa utworzyła już
+modele `InvoiceRow`. Użyj `summary_overrides()`, gdy oficjalny przypadek FA(3)
+wymaga wartości podsumowania, których nie należy wyliczać z pozycji.
+
+## Dodaj płatności i adnotacje
+
+Builder płatności obsługuje formę płatności, terminy, płatności częściowe,
+rachunki bankowe, rachunki faktora, rabaty, linki płatności i IP KSeF.
+
+```python
+_ = (
+    builder.standard()
+    .payment()
+        .via("bank_transfer")
+        .due_on(date(2026, 7, 8))
+        .add_partial_payment(
+            amount=Decimal("50.00"),
+            payment_date=date(2026, 6, 24),
+            payment_form="card",
+        )
+        .bank_account(
+            "PL10101010101010101010101010",
+            bank_name="Demo Bank S.A.",
+            account_description="Rachunek PLN",
+        )
+    .done()
+    .annotations()
+        .split_payment()
+        .cash_accounting(False)
+        .margin_procedure("travel_agency")
+    .done()
+    .done()
+)
+```
+
+Większość metod adnotacji przyjmuje wartości boolowskie albo stringi podobne do
+enumów i zapisuje odpowiednią flagę FA(3) tylko wtedy, gdy jest potrzebna.
+
+## Zbuduj korektę
+
+Korekty zostają w fluent builderze. Użyj selektora `.correction()`, dodaj
+ujemne albo przed/po pozycje, a potem otwórz zagnieżdżoną sekcję `.correction()`
+z powodem korekty i referencjami faktur korygowanych.
+
+```python
+from datetime import date
+from decimal import Decimal
+
+from ksef2.fa3 import FA3InvoiceBuilder, InvoiceSummaryOverrides, VatRate
+
+correction = (
+    FA3InvoiceBuilder()
+    .header(system_info="ksef2 correction guide")
+    .seller(
+        name="Demo Seller Sp. z o.o.",
+        tax_id="5261040828",
+        country_code="PL",
+        address_line_1="Prosta 1",
+    )
+    .buyer(
+        name="Demo Buyer Sp. z o.o.",
+        tax_id="5250001009",
+        country_code="PL",
+        address_line_1="Kwiatowa 2",
+    )
+    .correction()
+        .issue_date(date(2026, 7, 1))
+        .issue_place("Warszawa")
+        .invoice_number("FK/1/2026")
+        .summary_overrides(
+            InvoiceSummaryOverrides(
+                base_rate_net_total=Decimal("-100.00"),
+                base_rate_vat_total=Decimal("-23.00"),
+                total_gross=Decimal("-123.00"),
+            )
+        )
+        .rows()
+            .add_line(
+                name="Korekta usługi wdrożeniowej",
+                quantity=Decimal("1"),
+                unit_price_net=Decimal("-100.00"),
+                vat_rate=VatRate.VAT_23,
+            )
+        .done()
+        .correction()
+            .reason("Korekta ceny")
+            .effect_type("other_date")
+            .add_corrected_invoice(
+                issue_date=date(2026, 6, 24),
+                invoice_number="FV/1/2026",
+                ksef_id="5261040828-20260624-ABCDEF-ABCDEF-FF",
+            )
+        .done()
+    .done()
+    .build()
+)
+```
+
+Sekcja korekty obsługuje też okres faktury korygowanej, skorygowane dane
+sprzedawcy, skorygowanych nabywców oraz metody przyjmujące gotowe modele FA(3).
+
+## Zbuduj zaliczkę i rozliczenie
+
+Faktura zaliczkowa łączy ścieżkę body z zamówieniem, płatnością i opcjonalnymi
+referencjami zaliczek. Faktura rozliczeniowa może potem wskazać wcześniejsze
+faktury zaliczkowe.
+
+```python
+advance_xml = (
+    FA3InvoiceBuilder()
+    .header(system_info="advance guide")
+    .seller(
+        name="Demo Developer S.A.",
+        tax_id="5261040828",
+        country_code="PL",
+        address_line_1="Sadowa 1",
+    )
+    .buyer(
+        name="Demo Buyer",
+        tax_id="5250001009",
+        country_code="PL",
+        address_line_1="Kwiatowa 2",
+    )
+    .advance()
+        .issue_date(date(2026, 8, 1))
+        .invoice_number("FZ/1/2026")
+        .order(declared_total=Decimal("324000.00"))
+            .add_line(
+                name="Rezerwacja mieszkania",
+                quantity=Decimal("1"),
+                unit_price_net=Decimal("300000.00"),
+                vat_rate=VatRate.VAT_8,
+                gross_amount=Decimal("324000.00"),
+            )
+        .done()
+        .payment()
+            .via("bank_transfer")
+            .already_paid(date(2026, 8, 1))
+        .done()
+    .done()
+    .to_xml()
+)
+```
+
+```python
+settlement_xml = (
+    FA3InvoiceBuilder()
+    .header(system_info="settlement guide")
+    .seller(
+        name="Demo Developer S.A.",
+        tax_id="5261040828",
+        country_code="PL",
+        address_line_1="Sadowa 1",
+    )
+    .buyer(
+        name="Demo Buyer",
+        tax_id="5250001009",
+        country_code="PL",
+        address_line_1="Kwiatowa 2",
+    )
+    .settlement()
+        .issue_date(date(2026, 9, 1))
+        .invoice_number("FR/1/2026")
+        .rows()
+            .add_line(
+                name="Rozliczenie mieszkania",
+                quantity=Decimal("1"),
+                unit_price_net=Decimal("185185.19"),
+                vat_rate=VatRate.VAT_8,
+            )
+        .done()
+        .advance()
+            .add_invoice_reference(ksef_id="5261040828-20260801-ABCDEF-ABCDEF-FF")
+        .done()
+        .payment()
+            .via("bank_transfer")
+            .due_on(date(2026, 9, 15))
+        .done()
+    .done()
+    .to_xml()
+)
+```
+
+## Dodaj szczegóły root
+
+Szczegóły root są poza body faktury i możesz je dodać przed albo po ścieżce
+body.
+
+| Potrzeba | Metoda fluent | Metoda modelowa |
+| --- | --- | --- |
+| Gotowy model nagłówka, sprzedawcy, nabywcy, stopki albo załącznika | Użyj buildera fluent, gdy chcesz edytować pola. | `header_model()`, `seller_model()`, `buyer_model()`, `footer_model()`, `attachment_model()` |
+| Podmiot trzeci | `third_party(...)` | `add_third_party_model()`, `replace_third_parties()` |
+| Stopka rejestrowa albo nota prawna | `footer().add_information().add_registry().done()` | `footer_model()` |
+| Załącznik z blokami danych albo tabelami | `attachment().build_data_block()...done().done()` | `attachment_model()` |
+
+```python
+builder = (
+    builder
+    .third_party(
+        name="Additional buyer",
+        tax_id="3333333333",
+        address_country_code="PL",
+        address_line_1="Polna 3",
+        role="additional_buyer",
+        share_percentage=Decimal("50"),
+    )
+    .footer()
+        .add_information("Faktura wygenerowana elektronicznie.")
+        .add_registry(krs="0000123456", regon="123456789")
+    .done()
+    .attachment()
+        .build_data_block()
+            .set_header("Specyfikacja dostawy")
+            .add_paragraph("Towar sprawdzono przed wysyłką.")
+            .build_table()
+                .set_columns(["txt", "decimal"], names=["Usługa", "Kwota netto"])
+                .add_row(["Consulting", "1000.00"])
+            .done()
+        .done()
+    .done()
+)
+```
+
+## Wygeneruj XML
+
+Builder może zwrócić trzy postacie faktury:
+
+- `build()` zwraca `KsefInvoice`.
+- `to_spec()` zwraca wygenerowany model schemy FA(3) `Faktura`.
+- `to_xml()` zwraca XML jako string.
+
+```python
+from pathlib import Path
+
+invoice = builder.build()
+spec = builder.to_spec()
+xml_text = builder.to_xml()
+Path("invoice.xml").write_text(xml_text, encoding="utf-8")
+```
+
+Do sesji online albo batch przekaż bajty XML.
+
+```python
+from ksef2 import FormSchema
+
+invoice_xml = builder.to_xml().encode("utf-8")
+
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    sent = session.send_invoice(invoice_xml=invoice_xml)
+    print(sent.reference_number)
+```
+
+## Zapisz i odtwórz draft
+
+Niepełny stan buildera zapisuj przez `dump_state()` albo `dump_state_json()`.
+Później odtworzysz go przez `from_state()` albo `from_state_json()`.
+
+```python
+from ksef2.fa3 import FA3InvoiceBuilder, KsefInvoiceDraft
+
+draft_json = builder.dump_state_json(indent=2)
+draft = KsefInvoiceDraft.model_validate_json(draft_json)
+restored = FA3InvoiceBuilder.from_state(draft)
+```
+
+Jeżeli masz już kompletny `KsefInvoice`, otwórz go ponownie w builderze przez
+`FA3InvoiceBuilder.from_invoice(invoice)`.
+
+## Rozwiąż typowe błędy
+
+| Błąd | Znaczenie | Naprawa |
+| --- | --- | --- |
+| `Invoice header is required but not set.` | Root builder nie ma nagłówka. | Wywołaj `header()` albo `header_model()` przed `build()`, `to_spec()` albo `to_xml()`. |
+| `Invoice seller is required but not set.` | Brakuje sprzedawcy. | Wywołaj `seller()` albo `seller_model()`. |
+| `Invoice buyer is required but not set.` | Brakuje nabywcy. | Wywołaj `buyer()` albo `buyer_model()`. |
+| `Invoice body is required but not set.` | Nie wybrano i nie zakończono ścieżki body. | Wywołaj selektor, np. `standard()` albo `correction()`, uzupełnij wymagane pola i wróć przez `.done()`. |
+| `Provide either unit_price_net or unit_price_gross, not both.` | Pozycja ma niejednoznaczną cenę. | Przekaż tylko jedną cenę jednostkową i pozwól builderowi wyliczyć sumy. |
+| `... details are empty. Set at least one field before calling done().` | Otworzono opcjonalną sekcję, ale nie dodano danych. | Dodaj dane sekcji przed `.done()` albo nie twórz tej sekcji. |
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Utwórz `FA3InvoiceBuilder()` i ustaw nagłówek, sprzedawcę oraz nabywcę.
+
+2. Wybierz ścieżkę body: `standard()`, `correction()`, `advance()` albo inny
+   selektor pasujący do dokumentu biznesowego.
+
+3. Dodaj sekcje zagnieżdżone, takie jak `rows()`, `payment()`, `annotations()`,
+   `correction()`, `order()`, `footer()` albo `attachment()`.
+
+4. Użyj `build()` dla publicznego modelu podczas walidacji i `to_xml()` dla
+   ścieżki wysyłki.
+
+5. Zakoduj XML do bajtów przed przekazaniem go do API sesji albo batch.
+
+</Steps>
+
+## Powiązane strony
+
+<LinkCard
+  title="Referencja API Pythona: builder faktur FA(3)"
+  href="../reference/api/fa3.mdx"
+  description="Przejrzyj wygenerowane sygnatury buildera, agregatu faktury, draftów i override'ów podsumowania."
+/>
+<LinkCard
+  title="Quickstart"
+  href="../getting-started/quickstart.mdx"
+  description="Wygeneruj, wyślij, potwierdź i pobierz fakturę TEST end to end."
+/>
+<LinkCard
+  title="Wysyłanie faktur"
+  href="send-invoices.mdx"
+  description="Użyj wyniku buildera w sesji online albo batch."
+/>
+<LinkCard
+  title="Kontrakt publicznego API"
+  href="../reference/public-api.mdx"
+  description="Przejrzyj stabilne publiczne importy używane przez kod buildera faktur."
+/>

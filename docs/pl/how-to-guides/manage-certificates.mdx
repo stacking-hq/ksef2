@@ -1,0 +1,154 @@
+---
+title: Zarządzaj certyfikatami
+description: Sprawdzaj limity certyfikatów, rejestruj certyfikaty, wyszukuj wydane certyfikaty i cofaj je.
+---
+
+import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Użyj `auth.certificates` do rejestracji, wyszukiwania, pobierania i cofania
+certyfikatów KSeF. SDK wysyła CSR i żądania cyklu życia. Narzędzia
+certyfikatowe nadal odpowiadają za generowanie i przechowywanie kluczy
+prywatnych.
+
+## Sprawdź limity i dane rejestracji
+
+```python
+limits = auth.certificates.get_limits()
+
+# CertificateLimitsResponse
+# {
+#   "can_request": true,
+#   "enrollment_limit": 10,
+#   "enrollment_remaining": 9,
+#   "certificate_limit": 10,
+#   "certificate_remaining": 8
+# }
+
+subject = auth.certificates.get_enrollment_data()
+
+# CertificateEnrollmentData
+# {
+#   "common_name": "Example subject",
+#   "iso_country_code": "PL",
+#   "organization_identifier": "VATPL-5261040828"
+# }
+```
+
+Użyj danych rejestracji podczas budowania CSR w narzędziach certyfikatowych.
+
+## Zarejestruj certyfikat
+
+Wyślij CSR i zapisz zwróconą referencję rejestracji.
+
+```python
+csr = """-----BEGIN CERTIFICATE REQUEST-----
+...
+-----END CERTIFICATE REQUEST-----"""
+
+enrollment = auth.certificates.enroll(
+    certificate_name="billing-service",
+    certificate_type="authentication",
+    csr=csr,
+)
+
+# CertificateEnrollmentResponse
+# {
+#   "reference_number": "20260625-CERT-...",
+#   "timestamp": "2026-06-25T10:00:00Z"
+# }
+```
+
+Następnie sprawdź status rejestracji:
+
+```python
+status = auth.certificates.get_enrollment_status(
+    reference_number=enrollment.reference_number,
+)
+
+# CertificateEnrollmentStatusResponse
+# {
+#   "status_code": 200,
+#   "status_description": "Completed",
+#   "certificate_serial_number": "0123456789ABCDEF"
+# }
+```
+
+<Aside type="caution" title="Trzymaj klucze prywatne poza SDK">
+  SDK nie potrzebuje klucza prywatnego do rejestracji certyfikatu. Wygeneruj i
+  chroń klucz prywatny w narzędziach certyfikatowych, do KSeF wyślij tylko CSR,
+  a wydany certyfikat zapisz razem z pasującym kluczem.
+</Aside>
+
+## Wyszukaj, pobierz i cofnij
+
+<Tabs syncKey="sdk-cert-lifecycle">
+  <TabItem label="Wyszukaj">
+
+```python
+for certificate in auth.certificates.all(status="active"):
+    print(certificate.serial_number, certificate.name, certificate.valid_to)
+```
+
+  </TabItem>
+  <TabItem label="Pobierz">
+
+```python
+result = auth.certificates.retrieve(
+    certificate_serial_numbers=["0123456789ABCDEF"],
+)
+
+for certificate in result.certificates:
+    print(certificate.serial_number, certificate.certificate_type)
+```
+
+  </TabItem>
+  <TabItem label="Cofnij">
+
+```python
+auth.certificates.revoke(
+    certificate_serial_number="0123456789ABCDEF",
+    reason="key_compromise",
+)
+```
+
+  </TabItem>
+</Tabs>
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Sprawdź limity certyfikatów i rejestracji.
+
+2. Pobierz dane podmiotu do rejestracji.
+
+3. Wygeneruj klucz prywatny i CSR poza SDK.
+
+4. Wyślij rejestrację i zapisz numer referencyjny.
+
+5. Odpytuj status, pobierz certyfikat i zapisz go z kluczem prywatnym.
+
+6. Cofnij certyfikaty, które nie są już ważne albo których klucz prywatny mógł
+   zostać naruszony.
+
+</Steps>
+
+## Następne przepływy
+
+<LinkCard
+  title="Użyj pomocników XAdES"
+  href="use-xades-helpers.mdx"
+  description="Ładuj materiał certyfikatu i uwierzytelniaj się przez XAdES."
+/>
+
+<LinkCard
+  title="Certyfikaty"
+  href="../concepts/certificates.mdx"
+  description="Zrozum role certyfikatów w uwierzytelnianiu, podpisie i rejestracji."
+/>
+
+<LinkCard
+  title="Uwierzytelnianie"
+  href="authenticate.mdx"
+  description="Użyj wydanego materiału certyfikatu do uwierzytelniania SDK."
+/>

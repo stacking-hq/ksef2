@@ -1,0 +1,199 @@
+---
+title: Download Invoices
+description: Download processed invoice XML directly or through encrypted export packages with ksef2.
+---
+
+import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Use `auth.invoices` when you need invoice content after KSeF has processed it.
+The examples below assume you already have an authenticated client named `auth`.
+
+## Download one invoice
+
+If you already have a KSeF number, direct download is the shortest path.
+
+```python
+from pathlib import Path
+
+ksef_number = "1234567890-20260625-..."
+
+xml_bytes = auth.invoices.download_invoice(ksef_number=ksef_number)
+Path("invoice.xml").write_bytes(xml_bytes)
+```
+
+If the invoice was just sent, KSeF may need time before the processed XML is
+downloadable. Use the waiting helper when your workflow should block until the
+document is available.
+
+```python
+from pathlib import Path
+
+ksef_number = "1234567890-20260625-..."
+
+xml_bytes = auth.invoices.wait_for_invoice_download(
+    ksef_number=ksef_number,
+    timeout=120.0,
+    poll_interval=2.0,
+)
+Path("invoice.xml").write_bytes(xml_bytes)
+```
+
+## Build an export filter
+
+Use exports for larger downloads. Exports use `InvoicesFilter`, the same filter
+shape used by metadata queries.
+
+```python
+from datetime import datetime, timedelta, timezone
+
+from ksef2.models import InvoicesFilter
+
+now = datetime.now(tz=timezone.utc)
+
+filters = InvoicesFilter.for_buyer(
+    date_type="permanent_storage",
+    date_from=now - timedelta(days=1),
+    date_to=now,
+    restrict_to_permanent_storage_hwm_date=True,
+)
+```
+
+<Aside type="tip" title="Use HWM for background sync">
+  `restrict_to_permanent_storage_hwm_date=True` keeps unattended exports inside
+  the boundary KSeF reports as complete. Store `permanent_storage_hwm_date` for
+  the next sync window.
+</Aside>
+
+## Export many invoices
+
+Schedule the export, wait for the package, then fetch the decrypted ZIP parts.
+
+<Tabs syncKey="sdk-download-export">
+  <TabItem label="Save files">
+
+```python
+from pathlib import Path
+
+export = auth.invoices.schedule_export(filters=filters)
+
+# ExportHandle(reference_number="...", aes_key=<bytes>, iv=<bytes>)
+# Keep this object private. It contains decryption material.
+
+package = auth.invoices.wait_for_export_package(
+    reference_number=export.reference_number,
+    timeout=300.0,
+)
+
+# InvoicePackage
+# {
+#   "invoice_count": 3,
+#   "size": 14820,
+#   "is_truncated": false,
+#   "last_permanent_storage_date": "2026-06-25T09:58:21Z",
+#   "permanent_storage_hwm_date": "2026-06-25T10:00:00Z",
+#   "parts": [
+#     {
+#       "ordinal_number": 1,
+#       "part_name": "package-1.zip",
+#       "expiration_date": "2026-06-26T10:00:00Z"
+#     }
+#   ]
+# }
+
+saved_paths = auth.invoices.fetch_package(
+    package=package,
+    export=export,
+    target_directory=Path("downloads"),
+)
+
+for path in saved_paths:
+    print(path)
+```
+
+  </TabItem>
+  <TabItem label="In memory">
+
+```python
+export = auth.invoices.schedule_export(filters=filters)
+package = auth.invoices.wait_for_export_package(
+    reference_number=export.reference_number,
+    timeout=300.0,
+)
+
+zip_parts = auth.invoices.fetch_package_bytes(package=package, export=export)
+
+for zip_part in zip_parts:
+    print(len(zip_part))
+```
+
+  </TabItem>
+  <TabItem label="One call">
+
+```python
+zip_parts = auth.invoices.export_and_download(
+    filters=filters,
+    timeout=300.0,
+    poll_interval=2.0,
+)
+
+for zip_part in zip_parts:
+    print(len(zip_part))
+```
+
+  </TabItem>
+</Tabs>
+
+<Aside type="note" title="The SDK decrypts package parts">
+  KSeF returns encrypted package part URLs. The high-level export helpers load a
+  valid KSeF encryption certificate, schedule the export with local AES
+  material, download the package parts, and decrypt them before returning paths
+  or bytes.
+</Aside>
+
+<Aside type="caution" title="Package parts are temporary">
+  Package URLs expire. Store the decrypted ZIP parts or extracted invoice XML in
+  your own storage, and keep `_metadata.json` when the package includes it.
+</Aside>
+
+## After sending invoices
+
+Keep sending, processing, and retrieval as separate phases.
+
+<Steps>
+
+1. Send invoice XML through an online or batch session.
+
+2. Poll session or invoice status until KSeF reports a final accepted result.
+
+3. Persist the returned `ksef_number` values.
+
+4. Download one processed XML document by `ksef_number`, or build an export
+   filter for a larger time window.
+
+</Steps>
+
+## Next workflows
+
+<LinkCard
+  title="Query invoices"
+  href="query-invoices.mdx"
+  description="Find KSeF numbers and metadata before downloading invoice content."
+/>
+
+<LinkCard
+  title="Send invoices"
+  href="send-invoices.mdx"
+  description="Submit invoice XML through online or batch sessions."
+/>
+
+<LinkCard
+  title="Querying and exports"
+  href="../concepts/querying-and-exports.mdx"
+  description="Understand metadata, direct downloads, export packages, and HWM sync."
+/>
+
+<LinkCard
+  title="Inspect encryption certificates"
+  href="inspect-encryption-certificates.mdx"
+  description="Check the public KSeF certificates used by encrypted workflows."
+/>

@@ -1,0 +1,119 @@
+---
+title: Low-level sesje i faktury
+description: Kontrakty raw sesji, faktur, UPO, eksportu i payloadów szyfrowania.
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+Użyj low-level sesji i faktur, gdy integracja posiada materiał szyfrowania,
+otwieranie sesji, wysyłkę faktury, szyfrowanie eksportu albo kolejność pollingu.
+
+## Materiał posiadany przez callera
+
+| Wartość | Źródło | Potrzebna do |
+| --- | --- | --- |
+| `aes_key` | `generate_session_key()` albo własna custody klucza | Szyfrowanie faktury/sesji/eksportu i późniejsze odszyfrowanie. |
+| `iv` | `generate_session_key()` albo własna custody klucza | Metadane szyfrowania wysyłane do KSeF i lokalne operacje crypto. |
+| `encrypted_key` | `encrypt_symmetric_key(aes_key, cert.certificate)` | `encryptedSymmetricKey` w payloadach sesji albo eksportu. |
+| `public_key_id` | Metadane publicznego certyfikatu KSeF | `publicKeyId` w payloadach sesji albo eksportu. |
+| `referenceNumber` | Odpowiedź KSeF na open-session albo export | Późniejsza wysyłka, status, zamknięcie, UPO albo export status. |
+
+Jeżeli wysokopoziomowy helper utworzył ten materiał, preferuj pasującą metodę
+resume albo fetch wysokiego poziomu. Nie odtwarzaj stanu szyfrowania z logów.
+
+## Metody raw session
+
+| Metoda | Zwraca | Do czego służy |
+| --- | --- | --- |
+| `auth.raw.session.open_online(body)` | `spec.OpenOnlineSessionResponse` | Otwarcie sesji online z `OpenOnlineSessionRequest`. |
+| `auth.raw.session.terminate_online(reference_number)` | `None` | Zamknięcie sesji online po referencji. |
+| `auth.raw.session.open_batch(body)` | `spec.OpenBatchSessionResponse` | Otwarcie sesji batch z `OpenBatchSessionRequest`. |
+| `auth.raw.session.close_batch(reference_number)` | `None` | Zamknięcie sesji batch po uploadzie wszystkich części. |
+| `auth.raw.session.get_session_upo(reference_number, upo_reference_number)` | `bytes` | Pobranie bajtów UPO sesji. |
+| `auth.raw.session.list_sessions(...)` | `spec.SessionsQueryResponse` | Query historii sesji z filtrami i opcjonalnym continuation tokenem. |
+
+## Metody raw invoices
+
+| Metoda | Zwraca | Do czego służy |
+| --- | --- | --- |
+| `auth.raw.invoices.query_metadata(body, **params)` | `spec.QueryInvoicesMetadataResponse` | Pobranie jednej strony metadanych z `spec.InvoiceQueryFilters`. |
+| `auth.raw.invoices.export(body)` | `spec.ExportInvoicesResponse` | Start eksportu faktur z `InvoiceExportRequest`. |
+| `auth.raw.invoices.get_export_status(reference_number)` | `spec.InvoiceExportStatusResponse` | Sprawdzenie gotowości paczki eksportu. |
+| `auth.raw.invoices.download(ksef_number)` | `bytes` | Pobranie przetworzonego XML faktury po numerze KSeF. |
+| `auth.raw.invoices.send(reference_number, body)` | `spec.SendInvoiceResponse` | Wysłanie jednej zaszyfrowanej faktury do otwartej sesji online. |
+| `auth.raw.invoices.get_session_status(reference_number)` | `spec.SessionStatusResponse` | Pobranie statusu sesji online albo batch. |
+| `auth.raw.invoices.list_session_invoices(reference_number, ...)` | `spec.SessionInvoicesResponse` | Lista zaakceptowanych/faktur sesji. |
+| `auth.raw.invoices.list_failed_session_invoices(reference_number, ...)` | `spec.SessionInvoicesResponse` | Lista nieudanych faktur sesji. |
+| `auth.raw.invoices.get_session_invoice_status(reference_number, invoice_reference_number)` | `spec.SessionInvoiceStatusResponse` | Status jednej faktury w sesji. |
+| `auth.raw.invoices.get_invoice_upo_by_ksef(reference_number, ksef_number)` | `bytes` | Pobranie UPO faktury po numerze KSeF. |
+| `auth.raw.invoices.get_invoice_upo_by_reference(reference_number, invoice_reference_number)` | `bytes` | Pobranie UPO faktury po referencji faktury w sesji. |
+
+Metody z `continuation_token` wysyłają go jako `x-continuation-token`.
+
+## Payload OpenOnlineSessionRequest
+
+| Pole | Źródło |
+| --- | --- |
+| `formCode` | `spec.FormCode(...)` pasujący do schemy faktury. |
+| `encryption.encryptedSymmetricKey` | Base64 encoded `encrypted_key`. |
+| `encryption.initializationVector` | Base64 encoded `iv`. |
+| `encryption.publicKeyId` | Id publicznego klucza KSeF użytego do szyfrowania. |
+
+Zachowaj zwrócone `referenceNumber` razem z `aes_key` i `iv`.
+
+## Payload SendInvoiceRequest
+
+| Pole | Źródło |
+| --- | --- |
+| `invoiceHash` | `sha256_b64(invoice_xml)` |
+| `invoiceSize` | `len(invoice_xml)` |
+| `encryptedInvoiceHash` | `sha256_b64(encrypted_invoice)` |
+| `encryptedInvoiceSize` | `len(encrypted_invoice)` |
+| `encryptedInvoiceContent` | Base64 encoded zaszyfrowane bajty faktury. |
+
+`encrypt_invoice(xml_bytes=invoice_xml, key=aes_key, iv=iv)` tworzy
+zaszyfrowane bajty faktury. Low-level send nie polluje; użyj
+`get_session_invoice_status()`, aż faktura osiągnie finalny status.
+
+## Payload eksportu
+
+`auth.raw.invoices.export()` przyjmuje `InvoiceExportRequest`. Caller posiada
+te same pola szyfrowania co przy sesjach:
+
+| Grupa pól | Źródło |
+| --- | --- |
+| `encryption` | Zaszyfrowany materiał AES i `publicKeyId`. |
+| `filters` | `spec.InvoiceQueryFilters`. |
+| `compressionType` | `spec.CompressionType`, zwykle ZIP. |
+
+Używaj wysokopoziomowego `auth.invoices.fetch_package_bytes(...)` tylko wtedy,
+gdy nadal masz klucz AES i IV wymagane do odszyfrowania części paczki.
+
+## Handoff paczki batch
+
+`prepare_batch_package` jest eksportowane z `ksef2.raw` dla low-level batch
+flows. Przygotowuje metadane zaszyfrowanej paczki ZIP i części. Wynikowe
+metadane batch file można przekazać do:
+
+| Punkt wejścia | Kiedy używać |
+| --- | --- |
+| `auth.raw.session.open_batch(body)` | Gdy chcesz posiadać pełny schema-native request otwarcia batch. |
+| `auth.open_batch_session(...)` | Gdy chcesz step-level wiązanie sesji SDK przy caller-owned materiale szyfrowania. |
+
+## Powiązana referencja
+
+<LinkCard
+  title="Low-level API"
+  href="overview.mdx"
+  description="Sprawdź własność low-level, namespace modeli i utility exports."
+/>
+<LinkCard
+  title="Mapa endpointów"
+  href="endpoint-map.mdx"
+  description="Znajdź każdą gałąź raw endpointów."
+/>
+<LinkCard
+  title="Wyślij faktury"
+  href="../../how-to-guides/send-invoices.mdx"
+  description="Użyj wysokopoziomowych workflow online i batch, gdy raw endpoint control nie jest wymagany."
+/>

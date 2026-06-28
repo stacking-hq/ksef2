@@ -1,0 +1,94 @@
+---
+title: Environments
+description: Understand TEST, DEMO, and PRODUCTION environment choices in ksef2.
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+KSeF workflows run against an explicit environment. Choose it when constructing
+the root client and keep credentials, profiles, persisted session data, and
+download URLs scoped to that environment.
+
+| Environment | Official role | Base URL | Typical use |
+| --- | --- | --- | --- |
+| `Environment.TEST` | Test / release-candidate environment | `https://api-test.ksef.mf.gov.pl/v2` | Local development, CI, SDK-generated TEST certificates, TEST data setup. |
+| `Environment.DEMO` | Pre-production / demo environment | `https://api-demo.ksef.mf.gov.pl/v2` | Integration checks against production-like behavior with non-production credentials. |
+| `Environment.PRODUCTION` | Production environment | `https://api.ksef.mf.gov.pl/v2` | Real taxpayer workflows and production credentials. |
+
+<Aside type="caution" title="Environment state does not travel">
+  Do not reuse tokens, certificate assumptions, persisted session references, or
+  package URLs across environments. Treat each environment as a separate
+  operational boundary.
+</Aside>
+
+## Official environment boundaries
+
+TEST is intentionally looser than DEMO and PRODUCTION. It supports test data
+workflows, SDK-generated test certificate material, and self-signed certificate
+scenarios. TEST data is not a private production archive, so do not use real
+invoice data there.
+
+DEMO is closer to production behavior, but it is still not a production invoice
+environment. PRODUCTION is the only environment for real taxpayer workflows.
+URLs returned by KSeF, such as package download links, belong to the same
+environment host that produced them.
+
+Invoice schema availability also differs by environment:
+
+| Environment | Structured invoice formats |
+| --- | --- |
+| TEST | `FA(2)`, `FA(3)`, `FA_PEF(3)`, `FA_KOR_PEF(3)` |
+| DEMO | `FA(3)`, `FA_PEF(3)`, `FA_KOR_PEF(3)` |
+| PRODUCTION | `FA(3)`, `FA_PEF(3)`, `FA_KOR_PEF(3)` |
+
+## What the environment controls
+
+The environment selects the KSeF API base URL and the operational boundary for
+credentials, profiles, certificates, test data, session references, invoice
+numbers, and exports.
+
+```python
+from ksef2 import Client, Environment
+
+client = Client(Environment.TEST)
+```
+
+`client.testdata` is available only in `Environment.TEST`. The SDK-generated
+TEST certificate authentication helper is also TEST-only.
+
+## Safety boundaries
+
+Credentials are environment-specific. A profile created for PRODUCTION should
+not be selected by a TEST client, and `with_profile()` rejects that mismatch.
+
+Persisted state should be tagged with the environment that produced it:
+
+- authentication profile name;
+- taxpayer or context identifier;
+- online or batch session reference;
+- invoice reference number;
+- KSeF number;
+- export reference number.
+
+## Related pages
+
+<LinkCard
+  title="SDK Overview"
+  href="overview.mdx"
+  description="Understand the major SDK objects and workflow boundaries."
+/>
+<LinkCard
+  title="Client setup"
+  href="../how-to-guides/client-setup.mdx"
+  description="Choose TEST, DEMO, or PRODUCTION when constructing clients."
+/>
+<LinkCard
+  title="Authenticate"
+  href="../how-to-guides/authenticate.mdx"
+  description="Authenticate against the selected environment with the right credential."
+/>
+<LinkCard
+  title="Client lifecycle"
+  href="../reference/client-lifecycle.mdx"
+  description="Review how environment choice affects root and authenticated clients."
+/>

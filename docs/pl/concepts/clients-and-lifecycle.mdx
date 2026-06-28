@@ -1,0 +1,147 @@
+---
+title: Klienci i cykl życia
+description: Zrozum klientów głównych, klientów uwierzytelnionych, uchwyty sesji i własność zasobów w ksef2.
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+SDK ma niewielką hierarchię obiektów. Każdy obiekt oznacza inną granicę cyklu
+życia, a nie tylko inną przestrzeń nazw.
+
+```text
+Client albo AsyncClient
+  -> publiczne gałęzie klienta głównego
+  -> authentication
+    -> AuthenticatedClient dla jednego kontekstu KSeF
+      -> sesje, faktury, tokeny, uprawnienia, certyfikaty, limity
+        -> sesja online, sesja batch, uchwyt eksportu
+```
+
+Klient główny wybiera środowisko KSeF i posiada zasoby transportu. Klient
+uwierzytelniony niesie dostęp do jednego kontekstu. Klienci sesji i uchwyty
+eksportu są węższymi obiektami przepływu i nie powinny być używane jako ogólne
+punkty wejścia SDK.
+
+## Model obiektów
+
+| Obiekt | Co posiada | Co można użyć ponownie |
+| --- | --- | --- |
+| `Client` / `AsyncClient` | Środowisko, transport HTTP, retry, TLS/proxy i cache publicznych certyfikatów. | Użyj ponownie, gdy operacje mają to samo środowisko i politykę transportu. |
+| Klient uwierzytelniony | Tokeny dostępu i odświeżania dla jednego kontekstu logowania. | Użyj ponownie, gdy operacje należą do tego samego kontekstu podatnika i stanu credentiali. |
+| Klient sesji online | Jeden zdalny numer referencyjny sesji online oraz materiał szyfrowania sesji. | Użyj dla jednego przepływu wysyłki, potem zamknij sesję. |
+| Klient albo stan sesji batch | Jeden przepływ uploadu batch oraz materiał szyfrowania paczki. | Użyj do uploadu, zamknięcia, pollingu statusu i pobrania UPO. |
+| Uchwyt eksportu | Numer referencyjny eksportu oraz lokalny materiał AES potrzebny do odszyfrowania części paczki. | Trzymaj tylko do czasu pobrania i zapisania paczki eksportu. |
+
+Główna zasada cyklu życia jest prosta: używaj ponownie klientów głównych i
+uwierzytelnionych, gdy środowisko i kontekst się zgadzają; sesje i eksporty
+traktuj jako uchwyty jednego przepływu.
+
+## Klienci główni
+
+Klient główny jest granicą zasobów HTTP zarządzanych przez SDK. Udostępnia
+publiczne gałęzie, które nie wymagają uwierzytelnienia, na przykład odczyt
+certyfikatów szyfrowania i dostawców PEPPOL. Udostępnia też `authentication`,
+czyli wejście do uwierzytelnionego kontekstu KSeF.
+
+Twórz klienta głównego dla jednego środowiska: TEST, DEMO albo PRODUCTION. Nie
+przełączaj jednego klienta między środowiskami. Jeżeli aplikacja rozmawia z
+więcej niż jednym środowiskiem, każde środowisko powinno mieć osobnego klienta
+głównego i osobny cykl życia.
+
+Zamknięcie klienta głównego zwalnia zasoby HTTP, gdy należą one do SDK. Jeżeli
+przekazujesz do SDK własnego klienta `httpx`, aplikacja, która go utworzyła,
+wciąż odpowiada za jego zamknięcie.
+
+## Klienci uwierzytelnieni
+
+Uwierzytelnienie zmienia klienta głównego w klienta uwierzytelnionego dla
+jednego kontekstu KSeF. Ten kontekst to zwykle NIP podatnika plus credential,
+który potwierdza prawo do działania w tym kontekście.
+
+Klient uwierzytelniony jest punktem wejścia do gałęzi chronionych:
+
+| Gałąź | Rodzaj przepływu |
+| --- | --- |
+| `online_session` | Interaktywna wysyłka faktur. |
+| `batch` | Przygotowanie, upload, status i UPO paczki batch. |
+| `invoices` | Metadane, bezpośrednie pobrania, eksporty i pobieranie paczek eksportu. |
+| `tokens` | Generowanie, lista, status i unieważnianie tokenów KSeF. |
+| `permissions` | Nadawanie, zapytania, cofanie i status operacji uprawnień. |
+| `certificates` | Enrollment, pobieranie, limity i unieważnianie certyfikatów KSeF. |
+| `limits` | Odczyt albo zmiana limitów kontekstu, podmiotu i API. |
+| `sessions` / `invoice_sessions` | Inspekcja sesji uwierzytelnienia i sesji faktur. |
+
+Klienta uwierzytelnionego można używać ponownie między funkcjami workflow, gdy
+należą do tego samego kontekstu KSeF. Przekazywanie go do kodu przepływu trzyma
+setup transportu i credentiali poza logiką operacji biznesowej.
+
+## Uchwyty sesji
+
+Klienci sesji online i batch nie są ogólnymi klientami uwierzytelnionymi. Są
+uchwytami do jednej zdalnej referencji sesji KSeF i lokalnego materiału
+szyfrowania używanego przez tę sesję.
+
+Sesja online powinna zostać zamknięta, gdy nie będą wysyłane kolejne faktury.
+Zamknięcie sesji mówi KSeF, że etap wysyłki jest zakończony i pozwala przejść
+do finalnego statusu oraz dostępności UPO.
+
+Przepływ batch też ma granicę zamknięcia. KSeF zaczyna przetwarzanie dopiero po
+wysłaniu zaszyfrowanych części paczki i zamknięciu sesji batch.
+
+<Aside type="caution" title="Referencje żyją dłużej niż obiekty Pythona">
+  Obiekt sesji w Pythonie może zniknąć, gdy KSeF nadal przetwarza dane. Zapisz
+  numer referencyjny sesji, referencje faktur, numery KSeF i referencje UPO
+  potrzebne do późniejszego wznowienia statusu.
+</Aside>
+
+## Sync i async
+
+`Client` i `AsyncClient` udostępniają ten sam model gałęzi. Klient async zmienia
+styl wywołań: operacje sieciowe używają `await`, a granice cyklu życia używają
+async context managerów. Nie zmienia to modelu workflow KSeF.
+
+Wybierz klienta sync dla skryptów, narzędzi CLI, synchronicznych workerów i
+aplikacji, które nie mają własnej pętli zdarzeń. Wybierz klienta async, gdy
+aplikacja już jest asynchroniczna, na przykład async web service albo async
+worker.
+
+## Co zapisywać
+
+Nie zapisuj klientów głównych, klientów uwierzytelnionych ani obiektów sesji.
+Zapisuj identyfikatory i artefakty:
+
+- środowisko i nazwę profilu;
+- identyfikator kontekstu logowania;
+- numer referencyjny sesji;
+- numer referencyjny faktury;
+- numer KSeF;
+- referencję eksportu i chroniony materiał uchwytu eksportu, dopóki eksport
+  jest pobierany;
+- bajty XML UPO albo miejsce ich zapisu;
+- ostatni zaobserwowany status dla supportu i audytu.
+
+Obiekty klientów są zasobami procesu. Referencje i artefakty są stanem
+aplikacji.
+
+## Powiązane strony
+
+<LinkCard
+  title="Skonfiguruj klienta"
+  href="../how-to-guides/client-setup.mdx"
+  description="Utwórz klienty sync i async oraz ustaw granice cyklu życia w kodzie."
+/>
+<LinkCard
+  title="Metody uwierzytelniania"
+  href="authentication-methods.mdx"
+  description="Wybierz token, XAdES, certyfikat TEST albo uwierzytelnianie profilem."
+/>
+<LinkCard
+  title="Sesje"
+  href="sessions.mdx"
+  description="Zrozum sesje online, batch, stan sesji i historię sesji."
+/>
+<LinkCard
+  title="Referencja cyklu życia klienta"
+  href="../reference/client-lifecycle.mdx"
+  description="Sprawdź kontrakt własności klienta i zamykania zasobów."
+/>

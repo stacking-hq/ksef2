@@ -1,7 +1,463 @@
 {
   "product": "sdk",
   "slug": "sdk",
-  "name": "ksef2 SDK",
-  "name_pl": "ksef2 SDK",
-  "min_pages": 1
+  "name": {
+    "en": "ksef2 SDK",
+    "pl": "ksef2 SDK"
+  },
+  "default_locale": "en",
+  "locales": [
+    "en",
+    "pl"
+  ],
+  "min_pages": 60,
+  "sidebar": {
+    "link": "getting-started/overview.mdx",
+    "categories": [
+      {
+        "id": "getting-started",
+        "label": "Getting started",
+        "translations": {
+          "pl": "Pierwsze kroki"
+        },
+        "kind": "tutorial",
+        "items": [
+          {
+            "label": "Overview",
+            "translations": {
+              "pl": "Przegląd"
+            },
+            "path": "getting-started/overview.mdx"
+          },
+          {
+            "label": "Quickstart",
+            "translations": {
+              "pl": "Szybki start"
+            },
+            "path": "getting-started/quickstart.mdx"
+          }
+        ]
+      },
+      {
+        "id": "concepts",
+        "label": "Concepts",
+        "translations": {
+          "pl": "Koncepcje"
+        },
+        "kind": "explanation",
+        "items": [
+          {
+            "label": "SDK Overview",
+            "translations": {
+              "pl": "Przegląd SDK"
+            },
+            "path": "concepts/overview.mdx"
+          },
+          {
+            "label": "Foundations",
+            "translations": {
+              "pl": "Podstawy"
+            },
+            "items": [
+              {
+                "label": "Environments",
+                "translations": {
+                  "pl": "Środowiska"
+                },
+                "path": "concepts/environments.mdx"
+              },
+              {
+                "label": "Clients and lifecycle",
+                "translations": {
+                  "pl": "Klienci i cykl życia"
+                },
+                "path": "concepts/clients-and-lifecycle.mdx"
+              },
+              {
+                "label": "Glossary",
+                "translations": {
+                  "pl": "Słownik"
+                },
+                "path": "concepts/glossary.mdx"
+              }
+            ]
+          },
+          {
+            "label": "Authentication and security",
+            "translations": {
+              "pl": "Uwierzytelnianie i bezpieczeństwo"
+            },
+            "items": [
+              {
+                "label": "Authentication methods",
+                "translations": {
+                  "pl": "Metody uwierzytelniania"
+                },
+                "path": "concepts/authentication-methods.mdx"
+              },
+              {
+                "label": "Certificates",
+                "translations": {
+                  "pl": "Certyfikaty"
+                },
+                "path": "concepts/certificates.mdx"
+              },
+              {
+                "label": "Encryption",
+                "translations": {
+                  "pl": "Szyfrowanie"
+                },
+                "path": "concepts/encryption.mdx"
+              },
+              {
+                "label": "XAdES",
+                "translations": {
+                  "pl": "XAdES"
+                },
+                "path": "concepts/xades.mdx"
+              }
+            ]
+          },
+          {
+            "label": "Invoice workflows",
+            "translations": {
+              "pl": "Przepływy faktur"
+            },
+            "items": [
+              {
+                "label": "Sessions",
+                "translations": {
+                  "pl": "Sesje"
+                },
+                "path": "concepts/sessions.mdx"
+              },
+              {
+                "label": "Invoice lifecycle",
+                "translations": {
+                  "pl": "Cykl życia faktury"
+                },
+                "path": "concepts/invoice-lifecycle.mdx"
+              },
+              {
+                "label": "Querying and exports",
+                "translations": {
+                  "pl": "Zapytania i eksporty"
+                },
+                "path": "concepts/querying-and-exports.mdx"
+              },
+              {
+                "label": "Status and UPO",
+                "translations": {
+                  "pl": "Status i UPO"
+                },
+                "path": "concepts/status-and-upo.mdx"
+              }
+            ]
+          },
+          {
+            "label": "Administration",
+            "translations": {
+              "pl": "Administracja"
+            },
+            "items": [
+              {
+                "label": "Tokens and permissions",
+                "translations": {
+                  "pl": "Tokeny i uprawnienia"
+                },
+                "path": "concepts/permissions.mdx"
+              },
+              {
+                "label": "Limits, polling, and retries",
+                "translations": {
+                  "pl": "Limity, polling i ponowienia"
+                },
+                "path": "concepts/limits.mdx"
+              },
+              {
+                "label": "PEPPOL",
+                "translations": {
+                  "pl": "PEPPOL"
+                },
+                "path": "concepts/peppol.mdx"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "how-to-guides",
+        "label": "How-to guides",
+        "translations": {
+          "pl": "Przewodniki praktyczne"
+        },
+        "kind": "how-to",
+        "items": [
+          {
+            "label": "Overview",
+            "translations": {
+              "pl": "Przegląd"
+            },
+            "path": "how-to-guides/overview.mdx"
+          },
+          {
+            "label": "Migrate to 1.0.0",
+            "translations": {
+              "pl": "Migracja do 1.0.0"
+            },
+            "path": "how-to-guides/migrate-to-1-0-0.mdx"
+          },
+          {
+            "label": "Setup",
+            "translations": {
+              "pl": "Konfiguracja"
+            },
+            "items": [
+              {
+                "label": "Set up clients",
+                "translations": {
+                  "pl": "Skonfiguruj klienta"
+                },
+                "path": "how-to-guides/client-setup.mdx"
+              },
+              {
+                "label": "Configure a certificate store",
+                "translations": {
+                  "pl": "Skonfiguruj magazyn certyfikatów"
+                },
+                "path": "how-to-guides/configure-certificate-store.mdx"
+              },
+              {
+                "label": "Authenticate",
+                "translations": {
+                  "pl": "Uwierzytelnij się"
+                },
+                "path": "how-to-guides/authenticate.mdx"
+              },
+              {
+                "label": "Use profiles",
+                "translations": {
+                  "pl": "Użyj profili"
+                },
+                "path": "how-to-guides/profiles.mdx"
+              }
+            ]
+          },
+          {
+            "label": "Invoice work",
+            "translations": {
+              "pl": "Praca z fakturami"
+            },
+            "items": [
+              {
+                "label": "Build FA(3) invoices",
+                "translations": {
+                  "pl": "Zbuduj faktury FA(3)"
+                },
+                "path": "how-to-guides/build-fa3-invoices.mdx"
+              },
+              {
+                "label": "Send invoices",
+                "translations": {
+                  "pl": "Wyślij faktury"
+                },
+                "path": "how-to-guides/send-invoices.mdx"
+              },
+              {
+                "label": "Get status and UPO",
+                "translations": {
+                  "pl": "Sprawdź status i UPO"
+                },
+                "path": "how-to-guides/get-status-and-upo.mdx"
+              },
+              {
+                "label": "Query invoices",
+                "translations": {
+                  "pl": "Wyszukaj faktury"
+                },
+                "path": "how-to-guides/query-invoices.mdx"
+              },
+              {
+                "label": "Download invoices",
+                "translations": {
+                  "pl": "Pobierz faktury"
+                },
+                "path": "how-to-guides/download-invoices.mdx"
+              }
+            ]
+          },
+          {
+            "label": "Administration",
+            "translations": {
+              "pl": "Administracja"
+            },
+            "items": [
+              {
+                "label": "Manage tokens",
+                "translations": {
+                  "pl": "Zarządzaj tokenami"
+                },
+                "path": "how-to-guides/manage-tokens.mdx"
+              },
+              {
+                "label": "Configure permissions",
+                "translations": {
+                  "pl": "Skonfiguruj uprawnienia"
+                },
+                "path": "how-to-guides/configure-permissions.mdx"
+              },
+              {
+                "label": "Manage certificates",
+                "translations": {
+                  "pl": "Zarządzaj certyfikatami"
+                },
+                "path": "how-to-guides/manage-certificates.mdx"
+              },
+              {
+                "label": "Manage limits",
+                "translations": {
+                  "pl": "Zarządzaj limitami"
+                },
+                "path": "how-to-guides/manage-limits.mdx"
+              }
+            ]
+          },
+          {
+            "label": "Utilities",
+            "translations": {
+              "pl": "Narzędzia pomocnicze"
+            },
+            "items": [
+              {
+                "label": "Inspect encryption certificates",
+                "translations": {
+                  "pl": "Sprawdź certyfikaty szyfrowania"
+                },
+                "path": "how-to-guides/inspect-encryption-certificates.mdx"
+              },
+              {
+                "label": "Query PEPPOL providers",
+                "translations": {
+                  "pl": "Wyszukaj dostawców PEPPOL"
+                },
+                "path": "how-to-guides/query-peppol-providers.mdx"
+              },
+              {
+                "label": "Use TEST data",
+                "translations": {
+                  "pl": "Użyj danych TEST"
+                },
+                "path": "how-to-guides/use-test-data.mdx"
+              },
+              {
+                "label": "Use XAdES helpers",
+                "translations": {
+                  "pl": "Użyj pomocników XAdES"
+                },
+                "path": "how-to-guides/use-xades-helpers.mdx"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "reference",
+        "label": "Reference",
+        "translations": {
+          "pl": "Referencja"
+        },
+        "kind": "reference",
+        "items": [
+          {
+            "label": "1.0.0 release notes",
+            "translations": {
+              "pl": "Release notes 1.0.0"
+            },
+            "path": "reference/release-notes-1-0-0.mdx"
+          },
+          {
+            "label": "Public API contract",
+            "translations": {
+              "pl": "Kontrakt publicznego API"
+            },
+            "path": "reference/public-api.mdx"
+          },
+          {
+            "label": "Client lifecycle",
+            "translations": {
+              "pl": "Cykl życia klienta"
+            },
+            "path": "reference/client-lifecycle.mdx"
+          },
+          {
+            "label": "Error handling",
+            "translations": {
+              "pl": "Obsługa błędów"
+            },
+            "path": "reference/errors.mdx"
+          },
+          {
+            "label": "Operations",
+            "translations": {
+              "pl": "Operacje"
+            },
+            "path": "reference/operations.mdx"
+          },
+          {
+            "label": "Low-level API",
+            "translations": {
+              "pl": "Low-level API"
+            },
+            "items": [
+              {
+                "label": "Overview",
+                "translations": {
+                  "pl": "Przegląd"
+                },
+                "path": "reference/low-level/overview.mdx"
+              },
+              {
+                "label": "Authentication",
+                "translations": {
+                  "pl": "Uwierzytelnianie"
+                },
+                "path": "reference/low-level/authentication.mdx"
+              },
+              {
+                "label": "Sessions and invoices",
+                "translations": {
+                  "pl": "Sesje i faktury"
+                },
+                "path": "reference/low-level/sessions-invoices.mdx"
+              },
+              {
+                "label": "Endpoint map",
+                "translations": {
+                  "pl": "Mapa endpointów"
+                },
+                "path": "reference/low-level/endpoint-map.mdx"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "contributing",
+        "label": "Contributing",
+        "translations": {
+          "pl": "Współtworzenie"
+        },
+        "kind": "reference",
+        "items": [
+          {
+            "label": "Sync code generation",
+            "translations": {
+              "pl": "Generowanie kodu sync"
+            },
+            "path": "contributing/sync-generation.md"
+          }
+        ]
+      }
+    ]
+  }
 }

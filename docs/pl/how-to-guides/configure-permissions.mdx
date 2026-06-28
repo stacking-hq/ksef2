@@ -1,0 +1,215 @@
+---
+title: Skonfiguruj uprawnienia
+description: Nadawaj, wyszukuj, odbieraj i monitoruj uprawnienia KSeF z ksef2.
+---
+
+import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Użyj `auth.permissions`, gdy uwierzytelniony kontekst ma nadawać, sprawdzać albo
+cofać uprawnienia KSeF. Zmiany uprawnień są asynchroniczne: metody grant i
+revoke najpierw zwracają referencję operacji.
+
+## Nadaj uprawnienia
+
+Wybierz metodę nadania pasującą do docelowego podmiotu. Utrzymuj zakres
+uprawnień tak mały, jak pozwala na to przepływ.
+
+<Tabs syncKey="sdk-permission-grant">
+  <TabItem label="Osoba">
+
+```python
+operation = auth.permissions.grant_person(
+    subject_type="pesel",
+    subject_value="90010112345",
+    permissions=["invoice_read"],
+    description="Read invoices",
+    first_name="Jan",
+    last_name="Kowalski",
+)
+
+# GrantPermissionsResponse
+# {
+#   "reference_number": "20260625-PERM-..."
+# }
+```
+
+  </TabItem>
+  <TabItem label="Podmiot">
+
+```python
+from ksef2.models import EntityPermission
+
+operation = auth.permissions.grant_entity(
+    subject_value="1234567890",
+    permissions=[
+        EntityPermission(type="invoice_read", can_delegate=False),
+    ],
+    description="Accounting office read access",
+    entity_name="Accounting Sp. z o.o.",
+)
+```
+
+  </TabItem>
+  <TabItem label="Autoryzacja">
+
+```python
+operation = auth.permissions.grant_authorization(
+    subject_type="nip",
+    subject_value="1234567890",
+    permission="self_invoicing",
+    description="Self-invoicing agreement",
+    entity_name="Partner Sp. z o.o.",
+)
+```
+
+  </TabItem>
+</Tabs>
+
+## Sprawdź status operacji
+
+Używaj zwróconego `reference_number`, aż KSeF zgłosi wynik operacji uprawnień.
+
+```python
+status = auth.permissions.get_operation_status(
+    reference_number=operation.reference_number,
+)
+
+# PermissionOperationStatusResponse
+# {
+#   "status": {
+#     "code": 200,
+#     "description": "Completed"
+#   }
+# }
+```
+
+<Aside type="caution" title="Nie pokazuj uprawnienia przed zakończeniem statusu">
+  Odpowiedź grant oznacza, że KSeF przyjął żądanie operacji. Sprawdź status
+  operacji, zanim potraktujesz uprawnienie jako aktywne w aplikacji.
+</Aside>
+
+## Wyszukaj uprawnienia
+
+Metody query mają osobne kształty, ponieważ KSeF rozróżnia rekordy personal,
+person, entity, authorization, EU entity, subordinate entity i subunit.
+
+<Tabs syncKey="sdk-permission-query">
+  <TabItem label="Moje uprawnienia">
+
+```python
+from ksef2.models import PersonalPermissionsQuery
+
+page = auth.permissions.query_personal(
+    query=PersonalPermissionsQuery(
+        permission_types=["invoice_read"],
+        permission_state="active",
+    ),
+)
+
+for permission in page.permissions:
+    print(permission.id, permission.permission_type, permission.permission_state)
+```
+
+  </TabItem>
+  <TabItem label="Nadania entity">
+
+```python
+from ksef2.models import EntityPermissionsQuery
+
+page = auth.permissions.query_entities(
+    query=EntityPermissionsQuery(context_type="nip", context_value="5261040828"),
+)
+
+for permission in page.permissions:
+    print(permission.id, permission.permission_type, permission.can_delegate)
+```
+
+  </TabItem>
+  <TabItem label="Autoryzacje">
+
+```python
+from ksef2.models import AuthorizationPermissionsQuery
+
+page = auth.permissions.query_authorizations(
+    query=AuthorizationPermissionsQuery(
+        query_type="granted",
+        permission_types=["self_invoicing"],
+    ),
+)
+
+for grant in page.authorization_grants:
+    print(grant.id, grant.authorization_scope, grant.authorized_entity_value)
+```
+
+  </TabItem>
+</Tabs>
+
+## Cofnij uprawnienia
+
+Użyj identyfikatora uprawnienia zwróconego przez zapytanie. Cofnięcie też zwraca
+referencję operacji.
+
+```python
+operation = auth.permissions.revoke_common(permission_id="permission-id")
+status = auth.permissions.get_operation_status(
+    reference_number=operation.reference_number,
+)
+print(status.status.code, status.status.description)
+```
+
+Dla nadań autoryzacji użyj metody cofania autoryzacji:
+
+```python
+operation = auth.permissions.revoke_authorization(
+    permission_id="authorization-id",
+)
+```
+
+## Sprawdź uprawnienie do załączników
+
+```python
+status = auth.permissions.get_attachment_permission_status()
+
+# AttachmentPermissionStatus
+# {
+#   "is_attachment_allowed": true,
+#   "revoked_date": null
+# }
+```
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Nadaj najmniejszy zestaw uprawnień wymagany przez docelowy podmiot.
+
+2. Zapisz `reference_number` operacji.
+
+3. Sprawdź status operacji przed pokazaniem uprawnienia jako aktywnego.
+
+4. Wyszukaj uprawnienia, aby zebrać identyfikatory do audytu albo cofnięcia.
+
+5. Cofnij po identyfikatorze uprawnienia, gdy dostęp ma się zakończyć, a potem
+   sprawdź status operacji cofnięcia.
+
+</Steps>
+
+## Następne przepływy
+
+<LinkCard
+  title="Uprawnienia"
+  href="../concepts/permissions.mdx"
+  description="Zrozum rodziny uprawnień KSeF i powód różnych kształtów zapytań."
+/>
+
+<LinkCard
+  title="Zarządzaj tokenami"
+  href="manage-tokens.mdx"
+  description="Generuj i cofaj tokeny automatyzacji z ograniczonym zakresem uprawnień."
+/>
+
+<LinkCard
+  title="Użyj danych TEST"
+  href="use-test-data.mdx"
+  description="Twórz sandboxowe podmioty i nadania dla testów integracyjnych."
+/>

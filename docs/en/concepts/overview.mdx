@@ -1,0 +1,142 @@
+---
+title: SDK Overview
+description: Understand the main objects, workflow boundaries, and nouns used by ksef2.
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+ksef2 is organized around a few long-lived entry points and short-lived KSeF
+workflows. The root `Client` or `AsyncClient` chooses the environment and owns
+transport configuration. Authentication turns that root client into an
+authenticated client for one taxpayer context. Sessions are then opened only for
+workflows that KSeF models as sessions.
+
+Use this section when you need to understand the shape of a KSeF workflow before
+writing code. Use the how-to guides when you already know the task and want the
+SDK calls.
+
+<CardGrid>
+  <LinkCard
+    title="Foundations"
+    href="clients-and-lifecycle.mdx"
+    description="Start with root clients, authenticated clients, environments, and lifecycle ownership."
+  />
+  <LinkCard
+    title="Authentication and security"
+    href="authentication-methods.mdx"
+    description="Understand login context, authenticating subject, certificates, encryption, and XAdES."
+  />
+  <LinkCard
+    title="Invoice workflows"
+    href="invoice-lifecycle.mdx"
+    description="Follow sessions, invoice processing, UPO, metadata queries, downloads, and exports."
+  />
+  <LinkCard
+    title="Administration"
+    href="permissions.mdx"
+    description="Understand tokens, permission operations, certificates, limits, and PEPPOL lookup."
+  />
+</CardGrid>
+
+<Aside type="note" title="Concepts before code">
+  Concept pages explain nouns, boundaries, and tradeoffs. The how-to guides show
+  runnable calls for setup, authentication, invoice sending, querying,
+  downloading, and administration.
+</Aside>
+
+## How the SDK maps the official API
+
+The official KSeF API documentation groups work into access, interactive
+sending, batch sending, status and UPO, invoice retrieval, tokens, permissions,
+certificates, limits, public encryption certificates, and PEPPOL. The SDK keeps
+the same conceptual boundaries and exposes them as branches on the root or
+authenticated client.
+
+| Official API area | SDK view |
+| --- | --- |
+| Access | `client.authentication` creates an authenticated client for one context. |
+| Interactive and batch sending | `auth.online_session()` and `auth.batch_session()` own sending-session state. |
+| Status and UPO | Session clients and `auth.invoice_sessions` inspect remote processing and confirmations. |
+| Invoice retrieval | `auth.invoices` owns metadata queries, exports, direct downloads, and package download. |
+| Tokens, permissions, certificates, limits | Administrative branches on the authenticated client. |
+| Public data | Root-client branches such as `client.encryption`, `client.peppol`, and TEST data. |
+
+The low-level `raw` branches exist for custom protocol work, diagnostics, and
+exact KSeF payload debugging. They are public, but they are not the normal
+starting point for application code.
+
+<Aside type="note" title="Start from the workflow branch">
+  Most application code should start from `client.authentication`, then use the
+  authenticated branches such as `auth.invoices`, `auth.online_session()`, or
+  `auth.batch_session()`. Use `raw` branches only when you need protocol-level
+  control.
+</Aside>
+
+## Main nouns
+
+| Noun | What it means in the SDK |
+| --- | --- |
+| Root client | The unauthenticated client that owns environment and HTTP transport. |
+| Authenticated client | A client branch bound to redeemed KSeF access and refresh tokens for one context. |
+| Online session | A short-lived sending context for individual encrypted invoice submissions. |
+| Batch session | A short-lived sending context for prepared encrypted batch packages. |
+| Invoice service | The authenticated branch for metadata queries, exports, direct downloads, and export package download. |
+| Reference number | A handle returned by KSeF for sessions, invoices, exports, tokens, permissions, and other asynchronous work. |
+| KSeF number | The identifier assigned after KSeF accepts and processes an invoice. |
+| UPO | Official confirmation available after a session or invoice reaches the required processed state. |
+
+## What belongs where
+
+Use the root client for public lookup and setup:
+
+- `client.authentication` to start authentication.
+- `client.encryption` to inspect public encryption certificates.
+- `client.peppol` to query public PEPPOL provider data.
+- `client.testdata` in `Environment.TEST` only.
+
+Use the authenticated client for context-specific work:
+
+- `auth.online_session()` and `auth.batch_session()` for sending.
+- `auth.invoices` for metadata, exports, and downloads.
+- `auth.tokens`, `auth.permissions`, `auth.certificates`, and `auth.limits` for administrative workflows.
+- `auth.sessions` and `auth.invoice_sessions` for session management and history.
+
+## Related pages
+
+<CardGrid>
+  <LinkCard
+    title="Environments"
+    href="environments.mdx"
+    description="Choose TEST, DEMO, or PRODUCTION and keep state scoped to that environment."
+  />
+  <LinkCard
+    title="Clients and lifecycle"
+    href="clients-and-lifecycle.mdx"
+    description="Understand root clients, authenticated clients, sessions, and export handles."
+  />
+  <LinkCard
+    title="Authentication methods"
+    href="authentication-methods.mdx"
+    description="Choose token, XAdES, TEST certificate, or profile-based authentication."
+  />
+  <LinkCard
+    title="Sessions"
+    href="sessions.mdx"
+    description="Understand online, batch, authentication, and historical invoice sessions."
+  />
+  <LinkCard
+    title="Invoice lifecycle"
+    href="invoice-lifecycle.mdx"
+    description="Trace invoice submission through processing, KSeF number assignment, retrieval, and UPO."
+  />
+  <LinkCard
+    title="Client and service API"
+    href="../reference/api/client-surface.mdx"
+    description="Use the generated API reference when you need the full object and method inventory."
+  />
+  <LinkCard
+    title="Official KSeF API guide"
+    href="https://github.com/CIRFMF/ksef-api"
+    description="Source documentation for the KSeF 2.0 API concepts."
+  />
+</CardGrid>

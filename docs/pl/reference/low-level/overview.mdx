@@ -1,0 +1,81 @@
+---
+title: Low-level API
+description: Schema-native wrappery endpointów, przestrzenie nazw modeli raw i eksportowane utility low-level.
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+Low-level API to powierzchnia SDK dla kontroli na poziomie endpointów bez
+wychodzenia poza transport SDK. Jest dostępna przez `client.raw` przed
+uwierzytelnieniem i `auth.raw` po uwierzytelnieniu.
+
+Użyj jej, gdy integracja KSeF potrzebuje własnego podpisywania, własnej custody
+szyfrowania, dokładnych payloadów OpenAPI albo debugowania endpointów. Większość
+workflow aplikacyjnych powinna nadal zaczynać od klientów wysokopoziomowych.
+
+## Kontrakt
+
+| Właściwość | Zachowanie low-level |
+| --- | --- |
+| Transport | Używa tego samego stosu middleware klienta głównego, retry, lifecycle checks i mapowania wyjątków. |
+| Uwierzytelnienie | `client.raw` jest nieuwierzytelnione; `auth.raw` używa bearer transportu tam, gdzie wymaga tego KSeF. |
+| Modele | Requesty i odpowiedzi używają schema-native nazw KSeF/OpenAPI, takich jak `referenceNumber`, `publicKeyId` i `authenticationToken`. |
+| Parsowanie | Poprawne odpowiedzi JSON są parsowane do wygenerowanych modeli `spec` albo supplemental `supp`. |
+| Odpowiedzi binarne | XML faktur i UPO są zwracane jako `bytes`. |
+| Async | Klient async ma te same gałęzie i nazwy metod, a wywołania sieciowe używają `await`. |
+
+## Przestrzenie nazw modeli
+
+Modele low-level importuj ze wspieranego `ksef2.raw`, nie z wewnętrznych
+pakietów wygenerowanych:
+
+```python
+from ksef2.raw import spec, supp
+```
+
+| Namespace | Do czego służy |
+| --- | --- |
+| `spec` | Wygenerowane modele żądań i odpowiedzi OpenAPI. |
+| `supp` | Modele supplemental używane tam, gdzie wygenerowany kształt OpenAPI wymaga wsparcia SDK. |
+| `ksef2.raw.mappers` | Jawne mosty z modeli schema-native do publicznych modeli SDK. |
+
+## Eksportowane utility
+
+| Export | Do czego służy |
+| --- | --- |
+| `encrypt_token` | Szyfrowanie payloadów uwierzytelniania tokenem KSeF. |
+| `generate_session_key` | Generowanie klucza AES i IV dla szyfrowania sesji, faktur albo eksportu. |
+| `encrypt_symmetric_key` | Szyfrowanie lokalnego materiału AES publicznym certyfikatem KSeF. |
+| `encrypt_invoice` | Szyfrowanie bajtów XML faktury dla low-level wysyłki online. |
+| `sha256_b64` | Obliczanie base64 SHA-256 dla metadanych payloadów low-level. |
+| `prepare_batch_package` | Budowanie zaszyfrowanej paczki batch, gdy caller prowadzi low-level batch flow. |
+
+## Poziomy kontroli
+
+| Poziom | Co posiada SDK | Co posiada caller | Typowe wejście |
+| --- | --- | --- | --- |
+| Workflow | Kolejność endpointów, szyfrowanie, polling i mapowanie modeli. | Dane biznesowe i persystencja. | `auth.invoices`, `auth.batch`, klienci sesji. |
+| Step-level | Szczegóły protokołu dla jednego kroku workflow SDK. | Kolejność i zapis stanu między krokami. | `session.send_invoice()`, `session.wait_for_invoice_ready()`. |
+| Low-level | Transport, parsowanie odpowiedzi, mapowanie wyjątków. | Kolejność endpointów, schema-native payloady, custody szyfrowania, polling. | `client.raw`, `auth.raw`. |
+
+Główna zasada dotyczy właściciela sesji: jeśli low-level kod otwiera sesję, ten
+sam poziom zwykle powinien ją zamknąć i sprawdzać. Jeśli wysoki poziom otwiera
+sesję, używaj zwróconego klienta sesji.
+
+## Sekcja low-level
+
+<LinkCard
+  title="Low-level uwierzytelnianie"
+  href="authentication.mdx"
+  description="Sprawdź endpointy auth raw oraz sekwencję wiązania token/XAdES."
+/>
+<LinkCard
+  title="Low-level sesje i faktury"
+  href="sessions-invoices.mdx"
+  description="Sprawdź metody endpointów sesji, faktur, UPO i eksportu."
+/>
+<LinkCard
+  title="Mapa endpointów"
+  href="endpoint-map.mdx"
+  description="Znajdź gałąź raw i grupę metod dla obszaru KSeF."
+/>

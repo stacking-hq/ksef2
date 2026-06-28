@@ -1,0 +1,119 @@
+---
+title: Referencja błędów
+description: Hierarchia wyjątków SDK, atrybuty, kody wyjątków KSeF i klasy timeoutów pollingu.
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+ksef2 rzuca wyjątki SDK dla błędów, które potrafi sklasyfikować. Błędy
+transportu, które wystąpią zanim KSeF zwróci sparsowaną odpowiedź, pozostają
+wyjątkami `httpx.HTTPError`.
+
+## Klasy bazowe
+
+| Klasa | Baza | `code` | Główne atrybuty |
+| --- | --- | --- | --- |
+| `KSeFException` | `Exception` | `SDK_ERROR` | `context` |
+| `KSeFApiError` | `KSeFException` | `API_ERROR` | `status_code`, `exception_code`, `response` |
+| `KSeFAuthError` | `KSeFApiError` | `AUTH_ERROR` | `status_code`, `exception_code`, `response` |
+| `KSeFRateLimitError` | `KSeFApiError` | `RATE_LIMIT_ERROR` | `retry_after`, `status_code`, `response` |
+
+Łap węższe podklasy przed `KSeFException`, gdy workflow ma konkretną akcję
+odzyskiwania.
+
+```python
+try:
+    result = auth.invoices.query_metadata(filters=filters)
+except KSeFRateLimitError as exc:
+    retry_after = exc.retry_after
+except KSeFApiError as exc:
+    status_code = exc.status_code
+    exception_code = exc.exception_code
+except KSeFException as exc:
+    context = exc.context
+except httpx.HTTPError as exc:
+    transport_error = exc
+```
+
+## Klasy wyjątków SDK
+
+| Klasa | `code` | Kiedy jest rzucana |
+| --- | --- | --- |
+| `KSeFClientClosedError` | `CLIENT_CLOSED` | Klient główny albo klient sesji użyty po zamknięciu. |
+| `KSeFUnsupportedEnvironmentError` | `UNSUPPORTED_ENVIRONMENT` | Gałąź albo przepływ tylko dla TEST użyty poza `Environment.TEST`. |
+| `KSeFValidationError` | `VALIDATION_ERROR` | Niepoprawne dane wejściowe SDK, błędny payload odpowiedzi, błędny profil albo błędne argumenty sesji/batch. |
+| `KSeFInvoiceRenderingError` | `INVOICE_RENDERING_ERROR` | Błędy opcjonalnego renderowania XSLT/PDF. |
+| `KSeFEncryptionError` | `ENCRYPTION_ERROR` | Błąd szyfrowania tokenu, klucza symetrycznego, faktury albo deszyfrowania. |
+| `KSeFSessionError` | `SESSION_ERROR` | Naruszenie stanu sesji, na przykład użycie zamkniętej sesji. |
+| `NoCertificateAvailableError` | `NO_CERTIFICATE_AVAILABLE` | Brak poprawnego certyfikatu dla podpisu albo szyfrowania. |
+| `KSeFMetadataPaginationError` | `METADATA_PAGINATION_ERROR` | Paginacja metadanych nie może bezpiecznie kontynuować. |
+
+## Atrybuty błędu API
+
+`KSeFApiError` jest rzucany dla sparsowanych odpowiedzi KSeF 4xx i 5xx.
+Specjalne podklasy są używane dla błędów auth/autoryzacji i rate limitu.
+
+| Atrybut | Typ | Znaczenie |
+| --- | --- | --- |
+| `status_code` | `int` | Status HTTP zwrócony przez KSeF. |
+| `exception_code` | `ExceptionCode` | Znormalizowany kod wyjątku KSeF, gdy został rozpoznany. |
+| `response` | `BaseModel | None` | Sparsowany payload błędu KSeF, gdy parsowanie się udało. |
+
+Używaj `response.model_dump()` albo `response.model_dump_json()` do
+strukturalnych diagnostyk, gdy `response` nie jest `None`.
+
+## Wartości ExceptionCode
+
+| Nazwa | Wartość |
+| --- | --- |
+| `UNKNOWN_ERROR` | `10000` |
+| `OBJECT_ALREADY_EXISTS` | `30001` |
+| `VALIDATION_ERROR` | `21405` |
+| `UPO_NOT_FOUND` | `21178` |
+| `NOT_PROCESSED_YET` | `21165` |
+
+Nieznane numeryczne kody KSeF mapują się do `ExceptionCode.UNKNOWN_ERROR`.
+
+## Klasy timeoutów pollingu
+
+Wyjątki timeoutów pollingu oznaczają przekroczenie lokalnego deadline'u
+czekania. Same w sobie nie dowodzą, że zdalny workflow KSeF się nie udał.
+
+| Klasa | `code` | Atrybuty identyfikujące |
+| --- | --- | --- |
+| `KSeFAuthPollingTimeoutError` | `AUTH_POLLING_TIMEOUT` | `reference_number`, `timeout` |
+| `KSeFTokenStatusTimeoutError` | `TOKEN_STATUS_TIMEOUT` | `reference_number`, `timeout` |
+| `KSeFInvoiceQueryTimeoutError` | `INVOICE_QUERY_TIMEOUT` | `timeout` |
+| `KSeFInvoiceDownloadTimeoutError` | `INVOICE_DOWNLOAD_TIMEOUT` | `ksef_number`, `timeout` |
+| `KSeFInvoiceProcessingTimeoutError` | `INVOICE_PROCESSING_TIMEOUT` | `invoice_reference_number`, `timeout` |
+| `KSeFExportTimeoutError` | `EXPORT_TIMEOUT` | `reference_number`, `timeout` |
+| `KSeFBatchSessionTimeoutError` | `BATCH_SESSION_TIMEOUT` | `reference_number`, `timeout` |
+
+Zapisz właściwą referencję przed pollingiem, aby inny proces mógł wznowić
+sprawdzanie statusu.
+
+## Atrybuty rate limitu
+
+| Atrybut | Typ | Znaczenie |
+| --- | --- | --- |
+| `retry_after` | `int | None` | Sekundy z `Retry-After` KSeF; `None`, gdy nagłówek jest nieobecny. |
+| `status_code` | `int` | Zawsze `429`. |
+| `response` | `BaseModel | None` | Sparsowany payload błędu KSeF, gdy jest dostępny. |
+
+## Powiązana referencja
+
+<LinkCard
+  title="Referencja operacji"
+  href="operations.mdx"
+  description="Sprawdź retry, rate limit, timeouty workflow i wznawialny stan."
+/>
+<LinkCard
+  title="Cykl życia klienta"
+  href="client-lifecycle.mdx"
+  description="Sprawdź błędy lifecycle i zamykanie klientów."
+/>
+<LinkCard
+  title="Status i UPO"
+  href="../concepts/status-and-upo.mdx"
+  description="Zrozum statusy, dokumenty UPO i deadline'y pollingu."
+/>

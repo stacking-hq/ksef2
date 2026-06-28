@@ -1,0 +1,257 @@
+---
+title: Sprawdź status i UPO
+description: Sprawdzaj status sesji online i batch, listuj faktury sesji i pobieraj dokumenty UPO.
+---
+
+import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Użyj tej strony po wysłaniu XML faktury. Przykłady zakładają, że masz już
+uwierzytelnionego klienta `auth`.
+
+Wywołania statusu zwracają modele SDK. Wywołania UPO zwracają bajty XML.
+
+## Status faktury online
+
+Przy wysyłce online `send_invoice()` zwraca referencję faktury w sesji. Użyj tej
+referencji do pollingu wyniku faktury i pobrania UPO faktury.
+
+```python
+from pathlib import Path
+
+from ksef2 import FormSchema
+
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    sent = session.send_invoice(invoice_xml=invoice_xml)
+
+    invoice_status = session.wait_for_invoice_ready(
+        invoice_reference_number=sent.reference_number,
+        timeout=120.0,
+        poll_interval=2.0,
+    )
+
+    # SessionInvoiceStatusResponse
+    # {
+    #   "ordinal_number": 1,
+    #   "reference_number": "20260625-ABCD-EF1234567890",
+    #   "invoice_number": "FV/42/2026",
+    #   "ksef_number": "1234567890-20260625-...",
+    #   "status": {
+    #     "code": 200,
+    #     "description": "Processed"
+    #   }
+    # }
+
+    upo_xml = session.get_invoice_upo_by_reference(
+        invoice_reference_number=sent.reference_number,
+    )
+    Path("upo.xml").write_bytes(upo_xml)
+```
+
+W tym samym bloku sesji, jeśli masz już numer KSeF, możesz pobrać UPO faktury
+po numerze KSeF:
+
+```python
+ksef_number = invoice_status.ksef_number
+if ksef_number is None:
+    raise RuntimeError("KSeF did not assign an invoice number.")
+
+upo_xml = session.get_invoice_upo_by_ksef_number(
+    ksef_number=ksef_number,
+)
+```
+
+<Aside type="caution" title="Zachowaj referencję faktury">
+  Referencja faktury jest trwałym uchwytem do pollingu jednej faktury w sesji.
+  Zapisz ją przed czekaniem, żeby inny worker mógł sprawdzić wynik, jeśli
+  pierwotny proces się zatrzyma.
+</Aside>
+
+## Strony sesji online
+
+Użyj stron sesji, gdy chcesz sprawdzić wszystko, co wysłano w sesji online, a
+nie jedną referencję faktury.
+
+<Tabs syncKey="sdk-online-session-pages">
+  <TabItem label="Przyjęte">
+
+```python
+page = session.list_invoices(page_size=100)
+
+for invoice in page.invoices:
+    print(invoice.reference_number, invoice.ksef_number)
+```
+
+  </TabItem>
+  <TabItem label="Odrzucone">
+
+```python
+page = session.list_failed_invoices(page_size=100)
+
+for invoice in page.invoices:
+    print(invoice.reference_number, invoice.status.code, invoice.status.details)
+```
+
+  </TabItem>
+</Tabs>
+
+## Status batch i UPO
+
+Przy wysyłce batch zachowaj zwrócony `BatchSessionResumeState`. Serwis batch może
+pollować po stanie albo po samym numerze referencyjnym sesji.
+
+```python
+from pathlib import Path
+
+final_status = auth.batch.wait_for_completion(
+    session=state,
+    timeout=300.0,
+    poll_interval=2.0,
+)
+
+# SessionStatusResponse
+# {
+#   "status": {
+#     "code": 200,
+#     "description": "Processed"
+#   },
+#   "invoice_count": 10,
+#   "successful_invoice_count": 9,
+#   "failed_invoice_count": 1,
+#   "upo": {
+#     "pages": [
+#       {
+#         "reference_number": "upo-page-reference",
+#         "download_url_expiration_date": "2026-06-26T10:00:00Z"
+#       }
+#     ]
+#   }
+# }
+
+if final_status.upo is not None and final_status.upo.pages:
+    upo_reference_number = final_status.upo.pages[0].reference_number
+    upo_xml = auth.batch.get_upo(
+        session=state,
+        upo_reference_number=upo_reference_number,
+    )
+    Path("batch-upo.xml").write_bytes(upo_xml)
+```
+
+<Aside type="note" title="UPO jest artefaktem audytowym">
+  Zapisuj XML UPO trwale. To oficjalny dokument potwierdzenia, a nie tylko
+  tymczasowa odpowiedź statusu.
+</Aside>
+
+## Listuj faktury przyjęte i odrzucone w batchu
+
+Faktury przyjęte i odrzucone są na osobnych stronach. Przeczytaj oba zestawy
+przy uzgadnianiu batcha.
+
+<Tabs syncKey="sdk-batch-results">
+  <TabItem label="Przyjęte">
+
+```python
+page = auth.batch.list_invoices(session=state, page_size=100)
+
+for invoice in page.invoices:
+    print(invoice.invoice_file_name, invoice.ksef_number, invoice.status.description)
+```
+
+  </TabItem>
+  <TabItem label="Odrzucone">
+
+```python
+page = auth.batch.list_failed_invoices(session=state, page_size=100)
+
+for invoice in page.invoices:
+    print(invoice.invoice_file_name, invoice.status.code, invoice.status.details)
+```
+
+  </TabItem>
+</Tabs>
+
+Gdy strona ma `continuation_token`, przekaż go do następnego wywołania:
+
+```python
+page = auth.batch.list_invoices(session=state, page_size=100)
+
+while page.continuation_token is not None:
+    page = auth.batch.list_invoices(
+        session=state,
+        page_size=100,
+        continuation_token=page.continuation_token,
+    )
+```
+
+## Znajdź sesje po restarcie
+
+Użyj `auth.invoice_sessions`, gdy musisz znaleźć sesje online albo batch po
+zakończeniu pierwotnego procesu wysyłki.
+
+<Tabs syncKey="sdk-session-history">
+  <TabItem label="Jedna strona">
+
+```python
+page = auth.invoice_sessions.query(
+    session_type="online",
+    statuses=["in_progress", "succeeded"],
+)
+
+for item in page.sessions:
+    print(item.reference_number, item.status.code, item.total_invoice_count)
+```
+
+  </TabItem>
+  <TabItem label="Wszystkie strony">
+
+```python
+for page in auth.invoice_sessions.all(session_type="batch"):
+    for item in page.sessions:
+        print(item.reference_number, item.status.description)
+```
+
+  </TabItem>
+</Tabs>
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Zapisz referencje sesji i faktur podczas wysyłki.
+
+2. Polluj konkretną fakturę, sesję online albo sesję batch zgodnie z pytaniem,
+   na które odpowiadasz.
+
+3. Zapisz szczegóły faktur przyjętych i odrzuconych.
+
+4. Pobierz XML UPO i zapisz go razem z danymi audytowymi.
+
+5. Użyj `auth.invoice_sessions`, żeby odzyskać referencje sesji po restarcie
+   procesu.
+
+</Steps>
+
+## Następne przepływy
+
+<LinkCard
+  title="Wyślij faktury"
+  href="send-invoices.mdx"
+  description="Wyślij XML faktury przez sesję online albo batch przed pollingiem statusu."
+/>
+
+<LinkCard
+  title="Status i UPO"
+  href="../concepts/status-and-upo.mdx"
+  description="Zrozum powierzchnie statusu, dokumenty UPO, polling i lokalne timeouty."
+/>
+
+<LinkCard
+  title="Pobierz faktury"
+  href="download-invoices.mdx"
+  description="Pobierz przetworzony XML faktury po nadaniu numeru KSeF."
+/>
+
+<LinkCard
+  title="Wyszukaj faktury"
+  href="query-invoices.mdx"
+  description="Znajdź przetworzone faktury filtrami metadanych i paginacją."
+/>

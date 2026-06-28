@@ -1,0 +1,140 @@
+---
+title: Client Lifecycle Reference
+description: Constructor arguments, branch ownership, close behavior, and lifecycle errors for ksef2 clients.
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+This page is the reference contract for root clients and authenticated clients.
+Use the how-to guide when you need a runnable setup sequence.
+
+## Root client constructors
+
+```python
+Client(
+    environment=Environment.PRODUCTION,
+    *,
+    transport_config=None,
+    http_client=None,
+)
+
+AsyncClient(
+    environment=Environment.PRODUCTION,
+    *,
+    transport_config=None,
+    http_client=None,
+)
+```
+
+| Argument | Sync type | Async type | Default | Meaning |
+| --- | --- | --- | --- | --- |
+| `environment` | `Environment` | `Environment` | `Environment.PRODUCTION` | KSeF environment and base URL used by the root client. |
+| `transport_config` | `TransportConfig | None` | `TransportConfig | None` | SDK-managed HTTP timeout, pool, TLS, proxy, HTTP/2, and retry settings. |
+| `http_client` | `httpx.Client | None` | `httpx.AsyncClient | None` | Caller-supplied HTTP client. When provided, the caller owns its HTTP settings and final close. |
+
+When `http_client` is omitted, the SDK creates the underlying `httpx` client
+from `transport_config` and closes it when the root client closes.
+
+## Root client members
+
+| Member | Available on | Returns | Notes |
+| --- | --- | --- | --- |
+| `authentication` | `Client`, `AsyncClient` | `AuthClient` / `AsyncAuthClient` | Entry point for token, XAdES, TEST certificate, and profile authentication. |
+| `encryption` | `Client`, `AsyncClient` | `EncryptionClient` / `AsyncEncryptionClient` | Public KSeF encryption-certificate lookup. |
+| `peppol` | `Client`, `AsyncClient` | `PeppolClient` / `AsyncPeppolClient` | Public PEPPOL provider lookup. |
+| `testdata` | `Client`, `AsyncClient` | `TestDataClient` / `AsyncTestDataClient` | TEST-only fixture branch. Raises outside `Environment.TEST`. |
+| `raw` | `Client`, `AsyncClient` | `RawClient` / `AsyncRawClient` | Low-level unauthenticated endpoint groups. |
+| `authenticated(auth_tokens)` | `Client`, `AsyncClient` | `AuthenticatedClient` / `AsyncAuthenticatedClient` | Deprecated compatibility wrapper. Use `authentication.resume(AuthenticationResumeState.from_tokens(auth_tokens))`. |
+| `close()` | `Client` | `None` | Idempotently closes an SDK-owned sync HTTP client and invalidates cached branches. |
+| `aclose()` | `AsyncClient` | `None` | Idempotently closes async resources and invalidates cached branches. |
+
+Branch properties are cached while the root client is open. After the root
+client closes, branch access and operations guarded by lifecycle middleware
+raise `KSeFClientClosedError`.
+
+## Context managers
+
+| Client | Context protocol | Cleanup method |
+| --- | --- | --- |
+| `Client` | `with Client(...) as client:` | `client.close()` on exit. |
+| `AsyncClient` | `async with AsyncClient(...) as client:` | `await client.aclose()` on exit. |
+
+Context managers only close the root client. Online and batch sessions are
+separate lifecycle boundaries and should also be closed through their own
+context managers or service methods.
+
+## Authenticated client members
+
+Authentication returns an authenticated client bound to one KSeF context and one
+token pair.
+
+| Member | Returns | Notes |
+| --- | --- | --- |
+| `auth_tokens` | `AuthTokens` | Access and refresh token models used by this authenticated branch. |
+| `access_token` | `str` | Bearer access-token string. Treat as a secret. |
+| `refresh_token` | `str` | Refresh-token string. Treat as a secret. |
+| `resume_state()` | `AuthenticationResumeState` | Serializable authentication state containing access and refresh tokens. |
+| `online_session(form_code=...)` | Online session client | Opens one online invoice session. Async returns an awaitable async context-manager wrapper. |
+| `resume_online_session(state)` | Online session client | Rebinds serialized `OnlineSessionResumeState` to the current authenticated transport. |
+| `batch_session(...)` | Batch session client | Opens a batch session from a prepared batch or declared batch file. |
+| `open_batch_session(...)` | Batch session client | Opens a batch session when caller owns encryption metadata. |
+| `resume_batch_session(state)` | Batch session client | Rebinds serialized `BatchSessionResumeState` to the current authenticated transport. |
+| `invoices` | `InvoicesService` | Metadata, direct download, export, package download, and waiting helpers. |
+| `batch` | `BatchService` | High-level batch package preparation, upload, close, status, and UPO workflow. |
+| `limits` | `LimitsClient` | Context, subject, and API rate-limit endpoints. |
+| `tokens` | `TokensClient` | Token generation, status, listing, and revocation. |
+| `certificates` | `CertificatesClient` | Certificate enrollment, retrieval, query, limits, and revocation. |
+| `sessions` | `SessionManagementClient` | Authentication session listing and termination. |
+| `invoice_sessions` | `InvoiceSessionsClient` | Online and batch invoice-session history. |
+| `permissions` | `PermissionsClient` | Permission grants, queries, revokes, and operation status. |
+| `raw` | `RawAuthenticatedClient` | Low-level authenticated endpoint groups. |
+
+`AuthenticationResumeState` owns bearer access and refresh tokens.
+`OnlineSessionResumeState` and `BatchSessionResumeState` do not contain bearer
+authentication; resume them through an authenticated client.
+
+Authenticated clients share the root client's transport and certificate cache.
+They do not own an independent HTTP client.
+
+## HTTP client ownership
+
+| Setup | HTTP configuration source | Who closes HTTP resources |
+| --- | --- | --- |
+| `Client(Environment.TEST)` | SDK builds `httpx.Client` from `TransportConfig`. | `Client.close()` or context-manager exit. |
+| `AsyncClient(Environment.TEST)` | SDK builds `httpx.AsyncClient` from `TransportConfig`. | `await AsyncClient.aclose()` or async context-manager exit. |
+| `Client(..., http_client=http)` | Supplied `httpx.Client`. | Caller closes `http`. |
+| `AsyncClient(..., http_client=http)` | Supplied `httpx.AsyncClient`. | Caller closes `http`. |
+
+When `http_client` is supplied, HTTP-client settings such as timeout, pool,
+TLS, proxy, `trust_env`, HTTP/2, custom transports, and event hooks come from
+that supplied object. SDK retry middleware still uses `transport_config.retry`.
+
+## Lifecycle errors
+
+| Error | Raised when |
+| --- | --- |
+| `KSeFClientClosedError` | A root client or lifecycle-guarded branch is used after close. |
+| `KSeFUnsupportedEnvironmentError` | A TEST-only root branch, currently `testdata`, is accessed outside `Environment.TEST`. |
+
+## Related reference
+
+<LinkCard
+  title="Client setup"
+  href="../how-to-guides/client-setup.mdx"
+  description="Create clients in scripts, jobs, and framework dependencies."
+/>
+<LinkCard
+  title="Authentication methods"
+  href="../concepts/authentication-methods.mdx"
+  description="Understand how root clients become authenticated clients."
+/>
+<LinkCard
+  title="Operations reference"
+  href="operations.mdx"
+  description="Review transport config, retry behavior, timeouts, and resumability."
+/>
+<LinkCard
+  title="Low-level API"
+  href="low-level/overview.mdx"
+  description="Use schema-native endpoint wrappers when workflow clients are not enough."
+/>

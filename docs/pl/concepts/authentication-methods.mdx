@@ -1,0 +1,221 @@
+---
+title: Metody uwierzytelniania
+description: Zrozum uwierzytelnianie tokenem KSeF, XAdES, certyfikatem TEST i profilami w ksef2.
+---
+
+import { Aside, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
+
+Uwierzytelnianie zamienia głównego `Client` albo `AsyncClient` w klienta
+uwierzytelnionego dla jednego kontekstu KSeF. Klient główny wybiera środowisko
+i posiada zasoby transportu. Metoda uwierzytelniania potwierdza, kto może
+działać w wybranym kontekście.
+
+KSeF rozdziela dwa pojęcia, które łatwo pomylić:
+
+| Pojęcie | Znaczenie w KSeF | Powierzchnia SDK |
+| --- | --- | --- |
+| Kontekst logowania | Podatnik albo podmiot, w imieniu którego będą wykonywane operacje. | `nip` oraz `context_type`, na przykład `context_type="nip"`. |
+| Podmiot uwierzytelniający | Token albo tożsamość certyfikatowa, która potwierdza prawo wejścia w ten kontekst. | `ksef_token`, albo `cert` i `private_key`. |
+
+Po udanym uwierzytelnieniu SDK zwraca `AuthenticatedClient`. Ten klient
+przechowuje access i refresh tokeny KSeF oraz udostępnia chronione gałęzie:
+sesje, faktury, tokeny, uprawnienia, certyfikaty, limity i historię sesji.
+
+```text
+Client(Environment.TEST)
+  -> client.authentication
+    -> with_token(), with_xades(), with_test_certificate() albo with_profile()
+      -> AuthenticatedClient dla jednego kontekstu KSeF
+        -> sesje online, sesje batch, faktury
+        -> tokeny, uprawnienia, certyfikaty, limity
+```
+
+## Metody KSeF i pomocniki SDK
+
+Na poziomie API KSeF uwierzytelnianie ma dwie główne rodziny:
+
+| Rodzina KSeF | Co trafia do KSeF | Pomocnik SDK |
+| --- | --- | --- |
+| Uwierzytelnianie XAdES | Podpisany dokument XML `AuthTokenRequest`. | `with_xades()` |
+| Uwierzytelnianie tokenem KSeF | Token KSeF zaszyfrowany aktualnym certyfikatem do szyfrowania tokenów. | `with_token()` |
+
+SDK dodaje dwie warstwy wygody:
+
+| Pomocnik SDK | Co dodaje |
+| --- | --- |
+| `with_test_certificate()` | Generuje tymczasowy materiał certyfikatu TEST, a potem używa przepływu XAdES. |
+| `with_profile()` | Czyta lokalną konfigurację profilu `ksef2-cli` i wybiera token, certyfikat TEST, PEM XAdES albo PKCS#12 XAdES. |
+
+<Aside type="note" title="Profil nie jest kolejnym credentialem KSeF">
+  Profil przechowuje sposób uwierzytelnienia: środowisko, NIP, metodę, ścieżki
+  certyfikatów, ustawienia pollingu i nazwy zmiennych środowiskowych z
+  sekretami. Faktycznym credentialem nadal jest token KSeF albo podpis XAdES
+  oparty o certyfikat.
+</Aside>
+
+## Wybierz metodę
+
+| Metoda | Kiedy jej używać | Co robi SDK |
+| --- | --- | --- |
+| `with_test_certificate()` | Pracujesz z `Environment.TEST` i chcesz najmniej konfiguracji. | Generuje certyfikat TEST z NIP-u i uwierzytelnia się przez XAdES. |
+| `with_token()` | Aplikacja ma już token KSeF dla docelowego kontekstu. | Pobiera certyfikat KSeF do szyfrowania tokenów, szyfruje token ze znacznikiem czasu challenge, rozpoczyna uwierzytelnianie tokenem, odpytuje status i pobiera tokeny. |
+| `with_xades()` | Aplikacja ma certyfikat i klucz prywatny dostępne w Pythonie. | Buduje XML challenge KSeF, podpisuje go XAdES, wysyła podpisany XML, odpytuje status i pobiera tokeny. |
+| `with_profile()` | Chcesz, aby kod SDK i `ksef2-cli` współdzieliły nazwane lokalne ustawienia. | Rozwiązuje wybrany profil i wywołuje odpowiednią metodę SDK. |
+
+<CardGrid>
+  <LinkCard
+    title="Skonfiguruj uwierzytelnianie"
+    href="../how-to-guides/authenticate.mdx"
+    description="Użyj wybranej metody w uruchamialnym kodzie SDK ze zmiennymi środowiskowymi i granicami sekretów."
+  />
+  <LinkCard
+    title="Użyj profili"
+    href="../how-to-guides/profiles.mdx"
+    description="Współdziel lokalne ustawienia zgodne z CLI między przepływami terminalowymi i SDK."
+  />
+</CardGrid>
+
+## Podmiot i kontekst przy XAdES
+
+Przy uwierzytelnianiu XAdES SDK buduje i podpisuje żądanie XML dla kontekstu
+NIP przekazanego do `with_xades()`. KSeF odczytuje podmiot uwierzytelniający z
+certyfikatu użytego do podpisu: na przykład pieczęci firmowej, certyfikatu
+osobistego z NIP-em albo PESEL-em, certyfikatu KSeF do uwierzytelniania lub
+certyfikatu dopuszczonego przez uprawnienia na odcisk palca.
+
+To znaczy, że `nip` jest kontekstem logowania, a nie zawsze identyfikatorem
+wbudowanym w certyfikat podpisujący. Osoba może uwierzytelnić się w kontekście
+firmy, jeśli KSeF widzi aktywne uprawnienia tej osoby albo certyfikatu.
+
+<Aside type="tip" title="XML podpisywany poza Pythonem">
+  `with_xades()` jest wysokopoziomową ścieżką, gdy Python może wczytać
+  certyfikat i klucz prywatny. Jeśli podpis powstaje poza Pythonem, użyj
+  low-level endpointów uwierzytelniania i powiąż pobrane `AuthTokens` przez
+  `client.authentication.resume(AuthenticationResumeState.from_tokens(auth_tokens))`.
+</Aside>
+
+## Profile są lokalną konfiguracją uwierzytelniania
+
+`with_profile()` nie jest osobnym typem credentiala. To warstwa konfiguracji
+nad tymi samymi metodami uwierzytelniania:
+
+| Typ auth w profilu | Bezpośrednia metoda SDK |
+| --- | --- |
+| `token` | `with_token()` |
+| `test_certificate` | `with_test_certificate()` |
+| `xades_pem` | `with_xades()` z plikami certyfikatu i klucza PEM |
+| `xades_p12` | `with_xades()` z archiwum PKCS#12/PFX |
+
+Profil przechowuje niesekretne ustawienia, takie jak środowisko, NIP, typ
+uwierzytelniania, ścieżki certyfikatów, ustawienia pollingu i nazwę zmiennej
+środowiskowej zawierającej sekret. Nie powinien przechowywać wartości tokenów,
+haseł kluczy prywatnych ani haseł PKCS#12.
+
+Kolejność wyboru profilu jest taka sama w SDK i CLI:
+
+1. Jawna nazwa profilu przekazana do `with_profile("name")`.
+2. `KSEF2_PROFILE`.
+3. `active_profile` w lokalnej konfiguracji profili.
+
+<Aside type="tip" title="Profile dobrze działają z CLI">
+  Twórz i wybieraj profile przez `ksef2-cli`, gdy ludzie obsługują ten sam
+  kontekst z terminala. Użyj `ProfileStore`, gdy narzędzie w Pythonie ma samo
+  tworzyć albo aktualizować wspólny plik profili.
+</Aside>
+
+Środowisko klienta głównego musi zgadzać się ze środowiskiem wybranego profilu.
+Profil `test` używaj z `Client(Environment.TEST)`, profil `demo` z
+`Client(Environment.DEMO)`, a profil `production` z
+`Client(Environment.PRODUCTION)`.
+
+## Cykl uwierzytelniania
+
+<Steps>
+
+1. Klient główny pobiera challenge z wybranego środowiska KSeF.
+
+2. Wybrana metoda potwierdza tożsamość dla żądanego kontekstu.
+
+   Uwierzytelnianie tokenem szyfruje token KSeF razem ze znacznikiem czasu z
+   challenge. Uwierzytelnianie XAdES podpisuje XML challenge. Certyfikat TEST
+   najpierw generuje materiał certyfikatu TEST. Profil odczytuje jedną z tych
+   ścieżek z lokalnej konfiguracji.
+
+3. KSeF rozpoczyna asynchroniczną operację uwierzytelniania.
+
+   SDK trzyma tymczasowy token operacji i numer referencyjny wewnętrznie, gdy
+   odpytuje status.
+
+4. SDK zamienia zakończoną operację na access i refresh tokeny.
+
+5. Zwrócony `AuthenticatedClient` używa tych tokenów w chronionych operacjach
+   SDK.
+
+</Steps>
+
+Klient asynchroniczny ma te same nazwy metod na `AsyncClient`; wywołuj je z
+`await`. Wybór między tokenem, certyfikatem TEST, XAdES i profilem pozostaje
+taki sam.
+
+## Co chronić
+
+| Wartość | Dlaczego jest ważna |
+| --- | --- |
+| Token KSeF | Może uwierzytelnić się w swoim kontekście do czasu cofnięcia albo wygaśnięcia. |
+| Klucz prywatny i hasło certyfikatu | Mogą potwierdzić tożsamość używaną przez uwierzytelnianie XAdES. |
+| Access token | Autoryzuje chronione wywołania SDK, dopóki jest ważny. |
+| Refresh token | Może pobrać nowy access token, dopóki jest ważny. |
+| Stan wznowienia uwierzytelnienia | Zawiera access i refresh tokeny potrzebne do odtworzenia klienta uwierzytelnionego. |
+| Zserializowany stan sesji | Może zawierać materiał szyfrowania sesji i URL-e uploadu potrzebne do wznowienia przepływu. |
+
+Trzymaj sekrety w zmiennych środowiskowych, menedżerach sekretów albo
+bezpiecznym magazynie aplikacji. Pliki profili ograniczaj do niesekretnych
+domyślnych ustawień i nazw zmiennych środowiskowych, które zawierają sekrety.
+
+## Uwierzytelnienie nie jest autoryzacją
+
+Uwierzytelnienie potwierdza tożsamość dla kontekstu. Uprawnienia nadal
+określają, które operacje ta tożsamość może wykonać. Credential może
+uwierzytelnić się poprawnie, a potem nie mieć prawa do wysyłki faktur,
+metadanych, zarządzania tokenami albo nadawania uprawnień.
+
+<Aside type="note" title="Sprawdzaj kontekst i uprawnienia razem">
+  Gdy chroniona operacja nie powiedzie się po uwierzytelnieniu, sprawdź wybrane
+  środowisko, NIP kontekstu i aktywny zestaw uprawnień. Sam typ credentiala nie
+  rozstrzyga autoryzacji.
+</Aside>
+
+## Powiązane strony
+
+<CardGrid>
+  <LinkCard
+    title="Uwierzytelnij się"
+    href="../how-to-guides/authenticate.mdx"
+    description="Skonfiguruj zmienne środowiskowe, token, XAdES, certyfikaty TEST i profile."
+  />
+  <LinkCard
+    title="Użyj profili"
+    href="../how-to-guides/profiles.mdx"
+    description="Współdziel lokalną konfigurację ksef2-cli z uwierzytelnianiem SDK i ProfileStore."
+  />
+  <LinkCard
+    title="Low-level uwierzytelnianie"
+    href="../reference/low-level/authentication.mdx"
+    description="Wykonaj operację uwierzytelniania ręcznie, gdy inny system podpisuje XML albo obsługuje wymianę tokenów."
+  />
+  <LinkCard
+    title="Uwierzytelnianie w CLI"
+    href="../../cli/guides/authentication.md"
+    description="Użyj tych samych metod uwierzytelniania z profilami w ksef2-cli."
+  />
+  <LinkCard
+    title="Tokeny i uprawnienia"
+    href="permissions.mdx"
+    description="Zobacz, jak credentiale uwierzytelniające łączą się z chronionymi uprawnieniami."
+  />
+  <LinkCard
+    title="XAdES"
+    href="xades.mdx"
+    description="Zrozum podpis XML używany przy uwierzytelnianiu certyfikatem."
+  />
+</CardGrid>

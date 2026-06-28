@@ -10,6 +10,11 @@ materiału eksportów. Wysokopoziomowe pomocniki faktur i batch ładują te
 certyfikaty automatycznie. Użyj `client.encryption` bezpośrednio, gdy chcesz
 sprawdzić, cache'ować albo wstępnie załadować materiał certyfikatu.
 
+Domyślnie klienci główni używają `CertificateStore`, czyli pamięciowego cache
+odświeżanego po 24 godzinach. Przekaż `refresh_after=None`, aby zachować
+zachowanie "pobierz raz" dla krótkotrwałego klienta, albo przekaż własny obiekt
+implementujący `CertificateStoreProtocol`, aby zintegrować magazyn aplikacji.
+
 ## Pobierz certyfikaty
 
 ```python
@@ -26,6 +31,23 @@ certificates = client.encryption.get_certificates(
     usage=["symmetric_key_encryption"],
 )
 ```
+
+Skonfiguruj domyślny magazyn podczas tworzenia klienta głównego:
+
+```python
+from datetime import timedelta
+
+from ksef2 import CertificateStore, Client, Environment
+
+client = Client(
+    Environment.PRODUCTION,
+    certificate_store=CertificateStore(refresh_after=timedelta(hours=6)),
+)
+```
+
+Własne magazyny implementują `load()`, `get_valid()` i `needs_refresh()`. SDK
+nadal odpowiada za pobieranie zdalne; magazyn odpowiada za trwałość cache i
+decyzje o świeżości.
 
 ## Jak SDK ich używa
 

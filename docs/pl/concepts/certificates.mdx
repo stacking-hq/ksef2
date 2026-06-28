@@ -1,0 +1,116 @@
+---
+title: Certyfikaty
+description: Zrozum role certyfikatów w uwierzytelnianiu KSeF, rejestracji, trybie offline i publicznym szyfrowaniu.
+---
+
+import { Aside, LinkCard, Steps } from '@astrojs/starlight/components';
+
+KSeF używa słowa certyfikat w kilku różnych miejscach. Łączy je kryptografia,
+ale w SDK nie pełnią tej samej roli.
+
+| Rola certyfikatu | Kto go posiada | Powierzchnia SDK | Cel |
+| --- | --- | --- | --- |
+| Materiał podpisu uwierzytelniania | Aplikacja, użytkownik, HSM, magazyn certyfikatów albo helper TEST. | `client.authentication.with_xades()` i `ksef2.xades` | Podpisuje `AuthTokenRequest` używany do uwierzytelnienia. |
+| Certyfikat wydany przez KSeF | KSeF wydaje go po wniosku rejestracyjnym. Przechowujesz go z kluczem prywatnym. | `auth.certificates` | Daje podmiotowi uwierzytelniającemu certyfikat KSeF do uwierzytelniania albo trybu offline. |
+| Publiczny certyfikat szyfrowania | KSeF go publikuje. SDK go odczytuje. | `client.encryption` i przepływy wysokopoziomowe | Szyfruje payload uwierzytelniania tokenem, klucze sesji i klucze eksportu dla KSeF. |
+
+Rozdzielenie tych ról zapobiega dwóm częstym błędom projektowym: traktowaniu
+certyfikatu tak, jakby niósł uprawnienia KSeF, albo traktowaniu rejestracji
+certyfikatu tak, jakby KSeF miał otrzymać klucz prywatny.
+
+<Aside type="caution" title="Rejestracja nie jest przechowywaniem klucza">
+  SDK wysyła CSR i żądania cyklu życia certyfikatu. Aplikacja albo narzędzia
+  certyfikatowe generują, przechowują, rotują i chronią klucze prywatne.
+</Aside>
+
+## Tożsamość i uprawnienia
+
+Certyfikat KSeF jest nośnikiem tożsamości podmiotu uwierzytelniającego. Zwykle
+jest powiązany z NIP-em, PESEL-em albo odciskiem palca certyfikatu. Sam nie
+jest przypisany do kontekstu podatnika i nie zawiera zestawu uprawnień używanego
+przez operacje KSeF.
+
+Uprawnienia są oceniane osobno. Certyfikat może potwierdzić, kto się
+uwierzytelnia, a KSeF nadal sprawdza, czy ten podmiot ma prawo działać w
+wybranym kontekście logowania.
+
+## Typy certyfikatów
+
+Certyfikaty wydawane przez KSeF mają jeden typ:
+
+| Wartość SDK | Znaczenie |
+| --- | --- |
+| `authentication` | Może być używany jako materiał certyfikatu do uwierzytelniania KSeF. |
+| `offline` | Używany do identyfikacji wystawiania faktur offline; nie jest credentialem logowania. |
+
+Jeden wydany certyfikat nie łączy obu ról. Wnioskuj o typ pasujący do
+przepływu, który budujesz.
+
+## Model rejestracji
+
+Rejestracja certyfikatu jest przepływem uwierzytelnionym, ale nie jest tylko
+kolejnym formularzem administracyjnym. KSeF wyprowadza dane podmiotu do
+rejestracji z certyfikatu użytego do uwierzytelnienia XAdES. CSR musi użyć tych
+wartości; ich zmiana powoduje odrzucenie wniosku przez KSeF.
+
+```python
+limits = auth.certificates.get_limits()
+print(limits.can_request, limits.enrollment_remaining)
+
+subject = auth.certificates.get_enrollment_data()
+print(subject.common_name, subject.country_name)
+```
+
+SDK udostępnia cykl życia jako metody wysokiego poziomu, ale klucz prywatny i
+CSR nadal pochodzą z Twoich narzędzi certyfikatowych:
+
+<Steps>
+
+1. Uwierzytelnij się materiałem certyfikatu XAdES.
+2. Odczytaj limity certyfikatów i dane podmiotu do rejestracji.
+3. Wygeneruj klucz prywatny i CSR poza SDK.
+4. Wyślij CSR przez `auth.certificates.enroll()`.
+5. Odpytuj status rejestracji, aż KSeF zwróci numer seryjny certyfikatu.
+6. Pobierz wydany certyfikat i zapisz go razem z kluczem prywatnym.
+
+</Steps>
+
+<Aside type="note" title="Uwierzytelnienie tokenem nie wystarczy do rejestracji">
+  Rejestracja certyfikatu wymaga uwierzytelnienia XAdES, ponieważ KSeF używa
+  tożsamości z certyfikatu podpisującego jako źródła danych podmiotu.
+</Aside>
+
+## Relacja do XAdES i szyfrowania
+
+XAdES używa materiału certyfikatu do podpisania XML uwierzytelniającego.
+Rejestracja certyfikatów zarządza certyfikatami wydawanymi przez KSeF. Publiczne
+certyfikaty szyfrowania są jeszcze czymś innym: to publiczne klucze KSeF używane
+przez SDK do szyfrowania kluczy payloadów.
+
+Jeśli problem dotyczy kluczy prywatnych, CSR, numerów seryjnych wydanych
+certyfikatów albo certyfikatów offline, należy do zarządzania certyfikatami.
+Jeśli dotyczy `public_key_id`, szyfrowania tokenu, szyfrowania sesji albo
+deszyfrowania paczki eksportu, należy do modelu szyfrowania.
+
+## Powiązane strony
+
+<LinkCard
+  title="Zarządzaj certyfikatami"
+  href="../how-to-guides/manage-certificates.mdx"
+  description="Rejestruj, pobieraj, wyszukuj i unieważniaj certyfikaty KSeF z kodu uwierzytelnionego."
+/>
+<LinkCard
+  title="XAdES"
+  href="xades.mdx"
+  description="Zrozum podpis XML oparty o certyfikat podczas uwierzytelniania."
+/>
+<LinkCard
+  title="Szyfrowanie"
+  href="encryption.mdx"
+  description="Zrozum publiczne certyfikaty szyfrowania KSeF i rotację kluczy."
+/>
+<LinkCard
+  title="Uprawnienia"
+  href="permissions.mdx"
+  description="Zrozum, dlaczego tożsamość uwierzytelniania i uprawnienia operacji są osobne."
+/>

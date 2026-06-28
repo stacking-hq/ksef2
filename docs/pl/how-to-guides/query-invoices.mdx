@@ -1,0 +1,207 @@
+---
+title: Wyszukaj faktury
+description: Wyszukuj metadane faktur przez filtry, paginację i polling ksef2.
+---
+
+import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Użyj `auth.invoices`, gdy potrzebujesz metadanych faktur poza sesją wysyłki.
+Przykłady poniżej zakładają, że masz już uwierzytelnionego klienta `auth`.
+
+## Zbuduj wąski filtr
+
+Zacznij od pytania biznesowego: jaka rola, jakie pole daty i jaki przedział
+czasu mają zostać przeszukane przez KSeF?
+
+```python
+from datetime import datetime, timedelta, timezone
+
+from ksef2.models import InvoicesFilter
+
+now = datetime.now(tz=timezone.utc)
+
+filters = InvoicesFilter.for_seller(
+    date_from=now - timedelta(days=7),
+    date_to=now,
+    invoice_types=["vat"],
+    invoicing_mode="online",
+)
+```
+
+<Aside type="tip" title="Do synchronizacji użyj dat trwałego zapisu">
+  `issue_date` jest zwykle właściwe dla okresów księgowych. Dla automatycznej
+  synchronizacji przyrostowej użyj `date_type="permanent_storage"` oraz
+  `restrict_to_permanent_storage_hwm_date=True`.
+</Aside>
+
+## Pobierz jedną stronę
+
+Użyj `query_metadata()`, gdy potrzebujesz jednej strony dla ekranu, uzgodnienia
+albo diagnostyki.
+
+```python
+from ksef2.models import InvoiceMetadataParams
+
+page = auth.invoices.query_metadata(
+    filters=filters,
+    params=InvoiceMetadataParams(page_size=25, sort_order="asc"),
+)
+
+# QueryInvoicesMetadataResponse
+# {
+#   "has_more": false,
+#   "is_truncated": false,
+#   "permanent_storage_hwm_date": null,
+#   "invoices": [
+#     {
+#       "ksef_number": "1234567890-20260625-...",
+#       "invoice_number": "FV/42/2026",
+#       "issue_date": "2026-06-25",
+#       "gross_amount": 1230.0,
+#       "currency": "PLN",
+#       "invoice_type": "vat"
+#     }
+#   ]
+# }
+
+for invoice in page.invoices:
+    print(invoice.ksef_number, invoice.invoice_number)
+```
+
+`has_more` oznacza, że istnieje kolejna strona. `is_truncated` oznacza, że wynik
+dotarł do granicy okna KSeF i powinien być kontynuowany od zwróconej daty cyklu
+życia, a nie od zwykłego offsetu strony.
+
+## Przejdź po wynikach
+
+Użyj iteratora stron, gdy każda strona ma znaczenie. Użyj iteratora faktur, gdy
+zadanie potrzebuje tylko wierszy faktur.
+
+<Tabs syncKey="sdk-query-pagination">
+  <TabItem label="Strony">
+
+```python
+params = InvoiceMetadataParams(page_size=100, sort_order="asc")
+
+for page in auth.invoices.query_metadata_pages(filters=filters, params=params):
+    print(f"page={len(page.invoices)} has_more={page.has_more}")
+
+    for invoice in page.invoices:
+        print(invoice.ksef_number, invoice.permanent_storage_date)
+```
+
+  </TabItem>
+  <TabItem label="Faktury">
+
+```python
+params = InvoiceMetadataParams(page_size=100, sort_order="asc")
+
+for invoice in auth.invoices.all_metadata(filters=filters, params=params):
+    print(invoice.ksef_number, invoice.invoice_number)
+```
+
+  </TabItem>
+</Tabs>
+
+## Znajdź konkretną fakturę
+
+Jeśli znasz własny numer faktury, dodaj go do filtra. Jeśli masz już numer KSeF,
+preferuj filtrowanie po `ksef_number` albo bezpośrednie pobranie faktury.
+
+```python
+filters = InvoicesFilter.for_seller(
+    date_from=now - timedelta(days=30),
+    date_to=now,
+    invoice_number="FV/42/2026",
+)
+
+page = auth.invoices.query_metadata(filters=filters)
+```
+
+```python
+filters = InvoicesFilter.for_seller(
+    date_type="permanent_storage",
+    date_from=now - timedelta(days=30),
+    date_to=now,
+    ksef_number="1234567890-20260625-...",
+)
+
+page = auth.invoices.query_metadata(filters=filters)
+```
+
+## Poczekaj po wysyłce
+
+Przetwarzanie w KSeF jest asynchroniczne. Jeśli przepływ wysyła fakturę i od
+razu potrzebuje jej widoczności w API pobierania, polluj wąskim filtrem.
+
+```python
+filters = InvoicesFilter.for_seller(
+    date_from=now - timedelta(days=1),
+    date_to=now,
+    invoice_number="FV/42/2026",
+)
+
+result = auth.invoices.wait_for_invoices(
+    filters=filters,
+    timeout=120.0,
+    poll_interval=2.0,
+)
+
+# QueryInvoicesMetadataResponse
+# {
+#   "has_more": false,
+#   "is_truncated": false,
+#   "permanent_storage_hwm_date": null,
+#   "invoices": [
+#     {
+#       "ksef_number": "1234567890-20260625-...",
+#       "invoice_number": "FV/42/2026"
+#     }
+#   ]
+# }
+```
+
+<Aside type="caution" title="Polling czeka na dowolne dopasowanie">
+  `wait_for_invoices()` zwraca wynik, gdy co najmniej jeden wiersz pasuje do
+  filtra. Utrzymaj filtr na tyle konkretny, żeby pierwsze dopasowanie było
+  fakturą, na którą czekasz.
+</Aside>
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Wybierz rolę podmiotu, jako który wyszukujesz.
+
+2. Wybierz pole daty pasujące do zadania: widok księgowy, widok przetwarzania
+   albo synchronizacja przyrostowa.
+
+3. Zbuduj wąski `InvoicesFilter`.
+
+4. Pobierz jedną stronę dla pracy interaktywnej albo użyj iteratorów dla zadań w
+   tle.
+
+5. Zapisz wartości `ksef_number` do późniejszego bezpośredniego pobierania albo
+   uzgodnienia eksportów.
+
+</Steps>
+
+## Następne przepływy
+
+<LinkCard
+  title="Pobierz faktury"
+  href="download-invoices.mdx"
+  description="Pobierz XML faktury bezpośrednio albo przez szyfrowaną paczkę eksportu."
+/>
+
+<LinkCard
+  title="Wyślij faktury"
+  href="send-invoices.mdx"
+  description="Wyślij XML faktury przez sesję online albo wsadową przed wyszukiwaniem wyniku."
+/>
+
+<LinkCard
+  title="Zapytania i eksporty"
+  href="../concepts/querying-and-exports.mdx"
+  description="Zrozum metadane, bezpośrednie pobieranie, paczki eksportu i synchronizację HWM."
+/>

@@ -1,0 +1,97 @@
+---
+title: Limity, polling i ponowienia
+description: Zrozum limity kontekstu KSeF, limity podmiotu, rate limity API, deadline pollingu i granice retry.
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+Limity KSeF są częścią projektu integracji. Wpływają na liczbę faktur w sesji,
+częstotliwość pollingu workerów, wybór eksportu zamiast bezpośrednich pobrań i
+agresywność retry po throttlingu.
+
+SDK udostępnia odczyt limitów i administracyjne nadpisania przez `auth.limits`,
+ale większość aplikacji powinna traktować limity jako wejście do harmonogramu,
+a nie wartości zmieniane podczas zwykłych przepływów biznesowych.
+
+## Rodziny limitów
+
+| Rodzina limitów | Model SDK | Na co wpływa |
+| --- | --- | --- |
+| Limity kontekstu | `ContextLimits` | Liczba faktur i rozmiary payloadów w sesjach online oraz batch. |
+| Limity podmiotu | `SubjectLimits` | Limity rejestracji i wydawania certyfikatów dla uwierzytelnionego podmiotu. |
+| Rate limity API | `ApiRateLimits` | Wolumen żądań per sekunda, minuta i godzina dla rodzin endpointów. |
+
+```python
+context = auth.limits.get_context_limits()
+print(context.online_session.max_invoices)
+print(context.batch_session.max_invoice_size_mb)
+
+rate = auth.limits.get_api_rate_limits()
+print(rate.invoice_send.per_minute)
+```
+
+## Jak limity kształtują przepływy
+
+Używaj wysyłki online dla niskiego wolumenu albo natychmiastowej wysyłki
+faktur. Używaj wysyłki batch, gdy faktury mogą zostać przygotowane jako paczka.
+Używaj eksportów, gdy potrzebujesz większego zestawu pobrań; powtarzane
+bezpośrednie pobrania i bardzo częste zapytania przyrostowe zwykle są złą
+architekturą dla produkcyjnego synchronizatora.
+
+Dla aplikacji produkcyjnych traktuj KSeF jak zdalny system zapisu, z którego
+synchronizujesz dane w kontrolowanych interwałach. Zapisuj metadane i treści
+faktur lokalnie, a ekrany użytkownika obsługuj z lokalnego magazynu.
+
+<Aside type="caution" title="Limity są wejściem do integracji">
+  Rozmiary batchy, użycie eksportów, rytm pollingu i strategia retry powinny
+  wynikać z limitów KSeF oraz Twoich wymagań operacyjnych. Nie ukrywaj
+  nadpisań limitów w zwykłym kodzie przetwarzania faktur.
+</Aside>
+
+## Deadline pollingu
+
+Wiele przepływów KSeF jest asynchronicznych. SDK udostępnia helpery takie jak
+`send_invoice_and_wait()`, `wait_for_invoice_ready()`,
+`wait_for_export_package()`, `wait_for_invoice_download()` i polling aktywacji
+tokenu.
+
+Timeouty tych helperów są limitami oczekiwania na przepływ. Nie są tym samym co
+timeouty socketów HTTP. Timeout pollingu oznacza, że oczekiwany stan KSeF nie
+został osiągnięty przed lokalnym deadline; nie zawsze oznacza to błąd zdalnej
+operacji.
+
+## Granice retry
+
+Transport klienta głównego może ponawiać błędy transportu i odpowiedzi KSeF
+nadające się do retry. To nie znaczy, że każdą operację można bezpiecznie
+powtarzać w ciemno. Wysyłka faktury, nadanie uprawnień, rejestracja certyfikatu,
+generowanie tokenu i otwarcie sesji powinny być ponawiane na granicy aplikacji,
+z zapisanymi referencjami i zasadami idempotencji właściwymi dla przepływu.
+
+Gdy KSeF throttluje żądanie, respektuj zwrócone wskazówki retry i zwolnij
+harmonogram workera. Jeśli przepływ ma już numer referencyjny KSeF, preferuj
+sprawdzenie statusu albo wznowienie z tej referencji zamiast tworzyć operację od
+nowa.
+
+## Powiązane strony
+
+<LinkCard
+  title="Zarządzaj limitami"
+  href="../how-to-guides/manage-limits.mdx"
+  description="Odczytaj limity kontekstu, podmiotu i rate limity API w kodzie SDK."
+/>
+<LinkCard
+  title="Operacje"
+  href="../reference/operations.mdx"
+  description="Przejrzyj timeouty, retry, polling i idempotencję."
+/>
+<LinkCard
+  title="Wysyłanie faktur"
+  href="invoice-lifecycle.mdx"
+  description="Wybierz wysyłkę online albo batch na podstawie przepływu i wolumenu."
+/>
+<LinkCard
+  title="Zapytania i eksporty"
+  href="querying-and-exports.mdx"
+  description="Używaj eksportów i pobierania przyrostowego z uwzględnieniem limitów KSeF."
+/>

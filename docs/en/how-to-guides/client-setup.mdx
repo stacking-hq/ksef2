@@ -1,0 +1,191 @@
+---
+title: Client Setup
+description: Create ksef2 sync and async clients, configure transport behavior, and choose authenticated branches.
+---
+
+import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+The root `Client` owns HTTP transport configuration and exposes unauthenticated
+public branches. Authenticate once for a KSeF context, then pass the
+authenticated client into workflow code.
+
+## Choose sync or async
+
+<Tabs syncKey="sdk-client-kind">
+  <TabItem label="Sync">
+
+```python
+from ksef2 import Client, Environment
+
+with Client(Environment.TEST) as client:
+    auth = client.authentication.with_test_certificate(nip="5261040828")
+```
+
+  </TabItem>
+  <TabItem label="Async">
+
+```python
+from ksef2 import AsyncClient, Environment
+
+async with AsyncClient(Environment.TEST) as client:
+    auth = await client.authentication.with_test_certificate(nip="5261040828")
+```
+
+  </TabItem>
+</Tabs>
+
+Use `Environment.DEMO` or `Environment.PRODUCTION` outside local TEST
+workflows.
+
+## Manage lifecycle
+
+The root client owns SDK-managed HTTP resources. Prefer a context manager for
+scripts and jobs:
+
+```python
+from ksef2 import Client, Environment
+
+with Client(Environment.TEST) as client:
+    auth = client.authentication.with_test_certificate(nip="5261040828")
+```
+
+If a framework asks for a yielded dependency, put the `yield` inside the
+dependency function and close the client in `finally`:
+
+```python
+from collections.abc import Iterator
+
+from ksef2 import Client, Environment
+
+
+def get_client() -> Iterator[Client]:
+    client = Client(Environment.TEST)
+    try:
+        yield client
+    finally:
+        client.close()
+```
+
+Async applications use the same boundary with `async with`:
+
+```python
+from ksef2 import AsyncClient, Environment
+
+async with AsyncClient(Environment.TEST) as client:
+    auth = await client.authentication.with_test_certificate(nip="5261040828")
+```
+
+Online and batch sessions are lifecycle boundaries too. Use a session context
+manager so the SDK closes the remote session when the block exits:
+
+```python
+from ksef2 import FormSchema
+
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    status = session.send_invoice_and_wait(invoice_xml=invoice_xml)
+```
+
+When credentials live in a CLI-compatible profile, create the root client for
+the profile environment and authenticate through `with_profile()`:
+
+```python
+from ksef2 import Client, Environment
+
+client = Client(Environment.PRODUCTION)
+auth = client.authentication.with_profile("prod-token")
+```
+
+## Public root branches
+
+The root client is useful before authentication:
+
+```python
+certificates = client.encryption.get_certificates()
+providers = client.peppol.query()
+```
+
+The TEST-only branch is also on the root client:
+
+```python
+client.testdata.create_subject(
+    nip="5261040828",
+    subject_type="vat_group",
+    description="Sandbox company",
+)
+```
+
+## Authenticated branches
+
+After authentication, use the branch that matches the task:
+
+```python
+invoices = auth.invoices
+batch = auth.batch
+tokens = auth.tokens
+permissions = auth.permissions
+certificates = auth.certificates
+limits = auth.limits
+sessions = auth.sessions
+invoice_sessions = auth.invoice_sessions
+```
+
+<Aside type="note" title="Keep root and authenticated clients separate">
+  The root client chooses environment and transport. The authenticated client
+  owns bearer tokens and context-specific branches. Passing the authenticated
+  client into workflow code keeps auth state out of unrelated setup code.
+</Aside>
+
+## Recommended flow
+
+<Steps>
+
+1. Read environment and transport settings in your application boundary.
+
+2. Create one root client for the selected KSeF environment.
+
+3. Use root branches only for public lookup or TEST data setup.
+
+4. Authenticate once for the context that owns the operation.
+
+5. Pass the authenticated client to invoice, token, permission, certificate,
+   limits, and session workflows.
+
+</Steps>
+
+## Reference
+
+<LinkCard
+  title="Authentication guide"
+  href="authenticate.mdx"
+  description="Authenticate with a token, XAdES certificate, TEST certificate, or profile."
+/>
+<LinkCard
+  title="Operations"
+  href="../reference/operations.mdx"
+  description="Map common workflows to high-level SDK entry points."
+/>
+<LinkCard
+  title="Configure a certificate store"
+  href="configure-certificate-store.mdx"
+  description="Configure certificate cache refresh or provide a custom certificate store."
+/>
+<LinkCard
+  title="Encryption certificates"
+  href="inspect-encryption-certificates.mdx"
+  description="Inspect KSeF public encryption certificates before encrypted workflows."
+/>
+<LinkCard
+  title="PEPPOL providers"
+  href="query-peppol-providers.mdx"
+  description="Query public PEPPOL provider data from the root client."
+/>
+<LinkCard
+  title="TEST data"
+  href="use-test-data.mdx"
+  description="Create and manage TEST subjects and permissions."
+/>
+<LinkCard
+  title="Client lifecycle"
+  href="../reference/client-lifecycle.mdx"
+  description="Review root client lifecycle, authenticated clients, and close behavior."
+/>

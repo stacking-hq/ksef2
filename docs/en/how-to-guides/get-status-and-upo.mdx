@@ -1,0 +1,257 @@
+---
+title: Get Status and UPO
+description: Check online and batch session status, list session invoices, and download UPO documents.
+---
+
+import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Use this page after you have submitted invoice XML. The examples assume you
+already have an authenticated client named `auth`.
+
+Status calls return SDK models. UPO calls return XML bytes.
+
+## Online invoice status
+
+For online sending, `send_invoice()` returns a session invoice reference. Use
+that reference to poll the invoice result and download invoice UPO.
+
+```python
+from pathlib import Path
+
+from ksef2 import FormSchema
+
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    sent = session.send_invoice(invoice_xml=invoice_xml)
+
+    invoice_status = session.wait_for_invoice_ready(
+        invoice_reference_number=sent.reference_number,
+        timeout=120.0,
+        poll_interval=2.0,
+    )
+
+    # SessionInvoiceStatusResponse
+    # {
+    #   "ordinal_number": 1,
+    #   "reference_number": "20260625-ABCD-EF1234567890",
+    #   "invoice_number": "FV/42/2026",
+    #   "ksef_number": "1234567890-20260625-...",
+    #   "status": {
+    #     "code": 200,
+    #     "description": "Processed"
+    #   }
+    # }
+
+    upo_xml = session.get_invoice_upo_by_reference(
+        invoice_reference_number=sent.reference_number,
+    )
+    Path("upo.xml").write_bytes(upo_xml)
+```
+
+Inside the same session block, if you already have the KSeF number, you can
+download invoice UPO by KSeF number instead:
+
+```python
+ksef_number = invoice_status.ksef_number
+if ksef_number is None:
+    raise RuntimeError("KSeF did not assign an invoice number.")
+
+upo_xml = session.get_invoice_upo_by_ksef_number(
+    ksef_number=ksef_number,
+)
+```
+
+<Aside type="caution" title="Keep the invoice reference">
+  The invoice reference number is the durable handle for polling one invoice in
+  the session. Store it before waiting so another worker can inspect the result
+  if the original process stops.
+</Aside>
+
+## Online session pages
+
+Use session pages when you need to inspect everything submitted in an online
+session instead of one invoice reference.
+
+<Tabs syncKey="sdk-online-session-pages">
+  <TabItem label="Accepted">
+
+```python
+page = session.list_invoices(page_size=100)
+
+for invoice in page.invoices:
+    print(invoice.reference_number, invoice.ksef_number)
+```
+
+  </TabItem>
+  <TabItem label="Failed">
+
+```python
+page = session.list_failed_invoices(page_size=100)
+
+for invoice in page.invoices:
+    print(invoice.reference_number, invoice.status.code, invoice.status.details)
+```
+
+  </TabItem>
+</Tabs>
+
+## Batch status and UPO
+
+For batch sending, keep the returned `BatchSessionResumeState`. The batch service can
+poll by state or by plain session reference number.
+
+```python
+from pathlib import Path
+
+final_status = auth.batch.wait_for_completion(
+    session=state,
+    timeout=300.0,
+    poll_interval=2.0,
+)
+
+# SessionStatusResponse
+# {
+#   "status": {
+#     "code": 200,
+#     "description": "Processed"
+#   },
+#   "invoice_count": 10,
+#   "successful_invoice_count": 9,
+#   "failed_invoice_count": 1,
+#   "upo": {
+#     "pages": [
+#       {
+#         "reference_number": "upo-page-reference",
+#         "download_url_expiration_date": "2026-06-26T10:00:00Z"
+#       }
+#     ]
+#   }
+# }
+
+if final_status.upo is not None and final_status.upo.pages:
+    upo_reference_number = final_status.upo.pages[0].reference_number
+    upo_xml = auth.batch.get_upo(
+        session=state,
+        upo_reference_number=upo_reference_number,
+    )
+    Path("batch-upo.xml").write_bytes(upo_xml)
+```
+
+<Aside type="note" title="UPO is an audit artifact">
+  Store UPO XML durably. It is the official confirmation document, not just a
+  temporary status response.
+</Aside>
+
+## List accepted and failed batch invoices
+
+Accepted and failed invoices are separate pages. Read both when reconciling a
+batch.
+
+<Tabs syncKey="sdk-batch-results">
+  <TabItem label="Accepted">
+
+```python
+page = auth.batch.list_invoices(session=state, page_size=100)
+
+for invoice in page.invoices:
+    print(invoice.invoice_file_name, invoice.ksef_number, invoice.status.description)
+```
+
+  </TabItem>
+  <TabItem label="Failed">
+
+```python
+page = auth.batch.list_failed_invoices(session=state, page_size=100)
+
+for invoice in page.invoices:
+    print(invoice.invoice_file_name, invoice.status.code, invoice.status.details)
+```
+
+  </TabItem>
+</Tabs>
+
+When a page has `continuation_token`, pass it to the next call:
+
+```python
+page = auth.batch.list_invoices(session=state, page_size=100)
+
+while page.continuation_token is not None:
+    page = auth.batch.list_invoices(
+        session=state,
+        page_size=100,
+        continuation_token=page.continuation_token,
+    )
+```
+
+## Find sessions after restart
+
+Use `auth.invoice_sessions` when you need to find online or batch sessions after
+the original sender process has exited.
+
+<Tabs syncKey="sdk-session-history">
+  <TabItem label="One page">
+
+```python
+page = auth.invoice_sessions.query(
+    session_type="online",
+    statuses=["in_progress", "succeeded"],
+)
+
+for item in page.sessions:
+    print(item.reference_number, item.status.code, item.total_invoice_count)
+```
+
+  </TabItem>
+  <TabItem label="All pages">
+
+```python
+for page in auth.invoice_sessions.all(session_type="batch"):
+    for item in page.sessions:
+        print(item.reference_number, item.status.description)
+```
+
+  </TabItem>
+</Tabs>
+
+## Recommended flow
+
+<Steps>
+
+1. Persist session references and invoice reference numbers when sending.
+
+2. Poll the specific invoice, online session, or batch session that matches the
+   question you are answering.
+
+3. Store accepted and failed invoice details.
+
+4. Download UPO XML and store it with your audit records.
+
+5. Use `auth.invoice_sessions` to recover session references after process
+   restart.
+
+</Steps>
+
+## Next workflows
+
+<LinkCard
+  title="Send invoices"
+  href="send-invoices.mdx"
+  description="Submit invoice XML through online or batch sessions before polling status."
+/>
+
+<LinkCard
+  title="Status and UPO"
+  href="../concepts/status-and-upo.mdx"
+  description="Understand status surfaces, UPO documents, polling, and local timeouts."
+/>
+
+<LinkCard
+  title="Download invoices"
+  href="download-invoices.mdx"
+  description="Fetch processed invoice XML after KSeF assigns a number."
+/>
+
+<LinkCard
+  title="Query invoices"
+  href="query-invoices.mdx"
+  description="Find processed invoices through metadata filters and pagination."
+/>

@@ -1,0 +1,201 @@
+---
+title: Pobierz faktury
+description: Pobieraj przetworzony XML faktur bezpośrednio albo przez szyfrowane paczki eksportu ksef2.
+---
+
+import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Użyj `auth.invoices`, gdy potrzebujesz treści faktury po przetworzeniu jej przez
+KSeF. Przykłady poniżej zakładają, że masz już uwierzytelnionego klienta
+`auth`.
+
+## Pobierz jedną fakturę
+
+Jeśli masz już numer KSeF, bezpośrednie pobranie jest najkrótszą ścieżką.
+
+```python
+from pathlib import Path
+
+ksef_number = "1234567890-20260625-..."
+
+xml_bytes = auth.invoices.download_invoice(ksef_number=ksef_number)
+Path("invoice.xml").write_bytes(xml_bytes)
+```
+
+Jeśli faktura została dopiero wysłana, KSeF może potrzebować czasu, zanim
+przetworzony XML będzie dostępny do pobrania. Użyj helpera oczekującego, gdy
+przepływ ma blokować do dostępności dokumentu.
+
+```python
+from pathlib import Path
+
+ksef_number = "1234567890-20260625-..."
+
+xml_bytes = auth.invoices.wait_for_invoice_download(
+    ksef_number=ksef_number,
+    timeout=120.0,
+    poll_interval=2.0,
+)
+Path("invoice.xml").write_bytes(xml_bytes)
+```
+
+## Zbuduj filtr eksportu
+
+Eksportów używaj do większych pobrań. Eksporty korzystają z `InvoicesFilter`,
+czyli tego samego kształtu filtra co zapytania o metadane.
+
+```python
+from datetime import datetime, timedelta, timezone
+
+from ksef2.models import InvoicesFilter
+
+now = datetime.now(tz=timezone.utc)
+
+filters = InvoicesFilter.for_buyer(
+    date_type="permanent_storage",
+    date_from=now - timedelta(days=1),
+    date_to=now,
+    restrict_to_permanent_storage_hwm_date=True,
+)
+```
+
+<Aside type="tip" title="Do synchronizacji w tle użyj HWM">
+  `restrict_to_permanent_storage_hwm_date=True` utrzymuje automatyczne eksporty
+  w granicy, którą KSeF raportuje jako kompletną. Zapisz
+  `permanent_storage_hwm_date` dla następnego okna synchronizacji.
+</Aside>
+
+## Wyeksportuj wiele faktur
+
+Zaplanuj eksport, poczekaj na paczkę, a potem pobierz odszyfrowane części ZIP.
+
+<Tabs syncKey="sdk-download-export">
+  <TabItem label="Zapis do plików">
+
+```python
+from pathlib import Path
+
+export = auth.invoices.schedule_export(filters=filters)
+
+# ExportHandle(reference_number="...", aes_key=<bytes>, iv=<bytes>)
+# Zachowaj ten obiekt jako prywatny. Zawiera materiał deszyfrujący.
+
+package = auth.invoices.wait_for_export_package(
+    reference_number=export.reference_number,
+    timeout=300.0,
+)
+
+# InvoicePackage
+# {
+#   "invoice_count": 3,
+#   "size": 14820,
+#   "is_truncated": false,
+#   "last_permanent_storage_date": "2026-06-25T09:58:21Z",
+#   "permanent_storage_hwm_date": "2026-06-25T10:00:00Z",
+#   "parts": [
+#     {
+#       "ordinal_number": 1,
+#       "part_name": "package-1.zip",
+#       "expiration_date": "2026-06-26T10:00:00Z"
+#     }
+#   ]
+# }
+
+saved_paths = auth.invoices.fetch_package(
+    package=package,
+    export=export,
+    target_directory=Path("downloads"),
+)
+
+for path in saved_paths:
+    print(path)
+```
+
+  </TabItem>
+  <TabItem label="W pamięci">
+
+```python
+export = auth.invoices.schedule_export(filters=filters)
+package = auth.invoices.wait_for_export_package(
+    reference_number=export.reference_number,
+    timeout=300.0,
+)
+
+zip_parts = auth.invoices.fetch_package_bytes(package=package, export=export)
+
+for zip_part in zip_parts:
+    print(len(zip_part))
+```
+
+  </TabItem>
+  <TabItem label="Jedno wywołanie">
+
+```python
+zip_parts = auth.invoices.export_and_download(
+    filters=filters,
+    timeout=300.0,
+    poll_interval=2.0,
+)
+
+for zip_part in zip_parts:
+    print(len(zip_part))
+```
+
+  </TabItem>
+</Tabs>
+
+<Aside type="note" title="SDK odszyfrowuje części paczki">
+  KSeF zwraca URL-e zaszyfrowanych części paczki. Helpery wysokiego poziomu
+  wczytują ważny certyfikat szyfrowania KSeF, planują eksport z lokalnym
+  materiałem AES, pobierają części paczki i odszyfrowują je przed zwróceniem
+  ścieżek albo bajtów.
+</Aside>
+
+<Aside type="caution" title="Części paczki są tymczasowe">
+  URL-e paczki wygasają. Zapisz odszyfrowane części ZIP albo wyodrębniony XML
+  faktur we własnym magazynie i zachowaj `_metadata.json`, gdy paczka go
+  zawiera.
+</Aside>
+
+## Po wysyłce faktur
+
+Trzymaj wysyłkę, przetwarzanie i pobieranie jako osobne fazy.
+
+<Steps>
+
+1. Wyślij XML faktury przez sesję online albo wsadową.
+
+2. Polluj status sesji albo faktury do końcowego zaakceptowanego wyniku.
+
+3. Zapisz zwrócone wartości `ksef_number`.
+
+4. Pobierz jeden przetworzony dokument XML po `ksef_number` albo zbuduj filtr
+   eksportu dla większego okna czasu.
+
+</Steps>
+
+## Następne przepływy
+
+<LinkCard
+  title="Wyszukaj faktury"
+  href="query-invoices.mdx"
+  description="Znajdź numery KSeF i metadane przed pobraniem treści faktury."
+/>
+
+<LinkCard
+  title="Wyślij faktury"
+  href="send-invoices.mdx"
+  description="Wyślij XML faktury przez sesję online albo wsadową."
+/>
+
+<LinkCard
+  title="Zapytania i eksporty"
+  href="../concepts/querying-and-exports.mdx"
+  description="Zrozum metadane, bezpośrednie pobieranie, paczki eksportu i synchronizację HWM."
+/>
+
+<LinkCard
+  title="Sprawdź certyfikaty szyfrowania"
+  href="inspect-encryption-certificates.mdx"
+  description="Sprawdź publiczne certyfikaty KSeF używane przez szyfrowane przepływy."
+/>

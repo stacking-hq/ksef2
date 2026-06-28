@@ -1,0 +1,140 @@
+---
+title: Zarządzaj tokenami
+description: Generuj, listuj, sprawdzaj i cofaj tokeny KSeF przez ksef2.
+---
+
+import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Użyj `auth.tokens`, gdy uwierzytelniony kontekst ma tworzyć albo wycofywać
+tokeny KSeF dla automatyzacji. Przykłady zakładają, że masz już
+uwierzytelnionego klienta `auth`.
+
+## Wygeneruj token
+
+Wybierz najmniejszy zestaw uprawnień wymagany przez automatyzację, która będzie
+używać tokena.
+
+```python
+token = auth.tokens.generate(
+    permissions=["invoice_read"],
+    description="nightly invoice export",
+    timeout=60.0,
+    poll_interval=1.0,
+)
+
+# GenerateTokenResponse
+# {
+#   "reference_number": "20260625-TOKEN-...",
+#   "token": "eyJ..."
+# }
+```
+
+`generate()` wysyła żądanie tokena i czeka, aż KSeF zgłosi token jako aktywny.
+Zwrócone pole `token` jest sekretem, którego automatyzacja użyje później do
+uwierzytelniania tokenem.
+
+<Aside type="caution" title="Wartość tokena jest pokazana raz">
+  Zapisz zwróconą wartość tokena od razu w magazynie sekretów. Późniejsze
+  wywołania statusu i listowania identyfikują token po `reference_number`, ale
+  nie odzyskują sekretnej wartości tokena.
+</Aside>
+
+## Listuj tokeny
+
+Użyj `list_page()` dla jednej strony albo `list_all()` dla pełnego przebiegu
+audytowego.
+
+<Tabs syncKey="sdk-token-list">
+  <TabItem label="Jedna strona">
+
+```python
+page = auth.tokens.list_page()
+
+# QueryTokensResponse
+# {
+#   "continuation_token": null,
+#   "tokens": [
+#     {
+#       "reference_number": "20260625-TOKEN-...",
+#       "description": "nightly invoice export",
+#       "requested_permissions": ["invoice_read"],
+#       "status": "active"
+#     }
+#   ]
+# }
+
+for item in page.tokens:
+    print(item.reference_number, item.status, item.description)
+```
+
+  </TabItem>
+  <TabItem label="Wszystkie strony">
+
+```python
+for page in auth.tokens.list_all():
+    for item in page.tokens:
+        print(item.reference_number, item.status, item.description)
+```
+
+  </TabItem>
+</Tabs>
+
+## Sprawdź albo cofnij jeden token
+
+Do późniejszych operacji cyklu życia użyj numeru referencyjnego tokena.
+
+```python
+status = auth.tokens.status(reference_number="20260625-TOKEN-...")
+
+# TokenStatusResponse
+# {
+#   "reference_number": "20260625-TOKEN-...",
+#   "status": "active"
+# }
+```
+
+```python
+auth.tokens.revoke(reference_number="20260625-TOKEN-...")
+```
+
+<Aside type="tip" title="Oddziel referencję od sekretu">
+  Sekret tokena trzymaj w managerze sekretów. `reference_number` zapisz w
+  metadanych operacyjnych, żeby później sprawdzić albo cofnąć token bez
+  ujawniania sekretu.
+</Aside>
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Wybierz najmniejszy zestaw uprawnień wymagany przez automatyzację.
+
+2. Wygeneruj token w uwierzytelnionym kontekście, który ma być jego właścicielem.
+
+3. Zapisz wartość tokena w magazynie sekretów, a numer referencyjny w metadanych.
+
+4. Listuj albo sprawdzaj referencje tokenów podczas audytów.
+
+5. Cofaj tokeny nieużywane, wygasłe albo naruszone.
+
+</Steps>
+
+## Następne przepływy
+
+<LinkCard
+  title="Uwierzytelnianie"
+  href="authenticate.mdx"
+  description="Użyj wygenerowanego tokena KSeF jako jednej z metod uwierzytelniania SDK."
+/>
+
+<LinkCard
+  title="Metody uwierzytelniania"
+  href="../concepts/authentication-methods.mdx"
+  description="Zrozum uwierzytelnianie tokenem KSeF, XAdES, certyfikatem TEST i profilami."
+/>
+
+<LinkCard
+  title="Konfiguracja klienta"
+  href="client-setup.mdx"
+  description="Utwórz klienta sync albo async przed użyciem gałęzi uwierzytelnionych."
+/>

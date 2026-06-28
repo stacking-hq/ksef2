@@ -1,0 +1,484 @@
+---
+title: Build FA(3) Invoices
+description: Generate complete FA(3) invoice models and XML with the fluent builder.
+---
+
+import { Aside, LinkCard, Steps } from '@astrojs/starlight/components';
+
+Use `FA3InvoiceBuilder` when your application owns invoice data as Python
+objects and you want the SDK to produce typed FA(3) models and XML. The builder
+uses public SDK field names, then produces the same `KsefInvoice` aggregate used
+by the FA(3) mappers.
+
+<Aside type="tip" title="The builder covers advanced invoice paths">
+  `FA3InvoiceBuilder` is the public nested builder for standard, simplified,
+  correction, advance, settlement, correction-advance, and
+  correction-settlement invoices. Use direct `KsefInvoice` model construction
+  only when you already have model instances or need to bypass the fluent DSL.
+</Aside>
+
+## Builder shape
+
+The builder has three levels:
+
+| Level | What it owns | Common methods |
+| --- | --- | --- |
+| Root invoice | Header, seller, buyer, third parties, footer, attachment, and final output. | `header()`, `seller()`, `buyer()`, `third_party()`, `footer()`, `attachment()`, `build()`, `to_xml()` |
+| Body path | The FA(3) invoice kind and body-wide fields. | `standard()`, `simplified()`, `correction()`, `advance()`, `settlement()`, `correction_advance()`, `correction_settlement()` |
+| Nested sections | Repeating or optional body details. | `rows()`, `payment()`, `annotations()`, `correction()`, `order()`, `advance()`, `settlement()`, `transaction()` |
+
+Each nested builder returns to its parent with `.done()`. The root builder can
+produce a public model with `build()`, a generated FA(3) schema model with
+`to_spec()`, or XML text with `to_xml()`.
+
+## Build a standard invoice
+
+Start with the root invoice parties, choose an invoice path with `.standard()`,
+then add nested body sections.
+
+```python
+from datetime import date
+from decimal import Decimal
+
+from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+
+builder = (
+    FA3InvoiceBuilder()
+    .header(system_info="ksef2 builder guide")
+    .seller(
+        name="Demo Seller Sp. z o.o.",
+        tax_id="5261040828",
+        country_code="PL",
+        address_line_1="Prosta 1",
+        address_line_2="00-001 Warszawa",
+    )
+    .buyer(
+        name="Demo Buyer Sp. z o.o.",
+        tax_id="5250001009",
+        country_code="PL",
+        address_line_1="Kwiatowa 2",
+        address_line_2="00-002 Warszawa",
+    )
+    .standard()
+        .issue_date(date(2026, 6, 24))
+        .issue_place("Warszawa")
+        .invoice_number("FV/1/2026")
+        .rows()
+            .add_line(
+                name="Implementation service",
+                quantity=Decimal("2"),
+                unit_price_net=Decimal("150.00"),
+                vat_rate=VatRate.VAT_23,
+            )
+            .add_line(
+                name="Support package",
+                quantity=Decimal("1"),
+                unit_price_net=Decimal("50.00"),
+                vat_rate=VatRate.VAT_8,
+            )
+        .done()
+        .payment()
+            .via("bank_transfer")
+            .due_on(date(2026, 7, 8))
+            .bank_account("PL10101010101010101010101010")
+        .done()
+        .annotations()
+            .split_payment()
+        .done()
+    .done()
+)
+```
+
+Call `build()` when you want the typed public invoice model.
+
+```python
+invoice = builder.build()
+
+print(invoice.body.invoice_number)
+# FV/1/2026
+print(invoice.total_net)
+# 350.00
+print(invoice.total_vat)
+# 73.00
+print(invoice.total_gross)
+# 423.00
+```
+
+## Choose the invoice path
+
+Use one of the body selectors after `header()`, `seller()`, and `buyer()`:
+
+| Selector | Use for | Typical nested sections |
+| --- | --- | --- |
+| `standard()` | Regular VAT invoices. | `rows()`, `payment()`, `annotations()`, `transaction()`, `settlement()` |
+| `simplified()` | Simplified invoices. | `rows()`, `payment()`, `annotations()`, `settlement()` |
+| `correction()` | Corrections to previous invoices. | `rows()`, `correction()`, `payment()`, `annotations()` |
+| `advance()` | Advance-payment invoices. | `order()`, `payment()`, `advance()`, `annotations()`, `transaction()` |
+| `settlement()` | Settlement invoices for advances. | `rows()`, `payment()`, `advance()`, `settlement()`, `transaction()` |
+| `correction_advance()` | Corrections to advance-payment invoices. | `order()`, `correction()`, `advance()`, `payment()` |
+| `correction_settlement()` | Corrections to settlement invoices. | `rows()`, `correction()`, `advance()`, `settlement()`, `payment()` |
+
+All selectors share body-wide methods such as `currency()`, `issue_date()`,
+`issue_place()`, `invoice_number()`, `date_of_supply()`, `billing_period()`,
+`add_description()`, `mark_fp()`, `related_party_transaction()`, and
+`summary_overrides()`.
+
+## Add invoice rows
+
+Use `rows().add_line()` for normal application data. The builder calculates
+missing row totals from `quantity`, one unit price, and VAT classification.
+Provide either `unit_price_net` or `unit_price_gross`, not both.
+
+```python
+builder = (
+    FA3InvoiceBuilder()
+    .header(system_info="rows example")
+    .seller(
+        name="Demo Seller Sp. z o.o.",
+        tax_id="5261040828",
+        country_code="PL",
+        address_line_1="Prosta 1",
+    )
+    .buyer(
+        name="Demo Buyer Sp. z o.o.",
+        tax_id="5250001009",
+        country_code="PL",
+        address_line_1="Kwiatowa 2",
+    )
+    .standard()
+        .issue_date(date(2026, 6, 24))
+        .invoice_number("FV/2/2026")
+        .rows()
+            .add_line(
+                name="Gross-priced service",
+                quantity=Decimal("2"),
+                unit_price_gross=Decimal("123.00"),
+                vat_rate=VatRate.VAT_23,
+            )
+        .done()
+    .done()
+)
+```
+
+Use `add_line_model()` or `replace_lines()` when another layer already created
+`InvoiceRow` models. Use `summary_overrides()` when a business case requires
+official FA(3) summary values that cannot be derived from row arithmetic.
+
+## Add payments and annotations
+
+The payment builder supports a single payment form, due dates, partial payments,
+bank accounts, factor accounts, discounts, payment links, and IP KSeF data.
+
+```python
+_ = (
+    builder.standard()
+    .payment()
+        .via("bank_transfer")
+        .due_on(date(2026, 7, 8))
+        .add_partial_payment(
+            amount=Decimal("50.00"),
+            payment_date=date(2026, 6, 24),
+            payment_form="card",
+        )
+        .bank_account(
+            "PL10101010101010101010101010",
+            bank_name="Demo Bank S.A.",
+            account_description="PLN operating account",
+        )
+    .done()
+    .annotations()
+        .split_payment()
+        .cash_accounting(False)
+        .margin_procedure("travel_agency")
+    .done()
+    .done()
+)
+```
+
+Most annotation methods accept booleans or enum-like strings and write the
+corresponding FA(3) flag only when it is needed.
+
+## Build corrections
+
+Correction invoices stay in the fluent builder. Use the body selector
+`.correction()`, add negative or before/after rows as needed, then open the
+nested `.correction()` section to describe the correction reason and corrected
+invoice references.
+
+```python
+from datetime import date
+from decimal import Decimal
+
+from ksef2.fa3 import FA3InvoiceBuilder, InvoiceSummaryOverrides, VatRate
+
+correction = (
+    FA3InvoiceBuilder()
+    .header(system_info="ksef2 correction guide")
+    .seller(
+        name="Demo Seller Sp. z o.o.",
+        tax_id="5261040828",
+        country_code="PL",
+        address_line_1="Prosta 1",
+    )
+    .buyer(
+        name="Demo Buyer Sp. z o.o.",
+        tax_id="5250001009",
+        country_code="PL",
+        address_line_1="Kwiatowa 2",
+    )
+    .correction()
+        .issue_date(date(2026, 7, 1))
+        .issue_place("Warszawa")
+        .invoice_number("FK/1/2026")
+        .summary_overrides(
+            InvoiceSummaryOverrides(
+                base_rate_net_total=Decimal("-100.00"),
+                base_rate_vat_total=Decimal("-23.00"),
+                total_gross=Decimal("-123.00"),
+            )
+        )
+        .rows()
+            .add_line(
+                name="Implementation service correction",
+                quantity=Decimal("1"),
+                unit_price_net=Decimal("-100.00"),
+                vat_rate=VatRate.VAT_23,
+            )
+        .done()
+        .correction()
+            .reason("Price correction")
+            .effect_type("other_date")
+            .add_corrected_invoice(
+                issue_date=date(2026, 6, 24),
+                invoice_number="FV/1/2026",
+                ksef_id="5261040828-20260624-ABCDEF-ABCDEF-FF",
+            )
+        .done()
+    .done()
+    .build()
+)
+```
+
+The correction section also supports corrected invoice periods, corrected
+seller data, corrected buyers, and model-based input methods when you already
+hold public FA(3) models.
+
+## Build advance and settlement invoices
+
+Advance invoices combine the body path with an order section, payment details,
+and optional advance references. Settlement invoices can then reference earlier
+advance invoices.
+
+```python
+advance_xml = (
+    FA3InvoiceBuilder()
+    .header(system_info="advance guide")
+    .seller(
+        name="Demo Developer S.A.",
+        tax_id="5261040828",
+        country_code="PL",
+        address_line_1="Sadowa 1",
+    )
+    .buyer(
+        name="Demo Buyer",
+        tax_id="5250001009",
+        country_code="PL",
+        address_line_1="Kwiatowa 2",
+    )
+    .advance()
+        .issue_date(date(2026, 8, 1))
+        .invoice_number("FZ/1/2026")
+        .order(declared_total=Decimal("324000.00"))
+            .add_line(
+                name="Apartment reservation",
+                quantity=Decimal("1"),
+                unit_price_net=Decimal("300000.00"),
+                vat_rate=VatRate.VAT_8,
+                gross_amount=Decimal("324000.00"),
+            )
+        .done()
+        .payment()
+            .via("bank_transfer")
+            .already_paid(date(2026, 8, 1))
+        .done()
+    .done()
+    .to_xml()
+)
+```
+
+```python
+settlement_xml = (
+    FA3InvoiceBuilder()
+    .header(system_info="settlement guide")
+    .seller(
+        name="Demo Developer S.A.",
+        tax_id="5261040828",
+        country_code="PL",
+        address_line_1="Sadowa 1",
+    )
+    .buyer(
+        name="Demo Buyer",
+        tax_id="5250001009",
+        country_code="PL",
+        address_line_1="Kwiatowa 2",
+    )
+    .settlement()
+        .issue_date(date(2026, 9, 1))
+        .invoice_number("FR/1/2026")
+        .rows()
+            .add_line(
+                name="Apartment settlement",
+                quantity=Decimal("1"),
+                unit_price_net=Decimal("185185.19"),
+                vat_rate=VatRate.VAT_8,
+            )
+        .done()
+        .advance()
+            .add_invoice_reference(ksef_id="5261040828-20260801-ABCDEF-ABCDEF-FF")
+        .done()
+        .payment()
+            .via("bank_transfer")
+            .due_on(date(2026, 9, 15))
+        .done()
+    .done()
+    .to_xml()
+)
+```
+
+## Add root-level details
+
+Root-level details are outside the invoice body and can be added before or after
+the body path.
+
+| Need | Fluent method | Model method |
+| --- | --- | --- |
+| Existing seller, buyer, header, footer, or attachment model | Use the specific fluent builder when you want to edit fields. | `header_model()`, `seller_model()`, `buyer_model()`, `footer_model()`, `attachment_model()` |
+| Third-party subject | `third_party(...)` | `add_third_party_model()`, `replace_third_parties()` |
+| Footer registry or legal note | `footer().add_information().add_registry().done()` | `footer_model()` |
+| Attachment with data blocks or tables | `attachment().build_data_block()...done().done()` | `attachment_model()` |
+
+```python
+builder = (
+    builder
+    .third_party(
+        name="Additional buyer",
+        tax_id="3333333333",
+        address_country_code="PL",
+        address_line_1="Polna 3",
+        role="additional_buyer",
+        share_percentage=Decimal("50"),
+    )
+    .footer()
+        .add_information("Invoice generated electronically.")
+        .add_registry(krs="0000123456", regon="123456789")
+    .done()
+    .attachment()
+        .build_data_block()
+            .set_header("Delivery specification")
+            .add_paragraph("Goods were inspected before dispatch.")
+            .build_table()
+                .set_columns(["txt", "decimal"], names=["Service", "Net amount"])
+                .add_row(["Consulting", "1000.00"])
+            .done()
+        .done()
+    .done()
+)
+```
+
+## Generate XML
+
+The builder can produce three forms:
+
+- `build()` returns `KsefInvoice`.
+- `to_spec()` returns the generated FA(3) `Faktura` schema model.
+- `to_xml()` returns an XML string.
+
+```python
+from pathlib import Path
+
+invoice = builder.build()
+spec = builder.to_spec()
+xml_text = builder.to_xml()
+Path("invoice.xml").write_text(xml_text, encoding="utf-8")
+```
+
+When sending through an online or batch session, pass XML bytes.
+
+```python
+from ksef2 import FormSchema
+
+invoice_xml = builder.to_xml().encode("utf-8")
+
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    sent = session.send_invoice(invoice_xml=invoice_xml)
+    print(sent.reference_number)
+```
+
+## Save and reload drafts
+
+Persist incomplete builder state with `dump_state()` or `dump_state_json()`.
+Reload it later with `from_state()` or `from_state_json()`.
+
+```python
+from ksef2.fa3 import FA3InvoiceBuilder, KsefInvoiceDraft
+
+draft_json = builder.dump_state_json(indent=2)
+draft = KsefInvoiceDraft.model_validate_json(draft_json)
+restored = FA3InvoiceBuilder.from_state(draft)
+```
+
+If you already have a complete `KsefInvoice`, reopen it in the builder with
+`FA3InvoiceBuilder.from_invoice(invoice)`.
+
+## Troubleshoot builder errors
+
+| Error | Meaning | Fix |
+| --- | --- | --- |
+| `Invoice header is required but not set.` | The root builder has no header. | Call `header()` or `header_model()` before `build()`, `to_spec()`, or `to_xml()`. |
+| `Invoice seller is required but not set.` | The root seller is missing. | Call `seller()` or `seller_model()`. |
+| `Invoice buyer is required but not set.` | The root buyer is missing. | Call `buyer()` or `buyer_model()`. |
+| `Invoice body is required but not set.` | No body path was selected and completed. | Call one body selector such as `standard()` or `correction()`, fill required fields, and return with `.done()`. |
+| `Provide either unit_price_net or unit_price_gross, not both.` | A row has ambiguous pricing input. | Pass only one unit price and let the builder compute row totals. |
+| `... details are empty. Set at least one field before calling done().` | A nested optional section was opened but left empty. | Add section data before `.done()` or do not create that section. |
+
+## Recommended flow
+
+<Steps>
+
+1. Create `FA3InvoiceBuilder()` and set header, seller, and buyer.
+
+2. Choose the body path with `standard()`, `correction()`, `advance()`, or the
+   other invoice selector that matches the business document.
+
+3. Add nested sections such as `rows()`, `payment()`, `annotations()`,
+   `correction()`, `order()`, `footer()`, or `attachment()`.
+
+4. Use `build()` for the public model during validation and `to_xml()` for the
+   send path.
+
+5. Encode the XML string to bytes before passing it to session or batch APIs.
+
+</Steps>
+
+## Related pages
+
+<LinkCard
+  title="Python API reference: FA(3) invoice builder"
+  href="../reference/api/fa3.mdx"
+  description="Review generated signatures for the public builder, invoice aggregate, drafts, and summary overrides."
+/>
+<LinkCard
+  title="Quickstart"
+  href="../getting-started/quickstart.mdx"
+  description="Generate, send, confirm, and download a TEST invoice end to end."
+/>
+<LinkCard
+  title="Send invoices"
+  href="send-invoices.mdx"
+  description="Use builder output in online or batch invoice sessions."
+/>
+<LinkCard
+  title="Public API contract"
+  href="../reference/public-api.mdx"
+  description="Review stable public imports used by invoice builder code."
+/>

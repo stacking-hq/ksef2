@@ -1,0 +1,116 @@
+---
+title: Certificates
+description: Understand the certificate roles behind KSeF authentication, enrollment, offline identity, and public encryption.
+---
+
+import { Aside, LinkCard, Steps } from '@astrojs/starlight/components';
+
+KSeF uses the word certificate in a few different places. They are related by
+cryptography, but they do not play the same role in the SDK.
+
+| Certificate role | What owns it | SDK surface | Purpose |
+| --- | --- | --- | --- |
+| Authentication signing material | Your application, user, HSM, certificate store, or TEST helper. | `client.authentication.with_xades()` and `ksef2.xades` | Signs the `AuthTokenRequest` used to authenticate. |
+| KSeF-issued certificate | KSeF issues it after an enrollment request. You store it with its private key. | `auth.certificates` | Gives the authenticating subject a KSeF certificate for authentication or offline use. |
+| Public encryption certificate | KSeF publishes it. The SDK reads it. | `client.encryption` and high-level workflows | Encrypts token-auth payloads, session keys, and export keys for KSeF. |
+
+Keeping those roles separate prevents two common design mistakes: treating a
+certificate as if it carried KSeF permissions, or treating certificate
+enrollment as if KSeF should receive your private key.
+
+<Aside type="caution" title="Enrollment is not key custody">
+  The SDK sends CSRs and certificate lifecycle requests. Your application or
+  certificate tooling generates, stores, rotates, and protects private keys.
+</Aside>
+
+## Identity and permissions
+
+A KSeF certificate is an identity carrier for the authenticating subject. It is
+usually tied to a NIP, PESEL, or certificate fingerprint. It is not assigned to
+a taxpayer context by itself and it does not contain the permission set used by
+KSeF operations.
+
+Permissions are evaluated separately. A certificate can prove who is
+authenticating, while KSeF still checks whether that subject has permission to
+work in the selected login context.
+
+## Certificate types
+
+KSeF-issued certificates have one certificate type:
+
+| SDK value | Meaning |
+| --- | --- |
+| `authentication` | Can be used as certificate material for KSeF authentication. |
+| `offline` | Used to identify offline-mode invoice issuance; it is not a login credential. |
+
+One issued certificate does not combine both roles. Request the type that
+matches the workflow you are building.
+
+## Enrollment model
+
+Certificate enrollment is an authenticated workflow, but it is not just another
+admin form. KSeF derives the enrollment subject data from the certificate used
+for XAdES authentication. The CSR must use those subject values; changing them
+causes KSeF to reject the request.
+
+```python
+limits = auth.certificates.get_limits()
+print(limits.can_request, limits.enrollment_remaining)
+
+subject = auth.certificates.get_enrollment_data()
+print(subject.common_name, subject.country_name)
+```
+
+The SDK exposes the lifecycle as high-level methods, but the private key and CSR
+still come from your certificate tooling:
+
+<Steps>
+
+1. Authenticate with XAdES certificate material.
+2. Read certificate limits and enrollment subject data.
+3. Generate a private key and CSR outside the SDK.
+4. Submit the CSR through `auth.certificates.enroll()`.
+5. Poll enrollment status until KSeF returns a certificate serial number.
+6. Retrieve the issued certificate and store it with its private key.
+
+</Steps>
+
+<Aside type="note" title="Token auth is not enough for enrollment">
+  Certificate enrollment requires XAdES-based authentication because KSeF uses
+  the signing certificate identity as the source of enrollment subject data.
+</Aside>
+
+## Relationship to XAdES and encryption
+
+XAdES uses certificate material to sign authentication XML. Certificate
+enrollment manages KSeF-issued certificates. Public encryption certificates are
+different again: they are KSeF-owned public keys used by the SDK to encrypt
+payload keys.
+
+If a problem mentions private keys, CSRs, issued certificate serial numbers, or
+offline certificates, it belongs in certificate management. If it mentions
+`public_key_id`, token encryption, session encryption, or export package
+decryption, it belongs in the encryption model.
+
+## Related pages
+
+<LinkCard
+  title="Manage certificates"
+  href="../how-to-guides/manage-certificates.mdx"
+  description="Enroll, retrieve, query, and revoke KSeF certificates from authenticated code."
+/>
+<LinkCard
+  title="XAdES"
+  href="xades.mdx"
+  description="Understand certificate-backed XML signing during authentication."
+/>
+<LinkCard
+  title="Encryption"
+  href="encryption.mdx"
+  description="Understand KSeF public encryption certificates and key rotation."
+/>
+<LinkCard
+  title="Permissions"
+  href="permissions.mdx"
+  description="Understand why authentication identity and operation permissions are separate."
+/>
