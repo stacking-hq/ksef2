@@ -4,11 +4,11 @@ from unittest.mock import patch
 
 import pytest
 
-from ksef2.services.renderers import InvoicePDFExporter, InvoiceXSLTRenderer
+from ksef2.renderers import InvoicePDFExporter, InvoiceXSLTRenderer
 
 
 def test_renderers_package_imports_without_loading_weasyprint() -> None:
-    import ksef2.services.renderers as renderers
+    import ksef2.renderers as renderers
 
     assert renderers.InvoiceXSLTRenderer is InvoiceXSLTRenderer
     assert renderers.InvoicePDFExporter is InvoicePDFExporter

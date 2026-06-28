@@ -12,7 +12,13 @@ from lxml.etree import _ElementTree as ElementTree, _Element as Element
 
 @final
 class InvoiceXSLTRenderer:
-    """Render FA3 invoice XML to HTML using the bundled XSLT stylesheet."""
+    """Render FA3 invoice XML to HTML using the bundled XSLT stylesheet.
+
+    By default, XSLT ``document()`` reads cannot access local files or the
+    network. Enabling code lookups allows read-only file and network access so
+    the bundled stylesheet can resolve schema documents for code descriptions.
+    Use enabled code lookups only with trusted stylesheets.
+    """
 
     def __init__(
         self,
@@ -23,6 +29,19 @@ class InvoiceXSLTRenderer:
             Path(stylesheet_path) if stylesheet_path else _DEFAULT_STYLESHEET_PATH
         )
         self._enable_code_lookups = enable_code_lookups
+        read_file = enable_code_lookups
+        write_file = False
+        create_dir = False
+        read_network = enable_code_lookups
+        write_network = False
+        xslt_access_options = {
+            "read_file": read_file,
+            "write_file": write_file,
+            "create_dir": create_dir,
+            "read_network": read_network,
+            "write_network": write_network,
+        }
+        self._access_control = etree.XSLTAccessControl(**xslt_access_options)
         self._transform: etree.XSLT | None = None
 
     def _get_params(self) -> dict[str, str]:
@@ -47,7 +66,10 @@ class InvoiceXSLTRenderer:
             ) from e
 
         try:
-            self._transform = etree.XSLT(xslt_doc)
+            self._transform = etree.XSLT(
+                xslt_doc,
+                access_control=self._access_control,
+            )
         except etree.XSLTParseError as e:
             raise KSeFInvoiceRenderingError(
                 f"Failed to compile XSLT stylesheet: {self._stylesheet_path}"

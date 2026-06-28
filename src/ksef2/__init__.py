@@ -71,9 +71,12 @@ from ksef2.core.exceptions import (
     KSeFValidationError,
     NoCertificateAvailableError,
 )
+from ksef2.core.stores import CertificateStore, CertificateStoreProtocol
 
 __all__ = [
     "AsyncClient",
+    "CertificateStore",
+    "CertificateStoreProtocol",
     "Client",
     "ConnectionPoolConfig",
     "Environment",
