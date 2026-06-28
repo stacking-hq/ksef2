@@ -1,3 +1,4 @@
+from collections.abc import Awaitable, Callable
 from io import BytesIO
 from zipfile import ZipFile
 import asyncio
@@ -18,13 +19,13 @@ from ksef2.domain.models.batch import (
     BatchFilePart,
     BatchInvoice,
     BatchPreparedPart,
-    BatchSessionState,
+    BatchSessionResumeState,
     PartUploadRequest,
     PreparedBatch,
 )
-from ksef2.domain.models.session import FormSchema
+from ksef2.domain.models.session import FormSchema, SessionEncryptionMaterial
 from ksef2.infra.schema.api import spec
-from ksef2.services.async_batch import AsyncBatchService
+from ksef2.services.async_batch import AsyncBatchService, AsyncBatchSessionOpener
 from tests.unit.fakes.transport import AsyncFakeTransport
 from tests.unit.helpers import VALID_PUBLIC_KEY_ID
 
@@ -32,11 +33,17 @@ from tests.unit.helpers import VALID_PUBLIC_KEY_ID
 def _build_service(
     async_fake_transport: AsyncFakeTransport,
     *,
-    open_batch_session,
-    get_encryption_key=None,
+    open_batch_session: AsyncBatchSessionOpener,
+    get_encryption_key: Callable[[], Awaitable[SessionEncryptionMaterial]]
+    | None = None,
 ) -> AsyncBatchService:
-    async def _default_get_encryption_key() -> tuple[bytes, bytes, bytes, str | None]:
-        return b"k" * 32, b"v" * 16, b"enc-key", VALID_PUBLIC_KEY_ID
+    async def _default_get_encryption_key() -> SessionEncryptionMaterial:
+        return SessionEncryptionMaterial(
+            aes_key=b"k" * 32,
+            iv=b"v" * 16,
+            encrypted_key=b"enc-key",
+            public_key_id=VALID_PUBLIC_KEY_ID,
+        )
 
     return AsyncBatchService(
         authed_transport=async_fake_transport,
@@ -46,17 +53,38 @@ def _build_service(
     )
 
 
+async def _unused_open_batch_session(
+    *,
+    batch_file: BatchFileInfo,
+    aes_key: bytes,
+    iv: bytes,
+    encrypted_key: bytes,
+    public_key_id: str | None = None,
+    form_code: FormSchema = FormSchema.FA3,
+    offline_mode: bool = False,
+    prepared_batch: PreparedBatch | None = None,
+) -> AsyncBatchSessionClient:
+    del (
+        batch_file,
+        aes_key,
+        iv,
+        encrypted_key,
+        public_key_id,
+        form_code,
+        offline_mode,
+        prepared_batch,
+    )
+    raise AssertionError("not used")
+
+
 class TestAsyncBatchService:
     def test_prepare_batch_builds_zip_metadata_and_encrypted_part(
         self,
         async_fake_transport: AsyncFakeTransport,
     ) -> None:
-        async def _open_batch_session(**_):
-            raise AssertionError("not used")
-
         service = _build_service(
             async_fake_transport,
-            open_batch_session=_open_batch_session,
+            open_batch_session=_unused_open_batch_session,
         )
         invoices = [
             BatchInvoice(file_name="invoice-1.xml", content=b"<Invoice>1</Invoice>"),
@@ -88,12 +116,9 @@ class TestAsyncBatchService:
         self,
         async_fake_transport: AsyncFakeTransport,
     ) -> None:
-        async def _open_batch_session(**_):
-            raise AssertionError("not used")
-
         service = _build_service(
             async_fake_transport,
-            open_batch_session=_open_batch_session,
+            open_batch_session=_unused_open_batch_session,
         )
 
         with pytest.raises(KSeFValidationError, match="must be unique"):
@@ -109,14 +134,11 @@ class TestAsyncBatchService:
     def test_upload_parts_uses_presigned_urls_without_auth_header(
         self,
         async_fake_transport: AsyncFakeTransport,
-        domain_batch_session_state: BaseFactory[BatchSessionState],
+        domain_batch_session_state: BaseFactory[BatchSessionResumeState],
     ) -> None:
-        async def _open_batch_session(**_):
-            raise AssertionError("not used")
-
         service = _build_service(
             async_fake_transport,
-            open_batch_session=_open_batch_session,
+            open_batch_session=_unused_open_batch_session,
         )
         state = domain_batch_session_state.build(
             part_upload_requests=[
@@ -172,7 +194,7 @@ class TestAsyncBatchService:
     def test_submit_prepared_batch_uploads_parts_and_closes_session(
         self,
         async_fake_transport: AsyncFakeTransport,
-        domain_batch_session_state: BaseFactory[BatchSessionState],
+        domain_batch_session_state: BaseFactory[BatchSessionResumeState],
     ) -> None:
         state = domain_batch_session_state.build(
             reference_number="batch-ref",
@@ -186,11 +208,30 @@ class TestAsyncBatchService:
             ],
         )
 
-        async def _open_batch_session(**kwargs):
+        async def _open_batch_session(
+            *,
+            batch_file: BatchFileInfo,
+            aes_key: bytes,
+            iv: bytes,
+            encrypted_key: bytes,
+            public_key_id: str | None = None,
+            form_code: FormSchema = FormSchema.FA3,
+            offline_mode: bool = False,
+            prepared_batch: PreparedBatch | None = None,
+        ) -> AsyncBatchSessionClient:
+            del (
+                batch_file,
+                aes_key,
+                iv,
+                encrypted_key,
+                public_key_id,
+                form_code,
+                offline_mode,
+            )
             return AsyncBatchSessionClient(
                 async_fake_transport,
                 state,
-                prepared_batch=kwargs.get("prepared_batch"),
+                prepared_batch=prepared_batch,
             )
 
         service = _build_service(
@@ -238,15 +279,33 @@ class TestAsyncBatchService:
     def test_open_session_context_manager_opens_and_closes_session(
         self,
         async_fake_transport: AsyncFakeTransport,
-        domain_batch_session_state: BaseFactory[BatchSessionState],
+        domain_batch_session_state: BaseFactory[BatchSessionResumeState],
     ) -> None:
         state = domain_batch_session_state.build(reference_number="batch-ref")
 
-        async def _open_batch_session(**kwargs):
+        async def _open_batch_session(
+            *,
+            batch_file: BatchFileInfo,
+            aes_key: bytes,
+            iv: bytes,
+            encrypted_key: bytes,
+            public_key_id: str | None = None,
+            form_code: FormSchema = FormSchema.FA3,
+            offline_mode: bool = False,
+            prepared_batch: PreparedBatch | None = None,
+        ) -> AsyncBatchSessionClient:
+            assert prepared_batch is not None
+            assert batch_file == prepared_batch.batch_file
+            assert aes_key == prepared_batch.encryption.get_aes_key_bytes()
+            assert iv == prepared_batch.encryption.get_iv_bytes()
+            assert encrypted_key == prepared_batch.encryption.get_encrypted_key_bytes()
+            assert public_key_id == prepared_batch.encryption.public_key_id
+            assert form_code == prepared_batch.form_code
+            assert offline_mode == prepared_batch.offline_mode
             return AsyncBatchSessionClient(
                 async_fake_transport,
                 state,
-                prepared_batch=kwargs.get("prepared_batch"),
+                prepared_batch=prepared_batch,
             )
 
         service = _build_service(
@@ -295,12 +354,9 @@ class TestAsyncBatchService:
         async_fake_transport: AsyncFakeTransport,
         inv_session_status_resp: BaseFactory[spec.SessionStatusResponse],
     ) -> None:
-        async def _open_batch_session(**_):
-            raise AssertionError("not used")
-
         service = _build_service(
             async_fake_transport,
-            open_batch_session=_open_batch_session,
+            open_batch_session=_unused_open_batch_session,
         )
         async_fake_transport.enqueue(
             inv_session_status_resp.build(
@@ -329,12 +385,9 @@ class TestAsyncBatchService:
         async_fake_transport: AsyncFakeTransport,
         inv_session_status_resp: BaseFactory[spec.SessionStatusResponse],
     ) -> None:
-        async def _open_batch_session(**_):
-            raise AssertionError("not used")
-
         service = _build_service(
             async_fake_transport,
-            open_batch_session=_open_batch_session,
+            open_batch_session=_unused_open_batch_session,
         )
         async_fake_transport.enqueue(
             inv_session_status_resp.build(
@@ -356,12 +409,9 @@ class TestAsyncBatchService:
         async_fake_transport: AsyncFakeTransport,
         inv_session_status_resp: BaseFactory[spec.SessionStatusResponse],
     ) -> None:
-        async def _open_batch_session(**_):
-            raise AssertionError("not used")
-
         service = _build_service(
             async_fake_transport,
-            open_batch_session=_open_batch_session,
+            open_batch_session=_unused_open_batch_session,
         )
         async_fake_transport.enqueue(
             inv_session_status_resp.build(

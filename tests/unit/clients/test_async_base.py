@@ -1,8 +1,11 @@
 import asyncio
+from collections.abc import Iterable
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
+from polyfactory import BaseFactory
 
 from ksef2.clients.async_auth import AsyncAuthClient
 from ksef2.clients.async_base import AsyncClient
@@ -12,8 +15,38 @@ from ksef2.clients.async_testdata import AsyncTestDataClient
 from ksef2.config import Environment, TimeoutConfig, TransportConfig
 from ksef2.core.exceptions import KSeFClientClosedError
 from ksef2.core.exceptions import KSeFUnsupportedEnvironmentError
+from ksef2.domain.models.auth import AuthTokens
+from ksef2.domain.models.encryption import (
+    CertUsage,
+    CertUsageEnum,
+    PublicKeyCertificate,
+)
 
 HTTPX_ASYNC_CLIENT_CLASS = httpx.AsyncClient
+
+
+class CustomCertificateStore:
+    def __init__(self) -> None:
+        self.certificates: list[PublicKeyCertificate] = []
+
+    def load(self, certs: Iterable[PublicKeyCertificate]) -> None:
+        self.certificates = list(certs)
+
+    def get_valid(
+        self,
+        usage: CertUsage | CertUsageEnum | str,
+    ) -> PublicKeyCertificate:
+        raise AssertionError(f"Unexpected certificate lookup for {usage}.")
+
+    def needs_refresh(
+        self,
+        usage: CertUsage | CertUsageEnum | str,
+        *,
+        at: datetime | None = None,
+    ) -> bool:
+        _ = usage
+        _ = at
+        return True
 
 
 class TestAsyncClient:
@@ -113,3 +146,50 @@ class TestAsyncClient:
 
         with pytest.raises(KSeFClientClosedError, match="Client is closed"):
             _ = client.authentication
+
+    @patch("ksef2.clients.async_base.AsyncAuthClient")
+    def test_authentication_accessor_uses_custom_certificate_store(
+        self,
+        auth_client_cls: MagicMock,
+    ) -> None:
+        store = CustomCertificateStore()
+        client = AsyncClient(
+            environment=Environment.TEST,
+            http_client=AsyncMock(spec=HTTPX_ASYNC_CLIENT_CLASS),
+            certificate_store=store,
+        )
+
+        try:
+            _ = client.authentication
+        finally:
+            asyncio.run(client.aclose())
+
+        _, kwargs = auth_client_cls.call_args
+        assert kwargs["certificate_store"] is store
+
+    @patch("ksef2.clients.async_base.AsyncAuthClient")
+    def test_authenticated_deprecated_wrapper_delegates_to_auth_branch(
+        self,
+        auth_client_cls: MagicMock,
+        domain_auth_tokens: BaseFactory[AuthTokens],
+    ) -> None:
+        store = CustomCertificateStore()
+        auth_branch = MagicMock()
+        auth_client_cls.return_value = auth_branch
+        auth_tokens = domain_auth_tokens.build()
+        client = AsyncClient(
+            environment=Environment.TEST,
+            http_client=AsyncMock(spec=HTTPX_ASYNC_CLIENT_CLASS),
+            certificate_store=store,
+        )
+
+        try:
+            with pytest.deprecated_call(match="AsyncClient.authenticated"):
+                _ = client.authenticated(auth_tokens)
+        finally:
+            asyncio.run(client.aclose())
+
+        _, kwargs = auth_client_cls.call_args
+        assert kwargs["certificate_store"] is store
+        state = auth_branch.resume.call_args.args[0]
+        assert state.to_tokens() == auth_tokens

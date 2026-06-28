@@ -1,5 +1,6 @@
 """Async root client for authenticated and unauthenticated SDK entry points."""
 
+import warnings
 from functools import cached_property
 from types import TracebackType
 from typing import Self, final
@@ -21,7 +22,7 @@ from ksef2.core.middlewares.async_lifecycle import (
     AsyncClientLifecycleState,
 )
 from ksef2.core.middlewares.async_retry import AsyncRetryMiddleware
-from ksef2.domain.models.auth import AuthTokens
+from ksef2.domain.models.auth import AuthenticationResumeState, AuthTokens
 from ksef2.raw.async_facade import AsyncRawClient
 
 
@@ -44,6 +45,7 @@ class AsyncClient:
         *,
         transport_config: TransportConfig | None = None,
         http_client: httpx.AsyncClient | None = None,
+        certificate_store: stores.CertificateStoreProtocol | None = None,
     ) -> None:
         self._environment = environment
         self._transport_config = transport_config or TransportConfig()
@@ -67,7 +69,11 @@ class AsyncClient:
                 self._transport_config.retry,
             )
         )
-        self._certificate_store = stores.CertificateStore()
+        self._certificate_store = (
+            certificate_store
+            if certificate_store is not None
+            else stores.CertificateStore()
+        )
 
     @staticmethod
     def _build_http_client(
@@ -139,13 +145,18 @@ class AsyncClient:
         return AsyncRawClient(self._transport, self._environment)
 
     def authenticated(self, auth_tokens: AuthTokens) -> AsyncAuthenticatedClient:
-        """Bind caller-supplied auth tokens to an authenticated async SDK client."""
+        """Deprecated compatibility wrapper for ``authentication.resume()``."""
         self._ensure_open()
-        return AsyncAuthenticatedClient(
-            transport=self._transport,
-            auth_tokens=auth_tokens,
-            certificate_store=self._certificate_store,
-            environment=self._environment,
+        warnings.warn(
+            "AsyncClient.authenticated(auth_tokens) is deprecated and will be "
+            "removed in a future release; use "
+            "client.authentication.resume(AuthenticationResumeState.from_tokens(auth_tokens)) "
+            "instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.authentication.resume(
+            AuthenticationResumeState.from_tokens(auth_tokens)
         )
 
     async def aclose(self) -> None:

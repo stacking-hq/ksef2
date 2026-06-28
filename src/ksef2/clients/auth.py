@@ -23,8 +23,9 @@ from ksef2.core import exceptions
 from ksef2.core.crypto import encrypt_token
 from ksef2.core.polling import poll_until
 from ksef2.core.protocols import Middleware
-from ksef2.core.stores import CertificateStore
+from ksef2.core.stores import CertificateStoreProtocol
 from ksef2.domain.models.auth import (
+    AuthenticationResumeState,
     AuthOperationStatus,
     AuthTokens,
     ContextIdentifierType,
@@ -67,7 +68,7 @@ class AuthClient:
     def __init__(
         self,
         transport: Middleware,
-        certificate_store: CertificateStore,
+        certificate_store: CertificateStoreProtocol,
         environment: Environment = Environment.PRODUCTION,
     ) -> None:
         self._transport = transport
@@ -75,6 +76,10 @@ class AuthClient:
         self._environment = environment
         self._certificates = EncryptionClient(transport)
         self._auth_ep = AuthEndpoints(transport)
+
+    def resume(self, state: AuthenticationResumeState) -> AuthenticatedClient:
+        """Rehydrate an authenticated client from saved authentication state."""
+        return self._build_authenticated_client(auth_tokens=state.to_tokens())
 
     def with_token(
         self,
@@ -330,7 +335,7 @@ class AuthClient:
 
     def _ensure_certificates(self) -> None:
         """Populate the certificate store when token authentication needs it."""
-        if not self._certificate_store.all():
+        if self._certificate_store.needs_refresh("ksef_token_encryption"):
             self._certificate_store.load(self._certificates.get_certificates())
 
     def _poll_until_authenticated(

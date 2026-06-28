@@ -2,13 +2,11 @@
 
 Covers: sessions.open_online (context manager), send_invoice, download_invoice,
 get_status, list_invoices, list_failed_invoices, get_invoice_upo_by_ksef_number,
-get_invoice_upo_by_reference, get_state, sessions.resume.
+get_invoice_upo_by_reference, resume_state, sessions.resume.
 
 Run with:
     uv run pytest tests/integration/test_session_workflow.py -v -m integration
 """
-
-from __future__ import annotations
 
 import time
 
@@ -18,7 +16,10 @@ from ksef2 import Client, Environment, FormSchema
 from ksef2.clients.online import OnlineSessionClient
 from ksef2.core.tools import generate_nip, generate_pesel
 from ksef2.xades import generate_test_certificate
-from ksef2.domain.models.session import OnlineSessionState, SessionStatusResponse
+from ksef2.domain.models.session import (
+    OnlineSessionResumeState,
+    SessionStatusResponse,
+)
 from ksef2.domain.models.testdata import (
     Identifier,
     Permission,
@@ -81,7 +82,6 @@ def workflow_context(ksef_credentials: KSeFCredentials):
             cert=cert,
             private_key=private_key,
         )
-        access_token = auth.access_token
 
         with auth.online_session(form_code=FormSchema.FA3) as session:
             result = session.send_invoice(invoice_xml=load_test_invoice_xml())
@@ -94,7 +94,6 @@ def workflow_context(ksef_credentials: KSeFCredentials):
             yield {
                 "client": client,
                 "auth": auth,
-                "access_token": access_token,
                 "session": session,
                 "invoice_ref": result.reference_number,
                 "invoices_list": invoices_list,
@@ -102,22 +101,21 @@ def workflow_context(ksef_credentials: KSeFCredentials):
 
 
 # ---------------------------------------------------------------------------
-# get_state
+# resume_state
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.integration
-def test_get_state_returns_session_state(workflow_context):
-    """get_state returns a SessionState with all required fields."""
+def test_resume_state_returns_session_state(workflow_context):
+    """resume_state returns a session state with all required fields."""
     session: OnlineSessionClient = workflow_context["session"]
 
-    state = session.get_state()
+    state = session.resume_state()
 
-    assert isinstance(state, OnlineSessionState)
+    assert isinstance(state, OnlineSessionResumeState)
     assert state.reference_number
-    assert state.access_token
-    assert state.aes_key
-    assert state.iv
+    assert state.aes_key.get_secret_value()
+    assert state.iv.get_secret_value()
     assert state.valid_until is not None
     assert state.form_code == FormSchema.FA3
 
@@ -189,18 +187,18 @@ def test_get_invoice_upo_by_reference(workflow_context):
 
 
 @pytest.mark.integration
-def test_resume_session_from_state(workflow_context):
+def test_resume_session_from_resume_state(workflow_context):
     """Resume a session from serialized state and use it."""
     from ksef2.clients.authenticated import AuthenticatedClient
 
     auth: AuthenticatedClient = workflow_context["auth"]
     session: OnlineSessionClient = workflow_context["session"]
 
-    state = session.get_state()
+    state = session.resume_state()
 
     # Round-trip through JSON serialization
-    state_json = state.model_dump_json()
-    restored_state = OnlineSessionState.model_validate_json(state_json)
+    state_json = state.to_json()
+    restored_state = OnlineSessionResumeState.from_json(state_json)
 
     resumed = auth.resume_online_session(state=restored_state)
 
@@ -261,7 +259,7 @@ def test_get_session_upo_by_reference(ksef_credentials: KSeFCredentials):
 
         with auth.online_session(form_code=FormSchema.FA3) as session:
             _ = session.send_invoice(invoice_xml=load_test_invoice_xml())
-            state = session.get_state()
+            state = session.resume_state()
 
         resumed = auth.resume_online_session(state=state)
 

@@ -1,11 +1,20 @@
 """Domain models for online, batch, and authentication sessions."""
 
 import base64
+import json
+import warnings
+from collections.abc import Mapping
 from datetime import datetime
 from enum import Enum, StrEnum
-from typing import Self, Literal
+from typing import TYPE_CHECKING, Literal, Self, cast
 
-from pydantic import AwareDatetime, AnyUrl, field_validator
+from pydantic import (
+    AwareDatetime,
+    AnyUrl,
+    SecretStr,
+    field_validator,
+    model_validator,
+)
 
 from ksef2.domain.models.base import KSeFBaseModel
 
@@ -23,6 +32,15 @@ class FormSchema(Enum):
         self.system_code = system_code
         self.schema_version = schema_version
         self.schema_value = schema_value
+
+
+class SessionEncryptionMaterial(KSeFBaseModel):
+    """Raw and encrypted symmetric session key material."""
+
+    aes_key: bytes
+    iv: bytes
+    encrypted_key: bytes
+    public_key_id: str | None = None
 
 
 type SessionType = Literal["online", "batch"]
@@ -81,7 +99,7 @@ def normalize_session_type(value: SessionType | SessionTypeEnum | str) -> Sessio
 
     lowered_value = value.strip().lower()
     if lowered_value in _SESSION_TYPE_TO_SPEC:
-        return lowered_value  # pyright: ignore[reportReturnType]
+        return lowered_value
 
     if value in _SESSION_TYPE_FROM_SPEC:
         return _SESSION_TYPE_FROM_SPEC[value]
@@ -105,7 +123,7 @@ def normalize_session_status(
 
     lowered_value = value.strip().lower()
     if lowered_value in _SESSION_STATUS_TO_SPEC:
-        return lowered_value  # pyright: ignore[reportReturnType]
+        return lowered_value
 
     if value in _SESSION_STATUS_FROM_SPEC:
         return _SESSION_STATUS_FROM_SPEC[value]
@@ -235,8 +253,17 @@ class ListSessionsResponse(KSeFBaseModel):
     sessions: list[SessionSummary]
 
 
-class BaseSessionState(KSeFBaseModel):
-    """Base class for session state with common fields.
+def _warn_deprecated(old_name: str, new_name: str) -> None:
+    warnings.warn(
+        f"{old_name} is deprecated and will be removed in a future release; "
+        f"use {new_name} instead.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+
+
+class BaseSessionResumeState(KSeFBaseModel):
+    """Base class for session resume state with common fields.
 
     This class contains fields shared between online and batch sessions.
     It provides serialization/deserialization support and helper methods
@@ -246,17 +273,34 @@ class BaseSessionState(KSeFBaseModel):
     reference_number: str
     """Reference number of the session."""
 
-    aes_key: str
+    aes_key: SecretStr
     """AES key for encrypting data, Base64 encoded."""
 
-    iv: str
+    iv: SecretStr
     """Initialization vector for AES encryption, Base64 encoded."""
-
-    access_token: str
-    """Bearer token for API authentication."""
 
     form_code: FormSchema
     """Invoice schema used for this session."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _drop_legacy_access_token(cls, data: object) -> object:
+        """Accept pre-auth-state resume JSON that still carried bearer auth."""
+        if not isinstance(data, dict):
+            return data
+        state_data = cast(dict[str, object], data)
+        if "access_token" not in state_data:
+            return state_data
+
+        warnings.warn(
+            "Session resume state access_token is deprecated and ignored; "
+            "persist AuthenticationResumeState separately.",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+        cleaned = dict(state_data)
+        _ = cleaned.pop("access_token")
+        return cleaned
 
     @field_validator("form_code", mode="before")
     @classmethod
@@ -267,7 +311,7 @@ class BaseSessionState(KSeFBaseModel):
         Also accept enum names as a convenience ("FA3", etc.).
         """
         if isinstance(value, list):
-            return tuple(value)
+            return tuple(cast(list[object], value))
         if isinstance(value, str):
             try:
                 return FormSchema[value]
@@ -277,18 +321,83 @@ class BaseSessionState(KSeFBaseModel):
 
     def get_aes_key_bytes(self) -> bytes:
         """Get the AES key as raw bytes."""
-        return base64.b64decode(self.aes_key)
+        return base64.b64decode(self.aes_key.get_secret_value())
 
     def get_iv_bytes(self) -> bytes:
         """Get the initialization vector as raw bytes."""
-        return base64.b64decode(self.iv)
+        return base64.b64decode(self.iv.get_secret_value())
+
+    def to_dict(
+        self,
+        *,
+        mode: Literal["json", "python"] | str = "json",
+    ) -> dict[str, object]:
+        """Export resume state with credentials included.
+
+        The returned data contains the AES key, IV, and for batch sessions the
+        presigned upload URLs. Store and log it only as protected credential
+        material.
+        """
+        data: dict[str, object] = self.model_dump(mode=mode)
+        data["aes_key"] = self.aes_key.get_secret_value()
+        data["iv"] = self.iv.get_secret_value()
+        if mode == "json":
+            data["form_code"] = self.form_code.name
+        return data
+
+    def to_json(self, *, indent: int | None = None) -> str:
+        """Export resume state as JSON with credentials included."""
+        data = self.to_dict(mode="json")
+        if indent is None:
+            return json.dumps(data, separators=(",", ":"))
+        return json.dumps(data, indent=indent)
+
+    @classmethod
+    def from_dict(cls, state: Mapping[str, object]) -> Self:
+        """Restore resume state from a dictionary exported by ``to_dict()``."""
+        return cls.model_validate(state)
+
+    @classmethod
+    def from_json(cls, state: str | bytes | bytearray) -> Self:
+        """Restore resume state from JSON exported by ``to_json()``."""
+        return cls.model_validate_json(state)
+
+    def dump_state(
+        self,
+        *,
+        mode: Literal["json", "python"] | str = "python",
+    ) -> dict[str, object]:
+        """Deprecated compatibility wrapper for ``to_dict()``."""
+        _warn_deprecated("dump_state()", "to_dict()")
+        return self.to_dict(mode=mode)
+
+    def model_dump_sensitive(
+        self,
+        *,
+        mode: Literal["json", "python"] | str = "python",
+    ) -> dict[str, object]:
+        """Deprecated compatibility wrapper for ``to_dict()``."""
+        _warn_deprecated("model_dump_sensitive()", "to_dict()")
+        return self.to_dict(mode=mode)
+
+    def model_dump_sensitive_json(self, *, indent: int | None = None) -> str:
+        """Deprecated compatibility wrapper for ``to_json()``."""
+        _warn_deprecated("model_dump_sensitive_json()", "to_json()")
+        return self.to_json(indent=indent)
+
+    @classmethod
+    def from_state(cls, state: Mapping[str, object]) -> Self:
+        """Deprecated compatibility wrapper for ``from_dict()``."""
+        _warn_deprecated("from_state()", "from_dict()")
+        return cls.from_dict(state)
 
 
-class OnlineSessionState(BaseSessionState):
-    """Serializable state of an online session.
+class OnlineSessionResumeState(BaseSessionResumeState):
+    """Serializable resume state of an online session.
 
     This class holds all information needed to resume an online session.
-    Can be serialized to JSON for persistence.
+    Use ``to_json()`` when intentionally exporting
+    resumable JSON containing credentials.
     """
 
     valid_until: AwareDatetime
@@ -300,9 +409,10 @@ class OnlineSessionState(BaseSessionState):
         reference_number: str,
         aes_key: bytes,
         iv: bytes,
-        access_token: str,
         valid_until: datetime,
         form_code: FormSchema,
+        *,
+        access_token: str | None = None,
     ) -> Self:
         """Create state from raw bytes (aes_key, iv).
 
@@ -310,18 +420,52 @@ class OnlineSessionState(BaseSessionState):
             reference_number: Session reference number.
             aes_key: Raw AES key bytes.
             iv: Raw initialization vector bytes.
-            access_token: Bearer token for authentication.
             valid_until: Session expiration time.
             form_code: Invoice schema for this session.
+            access_token: Deprecated and ignored. Persist authentication state
+                separately with ``AuthenticationResumeState``.
 
         Returns:
-            SessionState with Base64-encoded key and IV.
+            OnlineSessionResumeState with Base64-encoded key and IV.
         """
+        if access_token is not None:
+            warnings.warn(
+                "OnlineSessionResumeState.from_encoded(access_token=...) is "
+                "deprecated and ignored; persist AuthenticationResumeState separately.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         return cls(
             reference_number=reference_number,
-            aes_key=base64.b64encode(aes_key).decode(),
-            iv=base64.b64encode(iv).decode(),
-            access_token=access_token,
+            aes_key=SecretStr(base64.b64encode(aes_key).decode()),
+            iv=SecretStr(base64.b64encode(iv).decode()),
             valid_until=valid_until,
             form_code=form_code,
         )
+
+
+if TYPE_CHECKING:
+    BaseSessionState = BaseSessionResumeState
+    OnlineSessionState = OnlineSessionResumeState
+
+
+_DEPRECATED_SESSION_EXPORTS = {
+    "BaseSessionState": (
+        BaseSessionResumeState,
+        "BaseSessionState is deprecated and will be removed in a future release; "
+        "use BaseSessionResumeState instead.",
+    ),
+    "OnlineSessionState": (
+        OnlineSessionResumeState,
+        "OnlineSessionState is deprecated and will be removed in a future release; "
+        "use OnlineSessionResumeState instead.",
+    ),
+}
+
+
+def __getattr__(name: str) -> object:
+    if name in _DEPRECATED_SESSION_EXPORTS:
+        value, message = _DEPRECATED_SESSION_EXPORTS[name]
+        warnings.warn(message, DeprecationWarning, stacklevel=2)
+        return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

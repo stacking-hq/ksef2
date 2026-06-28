@@ -75,6 +75,20 @@ def _token_store(certificate: PublicKeyCertificate) -> CertificateStore:
 
 
 class TestAuthClient:
+    def test_resume_rehydrates_authenticated_client(
+        self,
+        fake_transport: FakeTransport,
+        domain_auth_tokens: BaseFactory[domain_auth.AuthTokens],
+    ) -> None:
+        client = _build_auth_client(fake_transport)
+        auth_tokens = domain_auth_tokens.build()
+        state = domain_auth.AuthenticationResumeState.from_tokens(auth_tokens)
+
+        result = client.resume(state)
+
+        assert isinstance(result, AuthenticatedClient)
+        assert result.auth_tokens == auth_tokens
+
     @patch("ksef2.clients.auth.encrypt_token", return_value=VALID_BASE64)
     def test_with_token(
         self,

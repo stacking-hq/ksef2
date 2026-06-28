@@ -1,18 +1,27 @@
 """Domain models for batch session operations."""
 
-from __future__ import annotations
-
 import base64
-from typing import Self
+import warnings
+from typing import TYPE_CHECKING, Literal, Self, override
 
-from pydantic import field_validator
+from pydantic import Field, SecretStr, field_validator
 
 from ksef2.domain.models.base import KSeFBaseModel
 from ksef2.domain.models.compression import (
     CompressionType,
     normalize_compression_type,
 )
-from ksef2.domain.models.session import BaseSessionState, FormSchema
+from ksef2.domain.models.session import BaseSessionResumeState, FormSchema
+
+
+MAX_BATCH_FILE_SIZE_BYTES = 5_000_000_000
+MAX_BATCH_FILE_PARTS = 50
+MAX_BATCH_PART_PRE_ENCRYPTION_SIZE_BYTES = 100_000_000
+MAX_AES_CBC_PADDING_BYTES = 16
+# The API's 100MB part limit is pre-encryption; this model stores encrypted bytes.
+MAX_BATCH_ENCRYPTED_PART_SIZE_BYTES = (
+    MAX_BATCH_PART_PRE_ENCRYPTION_SIZE_BYTES + MAX_AES_CBC_PADDING_BYTES
+)
 
 
 class BatchInvoice(KSeFBaseModel):
@@ -32,10 +41,10 @@ class BatchInvoiceHash(KSeFBaseModel):
 class BatchFilePart(KSeFBaseModel):
     """Information about a part of the batch file."""
 
-    ordinal_number: int
+    ordinal_number: int = Field(ge=1)
     """Sequential number of the file part (1-indexed)."""
 
-    file_size: int
+    file_size: int = Field(ge=0, le=MAX_BATCH_ENCRYPTED_PART_SIZE_BYTES)
     """Size of the encrypted file part in bytes."""
 
     file_hash: str
@@ -45,7 +54,7 @@ class BatchFilePart(KSeFBaseModel):
 class BatchFileInfo(KSeFBaseModel):
     """Information about the batch file being uploaded."""
 
-    file_size: int
+    file_size: int = Field(ge=0, le=MAX_BATCH_FILE_SIZE_BYTES)
     """Total size of the batch file in bytes. Max 5GB."""
 
     file_hash: str
@@ -54,7 +63,7 @@ class BatchFileInfo(KSeFBaseModel):
     compression_type: CompressionType | None = None
     """Compression used for the batch file. Defaults to KSeF's ZIP behavior."""
 
-    parts: list[BatchFilePart]
+    parts: list[BatchFilePart] = Field(max_length=MAX_BATCH_FILE_PARTS)
     """List of file parts. Max 50 parts, each max 100MB before encryption."""
 
     @field_validator("compression_type", mode="before")
@@ -162,19 +171,38 @@ class OpenBatchSessionResponse(KSeFBaseModel):
     """Upload instructions for each file part."""
 
 
-class BatchSessionState(BaseSessionState):
-    """Serializable state of a batch session.
+class BatchSessionResumeState(BaseSessionResumeState):
+    """Serializable resume state of a batch session.
 
     This class holds all information needed to resume a batch session
-    or to upload file parts. Can be serialized to JSON for persistence.
+    or to upload file parts. Use ``to_json()`` when
+    intentionally exporting resumable JSON containing encryption material and
+    presigned upload URLs.
 
-    Inherits common session fields from BaseSessionState:
-    - reference_number, aes_key, iv, access_token, form_code
+    Inherits common session fields from BaseSessionResumeState:
+    - reference_number, aes_key, iv, form_code
     - get_aes_key_bytes(), get_iv_bytes() helper methods
     """
 
-    part_upload_requests: list[PartUploadRequest]
+    part_upload_requests: list[PartUploadRequest] = Field(exclude=True, repr=False)
     """Upload instructions for each file part."""
+
+    @override
+    def to_dict(
+        self,
+        *,
+        mode: Literal["json", "python"] | str = "json",
+    ) -> dict[str, object]:
+        """Export batch resume state with secrets and upload URLs included.
+
+        The returned data contains the AES key, IV, and presigned upload URLs.
+        Store and log it only as protected credential material.
+        """
+        data = super().to_dict(mode=mode)
+        data["part_upload_requests"] = [
+            request.model_dump(mode=mode) for request in self.part_upload_requests
+        ]
+        return data
 
     @classmethod
     def from_encoded(
@@ -182,28 +210,57 @@ class BatchSessionState(BaseSessionState):
         reference_number: str,
         aes_key: bytes,
         iv: bytes,
-        access_token: str,
         form_code: FormSchema,
         part_upload_requests: list[PartUploadRequest],
-    ) -> BatchSessionState:
+        *,
+        access_token: str | None = None,
+    ) -> Self:
         """Create state from raw bytes (aes_key, iv).
 
         Args:
             reference_number: Batch session reference number.
             aes_key: Raw AES key bytes.
             iv: Raw initialization vector bytes.
-            access_token: Bearer token for authentication.
             form_code: Invoice schema for this session.
             part_upload_requests: Upload instructions for file parts.
+            access_token: Deprecated and ignored. Persist authentication state
+                separately with ``AuthenticationResumeState``.
 
         Returns:
-            BatchSessionState with Base64-encoded key and IV.
+            BatchSessionResumeState with Base64-encoded key and IV.
         """
+        if access_token is not None:
+            warnings.warn(
+                "BatchSessionResumeState.from_encoded(access_token=...) is "
+                "deprecated and ignored; persist AuthenticationResumeState separately.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         return cls(
             reference_number=reference_number,
-            aes_key=base64.b64encode(aes_key).decode(),
-            iv=base64.b64encode(iv).decode(),
-            access_token=access_token,
+            aes_key=SecretStr(base64.b64encode(aes_key).decode()),
+            iv=SecretStr(base64.b64encode(iv).decode()),
             form_code=form_code,
             part_upload_requests=part_upload_requests,
         )
+
+
+if TYPE_CHECKING:
+    BatchSessionState = BatchSessionResumeState
+
+
+_DEPRECATED_BATCH_EXPORTS = {
+    "BatchSessionState": (
+        BatchSessionResumeState,
+        "BatchSessionState is deprecated and will be removed in a future release; "
+        "use BatchSessionResumeState instead.",
+    ),
+}
+
+
+def __getattr__(name: str) -> object:
+    if name in _DEPRECATED_BATCH_EXPORTS:
+        value, message = _DEPRECATED_BATCH_EXPORTS[name]
+        warnings.warn(message, DeprecationWarning, stacklevel=2)
+        return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

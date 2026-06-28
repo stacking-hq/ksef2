@@ -9,7 +9,7 @@ from ksef2.domain.models.batch import (
     BatchFileInfo,
     BatchFilePart,
     BatchPreparedPart,
-    BatchSessionState,
+    BatchSessionResumeState,
     PreparedBatch,
 )
 from ksef2.core.crypto import sha256_b64
@@ -21,7 +21,7 @@ class TestBatchSessionClient:
     def test_close_is_idempotent_and_keeps_reference_accessible(
         self,
         fake_transport: FakeTransport,
-        domain_batch_session_state: BaseFactory[BatchSessionState],
+        domain_batch_session_state: BaseFactory[BatchSessionResumeState],
     ) -> None:
         state = domain_batch_session_state.build()
         client = BatchSessionClient(fake_transport, state)
@@ -37,7 +37,9 @@ class TestBatchSessionClient:
         )
 
         assert client.reference_number == state.reference_number
-        assert client.get_state() == state
+        assert client.resume_state() == state
+        with pytest.deprecated_call(match="get_state"):
+            assert client.get_state() == state
 
         with pytest.raises(KSeFClientClosedError, match="Session client is closed"):
             _ = client.part_upload_requests
@@ -45,7 +47,7 @@ class TestBatchSessionClient:
     def test_upload_parts_uses_attached_prepared_batch(
         self,
         fake_transport: FakeTransport,
-        domain_batch_session_state: BaseFactory[BatchSessionState],
+        domain_batch_session_state: BaseFactory[BatchSessionResumeState],
     ) -> None:
         state = domain_batch_session_state.build()
         prepared_batch = PreparedBatch(
@@ -94,7 +96,7 @@ class TestBatchSessionClient:
     def test_context_manager_closes_batch_session_on_exit(
         self,
         fake_transport: FakeTransport,
-        domain_batch_session_state: BaseFactory[BatchSessionState],
+        domain_batch_session_state: BaseFactory[BatchSessionResumeState],
     ) -> None:
         state = domain_batch_session_state.build()
         fake_transport.enqueue(json_body={})
@@ -110,7 +112,7 @@ class TestBatchSessionClient:
     def test_get_status_reads_session_status(
         self,
         fake_transport: FakeTransport,
-        domain_batch_session_state: BaseFactory[BatchSessionState],
+        domain_batch_session_state: BaseFactory[BatchSessionResumeState],
         inv_session_status_resp: BaseFactory[spec.SessionStatusResponse],
     ) -> None:
         state = domain_batch_session_state.build()
@@ -132,7 +134,7 @@ class TestBatchSessionClient:
     def test_list_invoices_reads_batch_session_invoice_page(
         self,
         fake_transport: FakeTransport,
-        domain_batch_session_state: BaseFactory[BatchSessionState],
+        domain_batch_session_state: BaseFactory[BatchSessionResumeState],
         inv_session_invoices_resp: BaseFactory[spec.SessionInvoicesResponse],
         inv_session_invoice_status_resp: BaseFactory[spec.SessionInvoiceStatusResponse],
     ) -> None:
@@ -163,7 +165,7 @@ class TestBatchSessionClient:
     def test_get_upo_downloads_collective_session_upo(
         self,
         fake_transport: FakeTransport,
-        domain_batch_session_state: BaseFactory[BatchSessionState],
+        domain_batch_session_state: BaseFactory[BatchSessionResumeState],
     ) -> None:
         state = domain_batch_session_state.build()
         client = BatchSessionClient(fake_transport, state)

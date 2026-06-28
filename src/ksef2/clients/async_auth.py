@@ -21,11 +21,12 @@ from ksef2.core import exceptions
 from ksef2.core.async_protocols import AsyncMiddleware
 from ksef2.core.crypto import encrypt_token
 from ksef2.core.polling import async_poll_until
-from ksef2.core.stores import CertificateStore
+from ksef2.core.stores import CertificateStoreProtocol
 from ksef2.xades import XAdESPrivateKey, generate_test_certificate
 from ksef2.domain.models.auth import (
     AuthOperationStatus,
     AuthTokens,
+    AuthenticationResumeState,
     ContextIdentifierType,
     InitTokenAuthenticationRequest,
     RefreshedToken,
@@ -65,7 +66,7 @@ class AsyncAuthClient:
     def __init__(
         self,
         transport: AsyncMiddleware,
-        certificate_store: CertificateStore,
+        certificate_store: CertificateStoreProtocol,
         environment: Environment = Environment.PRODUCTION,
     ) -> None:
         self._transport = transport
@@ -73,6 +74,10 @@ class AsyncAuthClient:
         self._environment = environment
         self._certificates = AsyncEncryptionClient(transport)
         self._auth_ep = AsyncAuthEndpoints(transport)
+
+    def resume(self, state: AuthenticationResumeState) -> AsyncAuthenticatedClient:
+        """Rehydrate an authenticated client from saved authentication state."""
+        return self._build_authenticated_client(auth_tokens=state.to_tokens())
 
     async def with_token(
         self,
@@ -331,7 +336,7 @@ class AsyncAuthClient:
 
     async def _ensure_certificates(self) -> None:
         """Populate the certificate store when token authentication needs it."""
-        if not self._certificate_store.all():
+        if self._certificate_store.needs_refresh("ksef_token_encryption"):
             self._certificate_store.load(await self._certificates.get_certificates())
 
     async def _poll_until_authenticated(

@@ -3,7 +3,7 @@
 import pytest
 
 from ksef2 import Client, Environment
-from ksef2.domain.models import BatchSessionState
+from ksef2.domain.models import BatchSessionResumeState
 from ksef2.domain.models.batch import (
     BatchFileInfo,
     BatchFilePart,
@@ -62,7 +62,7 @@ class TestBatchSession:
                 assert upload_req.headers
 
                 batch_session.upload_parts()
-                state = batch_session.get_state()
+                state = batch_session.resume_state()
 
             status = auth.batch.wait_for_completion(
                 session=state,
@@ -118,7 +118,7 @@ class TestBatchSession:
         assert batch_file.parts[4].ordinal_number == 5
 
     def test_batch_session_state_serialization(self) -> None:
-        """Test that BatchSessionState can be serialized and restored."""
+        """Test that BatchSessionResumeState can be serialized and restored."""
         upload_requests = [
             PartUploadRequest(
                 ordinal_number=1,
@@ -128,23 +128,22 @@ class TestBatchSession:
             )
         ]
 
-        state = BatchSessionState.from_encoded(
+        state = BatchSessionResumeState.from_encoded(
             reference_number="20250217-SB-TEST123456-ABCDEF1234-E9",
             aes_key=b"0123456789abcdef0123456789abcdef",
             iv=b"0123456789abcdef",
-            access_token="test-access-token",
             form_code=FormSchema.FA3,
             part_upload_requests=upload_requests,
         )
 
         # Serialize to JSON
-        state_json = state.model_dump_json()
+        state_json = state.to_json()
 
         # Restore from JSON
-        restored = BatchSessionState.model_validate_json(state_json)
+        restored = BatchSessionResumeState.from_json(state_json)
 
         assert restored.reference_number == state.reference_number
-        assert restored.access_token == state.access_token
+        assert "access_token" not in restored.to_dict()
         assert restored.form_code == FormSchema.FA3
         assert len(restored.part_upload_requests) == 1
         assert restored.part_upload_requests[0].url == "https://example.com/upload/1"

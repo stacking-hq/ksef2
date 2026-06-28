@@ -10,14 +10,14 @@ from ksef2.core.exceptions import (
     KSeFSessionError,
 )
 from ksef2.core.routes import InvoiceRoutes, SessionRoutes
-from ksef2.domain.models.session import OnlineSessionState
+from ksef2.domain.models.session import OnlineSessionResumeState
 from ksef2.infra.schema.api import spec
 from tests.unit.fakes.transport import FakeTransport
 
 
 def _build_client(
     fake_transport: FakeTransport,
-    domain_online_session_state: BaseFactory[OnlineSessionState],
+    domain_online_session_state: BaseFactory[OnlineSessionResumeState],
 ) -> OnlineSessionClient:
     return OnlineSessionClient(fake_transport, domain_online_session_state.build())
 
@@ -26,7 +26,7 @@ class TestOnlineSessionClient:
     def test_close_is_idempotent_and_blocks_further_calls(
         self,
         fake_transport: FakeTransport,
-        domain_online_session_state: BaseFactory[OnlineSessionState],
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
     ) -> None:
         state = domain_online_session_state.build()
         client = OnlineSessionClient(fake_transport, state)
@@ -47,7 +47,7 @@ class TestOnlineSessionClient:
     def test_wait_for_invoice_ready_returns_processed_status(
         self,
         fake_transport: FakeTransport,
-        domain_online_session_state: BaseFactory[OnlineSessionState],
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
         inv_session_invoice_status_resp: BaseFactory[spec.SessionInvoiceStatusResponse],
     ) -> None:
         client = _build_client(fake_transport, domain_online_session_state)
@@ -91,7 +91,7 @@ class TestOnlineSessionClient:
     def test_wait_for_invoice_ready_raises_on_terminal_failure(
         self,
         fake_transport: FakeTransport,
-        domain_online_session_state: BaseFactory[OnlineSessionState],
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
         inv_session_invoice_status_resp: BaseFactory[spec.SessionInvoiceStatusResponse],
     ) -> None:
         client = _build_client(fake_transport, domain_online_session_state)
@@ -116,7 +116,7 @@ class TestOnlineSessionClient:
     def test_wait_for_invoice_ready_raises_on_timeout(
         self,
         fake_transport: FakeTransport,
-        domain_online_session_state: BaseFactory[OnlineSessionState],
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
         inv_session_invoice_status_resp: BaseFactory[spec.SessionInvoiceStatusResponse],
     ) -> None:
         client = _build_client(fake_transport, domain_online_session_state)
@@ -141,7 +141,7 @@ class TestOnlineSessionClient:
     def test_send_invoice_and_wait(
         self,
         fake_transport: FakeTransport,
-        domain_online_session_state: BaseFactory[OnlineSessionState],
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
         inv_send_resp: BaseFactory[spec.SendInvoiceResponse],
         inv_session_invoice_status_resp: BaseFactory[spec.SessionInvoiceStatusResponse],
     ) -> None:

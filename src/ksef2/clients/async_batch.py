@@ -1,11 +1,12 @@
 """Async batch session client for managing batch upload sessions."""
 
+import warnings
 from types import TracebackType
 from typing import final
 
 from ksef2.core import exceptions
 from ksef2.core.async_protocols import AsyncMiddleware
-from ksef2.domain.models import BatchSessionState
+from ksef2.domain.models import BatchSessionResumeState
 from ksef2.domain.models.batch import PartUploadRequest, PreparedBatch
 from ksef2.domain.models.session import (
     SessionInvoicesResponse,
@@ -38,15 +39,17 @@ class AsyncBatchSessionClient:
     def __init__(
         self,
         transport: AsyncMiddleware,
-        state: BatchSessionState,
+        state: BatchSessionResumeState,
         *,
         upload_transport: AsyncMiddleware | None = None,
         prepared_batch: PreparedBatch | None = None,
+        access_token: str | None = None,
     ) -> None:
         self._transport = transport
         self._upload_transport = upload_transport or transport
         self._state = state
         self._prepared_batch = prepared_batch
+        self._access_token = access_token
         self._invoice_eps = AsyncInvoicesEndpoints(transport)
         self._session_eps = AsyncSessionEndpoints(transport)
         self._closed = False
@@ -62,9 +65,20 @@ class AsyncBatchSessionClient:
 
     @property
     def access_token(self) -> str:
-        """Get the access token for this session."""
+        """Deprecated compatibility accessor for the current bearer token."""
         self._ensure_open()
-        return self._state.access_token
+        warnings.warn(
+            "BatchSessionClient.access_token is deprecated and will be removed "
+            "in a future release; persist AuthenticationResumeState separately.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if self._access_token is None:
+            raise exceptions.KSeFValidationError(
+                "Batch session state does not contain bearer authentication. "
+                "Use the parent authenticated client's access_token or resume_state()."
+            )
+        return self._access_token
 
     @property
     def aes_key(self) -> bytes:
@@ -84,16 +98,19 @@ class AsyncBatchSessionClient:
         self._ensure_open()
         return self._state.part_upload_requests
 
-    def get_state(self) -> BatchSessionState:
-        """Get the serializable state of this batch session.
-
-        The returned state can be serialized to JSON and used later
-        to resume the session or access upload URLs.
-
-        Returns:
-            BatchSessionState containing all session information.
-        """
+    def resume_state(self) -> BatchSessionResumeState:
+        """Return the sensitive session state needed to resume later."""
         return self._state
+
+    def get_state(self) -> BatchSessionResumeState:
+        """Deprecated compatibility wrapper for ``resume_state()``."""
+        warnings.warn(
+            "get_state() is deprecated and will be removed in a future release; "
+            "use resume_state() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.resume_state()
 
     async def get_status(self) -> SessionStatusResponse:
         """Fetch the current processing state of the batch session."""
