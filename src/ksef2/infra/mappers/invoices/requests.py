@@ -132,6 +132,9 @@ def _map_amount(
     if request.amount_min is None and request.amount_max is None:
         return None
 
+    if request.amount_type is None:
+        raise ValueError("amount_type must be specified when amount range is used")
+
     return spec.InvoiceQueryAmount(
         type=_map_amount_type(request.amount_type),
         **{"from": request.amount_min},

@@ -65,12 +65,9 @@ def download_for_nip(client: Client, nip: str, config: ExampleConfig) -> None:
 
     print(f"[{nip}] Scheduling export of purchase invoices...")
     export = auth.invoices.schedule_export(
-        filters=InvoicesFilter(
-            role="buyer",
-            date_type="issue_date",
+        filters=InvoicesFilter.for_buyer(
             date_from=config.date_from,
             date_to=config.date_to,
-            amount_type="brutto",
         )
     )
 

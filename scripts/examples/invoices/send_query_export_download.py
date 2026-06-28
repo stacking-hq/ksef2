@@ -56,12 +56,9 @@ def run(config: ExampleConfig) -> None:
         print(f"Invoice processed as KSeF number: {status.ksef_number}")
 
     export = auth.invoices.schedule_export(
-        filters=InvoicesFilter(
-            role="seller",
-            date_type="issue_date",
+        filters=InvoicesFilter.for_seller(
             date_from=datetime.now(tz=timezone.utc) - timedelta(days=1),
             date_to=datetime.now(tz=timezone.utc),
-            amount_type="brutto",
         )
     )
     print(f"Export scheduled: {export.reference_number}")

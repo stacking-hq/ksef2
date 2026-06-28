@@ -145,12 +145,9 @@ def main(argv: list[str] | None = None) -> None:
         print(f"Authentication failed: {exc}", file=sys.stderr)
         sys.exit(1)
 
-    query_filters = InvoicesFilter(
-        role="buyer",
-        date_type="issue_date",
+    query_filters = InvoicesFilter.for_buyer(
         date_from=datetime.now(tz=timezone.utc) - timedelta(days=args.days),
         date_to=datetime.now(tz=timezone.utc),
-        amount_type="brutto",
     )
 
     try:
