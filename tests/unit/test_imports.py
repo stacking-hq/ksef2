@@ -31,10 +31,12 @@ print(ksef2.__version__)
 
 
 def test_public_clients_import() -> None:
-    from ksef2 import AsyncClient, Client
+    from ksef2 import AsyncClient, CertificateStore, CertificateStoreProtocol, Client
 
     assert Client.__name__ == "Client"
     assert AsyncClient.__name__ == "AsyncClient"
+    assert CertificateStore.__name__ == "CertificateStore"
+    assert CertificateStoreProtocol.__name__ == "CertificateStoreProtocol"
 
 
 def test_root_error_surface_import() -> None:
@@ -97,6 +99,28 @@ def test_common_domain_models_import() -> None:
     assert InvoiceMetadataParams.__name__ == "InvoiceMetadataParams"
 
 
+def test_public_models_import() -> None:
+    from ksef2.models import (
+        ContextLimits,
+        InvoiceMetadataParams,
+        InvoicesFilter,
+        SessionLimits,
+    )
+
+    assert InvoicesFilter.__name__ == "InvoicesFilter"
+    assert InvoiceMetadataParams.__name__ == "InvoiceMetadataParams"
+    assert ContextLimits.__name__ == "ContextLimits"
+    assert SessionLimits.__name__ == "SessionLimits"
+
+
+def test_public_fa3_import() -> None:
+    from ksef2.fa3 import FA3InvoiceBuilder, KsefInvoice, KsefInvoiceDraft
+
+    assert FA3InvoiceBuilder.__name__ == "FA3InvoiceBuilder"
+    assert KsefInvoice.__name__ == "KsefInvoice"
+    assert KsefInvoiceDraft.__name__ == "KsefInvoiceDraft"
+
+
 def test_public_profiles_import() -> None:
     from ksef2.profiles import Profile, ProfileStore, TokenProfileAuth
 
@@ -111,6 +135,13 @@ def test_public_xades_import() -> None:
     assert LocalSigner.__name__ == "LocalSigner"
     assert generate_test_certificate.__name__ == "generate_test_certificate"
     assert sign_xades.__name__ == "sign_xades"
+
+
+def test_public_renderers_import() -> None:
+    from ksef2.renderers import InvoicePDFExporter, InvoiceXSLTRenderer
+
+    assert InvoicePDFExporter.__name__ == "InvoicePDFExporter"
+    assert InvoiceXSLTRenderer.__name__ == "InvoiceXSLTRenderer"
 
 
 def test_middlewares_import() -> None:
