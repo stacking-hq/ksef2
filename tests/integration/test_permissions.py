@@ -8,8 +8,6 @@ Run with:
     source .env.test && uv run pytest tests/integration/test_permissions.py -v -m integration
 """
 
-from __future__ import annotations
-
 import time
 from typing import TYPE_CHECKING, Generator, TypedDict
 
@@ -84,7 +82,7 @@ def _wait_for_permission_operation(
 @pytest.fixture(scope="module")
 def permissions_context(
     real_client: Client,
-    ksef_credentials: KSeFCredentials,
+    ksef_credentials: "KSeFCredentials",
 ) -> Generator[PermissionContext, None, None]:
     """Create an authenticated session using existing credentials.
 

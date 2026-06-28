@@ -4,8 +4,6 @@ Run with:
     uv run pytest tests/integration/test_token_lifecycle.py -v -m integration
 """
 
-from __future__ import annotations
-
 import pytest
 
 from ksef2 import Client, Environment
