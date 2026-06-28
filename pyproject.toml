@@ -7,6 +7,8 @@ name = "ksef2"
 version = "0.19.0"
 description = "Python SDK and Tools for Poland's KSeF (Krajowy System e-Faktur) API"
 readme = "README.md"
+authors = [{ name = "Artur Podsiadły" }]
+license = { file = "LICENSE.md" }
 requires-python = ">=3.12"
 pythonpath = "src"
 dependencies = [

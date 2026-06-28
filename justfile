@@ -52,10 +52,7 @@ check-gen-sync:
     uv run python scripts/gen_sync.py --check
 
 typecheck:
-    #!/usr/bin/env bash
-    output=$(uv run --extra runtime-checks basedpyright --level error 2>&1)
-    echo "$output"
-    echo "$output" | grep -q "0 errors"
+    uv run --extra runtime-checks basedpyright --level error
     uv run --extra runtime-checks basedpyright scripts/gen_sync.py
 
 
