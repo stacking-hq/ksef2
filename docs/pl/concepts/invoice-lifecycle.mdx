@@ -1,0 +1,157 @@
+---
+title: Cykl życia faktury
+description: Zrozum drogę faktury od wysyłki XML do numeru KSeF, metadanych, pobrania i UPO.
+---
+
+import { Aside, LinkCard, Steps } from '@astrojs/starlight/components';
+
+W KSeF wysłanie faktury rozpoczyna przetwarzanie, ale nie jest finalnym wynikiem.
+API najpierw przyjmuje zaszyfrowane dane faktury do sesji. Dopiero potem KSeF
+asynchronicznie waliduje i przetwarza fakturę.
+
+SDK odzwierciedla ten model: wysyłka najpierw zwraca uchwyt przetwarzania.
+Numer KSeF, widoczność w metadanych, pobranie faktury i UPO pojawiają się
+później.
+
+```text
+XML FA(3)
+  -> sesja online albo batch
+    -> numer referencyjny faktury
+      -> przetwarzanie KSeF
+        -> numer KSeF
+          -> metadane, pobranie, UPO
+        -> status niepowodzenia faktury
+```
+
+## Etapy
+
+<Steps>
+
+1. Przygotuj poprawny XML faktury.
+
+   SDK może wysłać bajty z pliku albo bajty wygenerowane przez builder FA(3).
+
+2. Wyślij XML przez sesję online albo batch.
+
+   Sesje online wysyłają faktury pojedynczo. Sesje batch wgrywają przygotowaną
+   paczkę ZIP i pokazują wyniki poszczególnych faktur po przetworzeniu paczki.
+
+3. Zapisz zwrócone referencje.
+
+   Numer referencyjny faktury jest pierwszym trwałym uchwytem dla wysłanej
+   faktury. Referencja sesji mówi KSeF, gdzie ta faktura została wysłana.
+
+4. Polluj status sesji albo faktury.
+
+   Poprawna odpowiedź HTTP nie oznacza jeszcze, że faktura ma numer KSeF.
+
+5. Używaj finalnych identyfikatorów do pobierania i audytu.
+
+   Po poprawnym przetworzeniu numer KSeF staje się stabilnym identyfikatorem do
+   bezpośredniego pobierania, uzgodnień, metadanych i wielu przepływów wsparcia.
+
+</Steps>
+
+## Send nie oznacza akceptacji
+
+`send_invoice()` szyfruje XML i wysyła go do otwartej sesji online. Zwraca
+`reference_number` faktury.
+
+`send_invoice_and_wait()` wykonuje tę samą wysyłkę, a potem polluje status
+faktury, aż KSeF nada `ksef_number`, osiągnie terminalny błąd albo minie lokalny
+timeout.
+
+```python
+sent = session.send_invoice(invoice_xml=xml_bytes)
+print(sent.reference_number)
+
+status = session.get_invoice_status(
+    invoice_reference_number=sent.reference_number,
+)
+print(status.status.code, status.ksef_number)
+```
+
+<Aside type="caution" title="Sukces transportu nie jest sukcesem biznesowym">
+  Udane wywołanie wysyłki oznacza, że KSeF przyjął żądanie do sesji. Faktura
+  może nadal być przetwarzana albo później nie przejść walidacji.
+</Aside>
+
+## Identyfikatory, których nie warto mieszać
+
+| Identyfikator | Gdzie się pojawia | Do czego służy |
+| --- | --- | --- |
+| Lokalny numer faktury | W XML faktury i lokalnym systemie. | Korelacja biznesowa przed i po przetworzeniu przez KSeF. |
+| Numer referencyjny sesji | Po otwarciu sesji online albo batch. | Odnalezienie zdalnego przepływu wysyłki. |
+| Numer referencyjny faktury | Odpowiedź z wysyłki i status faktury w sesji. | Polling jednej faktury i pobranie UPO faktury po referencji. |
+| Hash faktury | Status faktury w sesji i przygotowanie batch. | Korelacja wyników batch z lokalnymi dokumentami źródłowymi. |
+| Numer KSeF | Poprawny status faktury i metadane. | Stabilny identyfikator KSeF do pobierania, uzgodnień i wsparcia. |
+| Referencja UPO | Status sesji, gdy dostępne jest zbiorcze UPO. | Pobranie strony UPO dla sesji albo batch. |
+
+Dla wysyłki batch numer referencyjny faktury może nie być widoczny, dopóki KSeF
+nie przetworzy wgranej paczki. Zachowaj metadane przygotowanej paczki, aby
+`invoice_hash` i `invoice_file_name` łączyły wyniki KSeF z lokalnymi plikami.
+
+## Metadane i pobieranie są późniejszymi powierzchniami
+
+Status sesji mówi, co stało się z wysyłką. Metadane i pobieranie faktury są
+powierzchniami odczytu używanymi po przetworzeniu i materializacji faktury przez
+KSeF.
+
+Używaj tych powierzchni do różnych zadań:
+
+| Powierzchnia | Najlepsze pytanie |
+| --- | --- |
+| Status faktury w sesji | Czy ta wysłana faktura dostała numer KSeF albo nie przeszła przetwarzania? |
+| Zapytanie metadanych | Które przetworzone faktury pasują do filtrów, ról i dat? |
+| Bezpośrednie pobranie faktury | Daj XML dla znanego numeru KSeF. |
+| Paczka eksportu | Daj większy filtrowany zestaw plików XML faktur. |
+| UPO | Daj urzędowe poświadczenie dla przyjętej faktury albo sesji. |
+
+```python
+invoice_xml = auth.invoices.download_invoice(ksef_number=status.ksef_number)
+print(len(invoice_xml))
+```
+
+## Daty nie są zamienne
+
+Metadane KSeF wystawiają kilka dat. Wybieraj datę na podstawie przepływu, a nie
+etykiety, która wygląda najwygodniej.
+
+| Data | Znaczenie |
+| --- | --- |
+| `issue_date` | Data deklarowana na dokumencie faktury. |
+| `invoicing_date` | Data otrzymania faktury przez KSeF do przetwarzania. |
+| `acquisition_date` | Data udostępnienia faktury stronie w KSeF. |
+| `permanent_storage_date` | Data używana przez trwały zapis i przepływy eksportu przyrostowego. |
+
+Dla synchronizacji przyrostowej preferuj model Permanent Storage opisany na
+stronach o zapytaniach i eksporcie. Jest zaprojektowany tak, aby nie pomijać
+faktur mimo asynchronicznego przetwarzania KSeF.
+
+## Powiązane strony
+
+<LinkCard
+  title="Zbuduj faktury FA(3)"
+  href="../how-to-guides/build-fa3-invoices.mdx"
+  description="Wygeneruj poprawny XML faktury programowo przed wysyłką."
+/>
+<LinkCard
+  title="Wyślij faktury"
+  href="../how-to-guides/send-invoices.mdx"
+  description="Wyślij faktury przez przepływ online albo batch."
+/>
+<LinkCard
+  title="Sprawdź status i UPO"
+  href="../how-to-guides/get-status-and-upo.mdx"
+  description="Polluj status sesji i faktury, a potem pobierz dokumenty UPO."
+/>
+<LinkCard
+  title="Zapytania i eksporty"
+  href="querying-and-exports.mdx"
+  description="Zrozum zapytania metadanych, paczki eksportu i pobieranie przyrostowe."
+/>
+<LinkCard
+  title="Pobierz faktury"
+  href="../how-to-guides/download-invoices.mdx"
+  description="Pobierz XML faktury bezpośrednio albo przez paczki eksportu."
+/>

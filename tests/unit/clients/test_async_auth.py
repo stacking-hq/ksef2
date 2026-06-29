@@ -18,7 +18,7 @@ from ksef2.core.exceptions import (
 from ksef2.core.routes import AuthRoutes
 from ksef2.core.stores import CertificateStore
 from ksef2.xades import generate_test_certificate
-from ksef2.domain.models.auth import AuthTokens
+from ksef2.domain.models.auth import AuthenticationResumeState, AuthTokens
 from ksef2.domain.models.encryption import PublicKeyCertificate
 from ksef2.infra.schema.api.supp.auth import InitTokenAuthenticationRequest
 from ksef2.infra.schema.api import spec
@@ -45,6 +45,20 @@ def _token_store(certificate: PublicKeyCertificate) -> CertificateStore:
 
 
 class TestAsyncAuthClient:
+    def test_resume_rehydrates_authenticated_client(
+        self,
+        async_fake_transport: AsyncFakeTransport,
+        domain_auth_tokens: BaseFactory[AuthTokens],
+    ) -> None:
+        client = _build_auth_client(async_fake_transport)
+        auth_tokens = domain_auth_tokens.build()
+        state = AuthenticationResumeState.from_tokens(auth_tokens)
+
+        result = client.resume(state)
+
+        assert isinstance(result, AsyncAuthenticatedClient)
+        assert result.auth_tokens == auth_tokens
+
     @patch("ksef2.clients.async_auth.encrypt_token", return_value=VALID_BASE64)
     def test_with_token(
         self,

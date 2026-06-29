@@ -1,0 +1,107 @@
+---
+title: Przegląd
+description: Zacznij tutaj, jeśli korzystasz z dokumentacji SDK ksef2 dla Pythona.
+---
+
+import logoDark from '../../../sdk/assets/logo-dark.png';
+import logoLight from '../../../sdk/assets/logo-light.png';
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+<div className="ksef2-overview-logo" role="img" aria-label="ksef2">
+  <img
+    className="ksef2-overview-logo__image ksef2-overview-logo__image--light"
+    src={logoLight.src}
+    alt=""
+    width="392"
+    aria-hidden="true"
+  />
+  <img
+    className="ksef2-overview-logo__image ksef2-overview-logo__image--dark"
+    src={logoDark.src}
+    alt=""
+    width="392"
+    aria-hidden="true"
+  />
+</div>
+
+<style>{`
+  .ksef2-overview-logo {
+    position: relative;
+    width: min(392px, 100%);
+    aspect-ratio: 392 / 88;
+    margin: 0 0 1.5rem;
+  }
+
+  .ksef2-overview-logo__image {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: left center;
+  }
+
+  .ksef2-overview-logo__image--light {
+    opacity: 0;
+  }
+
+  :root[data-theme='dark'] .ksef2-overview-logo__image--light {
+    opacity: 1;
+  }
+
+  :root[data-theme='dark'] .ksef2-overview-logo__image--dark {
+    opacity: 0;
+  }
+`}</style>
+
+**ksef2** to w pełni typowane SDK dla języka Python do integracji z API systemu KSeF 2.0.
+
+> **Nieoficjalne SDK.** ksef2 jest projektem open-source utrzymywanym przez społeczność. \
+> Nie jest publikowany, zatwierdzany ani wspierany przez Ministerstwo Finansów. \
+> Oficjalna dokumentacja KSeF pozostaje źródłem informacji o działaniu systemu oraz zasadach pracy z nim.
+
+<LinkCard
+  title="Oficjalna dokumentacja API KSeF v2"
+  href="https://api-test.ksef.mf.gov.pl/docs/v2/"
+  description="Tutaj znajdziesz oficjalną dokumentację API KSeF 2.0, na której opiera się biblioteka ksef2."
+/>
+
+Projekt powstał z myślą o osobach, które budują własne integracje,
+automatyzacje i narzędzia back-office wokół KSeF, ale nie chcą ręcznie
+odtwarzać logiki HTTP, pętli odpytywania ani obsługi szyfrowania.
+
+Głównym założeniem SDK jest umożliwienie pracy z systemem KSeF przez wygodny
+interfejs, który podąża za praktykami i wzorcami typowymi dla języka Python.
+
+Pozwala to skupić się na logice biznesowej zamiast na szczegółach API KSeF.
+Biblioteka ukrywa wiele szczegółów komunikacji z systemem, ale nie zamyka drogi
+do niższego poziomu. Jeśli potrzebujesz większej kontroli nad żądaniami i
+odpowiedziami, możesz użyć niskopoziomowego dostępu do endpointów.
+
+## Następne kroki
+
+<LinkCard
+  title="Szybki start"
+  href="../getting-started/quickstart.mdx"
+  description="Zacznij od działającego przykładu uwierzytelniania, wysyłania, wyszukiwania i pobierania faktur."
+/>
+
+<LinkCard
+  title="Poznaj SDK"
+  href="../concepts/overview.mdx"
+  description="Poznaj wzorce uwierzytelniania, cykl życia klienta i obsługę faktur w SDK."
+/>
+
+<LinkCard
+  title="Wysyłanie, wyszukiwanie i pobieranie faktur"
+  href="../how-to-guides/overview.mdx"
+  description="Zobacz, jak wysyłać faktury online albo w trybie batch, wyszukiwać je z filtrami i paginacją oraz pobierać bezpośrednio albo jako pakiety eksportu."
+/>
+
+<LinkCard
+  title="API niskopoziomowe"
+  href="../reference/low-level/overview.mdx"
+  description="Użyj wrapperów endpointów zgodnych ze schematem, kiedy potrzebujesz bezpośredniej kontroli."
+/>

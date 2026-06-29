@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import pytest
 
 from ksef2.domain.models.limits import ApiRateLimits, ContextLimits, SubjectLimits

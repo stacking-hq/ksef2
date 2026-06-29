@@ -1,0 +1,178 @@
+---
+title: Przegląd poradników praktycznych
+description: Wybierz właściwy poradnik zadaniowy dla publicznej powierzchni SDK.
+---
+
+import { Aside, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
+
+Ta sekcja jest dla sytuacji, w których znasz już podstawowy kształt SDK i
+chcesz wykonać konkretne zadanie w KSeF. Quickstart pokazuje jedną ścieżkę od
+początku do końca; te poradniki rozbijają typowe decyzje produkcyjne.
+
+## Konfiguracja
+
+<CardGrid>
+  <LinkCard
+    title="Skonfiguruj klientów"
+    href="client-setup.mdx"
+    description="Wybierz sync albo async, publiczne gałęzie klienta głównego i uwierzytelnione gałęzie przepływów."
+  />
+  <LinkCard
+    title="Uwierzytelnij się"
+    href="authenticate.mdx"
+    description="Wybierz certyfikat TEST, token KSeF, certyfikat XAdES, zmienne środowiskowe albo profile kompatybilne z CLI."
+  />
+  <LinkCard
+    title="Użyj profili"
+    href="profiles.mdx"
+    description="Współdziel lokalną konfigurację ksef2-cli z uwierzytelnianiem SDK i ProfileStore."
+  />
+</CardGrid>
+
+## Praca z fakturami
+
+<CardGrid>
+  <LinkCard
+    title="Zbuduj faktury FA(3)"
+    href="build-fa3-invoices.mdx"
+    description="Wygeneruj prosty publiczny model faktury i XML FA(3) do wysyłki przez fluent builder."
+  />
+  <LinkCard
+    title="Wyślij faktury"
+    href="send-invoices.mdx"
+    description="Wyślij XML FA(3) przez sesję online albo sesję wsadową i sprawdź wynik przetwarzania."
+  />
+  <LinkCard
+    title="Sprawdź status i UPO"
+    href="get-status-and-upo.mdx"
+    description="Odpytuj status online albo batch, listuj faktury sesji i pobieraj dokumenty UPO."
+  />
+  <LinkCard
+    title="Wyszukaj faktury"
+    href="query-invoices.mdx"
+    description="Zbuduj filtry metadanych, przejdź po stronach wyników i czekaj na widoczność nowych faktur."
+  />
+  <LinkCard
+    title="Pobierz faktury"
+    href="download-invoices.mdx"
+    description="Pobierz jedną fakturę po numerze KSeF albo zaplanuj szyfrowany eksport paczek."
+  />
+</CardGrid>
+
+## Administracja
+
+<CardGrid>
+  <LinkCard
+    title="Zarządzaj tokenami"
+    href="manage-tokens.mdx"
+    description="Generuj, listuj, sprawdzaj i cofaj tokeny KSeF dla automatyzacji."
+  />
+  <LinkCard
+    title="Zarządzaj uprawnieniami"
+    href="configure-permissions.mdx"
+    description="Nadawaj, wyszukuj, odbieraj i monitoruj uprawnienia KSeF."
+  />
+  <LinkCard
+    title="Zarządzaj certyfikatami"
+    href="manage-certificates.mdx"
+    description="Sprawdzaj limity, rejestruj certyfikaty, pobieraj wydane materiały i cofaj certyfikaty."
+  />
+  <LinkCard
+    title="Zarządzaj limitami"
+    href="manage-limits.mdx"
+    description="Odczytuj i nadpisuj limity kontekstu, podmiotu oraz API rate limity."
+  />
+</CardGrid>
+
+## Narzędzia pomocnicze
+
+<CardGrid>
+  <LinkCard
+    title="Sprawdź certyfikaty szyfrowania"
+    href="inspect-encryption-certificates.mdx"
+    description="Sprawdzaj publiczne certyfikaty KSeF używane w szyfrowanych przepływach faktur i eksportów."
+  />
+  <LinkCard
+    title="Wyszukaj dostawców PEPPOL"
+    href="query-peppol-providers.mdx"
+    description="Wyszukuj publiczne dane dostawców PEPPOL z klienta głównego."
+  />
+  <LinkCard
+    title="Użyj danych TEST"
+    href="use-test-data.mdx"
+    description="Twórz sandboxowe podmioty, uprawnienia, flagi załączników i fixture'y z temporal cleanup."
+  />
+  <LinkCard
+    title="Użyj pomocników XAdES"
+    href="use-xades-helpers.mdx"
+    description="Ładuj materiał certyfikatu, generuj certyfikaty TEST i podpisuj XML."
+  />
+  <LinkCard
+    title="Low-level API"
+    href="../reference/low-level/overview.mdx"
+    description="Zejdź do schema-native wrapperów endpointów dla własnego podpisu, custody szyfrowania albo debugowania payloadów."
+  />
+</CardGrid>
+
+<Aside type="tip" title="Sync i async mają ten sam przepływ">
+  Klient async ma te same gałęzie i nazwy metod. Użyj `AsyncClient`, wywołania
+  sieciowe poprzedź `await`, a cykl życia klienta i sesji obsłuż przez
+  `async with`.
+</Aside>
+
+## Typowa kolejność
+
+<Steps>
+
+1. Skonfiguruj środowisko i dane uwierzytelniające.
+
+   Sekrety trzymaj w zmiennych środowiskowych, a niesekretne ustawienia w
+   lokalnej konfiguracji.
+
+2. Uwierzytelnij się dla wybranego kontekstu.
+
+   Uwierzytelniony klient udostępnia `online_session`, `batch`, `invoices`,
+   `tokens`, `permissions`, `certificates` i inne gałęzie przepływów.
+
+3. Uruchom gałąź przepływu, która odpowiada za zadanie.
+
+   Użyj publicznych gałęzi klienta głównego do certyfikatów szyfrowania, lookupu
+   PEPPOL i danych TEST. Użyj gałęzi uwierzytelnionych do faktur, sesji,
+   tokenów, uprawnień, certyfikatów i limitów.
+
+4. Poczekaj na przetwarzanie w KSeF albo status operacji.
+
+   Pomocniki wysokiego poziomu potrafią odpytywać status faktury, zakończenie
+   batcha, operacje uprawnień, rejestrację certyfikatu, widoczność w metadanych
+   i gotowość paczki eksportu.
+
+5. Zapisz wynik biznesowy.
+
+   Zapisuj numery KSeF, referencje sesji, referencje operacji, uchwyty
+   eksportu, pobrany XML, referencje tokenów, numery seryjne certyfikatów i UPO
+   zgodnie z polityką retencji aplikacji.
+
+</Steps>
+
+## Referencja
+
+<LinkCard
+  title="Quickstart"
+  href="../getting-started/quickstart.mdx"
+  description="Uruchom pierwszy przepływ generowania, wysyłki, potwierdzenia i pobrania."
+/>
+<LinkCard
+  title="Operacje"
+  href="../reference/operations.mdx"
+  description="Mapuj zadania na gałęzie SDK, helpery pollingu i granice retry."
+/>
+<LinkCard
+  title="Kontrakt publicznego API"
+  href="../reference/public-api.mdx"
+  description="Przejrzyj stabilne importy i publiczne moduły wystawiane przez SDK."
+/>
+<LinkCard
+  title="Low-level API"
+  href="../reference/low-level/overview.mdx"
+  description="Użyj schema-native wrapperów endpointów, gdy przepływ wysokiego poziomu nie wystarcza."
+/>

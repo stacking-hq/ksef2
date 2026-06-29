@@ -3,7 +3,7 @@
 
 """Client bound to an open online invoice session."""
 
-import base64
+import warnings
 from types import TracebackType
 from typing import final
 
@@ -16,7 +16,7 @@ from ksef2.core.protocols import Middleware
 from ksef2.domain.models import invoices
 from ksef2.domain.models.invoices import SendInvoicePayload
 from ksef2.domain.models.session import (
-    OnlineSessionState,
+    OnlineSessionResumeState,
     SessionInvoicesResponse,
     SessionInvoiceStatusResponse,
     SessionStatusResponse,
@@ -47,7 +47,7 @@ class OnlineSessionClient:
         httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
     """
 
-    def __init__(self, transport: Middleware, state: OnlineSessionState):
+    def __init__(self, transport: Middleware, state: OnlineSessionResumeState):
         self._transport = transport
         self._state = state
         self._invoice_eps = InvoicesEndpoints(transport)
@@ -68,8 +68,8 @@ class OnlineSessionClient:
         self._ensure_open()
         encrypted = encrypt_invoice(
             xml_bytes=invoice_xml,
-            key=base64.b64decode(self._state.aes_key),
-            iv=base64.b64decode(self._state.iv),
+            key=self._state.get_aes_key_bytes(),
+            iv=self._state.get_iv_bytes(),
         )
         request_body = invoice_to_spec(
             SendInvoicePayload(
@@ -232,9 +232,19 @@ class OnlineSessionClient:
         )
         self._closed = True
 
-    def get_state(self) -> OnlineSessionState:
-        """Return the serializable session state needed to resume later."""
+    def resume_state(self) -> OnlineSessionResumeState:
+        """Return the sensitive session state needed to resume later."""
         return self._state
+
+    def get_state(self) -> OnlineSessionResumeState:
+        """Deprecated compatibility wrapper for ``resume_state()``."""
+        warnings.warn(
+            "get_state() is deprecated and will be removed in a future release; "
+            "use resume_state() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.resume_state()
 
     def __enter__(self) -> "OnlineSessionClient":
         self._ensure_open()

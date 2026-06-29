@@ -1,0 +1,94 @@
+---
+title: XAdES
+description: Understand the XML signature step used by certificate-based KSeF authentication.
+---
+
+import { Aside, LinkCard, Steps } from '@astrojs/starlight/components';
+
+XAdES is the XML signature format used when KSeF authentication is backed by a
+certificate. In the SDK, XAdES belongs to authentication: it signs the
+`AuthTokenRequest` built from a KSeF challenge and a login context.
+
+It is not the invoice XML schema, not session encryption, and not the export
+package format.
+
+## What XAdES proves
+
+During XAdES authentication, KSeF checks a signed XML document and the
+certificate embedded in the signature. The login context is the NIP passed to
+the SDK method. The authenticating subject is read from the signing certificate,
+for example:
+
+- a qualified personal certificate containing PESEL or NIP;
+- a qualified organization seal containing NIP;
+- a KSeF-issued authentication certificate;
+- a certificate recognized by fingerprint permissions;
+- TEST-only self-signed certificate material.
+
+KSeF then checks whether that subject is allowed to operate in the requested
+context.
+
+## SDK layers
+
+Most applications should use `with_xades()` or a profile that dispatches to it:
+
+```python
+auth = client.authentication.with_xades(
+    nip="5261040828",
+    cert=cert,
+    private_key=private_key,
+)
+```
+
+The helper handles the normal sequence:
+
+<Steps>
+
+1. Request an authentication challenge.
+2. Build `AuthTokenRequest` XML for the context.
+3. Sign the XML with XAdES.
+4. Submit the signed XML to KSeF.
+5. Poll the authentication operation.
+6. Redeem access and refresh tokens.
+
+</Steps>
+
+Use `ksef2.xades` directly when you need to load certificate material yourself,
+inspect signed XML, or test a low-level integration boundary.
+
+<Aside type="tip" title="External signing boundary">
+  If another system signs XML and Python should only submit or redeem the
+  result, use the low-level authentication endpoints and then bind the redeemed
+  tokens with
+  `client.authentication.resume(AuthenticationResumeState.from_tokens(auth_tokens))`.
+</Aside>
+
+## TEST certificates
+
+The SDK can generate TEST-only self-signed certificate material with
+`with_test_certificate()` or lower-level helpers in `ksef2.xades`. That is a
+development shortcut for `Environment.TEST`; it is not valid for DEMO or
+PRODUCTION.
+
+## Related pages
+
+<LinkCard
+  title="Authentication methods"
+  href="authentication-methods.mdx"
+  description="See XAdES alongside token, TEST certificate, and profile authentication."
+/>
+<LinkCard
+  title="Use XAdES helpers"
+  href="../how-to-guides/use-xades-helpers.mdx"
+  description="Load certificate material and sign authentication XML in code."
+/>
+<LinkCard
+  title="Certificates"
+  href="certificates.mdx"
+  description="Understand certificate identity, enrollment, and issued certificate types."
+/>
+<LinkCard
+  title="Low-level authentication"
+  href="../reference/low-level/authentication.mdx"
+  description="Run manual authentication when signing is handled outside the high-level SDK helper."
+/>

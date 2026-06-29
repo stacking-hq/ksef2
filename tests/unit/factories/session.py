@@ -77,20 +77,22 @@ class DomainPartUploadRequestFactory(ModelFactory[domain_batch.PartUploadRequest
 
 
 @register_fixture(name="domain_online_session_state")
-class DomainOnlineSessionStateFactory(ModelFactory[domain_session.OnlineSessionState]):
+class DomainOnlineSessionResumeStateFactory(
+    ModelFactory[domain_session.OnlineSessionResumeState]
+):
     reference_number: str = "20250625-SO-2C3E6C8000-B675CF5D68-07"
     aes_key: str = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
     iv: str = "MDEyMzQ1Njc4OWFiY2RlZg=="
-    access_token: str = "fake-access-token"
     form_code: domain_session.FormSchema = domain_session.FormSchema.FA3
 
 
 @register_fixture(name="domain_batch_session_state")
-class DomainBatchSessionStateFactory(ModelFactory[domain_batch.BatchSessionState]):
+class DomainBatchSessionResumeStateFactory(
+    ModelFactory[domain_batch.BatchSessionResumeState]
+):
     reference_number: str = "20250625-BS-2C3E6C8000-B675CF5D68-07"
     aes_key: str = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
     iv: str = "MDEyMzQ1Njc4OWFiY2RlZg=="
-    access_token: str = "fake-access-token"
     form_code: domain_session.FormSchema = domain_session.FormSchema.FA3
 
     @classmethod

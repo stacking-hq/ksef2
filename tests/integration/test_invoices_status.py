@@ -8,8 +8,6 @@ Run with:
     source .env.test && uv run pytest tests/integration/test_invoices_status.py -v -m integration
 """
 
-from __future__ import annotations
-
 import pytest
 
 from ksef2 import Client, Environment, FormSchema
@@ -88,7 +86,7 @@ def session_with_invoice(ksef_credentials: KSeFCredentials):
         with auth.online_session(form_code=FormSchema.FA3) as session:
             result = session.send_invoice(invoice_xml=load_test_invoice_xml())
             invoice_ref = result.reference_number
-            session_ref = session.get_state().reference_number
+            session_ref = session.resume_state().reference_number
 
             yield client, access_token, session_ref, invoice_ref, session
 

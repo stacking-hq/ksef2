@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from io import BytesIO
 from zipfile import ZipFile
 
@@ -17,13 +18,13 @@ from ksef2.domain.models.batch import (
     BatchFilePart,
     BatchInvoice,
     BatchPreparedPart,
-    BatchSessionState,
+    BatchSessionResumeState,
     PartUploadRequest,
     PreparedBatch,
 )
-from ksef2.domain.models.session import FormSchema
+from ksef2.domain.models.session import FormSchema, SessionEncryptionMaterial
 from ksef2.infra.schema.api import spec
-from ksef2.services.batch import BatchService
+from ksef2.services.batch import BatchService, BatchSessionOpener
 from tests.unit.fakes.transport import FakeTransport
 from tests.unit.helpers import VALID_PUBLIC_KEY_ID
 
@@ -31,16 +32,47 @@ from tests.unit.helpers import VALID_PUBLIC_KEY_ID
 def _build_service(
     fake_transport: FakeTransport,
     *,
-    open_batch_session,
-    get_encryption_key=None,
+    open_batch_session: BatchSessionOpener,
+    get_encryption_key: Callable[[], SessionEncryptionMaterial] | None = None,
 ) -> BatchService:
     return BatchService(
         authed_transport=fake_transport,
         upload_transport=fake_transport,
         get_encryption_key=get_encryption_key
-        or (lambda: (b"k" * 32, b"v" * 16, b"enc-key", VALID_PUBLIC_KEY_ID)),
+        or (
+            lambda: SessionEncryptionMaterial(
+                aes_key=b"k" * 32,
+                iv=b"v" * 16,
+                encrypted_key=b"enc-key",
+                public_key_id=VALID_PUBLIC_KEY_ID,
+            )
+        ),
         open_batch_session=open_batch_session,
     )
+
+
+def _unused_open_batch_session(
+    *,
+    batch_file: BatchFileInfo,
+    aes_key: bytes,
+    iv: bytes,
+    encrypted_key: bytes,
+    public_key_id: str | None = None,
+    form_code: FormSchema = FormSchema.FA3,
+    offline_mode: bool = False,
+    prepared_batch: PreparedBatch | None = None,
+) -> BatchSessionClient:
+    del (
+        batch_file,
+        aes_key,
+        iv,
+        encrypted_key,
+        public_key_id,
+        form_code,
+        offline_mode,
+        prepared_batch,
+    )
+    raise AssertionError("not used")
 
 
 class TestBatchService:
@@ -50,7 +82,7 @@ class TestBatchService:
     ) -> None:
         service = _build_service(
             fake_transport,
-            open_batch_session=lambda **_: pytest.fail("not used"),
+            open_batch_session=_unused_open_batch_session,
         )
         invoices = [
             BatchInvoice(file_name="invoice-1.xml", content=b"<Invoice>1</Invoice>"),
@@ -89,7 +121,7 @@ class TestBatchService:
     ) -> None:
         service = _build_service(
             fake_transport,
-            open_batch_session=lambda **_: pytest.fail("not used"),
+            open_batch_session=_unused_open_batch_session,
         )
 
         with pytest.raises(KSeFValidationError, match="must be unique"):
@@ -103,11 +135,11 @@ class TestBatchService:
     def test_upload_parts_uses_presigned_urls_without_auth_header(
         self,
         fake_transport: FakeTransport,
-        domain_batch_session_state: BaseFactory[BatchSessionState],
+        domain_batch_session_state: BaseFactory[BatchSessionResumeState],
     ) -> None:
         service = _build_service(
             fake_transport,
-            open_batch_session=lambda **_: pytest.fail("not used"),
+            open_batch_session=_unused_open_batch_session,
         )
         state = domain_batch_session_state.build(
             part_upload_requests=[
@@ -161,7 +193,7 @@ class TestBatchService:
     def test_submit_prepared_batch_uploads_parts_and_closes_session(
         self,
         fake_transport: FakeTransport,
-        domain_batch_session_state: BaseFactory[BatchSessionState],
+        domain_batch_session_state: BaseFactory[BatchSessionResumeState],
     ) -> None:
         state = domain_batch_session_state.build(
             reference_number="batch-ref",
@@ -174,13 +206,36 @@ class TestBatchService:
                 )
             ],
         )
-        service = _build_service(
-            fake_transport,
-            open_batch_session=lambda **kwargs: BatchSessionClient(
+
+        def _open_batch_session(
+            *,
+            batch_file: BatchFileInfo,
+            aes_key: bytes,
+            iv: bytes,
+            encrypted_key: bytes,
+            public_key_id: str | None = None,
+            form_code: FormSchema = FormSchema.FA3,
+            offline_mode: bool = False,
+            prepared_batch: PreparedBatch | None = None,
+        ) -> BatchSessionClient:
+            del (
+                batch_file,
+                aes_key,
+                iv,
+                encrypted_key,
+                public_key_id,
+                form_code,
+                offline_mode,
+            )
+            return BatchSessionClient(
                 fake_transport,
                 state,
-                prepared_batch=kwargs.get("prepared_batch"),
-            ),
+                prepared_batch=prepared_batch,
+            )
+
+        service = _build_service(
+            fake_transport,
+            open_batch_session=_open_batch_session,
         )
         prepared_batch = PreparedBatch(
             batch_file=BatchFileInfo(
@@ -225,7 +280,7 @@ class TestBatchService:
     ) -> None:
         service = _build_service(
             fake_transport,
-            open_batch_session=lambda **_: pytest.fail("not used"),
+            open_batch_session=_unused_open_batch_session,
         )
         fake_transport.enqueue(
             inv_session_status_resp.build(
@@ -254,7 +309,7 @@ class TestBatchService:
     ) -> None:
         service = _build_service(
             fake_transport,
-            open_batch_session=lambda **_: pytest.fail("not used"),
+            open_batch_session=_unused_open_batch_session,
         )
         fake_transport.enqueue(
             inv_session_status_resp.build(
@@ -276,7 +331,7 @@ class TestBatchService:
     ) -> None:
         service = _build_service(
             fake_transport,
-            open_batch_session=lambda **_: pytest.fail("not used"),
+            open_batch_session=_unused_open_batch_session,
         )
         for _ in range(3):
             fake_transport.enqueue(

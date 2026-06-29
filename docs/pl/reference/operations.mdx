@@ -1,0 +1,208 @@
+---
+title: Referencja operacji
+description: Konfiguracja transportu, retry, timeouty workflow, pola logowania i wznawialne referencje KSeF.
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+Ta strona zapisuje zachowania operacyjne ważne dla integracji produkcyjnych.
+Nie jest walkthrough wysyłki ani uwierzytelniania.
+
+## TransportConfig
+
+`TransportConfig` jest używany tylko wtedy, gdy SDK tworzy wewnętrznego klienta
+`httpx`. Jeśli przekażesz `http_client`, ten klient posiada timeouty HTTP, pool,
+TLS, proxy, `trust_env`, HTTP/2, custom transport i event hooki.
+
+```python
+TransportConfig(
+    timeouts=TimeoutConfig(),
+    pool=ConnectionPoolConfig(),
+    retry=RetryConfig(),
+    tls=TlsConfig(),
+    proxy_url=None,
+    trust_env=True,
+    http2=True,
+)
+```
+
+| Pole | Typ | Domyślnie | Przekazywane do |
+| --- | --- | --- | --- |
+| `timeouts` | `TimeoutConfig` | `TimeoutConfig()` | `httpx.Timeout` |
+| `pool` | `ConnectionPoolConfig` | `ConnectionPoolConfig()` | `httpx.Limits` |
+| `retry` | `RetryConfig` | `RetryConfig()` | Middleware retry SDK |
+| `tls` | `TlsConfig` | `TlsConfig()` | Weryfikacja TLS w `httpx` |
+| `proxy_url` | `str | None` | `None` | Proxy `httpx` |
+| `trust_env` | `bool` | `True` | Obsługa zmiennych środowiskowych przez `httpx` |
+| `http2` | `bool` | `True` | Flaga HTTP/2 w `httpx` |
+
+## TimeoutConfig
+
+`TimeoutConfig` kontroluje pojedynczy request HTTP. Nie kontroluje tego, jak
+długo SDK odpytuje stan workflow KSeF.
+
+| Pole | Domyślnie | Znaczenie |
+| --- | --- | --- |
+| `connect` | `5.0` | Czas na zestawienie połączenia. |
+| `read` | `30.0` | Czas oczekiwania na bajty odpowiedzi. |
+| `write` | `30.0` | Czas wysyłania bajtów requestu. |
+| `pool` | `5.0` | Czas oczekiwania na połączenie z poola. |
+
+## ConnectionPoolConfig
+
+| Pole | Domyślnie | Znaczenie |
+| --- | --- | --- |
+| `max_connections` | `100` | Maksymalna liczba otwartych połączeń. |
+| `max_keepalive_connections` | `20` | Maksymalna liczba bezczynnych połączeń keep-alive. |
+| `keepalive_expiry` | `30.0` | Wygaśnięcie bezczynnego keep-alive w sekundach. |
+
+## TlsConfig
+
+| Pole | Domyślnie | Znaczenie |
+| --- | --- | --- |
+| `verify` | `True` | Przekazywane do `httpx`, chyba że ustawiono `ca_bundle_path`. |
+| `ca_bundle_path` | `None` | Ścieżka bundle CA używana jako wartość `verify` w `httpx`. |
+
+## RetryConfig
+
+`RetryConfig` kontroluje middleware retry SDK. Obejmuje błędy transportu i
+ponawialne odpowiedzi HTTP dla ponawialnych typów requestów.
+
+| Pole | Domyślnie |
+| --- | --- |
+| `max_attempts` | `3` |
+| `initial_delay` | `0.5` |
+| `max_delay` | `4.0` |
+| `backoff_multiplier` | `2.0` |
+| `retryable_status_codes` | `(429, 502, 503, 504)` |
+
+Opóźnienie retry jest wykładnicze:
+
+```text
+min(initial_delay * backoff_multiplier ** (attempt - 1), max_delay)
+```
+
+Jeżeli KSeF wyśle `Retry-After`, middleware retry użyje tej wartości, ale nie
+większej niż `max_delay`.
+
+## Ponawialne requesty
+
+SDK ponawia tylko kształty requestów, które są wystarczająco bezpieczne do
+powtórzenia na poziomie transportu.
+
+| Typ requestu | Zachowanie retry |
+| --- | --- |
+| `GET` | Ponawialny. |
+| `DELETE` | Ponawialny. |
+| Większość `POST` | Nie jest ponawiana automatycznie. |
+| Wybrane `POST` | Ponawiane automatycznie, gdy są na liście niżej. |
+
+Ponawialne grupy `POST`:
+
+| Obszar | Operacje |
+| --- | --- |
+| Uwierzytelnianie | challenge, redeem token, refresh token |
+| Faktury | query metadanych |
+| Certyfikaty | query, retrieve |
+| Uprawnienia | query personal, authorization, EU entity, person, subordinate entity i subunit |
+
+Wysyłka faktury, nadawanie uprawnień, enrollment certyfikatu, generowanie
+tokenu, otwieranie sesji online i otwieranie sesji batch nie są ponawiane przez
+middleware retry SDK. Zapisz zwrócone referencje i wznawiaj przez status zamiast
+tworzyć te operacje ponownie w ciemno.
+
+## Timeouty pollingu workflow
+
+Helpery pollingowe używają argumentów `timeout` i `poll_interval`. Są to
+deadline'y workflow, nie timeouty requestu HTTP. Gdy zostanie rzucony timeout
+pollingu, zdalny workflow KSeF może nadal zakończyć się później.
+
+| Workflow | Wyjątek timeout | Identyfikator w wyjątku |
+| --- | --- | --- |
+| Polling uwierzytelniania | `KSeFAuthPollingTimeoutError` | `reference_number` |
+| Polling aktywacji/statusu tokenu | `KSeFTokenStatusTimeoutError` | `reference_number` |
+| Polling widoczności metadanych | `KSeFInvoiceQueryTimeoutError` | tylko `timeout` |
+| Gotowość pobrania faktury | `KSeFInvoiceDownloadTimeoutError` | `ksef_number` |
+| Przetwarzanie faktury online | `KSeFInvoiceProcessingTimeoutError` | `invoice_reference_number` |
+| Gotowość paczki eksportu | `KSeFExportTimeoutError` | `reference_number` |
+| Zakończenie sesji batch | `KSeFBatchSessionTimeoutError` | `reference_number` |
+
+Po timeoutcie wznów polling zapisanymi identyfikatorami. Nie traktuj lokalnego
+deadline'u jako dowodu, że zdalna operacja się nie udała.
+
+## Rate limit
+
+Odpowiedzi KSeF `429` są klasyfikowane jako `KSeFRateLimitError`. Wyjątek
+udostępnia:
+
+| Atrybut | Znaczenie |
+| --- | --- |
+| `retry_after` | Liczba sekund z `Retry-After`, jeśli KSeF zwrócił nagłówek; inaczej `None`. |
+| `status_code` | Zawsze `429`. |
+| `response` | Sparsowany payload błędu KSeF, jeśli jest dostępny. |
+
+Używaj `retry_after` do planowania pracy w tle. W request handlerach lepiej
+zwrócić albo zakolejkować pracę do ponowienia niż usypiać request.
+
+## Granice sekretów i logowania
+
+Nie loguj:
+
+- access tokenów;
+- refresh tokenów;
+- wartości tokenów KSeF;
+- kluczy prywatnych;
+- haseł PEM albo PKCS#12;
+- surowego XML faktury, chyba że polityka retencji na to pozwala;
+- zserializowanego stanu sesji online albo batch.
+
+Przydatne pola logów produkcyjnych:
+
+| Pole | Znaczenie |
+| --- | --- |
+| `environment` | `test`, `demo` albo `production`. |
+| `workflow` | Nazwa operacji na poziomie aplikacji. |
+| `session_reference_number` | Referencja sesji online albo batch. |
+| `invoice_reference_number` | Referencja faktury w sesji. |
+| `ksef_number` | Finalny numer KSeF po przyjęciu faktury. |
+| `operation_reference_number` | Referencja operacji tokenu, uprawnienia, certyfikatu, auth albo eksportu. |
+| `sdk_error_code` | `KSeFException.context["code"]`, gdy istnieje. |
+| `exception_code` | Kod wyjątku KSeF z `KSeFApiError.exception_code`, gdy istnieje. |
+
+## Wznawialny stan workflow
+
+Większość workflow KSeF zaczyna się referencją i kończy przez polling albo
+późniejsze pobranie. Zapisz referencję przed czekaniem.
+
+| Workflow | Zapisz przed czekaniem |
+| --- | --- |
+| Uwierzytelnianie | referencję operacji auth i czas życia tymczasowego tokenu auth |
+| Wysyłka faktury online | referencję sesji i numer referencyjny faktury |
+| Upload batch | referencję sesji batch, referencje uploadu, metadane paczki i stan batch, dopóki jest potrzebny |
+| Eksport faktur | numer referencyjny eksportu i chroniony materiał uchwytu eksportu |
+| Generowanie tokenu | numer referencyjny tokenu i zwrócony sekret tokenu |
+| Nadanie/cofnięcie uprawnień | numer referencyjny operacji uprawnień |
+| Enrollment/revoke certyfikatu | referencję operacji certyfikatu albo numer seryjny certyfikatu |
+
+## Powiązana referencja
+
+<LinkCard
+  title="Cykl życia klienta"
+  href="client-lifecycle.mdx"
+  description="Sprawdź konstruktory, własność gałęzi, zamykanie i błędy lifecycle."
+/>
+<LinkCard
+  title="Obsługa błędów"
+  href="errors.mdx"
+  description="Sprawdź klasy wyjątków SDK, błędy API KSeF i timeouty."
+/>
+<LinkCard
+  title="Konfiguracja klienta"
+  href="../how-to-guides/client-setup.mdx"
+  description="Zastosuj te ustawienia w przykładach setupu sync i async."
+/>
+<LinkCard
+  title="Status i UPO"
+  href="../concepts/status-and-upo.mdx"
+  description="Zrozum statusy, dokumenty UPO, polling i lokalne deadline'y."
+/>

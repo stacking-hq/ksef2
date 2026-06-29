@@ -2,10 +2,21 @@
 
 from datetime import date
 from decimal import Decimal
+from enum import StrEnum
 
 from pydantic import model_validator
 
 from ksef2.domain.models import KSeFBaseModel
+
+
+class DraftIntent(StrEnum):
+    """Invoice intent tracked by serialized FA(3) builder drafts."""
+
+    STANDARD = "VAT"
+    CORRECTION = "KOR"
+    ADVANCE = "ZAL"
+    SETTLEMENT = "ROZ"
+    MARGIN = "MARZA"
 
 
 class CorrectedInvoiceReference(KSeFBaseModel):

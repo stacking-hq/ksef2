@@ -1,0 +1,81 @@
+---
+title: Low-level API
+description: Schema-native endpoint wrappers, raw model namespaces, and low-level utility exports.
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+The low-level API is the SDK surface for endpoint-level control without leaving
+the SDK transport stack. It is exposed through `client.raw` before
+authentication and `auth.raw` after authentication.
+
+Use it when a KSeF integration needs custom signing, caller-owned encryption
+custody, exact OpenAPI-shaped payloads, or endpoint debugging. Most application
+workflows should still start with the high-level clients.
+
+## Contract
+
+| Property | Low-level behavior |
+| --- | --- |
+| Transport | Reuses the same root-client middleware stack, retries, lifecycle checks, and exception mapping. |
+| Authentication | `client.raw` is unauthenticated; `auth.raw` uses the authenticated bearer transport where KSeF requires it. |
+| Models | Request and response objects use schema-native KSeF/OpenAPI field names such as `referenceNumber`, `publicKeyId`, and `authenticationToken`. |
+| Parsing | Successful JSON responses are parsed into generated `spec` or supplemental `supp` Pydantic models. |
+| Binary responses | Invoice XML and UPO downloads return `bytes`. |
+| Async shape | Async low-level clients expose the same branch and method names, with awaited network calls. |
+
+## Model namespaces
+
+Import supported low-level models from `ksef2.raw`, not from internal generated
+packages:
+
+```python
+from ksef2.raw import spec, supp
+```
+
+| Namespace | Use for |
+| --- | --- |
+| `spec` | Generated OpenAPI request and response models. |
+| `supp` | Supplemental models used where generated OpenAPI shapes need SDK-side support. |
+| `ksef2.raw.mappers` | Explicit bridges from schema-native models back to public SDK models. |
+
+## Utility exports
+
+| Export | Use for |
+| --- | --- |
+| `encrypt_token` | Encrypt KSeF token authentication payloads. |
+| `generate_session_key` | Generate AES key and IV for invoice/session/export encryption. |
+| `encrypt_symmetric_key` | Encrypt local AES material with a KSeF public certificate. |
+| `encrypt_invoice` | Encrypt invoice XML bytes for low-level online submission. |
+| `sha256_b64` | Calculate base64 SHA-256 hashes for low-level payload metadata. |
+| `prepare_batch_package` | Build encrypted batch package metadata when caller owns low-level batch flow. |
+
+## Levels of control
+
+| Level | SDK owns | Caller owns | Typical entry point |
+| --- | --- | --- | --- |
+| Workflow | Endpoint order, encryption, polling, and model mapping. | Business inputs and persistence. | `auth.invoices`, `auth.batch`, session clients. |
+| Step-level | Protocol details for one SDK workflow step. | Ordering and persistence between steps. | `session.send_invoice()`, `session.wait_for_invoice_ready()`. |
+| Low-level | Transport, response parsing, exception mapping. | Endpoint order, schema-native payloads, encryption custody, polling. | `client.raw`, `auth.raw`. |
+
+The main ownership rule is session consistency: if low-level code opens a
+session, low-level code should usually close and inspect that session. If
+high-level code opens a session, use the returned high-level session client.
+
+## Low-level section
+
+<LinkCard
+  title="Low-level authentication"
+  href="authentication.mdx"
+  description="Reference the raw authentication endpoints and token/XAdES binding sequence."
+/>
+<LinkCard
+  title="Low-level sessions and invoices"
+  href="sessions-invoices.mdx"
+  description="Reference session, invoice, UPO, and export endpoint methods."
+/>
+<LinkCard
+  title="Endpoint map"
+  href="endpoint-map.mdx"
+  description="Find the raw branch and method group for each KSeF area."
+/>

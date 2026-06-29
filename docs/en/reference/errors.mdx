@@ -1,0 +1,119 @@
+---
+title: Error Reference
+description: SDK exception hierarchy, attributes, KSeF exception codes, and polling timeout classes.
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+ksef2 raises SDK exceptions for failures it can classify. Transport failures
+raised before KSeF returns a parsed response remain `httpx.HTTPError`
+exceptions.
+
+## Base classes
+
+| Class | Base | `code` | Main attributes |
+| --- | --- | --- | --- |
+| `KSeFException` | `Exception` | `SDK_ERROR` | `context` |
+| `KSeFApiError` | `KSeFException` | `API_ERROR` | `status_code`, `exception_code`, `response` |
+| `KSeFAuthError` | `KSeFApiError` | `AUTH_ERROR` | `status_code`, `exception_code`, `response` |
+| `KSeFRateLimitError` | `KSeFApiError` | `RATE_LIMIT_ERROR` | `retry_after`, `status_code`, `response` |
+
+Catch narrower subclasses before `KSeFException` when the workflow has a
+specific recovery action.
+
+```python
+try:
+    result = auth.invoices.query_metadata(filters=filters)
+except KSeFRateLimitError as exc:
+    retry_after = exc.retry_after
+except KSeFApiError as exc:
+    status_code = exc.status_code
+    exception_code = exc.exception_code
+except KSeFException as exc:
+    context = exc.context
+except httpx.HTTPError as exc:
+    transport_error = exc
+```
+
+## SDK exception classes
+
+| Class | `code` | Raised for |
+| --- | --- | --- |
+| `KSeFClientClosedError` | `CLIENT_CLOSED` | Root client or session client used after close. |
+| `KSeFUnsupportedEnvironmentError` | `UNSUPPORTED_ENVIRONMENT` | TEST-only branch or flow used outside `Environment.TEST`. |
+| `KSeFValidationError` | `VALIDATION_ERROR` | Invalid SDK input, invalid response payload, invalid profile config, or invalid session/batch arguments. |
+| `KSeFInvoiceRenderingError` | `INVOICE_RENDERING_ERROR` | Optional XSLT/PDF rendering failures. |
+| `KSeFEncryptionError` | `ENCRYPTION_ERROR` | Token, symmetric-key, invoice encryption, or decryption failure. |
+| `KSeFSessionError` | `SESSION_ERROR` | Session-state violation, such as using a closed session. |
+| `NoCertificateAvailableError` | `NO_CERTIFICATE_AVAILABLE` | No valid certificate exists for signing or encryption usage. |
+| `KSeFMetadataPaginationError` | `METADATA_PAGINATION_ERROR` | Metadata pagination cannot continue safely. |
+
+## API error attributes
+
+`KSeFApiError` is raised for parsed KSeF 4xx and 5xx responses. Specialized
+subclasses are used for authentication/authorization failures and rate limits.
+
+| Attribute | Type | Meaning |
+| --- | --- | --- |
+| `status_code` | `int` | HTTP status returned by KSeF. |
+| `exception_code` | `ExceptionCode` | Normalized KSeF exception code when one is recognized. |
+| `response` | `BaseModel | None` | Parsed KSeF error payload when parsing succeeded. |
+
+Use `response.model_dump()` or `response.model_dump_json()` for structured
+diagnostics when `response` is not `None`.
+
+## ExceptionCode values
+
+| Name | Value |
+| --- | --- |
+| `UNKNOWN_ERROR` | `10000` |
+| `OBJECT_ALREADY_EXISTS` | `30001` |
+| `VALIDATION_ERROR` | `21405` |
+| `UPO_NOT_FOUND` | `21178` |
+| `NOT_PROCESSED_YET` | `21165` |
+
+Unknown numeric KSeF codes map to `ExceptionCode.UNKNOWN_ERROR`.
+
+## Polling timeout classes
+
+Polling timeout exceptions mean the local wait deadline expired. They do not by
+themselves prove the remote KSeF workflow failed.
+
+| Class | `code` | Identifier attributes |
+| --- | --- | --- |
+| `KSeFAuthPollingTimeoutError` | `AUTH_POLLING_TIMEOUT` | `reference_number`, `timeout` |
+| `KSeFTokenStatusTimeoutError` | `TOKEN_STATUS_TIMEOUT` | `reference_number`, `timeout` |
+| `KSeFInvoiceQueryTimeoutError` | `INVOICE_QUERY_TIMEOUT` | `timeout` |
+| `KSeFInvoiceDownloadTimeoutError` | `INVOICE_DOWNLOAD_TIMEOUT` | `ksef_number`, `timeout` |
+| `KSeFInvoiceProcessingTimeoutError` | `INVOICE_PROCESSING_TIMEOUT` | `invoice_reference_number`, `timeout` |
+| `KSeFExportTimeoutError` | `EXPORT_TIMEOUT` | `reference_number`, `timeout` |
+| `KSeFBatchSessionTimeoutError` | `BATCH_SESSION_TIMEOUT` | `reference_number`, `timeout` |
+
+Store the relevant reference before polling so another process can resume the
+status check.
+
+## Rate limit attributes
+
+| Attribute | Type | Meaning |
+| --- | --- | --- |
+| `retry_after` | `int | None` | Seconds from KSeF `Retry-After`; `None` when absent. |
+| `status_code` | `int` | Always `429`. |
+| `response` | `BaseModel | None` | Parsed KSeF error payload when available. |
+
+## Related reference
+
+<LinkCard
+  title="Operations reference"
+  href="operations.mdx"
+  description="Review retry behavior, rate limits, workflow timeouts, and resumable state."
+/>
+<LinkCard
+  title="Client lifecycle"
+  href="client-lifecycle.mdx"
+  description="Review lifecycle errors and client close behavior."
+/>
+<LinkCard
+  title="Status and UPO"
+  href="../concepts/status-and-upo.mdx"
+  description="Understand status surfaces, UPO documents, and polling deadlines."
+/>

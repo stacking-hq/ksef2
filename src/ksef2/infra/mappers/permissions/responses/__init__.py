@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from ksef2.infra.mappers.permissions.responses.grants import (
     from_spec as grant_from_spec,
 )

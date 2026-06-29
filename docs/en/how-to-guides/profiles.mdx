@@ -1,0 +1,276 @@
+---
+title: Use profiles
+description: Share local ksef2-cli profile configuration with SDK authentication.
+---
+
+import { Aside, LinkCard, Steps } from '@astrojs/starlight/components';
+
+Profiles are local, named authentication settings shared by `ksef2-cli` and the
+SDK. Use them when the same developer workstation needs both terminal commands
+and Python scripts for the same KSeF context.
+
+A profile stores non-secret settings: environment, NIP, authentication method,
+certificate paths, polling settings, and the name of the environment variable
+that contains a secret. It should not store KSeF token values, private-key
+passwords, or PKCS#12 passwords.
+
+<Aside type="tip" title="Use profiles for local work">
+  Profiles are a convenience layer for repeatable local workflows. In CI and
+  hosted applications, it is usually clearer to pass configuration through your
+  deployment system and read secrets directly from environment variables.
+</Aside>
+
+## Create a profile with the CLI
+
+The CLI is the most convenient way to create and inspect profile files.
+
+```bash
+ksef2 profile create test-company \
+  --env test \
+  --nip 5261040828 \
+  --test-cert
+
+ksef2 profile current
+ksef2 profile show test-company
+```
+
+Token and certificate profiles store the environment variable name that holds
+the secret, not the secret value:
+
+```bash
+export KSEF2_TOKEN=replace-with-a-real-ksef-token
+
+ksef2 profile create prod-token \
+  --env production \
+  --nip 5261040828 \
+  --token-env KSEF2_TOKEN
+```
+
+<LinkCard
+  title="CLI configuration"
+  href="../../cli/guides/configuration.md"
+  description="Create, select, inspect, and delete profiles with ksef2-cli."
+/>
+
+<LinkCard
+  title="CLI authentication"
+  href="../../cli/guides/authentication.md"
+  description="Choose token, TEST certificate, PEM XAdES, or PKCS#12 profile authentication from the command line."
+/>
+
+## Authenticate with a profile
+
+`with_profile()` reads the same profile file as the CLI. Passing no name uses
+the currently selected profile.
+
+```python
+from ksef2 import Client, Environment
+
+with Client(Environment.TEST) as client:
+    auth = client.authentication.with_profile()
+```
+
+Pass a name to ignore the active profile for one call:
+
+```python
+from ksef2 import Client, Environment
+
+with Client(Environment.TEST) as client:
+    auth = client.authentication.with_profile("test-company")
+```
+
+The root client environment must match the selected profile environment. A
+`test` profile must be used with `Client(Environment.TEST)`, a `demo` profile
+with `Client(Environment.DEMO)`, and a `production` profile with
+`Client(Environment.PRODUCTION)`.
+
+If you want the profile to choose the client environment, load it first:
+
+```python
+from ksef2 import Client
+from ksef2.profiles import load_cli_profile
+
+profile_name, profile = load_cli_profile("prod-token")
+
+with Client(profile.sdk_environment) as client:
+    auth = client.authentication.with_profile(profile_name)
+```
+
+Async clients use the same profile file and selection order:
+
+```python
+from ksef2 import AsyncClient, Environment
+
+async with AsyncClient(Environment.TEST) as client:
+    auth = await client.authentication.with_profile("test-company")
+```
+
+## Profile selection order
+
+The SDK selects a profile in the same order as `ksef2-cli`:
+
+1. The explicit name passed to `with_profile("name")`.
+2. `KSEF2_PROFILE` in the process environment.
+3. `active_profile` in the local profile config file.
+
+By default, the profile file is:
+
+```text
+~/.config/ksef2-cli/config.toml
+```
+
+Set `KSEF2_CONFIG` or pass `config_path` when the profile file lives somewhere
+else:
+
+```python
+from ksef2 import Client, Environment
+
+with Client(Environment.PRODUCTION) as client:
+    auth = client.authentication.with_profile(
+        "prod-token",
+        config_path="./local.ksef2.toml",
+    )
+```
+
+## Manage profiles from SDK code
+
+Use `ProfileStore` when a Python tool should create, update, select, or inspect
+the same profile file used by the CLI. Use `with_profile()` when you only need
+to authenticate.
+
+```python
+from ksef2 import Environment
+from ksef2.profiles import Profile, ProfileStore, TokenProfileAuth
+
+store = ProfileStore.default()
+store.save(
+    "prod-token",
+    Profile(
+        environment=Environment.PRODUCTION,
+        nip="5261040828",
+        auth=TokenProfileAuth(
+            token_env="KSEF2_TOKEN",
+            context_type="nip",
+        ),
+        poll_interval=2.0,
+        max_poll_attempts=90,
+    ),
+    activate=True,
+    overwrite=True,
+)
+```
+
+For a TEST certificate profile:
+
+```python
+from ksef2 import Environment
+from ksef2.profiles import Profile, ProfileStore, TestCertificateProfileAuth
+
+store = ProfileStore.default()
+store.save(
+    "test-company",
+    Profile(
+        environment=Environment.TEST,
+        nip="5261040828",
+        auth=TestCertificateProfileAuth(),
+    ),
+    activate=True,
+    overwrite=True,
+)
+```
+
+You can perform basic profile management without the CLI, but the CLI is usually more convenient.
+
+```python
+from ksef2.profiles import ProfileStore
+
+store = ProfileStore.default()
+
+profiles = store.list()
+current = store.current()
+profile = store.get("prod-token")
+store.use("prod-token")
+store.delete("old-profile")
+```
+
+`current` is either `None` or a `(name, profile)` tuple.
+
+## What the config contains
+
+The rendered file uses the same field names as the public SDK profile models:
+
+```toml
+active_profile = "prod-token"
+
+[profiles.prod-token]
+environment = "production"
+nip = "5261040828"
+poll_interval = 2.0
+max_poll_attempts = 90
+
+[profiles.prod-token.auth]
+type = "token"
+token_env = "KSEF2_TOKEN"
+context_type = "nip"
+```
+
+For XAdES profiles, the profile stores paths and password environment variable
+names:
+
+```python
+from ksef2 import Environment
+from ksef2.profiles import Profile, ProfileStore, XadesP12ProfileAuth
+
+store = ProfileStore.default()
+store.save(
+    "prod-p12",
+    Profile(
+        environment=Environment.PRODUCTION,
+        nip="5261040828",
+        auth=XadesP12ProfileAuth(
+            p12="signing-credentials.p12",
+            p12_password_env="KSEF2_P12_PASSWORD",
+        ),
+    ),
+    activate=False,
+    overwrite=True,
+)
+```
+
+## Recommended flow
+
+<Steps>
+
+1. Put secret values in environment variables.
+
+   Examples: `KSEF2_TOKEN`, `KSEF2_KEY_PASSWORD`, and
+   `KSEF2_P12_PASSWORD`.
+
+2. Create or select the profile with `ksef2-cli`.
+
+   This keeps terminal workflows and Python scripts aligned.
+
+3. Create the SDK root client for the same environment as the profile.
+
+   The SDK validates this before authenticating.
+
+4. Call `client.authentication.with_profile()`.
+
+   The returned authenticated client is used like any other authenticated SDK
+   client.
+
+</Steps>
+
+## Related pages
+
+<LinkCard
+  title="Quickstart"
+  href="../getting-started/quickstart.mdx"
+  description="Run the first send-and-download workflow, then adapt it to use a profile."
+/>
+
+<LinkCard
+  title="Authenticate"
+  href="authenticate.mdx"
+  description="Compare profiles with direct token, TEST certificate, and XAdES authentication."
+/>

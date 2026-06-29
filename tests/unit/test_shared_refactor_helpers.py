@@ -10,8 +10,8 @@ from ksef2.clients.base import Client
 from ksef2.clients.batch import BatchSessionClient
 from ksef2.config import Environment, TimeoutConfig, TransportConfig
 from ksef2.core.http_config import HttpClientKwargs
-from ksef2.domain.models.batch import BatchInvoice
-from ksef2.domain.models.session import FormSchema
+from ksef2.domain.models.batch import BatchFileInfo, BatchInvoice, PreparedBatch
+from ksef2.domain.models.session import FormSchema, SessionEncryptionMaterial
 from ksef2.endpoints.async_base import AsyncBaseEndpoints
 from ksef2.endpoints.base import BaseEndpoints
 from ksef2.services.async_batch import AsyncBatchService
@@ -87,26 +87,71 @@ def test_sync_and_async_batch_preparation_share_metadata_logic() -> None:
         BatchInvoice(file_name="invoice-2.xml", content=b"<Invoice>2</Invoice>"),
     ]
 
-    def _sync_open_batch_session() -> BatchSessionClient:
+    def _sync_open_batch_session(
+        *,
+        batch_file: BatchFileInfo,
+        aes_key: bytes,
+        iv: bytes,
+        encrypted_key: bytes,
+        public_key_id: str | None = None,
+        form_code: FormSchema = FormSchema.FA3,
+        offline_mode: bool = False,
+        prepared_batch: PreparedBatch | None = None,
+    ) -> BatchSessionClient:
+        del (
+            batch_file,
+            aes_key,
+            iv,
+            encrypted_key,
+            public_key_id,
+            form_code,
+            offline_mode,
+            prepared_batch,
+        )
         raise AssertionError("not used")
 
-    async def _async_open_batch_session() -> AsyncBatchSessionClient:
+    async def _async_open_batch_session(
+        *,
+        batch_file: BatchFileInfo,
+        aes_key: bytes,
+        iv: bytes,
+        encrypted_key: bytes,
+        public_key_id: str | None = None,
+        form_code: FormSchema = FormSchema.FA3,
+        offline_mode: bool = False,
+        prepared_batch: PreparedBatch | None = None,
+    ) -> AsyncBatchSessionClient:
+        del (
+            batch_file,
+            aes_key,
+            iv,
+            encrypted_key,
+            public_key_id,
+            form_code,
+            offline_mode,
+            prepared_batch,
+        )
         raise AssertionError("not used")
 
     sync_service = BatchService(
         authed_transport=FakeTransport(),
         upload_transport=FakeTransport(),
-        get_encryption_key=lambda: (
-            b"k" * 32,
-            b"v" * 16,
-            b"enc-key",
-            VALID_PUBLIC_KEY_ID,
+        get_encryption_key=lambda: SessionEncryptionMaterial(
+            aes_key=b"k" * 32,
+            iv=b"v" * 16,
+            encrypted_key=b"enc-key",
+            public_key_id=VALID_PUBLIC_KEY_ID,
         ),
         open_batch_session=_sync_open_batch_session,
     )
 
-    async def _get_encryption_key() -> tuple[bytes, bytes, bytes, str | None]:
-        return b"k" * 32, b"v" * 16, b"enc-key", VALID_PUBLIC_KEY_ID
+    async def _get_encryption_key() -> SessionEncryptionMaterial:
+        return SessionEncryptionMaterial(
+            aes_key=b"k" * 32,
+            iv=b"v" * 16,
+            encrypted_key=b"enc-key",
+            public_key_id=VALID_PUBLIC_KEY_ID,
+        )
 
     async_service = AsyncBatchService(
         authed_transport=AsyncFakeTransport(),

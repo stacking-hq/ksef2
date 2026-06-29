@@ -1,0 +1,96 @@
+---
+title: Encryption
+description: Understand how ksef2 uses KSeF public certificates for token, session, and export encryption.
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+KSeF expects clients to encrypt some payload material before it reaches the
+API. The SDK hides that machinery in normal workflows, but it is useful to know
+which key is being protected and what must be kept to continue the workflow.
+
+The public certificates used for that encryption are published by KSeF. Your
+application fetches public certificate material, encrypts local secrets for
+KSeF, and sends the `public_key_id` that identifies which KSeF public key was
+used.
+
+## Where encryption appears
+
+| Workflow | Local secret | What KSeF receives |
+| --- | --- | --- |
+| Token authentication | The KSeF token plus challenge timestamp. | Encrypted token-auth payload and the matching `public_key_id`. |
+| Online session | AES key and IV generated for invoice XML. | Encrypted session key, IV, and encrypted invoice payloads. |
+| Batch session | AES key and IV for the batch package. | Encrypted batch key material and upload declarations. |
+| Invoice export | AES key and IV for the export package. | Encrypted export key material; the SDK later uses local material to decrypt downloaded parts. |
+
+<Aside type="tip" title="Prefer the high-level path">
+  Online sessions, batch sessions, exports, and token authentication load and
+  use public certificates for you. Use `client.encryption` for diagnostics,
+  startup checks, or custom certificate caching.
+</Aside>
+
+## Public certificate model
+
+KSeF publishes public key certificates with metadata that tells clients what the
+key is for and when it is valid.
+
+| SDK field | Meaning |
+| --- | --- |
+| `certificate` | Base64 certificate material used by the SDK cryptography layer. |
+| `certificate_id` | Identifier for the certificate object. |
+| `public_key_id` | Identifier for the public key; sent back to KSeF after encryption. |
+| `valid_from` / `valid_to` | Validity window used for cache and refresh decisions. |
+| `usage` | `ksef_token_encryption` or `symmetric_key_encryption`. |
+
+```python
+certificates = client.encryption.get_certificates(
+    usage=["symmetric_key_encryption"],
+)
+
+for certificate in certificates:
+    print(certificate.public_key_id, certificate.valid_to, certificate.usage)
+```
+
+## Rotation and caching
+
+Treat public encryption certificates as rotating infrastructure. KSeF may
+publish a new certificate for the same key or rotate to a new key. A new
+certificate can change `certificate_id`; a new key changes `public_key_id`.
+
+Cache public certificates if it helps startup latency, but refresh them before
+long-running workers open sessions, schedule exports, or start token
+authentication. Do not hard-code certificate contents in application code.
+
+## What to persist
+
+For ordinary invoice sending, persist business identifiers, KSeF references,
+UPO data, and final artifacts. Do not persist low-level encryption internals
+unless another process must resume a session.
+
+For exports, keep the SDK `ExportHandle` until the package is downloaded. It
+contains local decryption material needed for the export parts. For resumed
+online or batch sessions, persist the serialized session state returned by the
+SDK rather than trying to reconstruct keys by hand.
+
+## Related pages
+
+<LinkCard
+  title="Inspect encryption certificates"
+  href="../how-to-guides/inspect-encryption-certificates.mdx"
+  description="Fetch and inspect KSeF public certificates from the root client."
+/>
+<LinkCard
+  title="Send invoices"
+  href="../how-to-guides/send-invoices.mdx"
+  description="Use encrypted online and batch sessions without managing keys manually."
+/>
+<LinkCard
+  title="Download invoices"
+  href="../how-to-guides/download-invoices.mdx"
+  description="Download direct invoices and encrypted export packages."
+/>
+<LinkCard
+  title="Certificates"
+  href="certificates.mdx"
+  description="Separate public encryption certificates from authentication and KSeF-issued certificates."
+/>

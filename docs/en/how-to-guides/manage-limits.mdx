@@ -1,0 +1,149 @@
+---
+title: Manage Limits
+description: Read and override KSeF context, subject, and API rate limits through ksef2.
+---
+
+import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Use `auth.limits` to inspect the effective limits KSeF applies to the current
+authenticated context. Only use override methods from explicit administrative
+workflows.
+
+## Read effective limits
+
+Read the current limits before choosing batch sizes, polling frequency, or
+certificate enrollment workflows.
+
+<Tabs syncKey="sdk-limits-read">
+  <TabItem label="Session limits">
+
+```python
+context = auth.limits.get_context_limits()
+
+# ContextLimits
+# {
+#   "online_session": {
+#     "max_invoice_size_mb": 10,
+#     "max_invoice_with_attachment_size_mb": 20,
+#     "max_invoices": 100
+#   },
+#   "batch_session": {
+#     "max_invoice_size_mb": 10,
+#     "max_invoice_with_attachment_size_mb": 20,
+#     "max_invoices": 1000
+#   }
+# }
+
+print(context.online_session.max_invoices)
+print(context.batch_session.max_invoice_size_mb)
+```
+
+  </TabItem>
+  <TabItem label="Subject limits">
+
+```python
+subject = auth.limits.get_subject_limits()
+
+print(subject.certificate)
+print(subject.enrollment)
+```
+
+  </TabItem>
+  <TabItem label="API rate limits">
+
+```python
+rate = auth.limits.get_api_rate_limits()
+
+print(rate.invoice_send.per_minute)
+print(rate.invoice_metadata.per_minute)
+print(rate.invoice_download.per_hour)
+```
+
+  </TabItem>
+</Tabs>
+
+## Override session limits
+
+Use session overrides only when the authenticated context is allowed to manage
+limits and the change is part of a controlled test or administration procedure.
+
+```python
+from ksef2.models import ContextLimits, SessionLimits
+
+limits = ContextLimits(
+    online_session=SessionLimits(
+        max_invoice_size_mb=10,
+        max_invoice_with_attachment_size_mb=20,
+        max_invoices=100,
+    ),
+    batch_session=SessionLimits(
+        max_invoice_size_mb=10,
+        max_invoice_with_attachment_size_mb=20,
+        max_invoices=1000,
+    ),
+)
+
+auth.limits.set_session_limits(limits=limits)
+```
+
+Reset the override when the test or temporary change is done:
+
+```python
+auth.limits.reset_session_limits()
+```
+
+## Use production rate defaults
+
+Use `set_production_rate_limits()` when a TEST-like environment should copy the
+production API rate defaults.
+
+```python
+auth.limits.set_production_rate_limits()
+
+rate = auth.limits.get_api_rate_limits()
+print(rate.invoice_send.per_minute)
+```
+
+<Aside type="caution" title="Do not hide limit changes">
+  Limit overrides affect other processes using the same KSeF context. Keep them
+  in operational runbooks, include the expected reset step, and do not bury them
+  inside ordinary invoice-sending code.
+</Aside>
+
+## Recommended flow
+
+<Steps>
+
+1. Read effective limits before choosing batch size, upload strategy, or polling
+   frequency.
+
+2. Keep production defaults unless a controlled test or administrator workflow
+   requires an override.
+
+3. Apply overrides from explicit operations code.
+
+4. Verify the new limits after applying them.
+
+5. Reset temporary overrides after the test or maintenance window.
+
+</Steps>
+
+## Next workflows
+
+<LinkCard
+  title="Send invoices"
+  href="send-invoices.mdx"
+  description="Choose online and batch sending behavior with the current limits in mind."
+/>
+
+<LinkCard
+  title="Limits"
+  href="../concepts/limits.mdx"
+  description="Understand why KSeF limits affect batching, polling, and retries."
+/>
+
+<LinkCard
+  title="Client setup"
+  href="client-setup.mdx"
+  description="Configure client timeout and retry behavior around KSeF limits."
+/>

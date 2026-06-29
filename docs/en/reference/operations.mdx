@@ -1,0 +1,208 @@
+---
+title: Operations Reference
+description: Transport configuration, retry behavior, workflow timeouts, logging fields, and resumable KSeF references.
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+This page records operational behavior that affects production integrations.
+It is not a sending or authentication walkthrough.
+
+## TransportConfig
+
+`TransportConfig` is used only when the SDK creates the underlying `httpx`
+client. If you pass `http_client`, that supplied client owns HTTP timeout, pool,
+TLS, proxy, `trust_env`, HTTP/2, custom transport, and event-hook settings.
+
+```python
+TransportConfig(
+    timeouts=TimeoutConfig(),
+    pool=ConnectionPoolConfig(),
+    retry=RetryConfig(),
+    tls=TlsConfig(),
+    proxy_url=None,
+    trust_env=True,
+    http2=True,
+)
+```
+
+| Field | Type | Default | Passed to |
+| --- | --- | --- | --- |
+| `timeouts` | `TimeoutConfig` | `TimeoutConfig()` | `httpx.Timeout` |
+| `pool` | `ConnectionPoolConfig` | `ConnectionPoolConfig()` | `httpx.Limits` |
+| `retry` | `RetryConfig` | `RetryConfig()` | SDK retry middleware |
+| `tls` | `TlsConfig` | `TlsConfig()` | `httpx` TLS verification |
+| `proxy_url` | `str | None` | `None` | `httpx` proxy |
+| `trust_env` | `bool` | `True` | `httpx` environment-variable behavior |
+| `http2` | `bool` | `True` | `httpx` HTTP/2 flag |
+
+## TimeoutConfig
+
+`TimeoutConfig` controls one HTTP request. It does not control how long the SDK
+polls KSeF workflow state.
+
+| Field | Default | Meaning |
+| --- | --- | --- |
+| `connect` | `5.0` | Time allowed to establish a connection. |
+| `read` | `30.0` | Time allowed while waiting for response bytes. |
+| `write` | `30.0` | Time allowed while sending request bytes. |
+| `pool` | `5.0` | Time allowed while waiting for a connection from the pool. |
+
+## ConnectionPoolConfig
+
+| Field | Default | Meaning |
+| --- | --- | --- |
+| `max_connections` | `100` | Maximum open connections. |
+| `max_keepalive_connections` | `20` | Maximum idle keep-alive connections. |
+| `keepalive_expiry` | `30.0` | Idle keep-alive expiry in seconds. |
+
+## TlsConfig
+
+| Field | Default | Meaning |
+| --- | --- | --- |
+| `verify` | `True` | Passed to `httpx` unless `ca_bundle_path` is set. |
+| `ca_bundle_path` | `None` | CA bundle path used as the `httpx` `verify` value when provided. |
+
+## RetryConfig
+
+`RetryConfig` controls SDK retry middleware. It applies to transport errors and
+retryable HTTP responses for retryable request types.
+
+| Field | Default |
+| --- | --- |
+| `max_attempts` | `3` |
+| `initial_delay` | `0.5` |
+| `max_delay` | `4.0` |
+| `backoff_multiplier` | `2.0` |
+| `retryable_status_codes` | `(429, 502, 503, 504)` |
+
+Retry delay is exponential:
+
+```text
+min(initial_delay * backoff_multiplier ** (attempt - 1), max_delay)
+```
+
+If KSeF sends `Retry-After`, the retry middleware uses that value, capped at
+`max_delay`.
+
+## Retryable requests
+
+The SDK retries only request shapes that are safe enough to repeat at the
+transport layer.
+
+| Request kind | Retry behavior |
+| --- | --- |
+| `GET` | Retryable. |
+| `DELETE` | Retryable. |
+| Most `POST` requests | Not retried automatically. |
+| Selected `POST` requests | Retried automatically when listed below. |
+
+Retryable `POST` groups:
+
+| Area | Operations |
+| --- | --- |
+| Authentication | challenge, redeem token, refresh token |
+| Invoices | metadata query |
+| Certificates | query, retrieve |
+| Permissions | personal, authorization, EU entity, person, subordinate entity, and subunit queries |
+
+Invoice submission, permission grants, certificate enrollment, token
+generation, online-session opening, and batch-session opening are not retried by
+the SDK retry middleware. Persist returned references and resume by status
+instead of recreating those operations blindly.
+
+## Workflow polling timeouts
+
+Polling helpers use `timeout` and `poll_interval` arguments. Those values are
+workflow deadlines, not HTTP request timeouts. When a polling timeout is raised,
+the remote KSeF workflow may still finish later.
+
+| Workflow | Timeout exception | Identifier carried by exception |
+| --- | --- | --- |
+| Authentication polling | `KSeFAuthPollingTimeoutError` | `reference_number` |
+| Token activation/status polling | `KSeFTokenStatusTimeoutError` | `reference_number` |
+| Metadata visibility polling | `KSeFInvoiceQueryTimeoutError` | `timeout` only |
+| Direct invoice download readiness | `KSeFInvoiceDownloadTimeoutError` | `ksef_number` |
+| Online invoice processing | `KSeFInvoiceProcessingTimeoutError` | `invoice_reference_number` |
+| Export package readiness | `KSeFExportTimeoutError` | `reference_number` |
+| Batch session completion | `KSeFBatchSessionTimeoutError` | `reference_number` |
+
+Resume polling with stored identifiers after a timeout. Do not infer that the
+remote operation failed only because the local wait deadline expired.
+
+## Rate limits
+
+KSeF `429` responses are classified as `KSeFRateLimitError`. The exception
+exposes:
+
+| Attribute | Meaning |
+| --- | --- |
+| `retry_after` | Seconds from `Retry-After` when KSeF returned the header; otherwise `None`. |
+| `status_code` | Always `429`. |
+| `response` | Parsed KSeF error payload when available. |
+
+Use `retry_after` to schedule background work. In request handlers, prefer
+returning or enqueueing retryable work over sleeping inside the request.
+
+## Secret and logging boundaries
+
+Do not log:
+
+- access tokens;
+- refresh tokens;
+- KSeF token values;
+- private keys;
+- PEM or PKCS#12 passwords;
+- raw invoice XML unless your retention policy explicitly allows it;
+- serialized online or batch session state.
+
+Useful production log fields:
+
+| Field | Meaning |
+| --- | --- |
+| `environment` | `test`, `demo`, or `production`. |
+| `workflow` | Application-level operation name. |
+| `session_reference_number` | Online or batch session reference. |
+| `invoice_reference_number` | Per-invoice session reference. |
+| `ksef_number` | Final KSeF invoice number after acceptance. |
+| `operation_reference_number` | Token, permission, certificate, auth, or export operation reference. |
+| `sdk_error_code` | `KSeFException.context["code"]` when present. |
+| `exception_code` | KSeF exception code from `KSeFApiError.exception_code` when present. |
+
+## Resumable workflow state
+
+Most KSeF workflows start with a reference and finish through polling or later
+download. Store the reference before waiting.
+
+| Workflow | Persist before waiting |
+| --- | --- |
+| Authentication | authentication operation reference and temporary authentication-token lifetime |
+| Online invoice sending | session reference and invoice reference number |
+| Batch upload | batch session reference, upload references, package metadata, and batch state while needed |
+| Invoice export | export reference number and protected export handle material |
+| Token generation | token reference number and returned token secret |
+| Permission grants/revokes | permission operation reference number |
+| Certificate enrollment/revoke | certificate operation reference or certificate serial number |
+
+## Related reference
+
+<LinkCard
+  title="Client lifecycle"
+  href="client-lifecycle.mdx"
+  description="Review constructors, branch ownership, close behavior, and lifecycle errors."
+/>
+<LinkCard
+  title="Error handling"
+  href="errors.mdx"
+  description="Inspect SDK exception classes, KSeF API errors, and timeout handling."
+/>
+<LinkCard
+  title="Client setup"
+  href="../how-to-guides/client-setup.mdx"
+  description="Apply these settings in runnable sync and async client setup examples."
+/>
+<LinkCard
+  title="Status and UPO"
+  href="../concepts/status-and-upo.mdx"
+  description="Understand status surfaces, UPO documents, polling, and local deadlines."
+/>

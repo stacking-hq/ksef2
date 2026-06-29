@@ -1,6 +1,6 @@
 """Domain models for effective and overrideable KSeF limits."""
 
-from ksef2.domain.models import KSeFBaseModel
+from ksef2.domain.models.base import KSeFBaseModel
 
 
 class SessionLimits(KSeFBaseModel):

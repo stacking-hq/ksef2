@@ -1,15 +1,19 @@
 """Public domain models and typed request/response helpers."""
 
+import warnings
+from typing import TYPE_CHECKING
+
 from ksef2.domain.models.base import KSeFBaseModel, KSeFBaseParams
 from ksef2.domain.models.compression import CompressionType, CompressionTypeEnum
 from ksef2.domain.models.session import (
-    BaseSessionState,
+    BaseSessionResumeState,
     FormSchema,
     InvoiceStatusInfo,
     ListSessionsResponse,
     OpenOnlineSessionRequest,
     OpenOnlineSessionResponse,
-    OnlineSessionState,
+    OnlineSessionResumeState,
+    SessionEncryptionMaterial,
     SessionInvoiceStatusResponse,
     SessionInvoicesResponse,
     SessionStatusResponse,
@@ -25,7 +29,7 @@ from ksef2.domain.models.batch import (
     BatchInvoiceHash,
     BatchPreparedPart,
     OpenBatchSessionRequest,
-    BatchSessionState,
+    BatchSessionResumeState,
     OpenBatchSessionResponse,
     PartUploadRequest,
     PreparedBatch,
@@ -152,6 +156,7 @@ from ksef2.domain.models.tokens import (
 from ksef2.domain.models.auth import (
     AuthenticationMethodCategory,
     AuthenticationMethod,
+    AuthenticationResumeState,
     AuthenticationSession,
     AuthenticationSessionsResponse,
     AuthInitResponse,
@@ -170,11 +175,50 @@ from ksef2.domain.models.certificates import (
     CertificateStatusValue,
     CertificateTypeValue,
 )
+from ksef2.domain.models.limits import (
+    ApiRateLimits,
+    ContextLimits,
+    SessionLimits,
+    SubjectLimits,
+)
 from ksef2.domain.models.peppol import (
     PeppolProvider,
     ListPeppolProvidersResponse,
 )
 from ksef2.domain.models.pagination import InvoiceMetadataParams
+
+if TYPE_CHECKING:
+    BaseSessionState = BaseSessionResumeState
+    OnlineSessionState = OnlineSessionResumeState
+    BatchSessionState = BatchSessionResumeState
+
+
+_DEPRECATED_EXPORTS = {
+    "BaseSessionState": (
+        BaseSessionResumeState,
+        "ksef2.domain.models.BaseSessionState is deprecated and will be "
+        "removed in a future release; use BaseSessionResumeState instead.",
+    ),
+    "OnlineSessionState": (
+        OnlineSessionResumeState,
+        "ksef2.domain.models.OnlineSessionState is deprecated and will be "
+        "removed in a future release; use OnlineSessionResumeState instead.",
+    ),
+    "BatchSessionState": (
+        BatchSessionResumeState,
+        "ksef2.domain.models.BatchSessionState is deprecated and will be "
+        "removed in a future release; use BatchSessionResumeState instead.",
+    ),
+}
+
+
+def __getattr__(name: str) -> object:
+    if name in _DEPRECATED_EXPORTS:
+        value, message = _DEPRECATED_EXPORTS[name]
+        warnings.warn(message, DeprecationWarning, stacklevel=2)
+        return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 __all__ = [
     # base
@@ -183,13 +227,14 @@ __all__ = [
     "CompressionType",
     "CompressionTypeEnum",
     # session
-    "BaseSessionState",
+    "BaseSessionResumeState",
     "FormSchema",
     "InvoiceStatusInfo",
     "ListSessionsResponse",
     "OpenOnlineSessionRequest",
     "OpenOnlineSessionResponse",
-    "OnlineSessionState",
+    "OnlineSessionResumeState",
+    "SessionEncryptionMaterial",
     "SessionInvoiceStatusResponse",
     "SessionInvoicesResponse",
     "SessionStatusResponse",
@@ -204,7 +249,7 @@ __all__ = [
     "BatchPreparedPart",
     "BatchEncryptionData",
     "OpenBatchSessionRequest",
-    "BatchSessionState",
+    "BatchSessionResumeState",
     "OpenBatchSessionResponse",
     "PartUploadRequest",
     "PreparedBatch",
@@ -328,6 +373,7 @@ __all__ = [
     # auth
     "AuthenticationMethodCategory",
     "AuthenticationMethod",
+    "AuthenticationResumeState",
     "AuthenticationSession",
     "AuthenticationSessionsResponse",
     "AuthInitResponse",
@@ -344,6 +390,11 @@ __all__ = [
     "CertificateLimitsResponse",
     "CertificateStatusValue",
     "CertificateTypeValue",
+    # limits
+    "ApiRateLimits",
+    "ContextLimits",
+    "SessionLimits",
+    "SubjectLimits",
     # peppol
     "PeppolProvider",
     "ListPeppolProvidersResponse",

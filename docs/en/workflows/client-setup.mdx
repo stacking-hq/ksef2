@@ -37,6 +37,27 @@ async with AsyncClient(Environment.TEST) as client:
 Use `Environment.DEMO` or `Environment.PRODUCTION` outside local TEST
 workflows.
 
+## Certificate cache
+
+Root clients use an in-memory certificate store by default. The store refreshes
+public encryption certificates after 24 hours, and high-level authentication,
+session, and export workflows load certificates lazily when they need them.
+
+Use a custom refresh interval when your application has a stricter startup or
+rotation policy:
+
+```python
+from datetime import timedelta
+
+from ksef2 import CertificateStore, Client, Environment
+
+store = CertificateStore(refresh_after=timedelta(hours=6))
+client = Client(Environment.PRODUCTION, certificate_store=store)
+```
+
+Pass any object implementing `CertificateStoreProtocol` when certificates should
+be shared through application storage such as a database or cache.
+
 When credentials live in a CLI-compatible profile, create the root client for
 the profile environment and authenticate through `with_profile()`:
 

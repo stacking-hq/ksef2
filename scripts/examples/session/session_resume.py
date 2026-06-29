@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 from ksef2 import Client, Environment, FormSchema
 from ksef2.core.tools import generate_nip, generate_pesel
-from ksef2.domain.models.session import OnlineSessionState
+from ksef2.domain.models.session import OnlineSessionResumeState
 from ksef2.domain.models.testdata import Identifier, Permission
 
 
@@ -55,19 +55,19 @@ def run(config: ExampleConfig) -> None:
         print("Opening session (manual mode)...")
         session = auth.online_session(form_code=FormSchema.FA3)
 
-        state: OnlineSessionState = session.get_state()
-        state_json = state.model_dump_json()
+        state: OnlineSessionResumeState = session.resume_state()
+        state_json = state.to_json()
 
         print(f"Session state saved ({len(state_json)} bytes)")
         print(f"  Reference: {state.reference_number}")
         print(f"  Valid until: {state.valid_until}")
 
         print("Resuming session from saved state...")
-        restored_state = OnlineSessionState.model_validate_json(state_json)
-        resumed_session = auth.resume_online_session(state=restored_state)
+        restored_state = OnlineSessionResumeState.from_json(state_json)
 
-        print("Terminating session...")
-        resumed_session.close()
+        print("Terminating resumed session...")
+        with auth.resume_online_session(state=restored_state):
+            pass
         print("Session terminated.")
 
 

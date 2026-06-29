@@ -1,0 +1,214 @@
+---
+title: Quickstart
+description: Generate, send, confirm, and download a TEST invoice with ksef2.
+---
+
+import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+This quickstart follows one TEST invoice through the SDK: build an FA(3)
+invoice, authenticate with a TEST certificate, send it in an online session,
+download the UPO, and fetch the processed invoice XML back from KSeF.
+
+## Install
+
+Choose your preferred installation method:
+<Tabs>
+  <TabItem label="pip">
+
+```bash
+pip install ksef2
+```
+
+  </TabItem>
+  <TabItem label="uv">
+
+```bash
+uv add ksef2
+```
+
+  </TabItem>
+</Tabs>
+
+ksef2 requires Python 3.12 or newer.
+
+## Code example
+
+Copy the following into a `quickstart.py` file.
+
+```python title="quickstart.py"
+from datetime import date, datetime, timezone
+from decimal import Decimal
+from pathlib import Path
+
+from ksef2 import Client, Environment, FormSchema
+from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+
+
+SELLER_NIP = "5261040828"
+DOWNLOADS = Path("downloads")
+
+invoice_number = f"QS/{datetime.now(timezone.utc):%Y%m%d%H%M%S}"
+invoice_xml = (
+    FA3InvoiceBuilder()
+    .header(system_info="ksef2 quickstart")
+    .seller(
+        name="Demo Seller Sp. z o.o.",
+        tax_id=SELLER_NIP,
+        country_code="PL",
+        address_line_1="Prosta 1",
+        address_line_2="00-001 Warszawa",
+    )
+    .buyer(
+        name="Demo Buyer Sp. z o.o.",
+        country_code="PL",
+        address_line_1="Kwiatowa 2",
+        address_line_2="00-002 Warszawa",
+    )
+    .standard()
+        .issue_date(date.today())
+        .issue_place("Warszawa")
+        .invoice_number(invoice_number)
+        .rows()
+            .add_line(
+                name="Consulting service",
+                quantity=Decimal("1"),
+                unit_price_net=Decimal("100.00"),
+                vat_rate=VatRate.VAT_23,
+            )
+        .done()
+    .done()
+    .to_xml()
+    .encode("utf-8")
+)
+
+DOWNLOADS.mkdir(exist_ok=True)
+(DOWNLOADS / "generated-invoice.xml").write_bytes(invoice_xml)
+
+with Client(Environment.TEST) as client:
+    auth = client.authentication.with_test_certificate(nip=SELLER_NIP)
+
+    with auth.online_session(form_code=FormSchema.FA3) as session:
+        sent = session.send_invoice(invoice_xml=invoice_xml)
+        print("Sent invoice:")
+        print(sent.model_dump_json(indent=2))
+
+        status = session.wait_for_invoice_ready(
+            invoice_reference_number=sent.reference_number,
+            timeout=120.0,
+        )
+        print("Invoice status:")
+        print(status.model_dump_json(indent=2))
+
+        upo_xml = session.get_invoice_upo_by_reference(
+            invoice_reference_number=sent.reference_number,
+        )
+        (DOWNLOADS / "upo.xml").write_bytes(upo_xml)
+        print("Saved downloads/upo.xml")
+
+    if status.ksef_number is None:
+        raise RuntimeError("KSeF did not assign an invoice number.")
+
+    downloaded_xml = auth.invoices.wait_for_invoice_download(
+        ksef_number=status.ksef_number,
+        timeout=120.0,
+    )
+    (DOWNLOADS / "processed-invoice.xml").write_bytes(downloaded_xml)
+    print("Saved downloads/processed-invoice.xml")
+```
+
+Run the Python script:
+
+```bash
+python quickstart.py
+# or
+uv run quickstart.py
+```
+
+The script writes three local files:
+- `downloads/generated-invoice.xml`
+- `downloads/upo.xml`
+- `downloads/processed-invoice.xml`
+
+After the script completes, inspect the generated XML, the UPO, and the XML
+returned by KSeF. The generated and processed invoice XML should represent the
+same invoice; keep the processed XML as the KSeF-returned copy.
+
+<Aside type="note" title="Why TEST certificate auth?">
+  This quickstart uses `with_test_certificate()` because it needs the least
+  setup in `Environment.TEST`. Token, XAdES, and profile authentication are
+  covered in the authentication guide.
+</Aside>
+
+## What happened
+
+<Steps>
+
+1. `FA3InvoiceBuilder` created a minimal FA(3) invoice XML using public SDK
+   field names such as `invoice_number`, `tax_id`, and `unit_price_net`.
+
+2. `Client(Environment.TEST)` selected the TEST KSeF base URLs and owned the
+   SDK HTTP resources.
+
+3. `with_test_certificate()` authenticated the TEST context represented by
+   `SELLER_NIP`.
+
+4. `online_session(FormSchema.FA3)` opened an online session for FA(3) invoice
+   submission.
+
+5. `send_invoice()` submitted the invoice and returned a session invoice
+   reference number.
+
+6. `wait_for_invoice_ready()` polled until KSeF assigned a KSeF invoice number.
+
+7. `get_invoice_upo_by_reference()` downloaded the UPO XML, and
+   `auth.invoices.wait_for_invoice_download()` fetched the processed invoice XML.
+
+</Steps>
+
+## Adapt the script
+
+Change the invoice fields or add more lines when you adapt the script. To move
+the same shape into DEMO or PRODUCTION, change the root `Environment` and use a
+credential that belongs to that environment.
+
+For repeated local work, create a CLI-compatible profile and replace the
+authentication line with `client.authentication.with_profile("test-company")`.
+Keep the profile environment aligned with the root client environment.
+
+## Related pages
+
+<LinkCard
+  title="Client setup"
+  href="../how-to-guides/client-setup.mdx"
+  description="Create sync and async clients and manage their lifecycle."
+/>
+<LinkCard
+  title="Authentication guide"
+  href="../how-to-guides/authenticate.mdx"
+  description="Authenticate with a token, XAdES certificate, TEST certificate, or profile."
+/>
+<LinkCard
+  title="Use profiles"
+  href="../how-to-guides/profiles.mdx"
+  description="Use a CLI-compatible local profile after the first TEST run."
+/>
+<LinkCard
+  title="Build FA(3) invoices"
+  href="../how-to-guides/build-fa3-invoices.mdx"
+  description="Generate valid FA(3) invoice XML with the fluent builder."
+/>
+<LinkCard
+  title="Sending invoices"
+  href="../how-to-guides/send-invoices.mdx"
+  description="Send invoices online or in batch and track processing state."
+/>
+<LinkCard
+  title="Downloading invoices"
+  href="../how-to-guides/download-invoices.mdx"
+  description="Download invoice XML directly or through export packages."
+/>
+<LinkCard
+  title="Public API contract"
+  href="../reference/public-api.mdx"
+  description="Review stable public imports for application code."
+/>

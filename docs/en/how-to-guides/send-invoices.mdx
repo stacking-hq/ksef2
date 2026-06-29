@@ -1,0 +1,273 @@
+---
+title: Send Invoices
+description: Send FA(3) XML through ksef2 online sessions or batch sessions.
+---
+
+import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Use `auth.online_session(...)` for interactive submission and `auth.batch` for
+larger file sets. The examples below assume you already have an authenticated
+client named `auth`.
+
+## Start with XML bytes
+
+The send APIs accept invoice XML bytes. Those bytes can come from your ERP, a
+file, or the SDK's FA(3) builder.
+
+<Tabs syncKey="sdk-invoice-xml-source">
+  <TabItem label="From file">
+
+```python
+from pathlib import Path
+
+invoice_xml = Path("invoice.xml").read_bytes()
+```
+
+  </TabItem>
+  <TabItem label="From builder">
+
+```python
+from datetime import date
+from decimal import Decimal
+
+from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+
+invoice_xml = (
+    FA3InvoiceBuilder()
+    .header(system_info="ksef2 send guide")
+    .seller(
+        name="Demo Seller Sp. z o.o.",
+        tax_id="5261040828",
+        country_code="PL",
+        address_line_1="Prosta 1",
+        address_line_2="00-001 Warszawa",
+    )
+    .buyer(
+        name="Demo Buyer Sp. z o.o.",
+        country_code="PL",
+        address_line_1="Kwiatowa 2",
+        address_line_2="00-002 Warszawa",
+    )
+    .standard()
+        .issue_date(date.today())
+        .issue_place("Warszawa")
+        .invoice_number("FV/42/2026")
+        .rows()
+            .add_line(
+                name="Consulting service",
+                quantity=Decimal("1"),
+                unit_price_net=Decimal("100.00"),
+                vat_rate=VatRate.VAT_23,
+            )
+        .done()
+    .done()
+    .to_xml()
+    .encode("utf-8")
+)
+```
+
+  </TabItem>
+</Tabs>
+
+## Send in an online session
+
+Use an online session when you want to submit one invoice or a small interactive
+set. The session context manager closes the remote online session when the block
+exits.
+
+```python
+from ksef2 import FormSchema
+
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    sent = session.send_invoice(invoice_xml=invoice_xml)
+
+    # SendInvoiceResponse
+    # {
+    #   "reference_number": "20260625-ABCD-EF1234567890"
+    # }
+
+    status = session.wait_for_invoice_ready(
+        invoice_reference_number=sent.reference_number,
+        timeout=120.0,
+        poll_interval=2.0,
+    )
+
+    # SessionInvoiceStatusResponse
+    # {
+    #   "reference_number": "20260625-ABCD-EF1234567890",
+    #   "ksef_number": "1234567890-20260625-...",
+    #   "invoice_number": "FV/42/2026",
+    #   "status": {
+    #     "code": 200,
+    #     "description": "Processed"
+    #   }
+    # }
+```
+
+`send_invoice()` only means KSeF accepted the encrypted payload into the session.
+`wait_for_invoice_ready()` waits for the per-invoice result and returns the KSeF
+number when processing succeeds.
+
+<Aside type="tip" title="Use the combined helper for simple scripts">
+  `session.send_invoice_and_wait(invoice_xml=invoice_xml)` performs the same
+  submit-and-poll sequence when you do not need the intermediate invoice
+  reference separately.
+</Aside>
+
+## Keep session handles
+
+Persist the handles before long polling or before handing work to another
+process.
+
+```python
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    session_state_json = session.resume_state().to_json()
+    sent = session.send_invoice(invoice_xml=invoice_xml)
+    invoice_reference_number = sent.reference_number
+
+# Store session_state_json and invoice_reference_number in secure storage.
+# Do not log session_state_json because it contains session encryption data.
+```
+
+## Send a batch
+
+Use a batch when you need to submit many XML files as one KSeF batch workflow.
+The high-level batch service prepares the ZIP package, encrypts package parts,
+opens the batch session, uploads the parts, closes the session, and returns a
+`BatchSessionResumeState`.
+
+<Tabs syncKey="sdk-batch-source">
+  <TabItem label="From paths">
+
+```python
+from pathlib import Path
+
+from ksef2 import FormSchema
+
+prepared = auth.batch.prepare_batch_from_paths(
+    invoice_paths=[
+        Path("invoice-1.xml"),
+        Path("invoice-2.xml"),
+    ],
+    form_code=FormSchema.FA3,
+)
+
+state = auth.batch.submit_prepared_batch(prepared_batch=prepared)
+
+# BatchSessionResumeState(reference_number="20260625-BATCH-...")
+# Persist the state securely. It contains encryption material and upload URLs.
+```
+
+  </TabItem>
+  <TabItem label="From bytes">
+
+```python
+from pathlib import Path
+
+from ksef2 import FormSchema
+from ksef2.models import BatchInvoice
+
+state = auth.batch.submit_batch(
+    invoices=[
+        BatchInvoice(
+            file_name="invoice-1.xml",
+            content=Path("invoice-1.xml").read_bytes(),
+        ),
+        BatchInvoice(
+            file_name="invoice-2.xml",
+            content=Path("invoice-2.xml").read_bytes(),
+        ),
+    ],
+    form_code=FormSchema.FA3,
+)
+
+# BatchSessionResumeState(reference_number="20260625-BATCH-...")
+# Persist the state securely. It contains encryption material and upload URLs.
+```
+
+  </TabItem>
+</Tabs>
+
+## Wait for batch completion
+
+After the batch is submitted, poll the batch session and inspect accepted and
+failed invoices.
+
+```python
+final_status = auth.batch.wait_for_completion(
+    session=state,
+    timeout=300.0,
+    poll_interval=2.0,
+)
+
+# SessionStatusResponse
+# {
+#   "status": {
+#     "code": 200,
+#     "description": "Processed"
+#   },
+#   "invoice_count": 2,
+#   "successful_invoice_count": 2,
+#   "failed_invoice_count": 0,
+#   "upo": {
+#     "pages": [
+#       {
+#         "reference_number": "upo-page-reference"
+#       }
+#     ]
+#   }
+# }
+
+accepted = auth.batch.list_invoices(session=state, page_size=100)
+failed = auth.batch.list_failed_invoices(session=state, page_size=100)
+```
+
+<Aside type="caution" title="Batch success still needs inspection">
+  A batch status summarizes the session. Inspect accepted and failed invoice
+  pages before deciding that every invoice in the package reached the expected
+  business outcome.
+</Aside>
+
+## Recommended flow
+
+<Steps>
+
+1. Authenticate for the seller context.
+
+2. Load invoice XML from your system or build it with `FA3InvoiceBuilder`.
+
+3. Use an online session for small interactive sending or `auth.batch` for
+   larger sets.
+
+4. Persist the returned session and invoice references before polling.
+
+5. Poll status, store accepted and failed results, then download UPO or invoice
+   XML from the follow-up pages.
+
+</Steps>
+
+## Next workflows
+
+<LinkCard
+  title="Get status and UPO"
+  href="get-status-and-upo.mdx"
+  description="Poll online and batch sessions, inspect results, and download UPO XML."
+/>
+
+<LinkCard
+  title="Build FA(3) invoices"
+  href="build-fa3-invoices.mdx"
+  description="Generate valid FA(3) XML when your application does not already have one."
+/>
+
+<LinkCard
+  title="Query invoices"
+  href="query-invoices.mdx"
+  description="Find processed invoices through metadata filters and pagination."
+/>
+
+<LinkCard
+  title="Download invoices"
+  href="download-invoices.mdx"
+  description="Download processed invoice XML after KSeF assigns a number."
+/>

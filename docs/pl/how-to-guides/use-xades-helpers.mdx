@@ -1,0 +1,148 @@
+---
+title: Użyj pomocników XAdES
+description: Ładuj certyfikaty i klucze prywatne, generuj certyfikaty TEST i podpisuj XML dla uwierzytelniania KSeF.
+---
+
+import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Użyj pomocników XAdES, gdy uwierzytelniasz się materiałem certyfikatu albo
+diagnozujesz podpisany XML uwierzytelniania. Większość aplikacji powinna nadal
+wywoływać `client.authentication.with_xades()` zamiast podpisywać ręcznie.
+
+## Załaduj materiał certyfikatu
+
+<Tabs syncKey="sdk-xades-load">
+  <TabItem label="PEM">
+
+```python
+import os
+
+from ksef2.xades import load_certificate_from_pem, load_private_key_from_pem
+
+password = os.environ.get("KSEF2_KEY_PASSWORD")
+
+cert = load_certificate_from_pem("company.pem")
+private_key = load_private_key_from_pem(
+    "company.key",
+    password=password.encode() if password else None,
+)
+```
+
+  </TabItem>
+  <TabItem label="PKCS#12">
+
+```python
+import os
+
+from ksef2.xades import load_certificate_and_key_from_p12
+
+password = os.environ.get("KSEF2_P12_PASSWORD")
+
+cert, private_key = load_certificate_and_key_from_p12(
+    "company.p12",
+    password=password.encode() if password else None,
+)
+```
+
+  </TabItem>
+</Tabs>
+
+## Uwierzytelnij przez XAdES
+
+Przekaż załadowany certyfikat i klucz prywatny do gałęzi uwierzytelniania.
+
+```python
+auth = client.authentication.with_xades(
+    nip="5261040828",
+    cert=cert,
+    private_key=private_key,
+)
+```
+
+## Wygeneruj materiał certyfikatu TEST
+
+Wygenerowanych certyfikatów używaj tylko w przepływach TEST.
+
+<Tabs syncKey="sdk-xades-test-certs">
+  <TabItem label="Firma">
+
+```python
+from ksef2.xades import generate_test_certificate
+
+cert, private_key = generate_test_certificate(nip="5261040828")
+```
+
+  </TabItem>
+  <TabItem label="Osoba">
+
+```python
+from ksef2.xades import generate_personal_test_certificate
+
+cert, private_key = generate_personal_test_certificate(
+    pesel="90010112345",
+    nip="5261040828",
+)
+```
+
+  </TabItem>
+</Tabs>
+
+## Podpisz XML bezpośrednio
+
+Bezpośrednich helperów podpisu używaj do diagnostyki albo niższych testów
+integracyjnych. Dla zwykłego uwierzytelniania preferuj `with_xades()`.
+
+```python
+from ksef2.xades import build_auth_token_request_xml, sign_xades
+
+xml = build_auth_token_request_xml(
+    challenge="challenge-from-ksef",
+    nip="5261040828",
+)
+
+signed_xml = sign_xades(xml, cert, private_key)
+```
+
+<Aside type="caution" title="Chroń klucze prywatne">
+  Pliki kluczy prywatnych i hasła trzymaj poza kontrolą wersji. Ładuj hasła ze
+  zmiennych środowiskowych albo managera sekretów i przekazuj do SDK tylko
+  załadowany obiekt klucza.
+</Aside>
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Załaduj materiał certyfikatu z PEM albo PKCS#12.
+
+2. Trzymaj hasła kluczy prywatnych w zmiennych środowiskowych albo managerze
+   sekretów.
+
+3. Uwierzytelniaj się przez `with_xades()`, gdy to możliwe.
+
+4. Generuj samopodpisane certyfikaty tylko dla TEST.
+
+5. Używaj bezpośrednich helperów podpisu tylko do diagnostyki albo
+   niskopoziomowych testów integracyjnych.
+
+</Steps>
+
+## Następne przepływy
+
+<LinkCard
+  title="Uwierzytelnianie"
+  href="authenticate.mdx"
+  description="Użyj załadowanego materiału certyfikatu XAdES w uwierzytelnianiu SDK."
+/>
+
+<LinkCard
+  title="Zarządzaj certyfikatami"
+  href="manage-certificates.mdx"
+  description="Rejestruj, pobieraj i cofaj certyfikaty KSeF."
+/>
+
+<LinkCard
+  title="XAdES"
+  href="../concepts/xades.mdx"
+  description="Zrozum, gdzie XAdES pasuje do modelu uwierzytelniania KSeF."
+/>

@@ -14,7 +14,7 @@
 
 <div align="center">
   <br>
-  <a href="https://docs.stacking.me/ksef2/sdk/intro/" title="ksef2 documentation">
+  <a href="https://docs.stacking.me/ksef2/sdk/getting-started/overview/" title="ksef2 documentation">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/stacking-hq/ksef2/main/docs/assets/logo-light.png">
       <img src="https://raw.githubusercontent.com/stacking-hq/ksef2/main/docs/assets/logo-dark.png" alt="ksef2" width="320">
@@ -137,7 +137,7 @@ ksef2 profile create prod-token \
 ksef2 profile use prod-token
 
 # example usage of the cli
-ksef2 --profile prod-token invoices metadata \
+ksef2 --profile prod-token invoices list \
   --role seller \
   --date-from 2026-01-01T00:00:00Z
 ```
@@ -219,10 +219,11 @@ invoice downloads after KSeF assigns invoice numbers.
 
 ## Documentation
 
-- Online docs: <https://docs.stacking.me/ksef2/sdk/intro/>
+- Online docs: <https://docs.stacking.me/ksef2/sdk/getting-started/overview/>
 - Quickstart: <https://docs.stacking.me/ksef2/sdk/getting-started/quickstart/>
-- Workflow guides: <https://docs.stacking.me/ksef2/sdk/workflows/overview/>
-- API reference: <https://docs.stacking.me/ksef2/sdk/reference/api-signatures/>
+- How-to guides: <https://docs.stacking.me/ksef2/sdk/how-to-guides/overview/>
+- Public API contract: <https://docs.stacking.me/ksef2/sdk/reference/public-api/>
+- Python API reference: <https://docs.stacking.me/ksef2/sdk/reference/api/>
 - Source docs: [`docs/en`](https://github.com/stacking-hq/ksef2/tree/main/docs/en) and [`docs/pl`](https://github.com/stacking-hq/ksef2/tree/main/docs/pl)
 - Runnable examples: [`scripts/examples`](https://github.com/stacking-hq/ksef2/tree/main/scripts/examples)
 

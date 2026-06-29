@@ -1,0 +1,185 @@
+---
+title: Migrate to ksef2 1.0.0
+description: Upgrade pre-1.0 application code to the stable public ksef2 SDK surface.
+---
+
+import { Aside, LinkCard, Steps } from '@astrojs/starlight/components';
+
+Use this guide when an application was built against a pre-1.0 ksef2 release and
+you want to move it onto the documented 1.x public contract.
+
+<Aside type="caution" title="Verify against KSeF TEST or DEMO first">
+  1.0 stabilizes the SDK's documented application surface. It does not freeze
+  Ministry of Finance API behavior, taxpayer permissions, credentials, or
+  generated OpenAPI model shapes.
+</Aside>
+
+## 1. Pin the upgrade window
+
+Install the 1.x line explicitly and run your integration tests against the same
+KSeF environment your application will use:
+
+```bash
+pip install "ksef2>=1.0,<2"
+# or
+uv add "ksef2>=1.0,<2"
+```
+
+Keep Python at 3.12 or newer.
+
+## 2. Move imports to public paths
+
+Replace imports from internal modules before changing workflow behavior.
+
+| Pre-1.0 or internal path | Use in 1.0 |
+| --- | --- |
+| `ksef2.core.xades` | `ksef2.xades` |
+| `ksef2.core.exceptions` for application catches | root `ksef2` exports such as `KSeFApiError`, `KSeFRateLimitError`, and `KSeFException` |
+| `ksef2.config` for common config | root `ksef2` exports such as `Environment`, `TransportConfig`, and `RetryConfig` |
+| `ksef2.infra.schema.api.spec` | `from ksef2.raw import spec` |
+| `ksef2.infra.schema.api.supp` | `from ksef2.raw import supp` |
+| `ksef2.infra.mappers.*` | high-level SDK models, or documented bridges under `ksef2.raw.mappers` |
+| `ksef2.endpoints.*` | high-level client branches or `client.raw` / `auth.raw` |
+| old FA(3) builder or sample-invoice helpers | `ksef2.fa3.FA3InvoiceBuilder` and public `ksef2.fa3` models |
+
+If an internal import has no public replacement, move the code up to the nearest
+documented workflow branch instead of copying the internal implementation.
+
+## 3. Rebase workflow code on authenticated branches
+
+The normal shape is root client, authentication, then an authenticated branch:
+
+```python
+from ksef2 import Client, Environment, FormSchema
+
+client = Client(Environment.TEST)
+auth = client.authentication.with_token(
+    ksef_token="your-ksef-token",
+    nip="5261040828",
+)
+
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    status = session.send_invoice_and_wait(
+        invoice_xml=b"<Faktura>...</Faktura>",
+        timeout=60.0,
+    )
+
+invoice_xml = auth.invoices.wait_for_invoice_download(
+    ksef_number=status.ksef_number,
+    timeout=120.0,
+)
+```
+
+Use `auth.invoices`, `auth.tokens`, `auth.permissions`, `auth.certificates`, and
+`auth.limits` for authenticated work. Use `client.encryption`, `client.peppol`,
+and TEST-only `client.testdata` for public or setup work on the root client.
+
+## 4. Update error handling
+
+Catch SDK-classified errors by public exception class and keep transport errors
+separate:
+
+```python
+import httpx
+
+from ksef2 import KSeFApiError, KSeFException, KSeFRateLimitError
+
+try:
+    result = auth.invoices.query_metadata(filters=filters)
+except KSeFRateLimitError as exc:
+    retry_after = exc.retry_after
+except KSeFApiError as exc:
+    status_code = exc.status_code
+    exception_code = exc.exception_code
+except KSeFException as exc:
+    context = exc.context
+except httpx.HTTPError as exc:
+    transport_error = exc
+```
+
+Polling timeout exceptions mean the local deadline expired. They do not prove
+that the remote KSeF operation failed. Persist references before waiting so
+another process can resume polling.
+
+## 5. Recheck low-level integrations
+
+Keep low-level code inside the supported raw surface:
+
+```python
+from ksef2.raw import spec, supp
+from ksef2.raw.mappers import auth as auth_mapper
+```
+
+The `ksef2.raw` import path is stable, but model fields follow the checked KSeF
+OpenAPI version. When the Ministry of Finance changes the schema, raw model
+shapes can change in a minor SDK release.
+
+## 6. Update FA(3) builder usage
+
+Use the public FA(3) facade for new invoice-building code:
+
+```python
+from ksef2.fa3 import FA3InvoiceBuilder, KsefInvoiceDraft, VatRate
+```
+
+Persist generated XML or `KsefInvoiceDraft` state when users can pause editing.
+Do not persist private builder attributes. Validate business assumptions against
+the official FA(3) rules and your own accounting requirements.
+
+## 7. Replace old documentation links
+
+The public docs no longer use the old `intro`, `workflows`, or
+`api-signatures` routes.
+
+| Old route | Current route |
+| --- | --- |
+| `/ksef2/sdk/intro/` | `/ksef2/sdk/getting-started/overview/` |
+| `/ksef2/sdk/workflows/overview/` | `/ksef2/sdk/how-to-guides/overview/` for tasks or `/ksef2/sdk/concepts/overview/` for concepts |
+| `/ksef2/sdk/reference/api-signatures/` | `/ksef2/sdk/reference/api/` |
+| `/ksef2/sdk/raw/overview/` | `/ksef2/sdk/reference/low-level/overview/` |
+
+## Final checklist
+
+<Steps>
+
+1. Search application code for `ksef2.core`, `ksef2.infra`, and
+   `ksef2.endpoints`.
+
+   Replace them with documented public imports or high-level client branches.
+
+2. Run authentication, sending, querying, download, and administrative tests in
+   TEST or DEMO.
+
+   Pay special attention to credentials, taxpayer context, permissions, and
+   references persisted before polling.
+
+3. Review logging.
+
+   Do not log tokens, private keys, password material, raw invoice XML, or
+   serialized session state unless your retention policy explicitly allows it.
+
+4. Check the official KSeF documentation for behavior that is owned by the
+   Ministry of Finance.
+
+   The SDK wraps the API; it is not the authority for legal or operational KSeF
+   behavior.
+
+</Steps>
+
+## Related pages
+
+<LinkCard
+  title="1.0.0 release notes"
+  href="../reference/release-notes-1-0-0.mdx"
+  description="Review what is stable, public-but-lower-level, and outside the 1.x contract."
+/>
+<LinkCard
+  title="Public API contract"
+  href="../reference/public-api.mdx"
+  description="Review stable imports and internal boundaries."
+/>
+<LinkCard
+  title="Operations reference"
+  href="../reference/operations.mdx"
+  description="Review retries, timeouts, rate limits, logging boundaries, and resumable references."
+/>

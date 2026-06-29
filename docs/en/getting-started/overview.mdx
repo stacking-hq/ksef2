@@ -1,0 +1,102 @@
+---
+title: Overview
+description: Start here for the ksef2 Python SDK documentation.
+---
+
+import logoDark from '../assets/logo-dark.png';
+import logoLight from '../assets/logo-light.png';
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+<div className="ksef2-overview-logo" role="img" aria-label="ksef2">
+  <img
+    className="ksef2-overview-logo__image ksef2-overview-logo__image--light"
+    src={logoLight.src}
+    alt=""
+    width="392"
+    aria-hidden="true"
+  />
+  <img
+    className="ksef2-overview-logo__image ksef2-overview-logo__image--dark"
+    src={logoDark.src}
+    alt=""
+    width="392"
+    aria-hidden="true"
+  />
+</div>
+
+<style>{`
+  .ksef2-overview-logo {
+    position: relative;
+    width: min(392px, 100%);
+    aspect-ratio: 392 / 88;
+    margin: 0 0 1.5rem;
+  }
+
+  .ksef2-overview-logo__image {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: left center;
+  }
+
+  .ksef2-overview-logo__image--light {
+    opacity: 0;
+  }
+
+  :root[data-theme='dark'] .ksef2-overview-logo__image--light {
+    opacity: 1;
+  }
+
+  :root[data-theme='dark'] .ksef2-overview-logo__image--dark {
+    opacity: 0;
+  }
+`}</style>
+
+**ksef2** is a fully typed Python SDK for Poland's KSeF v2 API.
+
+> **Unofficial SDK.** ksef2 is a community-maintained Python SDK. It is not
+> published, endorsed, or supported by Poland's Ministry of Finance. Use the
+> official KSeF documentation as the authority for API behavior.
+
+<LinkCard
+  title="Official KSeF API v2 documentation"
+  href="https://api-test.ksef.mf.gov.pl/docs/v2/"
+  description="Use the Ministry of Finance documentation as the authority for API behavior."
+/>
+
+
+This project aims to be a go-to solution for developers building custom integrations, automations and back-office tools around KSeF without hand-writing HTTP requests, polling loops, or encryption handling.
+
+The main premise of the SDK is to provide a high-level pythonic interface that allows developers to focus on their business logic rather than the intricacies of the KSeF API.
+
+While the SDK abstracts away many of the complexities of interacting with the KSeF API, we are aware that some developers may want to have more control over the requests and responses. Therefore, the SDK also provides low-level access to the API endpoints, allowing developers to customize their interactions with the API as needed.
+
+## Next steps
+
+<LinkCard
+  title="Run the quickstart"
+  href="../getting-started/quickstart.mdx"
+  description="Get started with a working example of authentication, sending, querying, and downloading invoices."
+/>
+
+<LinkCard
+  title="Get familiar with the SDK"
+  href="../concepts/overview.mdx"
+  description="Learn about the SDK's authentication patterns, client lifecycle, and invoice handling."
+/>
+
+<LinkCard
+  title="Send, query, and download invoices"
+  href="../how-to-guides/overview.mdx"
+  description="Learn how to send invoices online or in batch, query invoices with filters and pagination, and download invoices directly or as export packages."
+/>
+
+<LinkCard
+  title="Low-level API"
+  href="../reference/low-level/overview.mdx"
+  description="Use schema-native endpoint wrappers when you need direct control."
+/>

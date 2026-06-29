@@ -1,0 +1,194 @@
+---
+title: Skonfiguruj klienta
+description: Utwórz klienta sync albo async, skonfiguruj transport i wybierz uwierzytelnione gałęzie.
+---
+
+import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Klient główny `Client` przechowuje konfigurację transportu HTTP i udostępnia
+publiczne, nieuwierzytelnione gałęzie. Uwierzytelnij się raz dla kontekstu KSeF,
+a potem przekaż uwierzytelnionego klienta do kodu przepływu.
+
+## Wybierz sync albo async
+
+<Tabs syncKey="sdk-client-kind">
+  <TabItem label="Sync">
+
+```python
+from ksef2 import Client, Environment
+
+with Client(Environment.TEST) as client:
+    auth = client.authentication.with_test_certificate(nip="5261040828")
+```
+
+  </TabItem>
+  <TabItem label="Async">
+
+```python
+from ksef2 import AsyncClient, Environment
+
+async with AsyncClient(Environment.TEST) as client:
+    auth = await client.authentication.with_test_certificate(nip="5261040828")
+```
+
+  </TabItem>
+</Tabs>
+
+Poza lokalnymi przepływami TEST używaj `Environment.DEMO` albo
+`Environment.PRODUCTION`.
+
+## Zarządzaj cyklem życia
+
+Klient główny przechowuje zasoby HTTP zarządzane przez SDK. W skryptach i
+zadaniach preferuj context manager:
+
+```python
+from ksef2 import Client, Environment
+
+with Client(Environment.TEST) as client:
+    auth = client.authentication.with_test_certificate(nip="5261040828")
+```
+
+Jeżeli framework oczekuje zależności opartej o `yield`, umieść `yield` w
+funkcji zależności i zamknij klienta w `finally`:
+
+```python
+from collections.abc import Iterator
+
+from ksef2 import Client, Environment
+
+
+def get_client() -> Iterator[Client]:
+    client = Client(Environment.TEST)
+    try:
+        yield client
+    finally:
+        client.close()
+```
+
+Aplikacje async używają tej samej granicy przez `async with`:
+
+```python
+from ksef2 import AsyncClient, Environment
+
+async with AsyncClient(Environment.TEST) as client:
+    auth = await client.authentication.with_test_certificate(nip="5261040828")
+```
+
+Sesje online i batch też są granicami cyklu życia. Używaj context managera
+sesji, żeby SDK zamknęło zdalną sesję po wyjściu z bloku:
+
+```python
+from ksef2 import FormSchema
+
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    status = session.send_invoice_and_wait(invoice_xml=invoice_xml)
+```
+
+Gdy dane uwierzytelniające są zapisane w profilu kompatybilnym z CLI, utwórz
+klienta głównego dla środowiska profilu i uwierzytelnij się przez
+`with_profile()`:
+
+```python
+from ksef2 import Client, Environment
+
+client = Client(Environment.PRODUCTION)
+auth = client.authentication.with_profile("prod-token")
+```
+
+## Publiczne gałęzie klienta głównego
+
+Klient główny przydaje się przed uwierzytelnieniem:
+
+```python
+certificates = client.encryption.get_certificates()
+providers = client.peppol.query()
+```
+
+Gałąź tylko dla TEST także jest na kliencie głównym:
+
+```python
+client.testdata.create_subject(
+    nip="5261040828",
+    subject_type="vat_group",
+    description="Sandbox company",
+)
+```
+
+## Gałęzie uwierzytelnione
+
+Po uwierzytelnieniu użyj gałęzi pasującej do zadania:
+
+```python
+invoices = auth.invoices
+batch = auth.batch
+tokens = auth.tokens
+permissions = auth.permissions
+certificates = auth.certificates
+limits = auth.limits
+sessions = auth.sessions
+invoice_sessions = auth.invoice_sessions
+```
+
+<Aside type="note" title="Oddziel klienta głównego od uwierzytelnionego">
+  Klient główny wybiera środowisko i transport. Klient uwierzytelniony trzyma
+  tokeny bearer i gałęzie zależne od kontekstu. Przekazywanie
+  uwierzytelnionego klienta do kodu przepływów trzyma stan auth poza kodem
+  konfiguracji.
+</Aside>
+
+## Zalecany przepływ
+
+<Steps>
+
+1. Odczytaj środowisko i ustawienia transportu na granicy aplikacji.
+
+2. Utwórz jednego klienta głównego dla wybranego środowiska KSeF.
+
+3. Używaj gałęzi głównych tylko do publicznych odczytów albo przygotowania
+   danych TEST.
+
+4. Uwierzytelnij się raz dla kontekstu, który wykonuje operację.
+
+5. Przekaż uwierzytelnionego klienta do przepływów faktur, tokenów, uprawnień,
+   certyfikatów, limitów i sesji.
+
+</Steps>
+
+## Referencja
+
+<LinkCard
+  title="Uwierzytelnianie"
+  href="authenticate.mdx"
+  description="Uwierzytelnij się tokenem, XAdES, certyfikatem TEST albo profilem."
+/>
+<LinkCard
+  title="Operacje"
+  href="../reference/operations.mdx"
+  description="Mapuj typowe workflow na wysokopoziomowe wejścia SDK."
+/>
+<LinkCard
+  title="Magazyn certyfikatów"
+  href="configure-certificate-store.mdx"
+  description="Skonfiguruj odświeżanie cache certyfikatów albo przekaż własny magazyn."
+/>
+<LinkCard
+  title="Certyfikaty szyfrowania"
+  href="inspect-encryption-certificates.mdx"
+  description="Sprawdź publiczne certyfikaty szyfrowania KSeF przed zaszyfrowanymi workflow."
+/>
+<LinkCard
+  title="Dostawcy PEPPOL"
+  href="query-peppol-providers.mdx"
+  description="Odczytuj publiczne dane dostawców PEPPOL z klienta głównego."
+/>
+<LinkCard
+  title="Dane TEST"
+  href="use-test-data.mdx"
+  description="Twórz i zarządzaj podmiotami oraz uprawnieniami TEST."
+/>
+<LinkCard
+  title="Cykl życia klienta"
+  href="../reference/client-lifecycle.mdx"
+  description="Przejrzyj cykl życia klienta głównego, klientów uwierzytelnionych i zamykanie zasobów."
+/>

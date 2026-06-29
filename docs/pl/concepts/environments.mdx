@@ -1,0 +1,96 @@
+---
+title: Środowiska
+description: Zrozum wybór środowisk TEST, DEMO i PRODUCTION w ksef2.
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+Przepływy KSeF działają wobec jawnie wybranego środowiska. Wybierasz je przy
+tworzeniu klienta głównego, a dane dostępowe, profile, zapisany stan sesji i
+URL-e pobierania powinny pozostać przypisane do tego środowiska.
+
+| Środowisko | Oficjalna rola | Bazowy URL | Typowe użycie |
+| --- | --- | --- | --- |
+| `Environment.TEST` | Środowisko testowe / release candidate | `https://api-test.ksef.mf.gov.pl/v2` | Lokalny development, CI, certyfikaty TEST generowane przez SDK, dane TEST. |
+| `Environment.DEMO` | Środowisko przedprodukcyjne / demo | `https://api-demo.ksef.mf.gov.pl/v2` | Testy integracyjne z zachowaniem podobnym do produkcji i nieprodukcyjnymi credentialami. |
+| `Environment.PRODUCTION` | Środowisko produkcyjne | `https://api.ksef.mf.gov.pl/v2` | Rzeczywiste przepływy podatnika i produkcyjne credentiale. |
+
+<Aside type="caution" title="Stan środowiska nie jest przenośny">
+  Nie przenoś tokenów, założeń certyfikatowych, referencji sesji ani URL-i
+  paczek między środowiskami. Traktuj każde środowisko jako osobną granicę
+  operacyjną.
+</Aside>
+
+## Oficjalne granice środowisk
+
+TEST jest celowo luźniejszy niż DEMO i PRODUCTION. Obsługuje przepływy danych
+testowych, materiał certyfikatu testowego generowany przez SDK i scenariusze z
+certyfikatami self-signed. Dane TEST nie są prywatnym archiwum produkcyjnym, więc
+nie używaj tam rzeczywistych danych faktur.
+
+DEMO jest bliżej zachowania produkcyjnego, ale nadal nie jest środowiskiem
+produkcyjnych faktur. PRODUCTION jest jedynym środowiskiem dla rzeczywistych
+przepływów podatnika. URL-e zwracane przez KSeF, na przykład linki do paczek,
+należą do tego samego hosta środowiska, które je wytworzyło.
+
+Dostępność schematów faktur też zależy od środowiska:
+
+| Środowisko | Format faktur ustrukturyzowanych |
+| --- | --- |
+| TEST | `FA(2)`, `FA(3)`, `FA_PEF(3)`, `FA_KOR_PEF(3)` |
+| DEMO | `FA(3)`, `FA_PEF(3)`, `FA_KOR_PEF(3)` |
+| PRODUCTION | `FA(3)`, `FA_PEF(3)`, `FA_KOR_PEF(3)` |
+
+## Co kontroluje środowisko
+
+Środowisko wybiera bazowy URL API KSeF oraz granicę operacyjną dla credentiali,
+profili, certyfikatów, danych testowych, referencji sesji, numerów faktur i
+eksportów.
+
+```python
+from ksef2 import Client, Environment
+
+client = Client(Environment.TEST)
+```
+
+`client.testdata` jest dostępne tylko w `Environment.TEST`. Helper
+uwierzytelniania certyfikatem TEST generowanym przez SDK również działa tylko w
+TEST.
+
+## Granice bezpieczeństwa
+
+Credentiale są przypisane do środowiska. Profil utworzony dla PRODUCTION nie
+powinien być wybrany przez klienta TEST, a `with_profile()` odrzuca taki
+mismatch.
+
+Zapisany stan oznaczaj środowiskiem, które go wytworzyło:
+
+- nazwa profilu uwierzytelniania;
+- identyfikator podatnika albo kontekstu;
+- referencja sesji online albo batch;
+- numer referencyjny faktury;
+- numer KSeF;
+- numer referencyjny eksportu.
+
+## Powiązane strony
+
+<LinkCard
+  title="Przegląd SDK"
+  href="overview.mdx"
+  description="Zrozum główne obiekty SDK i granice przepływów."
+/>
+<LinkCard
+  title="Skonfiguruj klienta"
+  href="../how-to-guides/client-setup.mdx"
+  description="Wybierz TEST, DEMO albo PRODUCTION podczas tworzenia klienta."
+/>
+<LinkCard
+  title="Uwierzytelnij się"
+  href="../how-to-guides/authenticate.mdx"
+  description="Uwierzytelnij się właściwym credentialem w wybranym środowisku."
+/>
+<LinkCard
+  title="Cykl życia klienta"
+  href="../reference/client-lifecycle.mdx"
+  description="Sprawdź, jak wybór środowiska wpływa na klientów SDK."
+/>

@@ -1,7 +1,5 @@
 """Generators for valid Polish NIP and PESEL numbers (for testing)."""
 
-from __future__ import annotations
-
 import random
 
 NIP_WEIGHTS = (6, 5, 7, 2, 3, 4, 5, 6, 7)

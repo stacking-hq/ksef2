@@ -13,7 +13,7 @@ from ksef2.config import Environment
 from ksef2.core.exceptions import KSeFUnsupportedEnvironmentError
 from ksef2.core.routes import TokenRoutes
 from ksef2.core.stores import CertificateStore
-from ksef2.domain.models.auth import AuthTokens
+from ksef2.domain.models.auth import AuthenticationResumeState, AuthTokens
 from ksef2.endpoints.auth import AuthEndpoints
 from ksef2.endpoints.encryption import EncryptionEndpoints
 from ksef2.endpoints.invoices import InvoicesEndpoints
@@ -64,7 +64,9 @@ def test_root_client_binds_tokens_to_authenticated_raw_client(
         environment=Environment.TEST, http_client=MagicMock(spec=httpx.Client)
     )
 
-    auth = client.authenticated(domain_auth_tokens.build())
+    auth = client.authentication.resume(
+        AuthenticationResumeState.from_tokens(domain_auth_tokens.build())
+    )
 
     assert isinstance(auth, AuthenticatedClient)
     assert isinstance(auth.raw, RawAuthenticatedClient)

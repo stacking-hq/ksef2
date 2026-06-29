@@ -7,8 +7,6 @@ Run with:
     uv run pytest tests/integration/test_cli_export_invoices.py -v -m integration
 """
 
-from __future__ import annotations
-
 import time
 from pathlib import Path
 

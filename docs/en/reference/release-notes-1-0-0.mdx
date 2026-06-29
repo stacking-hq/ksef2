@@ -1,0 +1,118 @@
+---
+title: ksef2 1.0.0 Release Notes
+description: Stability boundary, supported workflows, and pre-1.0 changes for the first stable ksef2 SDK release.
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+<Aside type="caution" title="Draft until the 1.0.0 tag">
+  These notes describe the intended 1.0.0 public contract. Treat the package
+  changelog and the final GitHub release as authoritative once `v1.0.0` is
+  tagged.
+</Aside>
+
+ksef2 1.0.0 is the first release that treats documented application-facing
+imports as a compatibility contract for the 1.x line. The SDK currently targets
+KSeF OpenAPI version `2.6.1`.
+
+> **Unofficial SDK.** ksef2 is community-maintained. It is not published,
+> endorsed, or supported by Poland's Ministry of Finance. The official KSeF
+> documentation remains the source of truth for API behavior.
+
+<LinkCard
+  title="Official KSeF API v2 documentation"
+  href="https://api-test.ksef.mf.gov.pl/docs/v2/"
+  description="Use the Ministry of Finance documentation as the authority for API behavior."
+/>
+
+## Stable in 1.0
+
+The stable contract is the documented public SDK surface, not every importable
+module in the repository.
+
+| Surface | 1.0 contract |
+| --- | --- |
+| `ksef2` | Root clients, environments, transport config, `FormSchema`, `__version__`, and public exceptions. |
+| `ksef2.clients` | Concrete sync and async client classes for type annotations and advanced construction. |
+| `ksef2.models` | Public SDK request, response, filter, pagination, token, permission, session, batch, and invoice models. |
+| High-level client branches | `client.authentication`, `client.encryption`, `client.peppol`, `client.testdata`, and authenticated branches such as `auth.invoices`, `auth.tokens`, `auth.permissions`, `auth.certificates`, and `auth.limits`. |
+| Session helpers | Online and batch session workflows for sending, polling, UPO, and resumable KSeF references. |
+| `ksef2.xades` | Certificate loading, TEST certificate generation, local XAdES signing helpers, and `LocalSigner`. |
+| `ksef2.profiles` | Local `ksef2-cli` compatible profile config helpers. |
+| `ksef2.fa3` | Public FA(3) invoice builder, draft snapshots, and public FA(3) domain models used by builder workflows. |
+| `ksef2.renderers` | Optional local XSLT/PDF invoice rendering helpers when installed with the `pdf` extra. |
+
+For the exact compatibility boundary, use the public API contract page.
+
+## Public but lower level
+
+`ksef2.raw` and `ksef2.raw.mappers` are public advanced APIs. Their import paths
+are part of the 1.x contract, but their schema-native model shapes follow the
+checked Ministry of Finance OpenAPI version.
+
+Use `ksef2.raw` when you need endpoint-level control, exact OpenAPI-shaped
+payloads, caller-owned encryption custody, or protocol debugging. Most
+application code should use the high-level client branches.
+
+## Not part of the 1.x contract
+
+Do not build application code on these paths:
+
+- `ksef2.infra.*`;
+- `ksef2.core.*`;
+- `ksef2.endpoints.*`;
+- `ksef2.services.*`;
+- repository `scripts/*`;
+- underscored modules and deprecated compatibility modules;
+- generated schema internals outside `ksef2.raw.spec` and `ksef2.raw.supp`.
+
+These paths may remain importable for SDK implementation, tests, and tooling,
+but they can change without a 2.0 release.
+
+## What changed from pre-1.0
+
+Pre-1.0 releases shaped the SDK around a stable application surface:
+
+- consolidated normal workflows around `Client` or `AsyncClient`, then
+  `client.authentication`, then authenticated branches such as `auth.invoices`;
+- added matching sync and async client surfaces;
+- exposed public `ksef2.xades` and `ksef2.profiles` facades;
+- exposed `ksef2.raw` for schema-native endpoint access without importing
+  internal generated modules;
+- documented public exception classes, KSeF API errors, rate-limit errors, and
+  local polling timeouts;
+- added invoice metadata pagination, exports, package downloads, and direct
+  invoice downloads;
+- added token, permission, certificate, limits, PEPPOL, and TEST-data workflows;
+- added public FA(3) builder and draft APIs under `ksef2.fa3`;
+- moved public documentation into `getting-started`, `concepts`,
+  `how-to-guides`, and `reference`.
+
+## Upgrade summary
+
+Move application imports to the documented public paths, retest authentication
+and invoice workflows against TEST or DEMO, and replace old documentation links
+with the current Starlight routes.
+
+<CardGrid>
+  <LinkCard
+    title="Migrate to 1.0.0"
+    href="../how-to-guides/migrate-to-1-0-0.mdx"
+    description="Upgrade pre-1.0 imports, workflow code, error handling, and documentation links."
+  />
+  <LinkCard
+    title="Public API contract"
+    href="public-api.mdx"
+    description="Review stable imports and internal boundaries for application code."
+  />
+  <LinkCard
+    title="Low-level API"
+    href="low-level/overview.mdx"
+    description="Understand the supported raw endpoint surface and its schema-following model contract."
+  />
+  <LinkCard
+    title="Operations reference"
+    href="operations.mdx"
+    description="Review retries, timeouts, rate limits, logging boundaries, and resumable references."
+  />
+</CardGrid>

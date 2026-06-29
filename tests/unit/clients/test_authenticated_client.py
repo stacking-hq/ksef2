@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
+import pytest
 from polyfactory import BaseFactory
 
 from ksef2.clients.authenticated import AuthenticatedClient
@@ -12,19 +13,20 @@ from ksef2.clients.online import OnlineSessionClient
 from ksef2.clients.permissions import PermissionsClient
 from ksef2.clients.session_management import SessionManagementClient
 from ksef2.clients.tokens import TokensClient
+from ksef2.core.exceptions import NoCertificateAvailableError
 from ksef2.core.routes import EncryptionRoutes, SessionRoutes, TokenRoutes
 from ksef2.core.stores import CertificateStore
-from ksef2.domain.models.auth import AuthTokens
+from ksef2.domain.models.auth import AuthenticationResumeState, AuthTokens
 from ksef2.domain.models.batch import (
     BatchEncryptionData,
     BatchFileInfo,
     BatchFilePart,
     BatchPreparedPart,
-    BatchSessionState,
+    BatchSessionResumeState,
     PreparedBatch,
 )
 from ksef2.domain.models.encryption import PublicKeyCertificate
-from ksef2.domain.models.session import FormSchema, OnlineSessionState
+from ksef2.domain.models.session import FormSchema, OnlineSessionResumeState
 from ksef2.infra.schema.api import spec
 from ksef2.services.batch import BatchService
 from ksef2.services.invoices import InvoicesService
@@ -57,6 +59,19 @@ class TestAuthenticatedClientFacade:
         assert client.auth_tokens.access_token.token == _TOKEN
         assert client.access_token == _TOKEN
         assert client.refresh_token == "fake-refresh-token"
+
+    def test_resume_state_exports_authentication_state(
+        self,
+        fake_transport: FakeTransport,
+        domain_auth_tokens: BaseFactory[AuthTokens],
+    ) -> None:
+        auth_tokens = domain_auth_tokens.build()
+        client = _build_client(fake_transport, auth_tokens)
+
+        state = client.resume_state()
+
+        assert isinstance(state, AuthenticationResumeState)
+        assert state.to_tokens() == auth_tokens
 
     def test_leaf_accessors_return_expected_types(
         self,
@@ -164,6 +179,171 @@ class TestEncryptionAndSessions:
         "ksef2.clients.authenticated.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
     )
+    def test_get_encryption_key_uses_fresh_symmetric_key_certificate_without_refresh(
+        self,
+        _mock_generate_session_key: MagicMock,
+        _mock_encrypt_symmetric_key: MagicMock,
+        fake_transport: FakeTransport,
+        domain_auth_tokens: BaseFactory[AuthTokens],
+        domain_public_key_cert: BaseFactory[PublicKeyCertificate],
+    ) -> None:
+        store = CertificateStore()
+        store.load(
+            [
+                domain_public_key_cert.build(
+                    usage=["symmetric_key_encryption"],
+                )
+            ]
+        )
+        client = _build_client(
+            fake_transport,
+            domain_auth_tokens.build(),
+            certificate_store=store,
+        )
+
+        aes_key, iv, encrypted_key = client.get_encryption_key()
+
+        assert aes_key == b"k" * 32
+        assert iv == b"v" * 16
+        assert encrypted_key == b"enc-key"
+        assert fake_transport.calls == []
+
+    @patch("ksef2.clients.authenticated.encrypt_symmetric_key", return_value=b"enc-key")
+    @patch(
+        "ksef2.clients.authenticated.generate_session_key",
+        return_value=(b"k" * 32, b"v" * 16),
+    )
+    def test_get_encryption_key_refreshes_stale_symmetric_key_certificate(
+        self,
+        _mock_generate_session_key: MagicMock,
+        _mock_encrypt_symmetric_key: MagicMock,
+        fake_transport: FakeTransport,
+        domain_auth_tokens: BaseFactory[AuthTokens],
+        domain_public_key_cert: BaseFactory[PublicKeyCertificate],
+        public_key_cert: BaseFactory[spec.PublicKeyCertificate],
+    ) -> None:
+        store = CertificateStore(refresh_after=timedelta(0))
+        store.load(
+            [
+                domain_public_key_cert.build(
+                    public_key_id="old-public-key-id",
+                    usage=["symmetric_key_encryption"],
+                )
+            ]
+        )
+        refreshed_certificate = public_key_cert.build(
+            validTo=datetime.now(timezone.utc) + timedelta(days=30),
+            usage=[spec.PublicKeyCertificateUsage.SymmetricKeyEncryption],
+        )
+        fake_transport.enqueue(
+            json_body=[refreshed_certificate.model_dump(mode="json")]
+        )
+        client = _build_client(
+            fake_transport,
+            domain_auth_tokens.build(),
+            certificate_store=store,
+        )
+
+        aes_key, iv, encrypted_key = client.get_encryption_key()
+
+        assert aes_key == b"k" * 32
+        assert iv == b"v" * 16
+        assert encrypted_key == b"enc-key"
+        assert fake_transport.calls[0].method == "GET"
+        assert fake_transport.calls[0].path == EncryptionRoutes.PUBLIC_KEY_CERTIFICATES
+        assert (
+            store.get_valid("symmetric_key_encryption").public_key_id
+            == refreshed_certificate.publicKeyId
+        )
+
+    @patch("ksef2.clients.authenticated.encrypt_symmetric_key", return_value=b"enc-key")
+    @patch(
+        "ksef2.clients.authenticated.generate_session_key",
+        return_value=(b"k" * 32, b"v" * 16),
+    )
+    def test_get_encryption_key_fetches_certificates_when_store_lacks_symmetric_key_usage(
+        self,
+        _mock_generate_session_key: MagicMock,
+        _mock_encrypt_symmetric_key: MagicMock,
+        fake_transport: FakeTransport,
+        domain_auth_tokens: BaseFactory[AuthTokens],
+        domain_public_key_cert: BaseFactory[PublicKeyCertificate],
+        public_key_cert: BaseFactory[spec.PublicKeyCertificate],
+    ) -> None:
+        store = CertificateStore()
+        store.load(
+            [
+                domain_public_key_cert.build(
+                    usage=["ksef_token_encryption"],
+                )
+            ]
+        )
+        refreshed_certificate = public_key_cert.build(
+            usage=[spec.PublicKeyCertificateUsage.SymmetricKeyEncryption]
+        )
+        fake_transport.enqueue(
+            json_body=[refreshed_certificate.model_dump(mode="json")]
+        )
+        client = _build_client(
+            fake_transport,
+            domain_auth_tokens.build(),
+            certificate_store=store,
+        )
+
+        aes_key, iv, encrypted_key = client.get_encryption_key()
+
+        assert aes_key == b"k" * 32
+        assert iv == b"v" * 16
+        assert encrypted_key == b"enc-key"
+        assert fake_transport.calls[0].method == "GET"
+        assert fake_transport.calls[0].path == EncryptionRoutes.PUBLIC_KEY_CERTIFICATES
+        assert (
+            store.get_valid("symmetric_key_encryption").public_key_id
+            == refreshed_certificate.publicKeyId
+        )
+
+    def test_get_encryption_key_preserves_missing_symmetric_key_error_after_refresh(
+        self,
+        fake_transport: FakeTransport,
+        domain_auth_tokens: BaseFactory[AuthTokens],
+        domain_public_key_cert: BaseFactory[PublicKeyCertificate],
+        public_key_cert: BaseFactory[spec.PublicKeyCertificate],
+    ) -> None:
+        store = CertificateStore()
+        store.load(
+            [
+                domain_public_key_cert.build(
+                    usage=["ksef_token_encryption"],
+                )
+            ]
+        )
+        fake_transport.enqueue(
+            json_body=[
+                public_key_cert.build(
+                    usage=[spec.PublicKeyCertificateUsage.KsefTokenEncryption]
+                ).model_dump(mode="json")
+            ]
+        )
+        client = _build_client(
+            fake_transport,
+            domain_auth_tokens.build(),
+            certificate_store=store,
+        )
+
+        with pytest.raises(
+            NoCertificateAvailableError,
+            match="No valid certificate for usage: symmetric_key_encryption",
+        ):
+            client.get_encryption_key()
+
+        assert fake_transport.calls[0].method == "GET"
+        assert fake_transport.calls[0].path == EncryptionRoutes.PUBLIC_KEY_CERTIFICATES
+
+    @patch("ksef2.clients.authenticated.encrypt_symmetric_key", return_value=b"enc-key")
+    @patch(
+        "ksef2.clients.authenticated.generate_session_key",
+        return_value=(b"k" * 32, b"v" * 16),
+    )
     def test_online_session_uses_bearer_transport_and_returns_client(
         self,
         _mock_generate_session_key: MagicMock,
@@ -197,7 +377,7 @@ class TestEncryptionAndSessions:
         assert call.headers == {"Authorization": f"Bearer {_TOKEN}"}
         assert call.json is not None
         assert call.json["encryption"]["publicKeyId"] == store.all()[0].public_key_id
-        assert session_client.get_state().access_token == _TOKEN
+        assert "access_token" not in session_client.resume_state().to_dict()
 
     @patch("ksef2.clients.authenticated.encrypt_symmetric_key", return_value=b"enc-key")
     @patch(
@@ -239,7 +419,8 @@ class TestEncryptionAndSessions:
         assert call.headers == {"Authorization": f"Bearer {_TOKEN}"}
         assert call.json is not None
         assert call.json["encryption"]["publicKeyId"] == store.all()[0].public_key_id
-        assert batch_client.access_token == _TOKEN
+        with pytest.deprecated_call(match="BatchSessionClient.access_token"):
+            assert batch_client.access_token == _TOKEN
 
     def test_open_batch_session_uses_supplied_encryption_material(
         self,
@@ -320,26 +501,34 @@ class TestEncryptionAndSessions:
         self,
         fake_transport: FakeTransport,
         domain_auth_tokens: BaseFactory[AuthTokens],
-        domain_online_session_state: BaseFactory[OnlineSessionState],
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
     ) -> None:
         client = _build_client(fake_transport, domain_auth_tokens.build())
         state = domain_online_session_state.build()
+        fake_transport.enqueue({})
 
-        resumed = client.resume_online_session(state)
+        with client.resume_online_session(state) as resumed:
+            assert isinstance(resumed, OnlineSessionClient)
+            assert resumed.resume_state() == state
 
-        assert isinstance(resumed, OnlineSessionClient)
-        assert resumed.get_state() == state
+        assert fake_transport.calls[0].path == SessionRoutes.TERMINATE_ONLINE.format(
+            referenceNumber=state.reference_number
+        )
 
     def test_resume_batch_session_reuses_authenticated_transport(
         self,
         fake_transport: FakeTransport,
         domain_auth_tokens: BaseFactory[AuthTokens],
-        domain_batch_session_state: BaseFactory[BatchSessionState],
+        domain_batch_session_state: BaseFactory[BatchSessionResumeState],
     ) -> None:
         client = _build_client(fake_transport, domain_auth_tokens.build())
         state = domain_batch_session_state.build()
+        fake_transport.enqueue({})
 
-        resumed = client.resume_batch_session(state)
+        with client.resume_batch_session(state) as resumed:
+            assert isinstance(resumed, BatchSessionClient)
+            assert resumed.resume_state() == state
 
-        assert isinstance(resumed, BatchSessionClient)
-        assert resumed.get_state() == state
+        assert fake_transport.calls[0].path == SessionRoutes.CLOSE_BATCH.format(
+            referenceNumber=state.reference_number
+        )

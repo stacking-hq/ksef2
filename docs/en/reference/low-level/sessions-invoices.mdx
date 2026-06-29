@@ -1,0 +1,120 @@
+---
+title: Low-level Sessions and Invoices
+description: Raw session, invoice, UPO, export, and encryption payload contracts.
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+Use low-level session and invoice calls when your integration owns encryption
+material, session opening, invoice submission, export encryption, or polling
+order.
+
+## Caller-owned material
+
+| Value | Source | Needed for |
+| --- | --- | --- |
+| `aes_key` | `generate_session_key()` or caller key custody | Invoice/session/export encryption and later decryption. |
+| `iv` | `generate_session_key()` or caller key custody | Encryption metadata sent to KSeF and local decrypt/encrypt operations. |
+| `encrypted_key` | `encrypt_symmetric_key(aes_key, cert.certificate)` | `encryptedSymmetricKey` in session or export payloads. |
+| `public_key_id` | KSeF public certificate metadata | `publicKeyId` in session or export payloads. |
+| `referenceNumber` | KSeF open-session or export response | Later send, status, close, UPO, or export-status calls. |
+
+If a high-level helper created this material, prefer the matching high-level
+resume or fetch method. Do not reconstruct encryption state from logs.
+
+## Raw session methods
+
+| Method | Returns | Use for |
+| --- | --- | --- |
+| `auth.raw.session.open_online(body)` | `spec.OpenOnlineSessionResponse` | Open an online session from `OpenOnlineSessionRequest`. |
+| `auth.raw.session.terminate_online(reference_number)` | `None` | Close an online session by reference. |
+| `auth.raw.session.open_batch(body)` | `spec.OpenBatchSessionResponse` | Open a batch session from `OpenBatchSessionRequest`. |
+| `auth.raw.session.close_batch(reference_number)` | `None` | Close a batch session after uploading all parts. |
+| `auth.raw.session.get_session_upo(reference_number, upo_reference_number)` | `bytes` | Download session UPO bytes. |
+| `auth.raw.session.list_sessions(...)` | `spec.SessionsQueryResponse` | Query session history with filters and optional continuation token. |
+
+## Raw invoice methods
+
+| Method | Returns | Use for |
+| --- | --- | --- |
+| `auth.raw.invoices.query_metadata(body, **params)` | `spec.QueryInvoicesMetadataResponse` | Fetch one metadata page from `spec.InvoiceQueryFilters`. |
+| `auth.raw.invoices.export(body)` | `spec.ExportInvoicesResponse` | Start an invoice export from `InvoiceExportRequest`. |
+| `auth.raw.invoices.get_export_status(reference_number)` | `spec.InvoiceExportStatusResponse` | Check export package readiness. |
+| `auth.raw.invoices.download(ksef_number)` | `bytes` | Download processed invoice XML by KSeF number. |
+| `auth.raw.invoices.send(reference_number, body)` | `spec.SendInvoiceResponse` | Send one encrypted invoice to an open online session. |
+| `auth.raw.invoices.get_session_status(reference_number)` | `spec.SessionStatusResponse` | Fetch online or batch session status. |
+| `auth.raw.invoices.list_session_invoices(reference_number, ...)` | `spec.SessionInvoicesResponse` | List accepted/session invoices. |
+| `auth.raw.invoices.list_failed_session_invoices(reference_number, ...)` | `spec.SessionInvoicesResponse` | List failed session invoices. |
+| `auth.raw.invoices.get_session_invoice_status(reference_number, invoice_reference_number)` | `spec.SessionInvoiceStatusResponse` | Fetch status for one invoice in a session. |
+| `auth.raw.invoices.get_invoice_upo_by_ksef(reference_number, ksef_number)` | `bytes` | Download invoice UPO by KSeF number. |
+| `auth.raw.invoices.get_invoice_upo_by_reference(reference_number, invoice_reference_number)` | `bytes` | Download invoice UPO by session invoice reference. |
+
+Methods with `continuation_token` send it as `x-continuation-token`.
+
+## OpenOnlineSessionRequest payload
+
+| Field | Source |
+| --- | --- |
+| `formCode` | `spec.FormCode(...)` matching the invoice schema. |
+| `encryption.encryptedSymmetricKey` | Base64 encoded `encrypted_key`. |
+| `encryption.initializationVector` | Base64 encoded `iv`. |
+| `encryption.publicKeyId` | KSeF public key id used for encryption. |
+
+Keep the returned `referenceNumber` together with `aes_key` and `iv`.
+
+## SendInvoiceRequest payload
+
+| Field | Source |
+| --- | --- |
+| `invoiceHash` | `sha256_b64(invoice_xml)` |
+| `invoiceSize` | `len(invoice_xml)` |
+| `encryptedInvoiceHash` | `sha256_b64(encrypted_invoice)` |
+| `encryptedInvoiceSize` | `len(encrypted_invoice)` |
+| `encryptedInvoiceContent` | Base64 encoded encrypted invoice bytes. |
+
+`encrypt_invoice(xml_bytes=invoice_xml, key=aes_key, iv=iv)` produces the
+encrypted invoice bytes. Low-level send does not poll; use
+`get_session_invoice_status()` until the invoice has a final status.
+
+## Export payload
+
+`auth.raw.invoices.export()` accepts `InvoiceExportRequest`. The caller owns
+the same encryption fields as sessions:
+
+| Field group | Source |
+| --- | --- |
+| `encryption` | Encrypted AES material and `publicKeyId`. |
+| `filters` | `spec.InvoiceQueryFilters`. |
+| `compressionType` | `spec.CompressionType`, usually ZIP. |
+
+Use high-level `auth.invoices.fetch_package_bytes(...)` only when you still
+have the AES key and IV required to decrypt package parts.
+
+## Batch package handoff
+
+`prepare_batch_package` is exported from `ksef2.raw` for low-level batch flows.
+It prepares encrypted ZIP package metadata and parts. The resulting batch file
+metadata can be passed into:
+
+| Entry point | Use when |
+| --- | --- |
+| `auth.raw.session.open_batch(body)` | You want to own the full schema-native batch open request. |
+| `auth.open_batch_session(...)` | You want SDK step-level session binding while keeping caller-owned encryption material. |
+
+## Related reference
+
+<LinkCard
+  title="Low-level API"
+  href="overview.mdx"
+  description="Review low-level ownership, model namespaces, and utility exports."
+/>
+<LinkCard
+  title="Endpoint map"
+  href="endpoint-map.mdx"
+  description="Find every raw endpoint branch."
+/>
+<LinkCard
+  title="Send invoices"
+  href="../../how-to-guides/send-invoices.mdx"
+  description="Use high-level online and batch workflows when raw endpoint control is not required."
+/>

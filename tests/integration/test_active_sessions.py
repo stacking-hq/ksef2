@@ -1,6 +1,3 @@
-from __future__ import annotations
-
-
 import pytest
 
 from ksef2 import Client

@@ -18,6 +18,49 @@ class TestInvoicesRequestMapper:
         assert output.dateRange.dateType == spec.InvoiceQueryDateType.Issue
         assert output.formType == spec.InvoiceQueryFormType.FA_RR
 
+    def test_to_spec_omits_amount_filter_without_amount_range(self) -> None:
+        request = domain_invoices.InvoicesFilter.for_seller(
+            date_from="2026-01-01T00:00:00",
+            date_to="2026-01-02T00:00:00",
+        )
+
+        output = to_spec(request)
+
+        assert isinstance(output, spec.InvoiceQueryFilters)
+        assert output.amount is None
+
+    def test_to_spec_maps_amount_filter_when_range_is_present(self) -> None:
+        request = domain_invoices.InvoicesFilter.for_seller(
+            date_from="2026-01-01T00:00:00",
+            date_to="2026-01-02T00:00:00",
+            amount_type="netto",
+            amount_min=100.0,
+            amount_max=200.0,
+        )
+
+        output = to_spec(request)
+
+        assert isinstance(output, spec.InvoiceQueryFilters)
+        assert output.amount is not None
+        assert output.amount.type == spec.AmountType.Netto
+        assert output.amount.from_ == 100.0
+        assert output.amount.to == 200.0
+
+    def test_to_spec_maps_buyer_identifier_from_filter_constructor(self) -> None:
+        request = domain_invoices.InvoicesFilter.for_buyer(
+            date_from="2026-01-01T00:00:00",
+            date_to="2026-01-02T00:00:00",
+            buyer_vat_ue="PL1234567890",
+        )
+
+        output = to_spec(request)
+
+        assert isinstance(output, spec.InvoiceQueryFilters)
+        assert output.subjectType == spec.InvoiceQuerySubjectType.Subject2
+        assert output.buyerIdentifier is not None
+        assert output.buyerIdentifier.type == spec.BuyerIdentifierType.VatUe
+        assert output.buyerIdentifier.value == "PL1234567890"
+
     def test_to_export_request(self, inv_export_filters) -> None:
         request = ExportInvoicesPayload(
             filter=inv_export_filters.build(),

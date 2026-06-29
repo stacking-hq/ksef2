@@ -1,0 +1,94 @@
+---
+title: Low-level Authentication
+description: Raw authentication endpoint methods, token and XAdES sequence contracts, and SDK token binding.
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+Use low-level authentication when another system owns signing, token encryption,
+or polling policy. Raw authentication uses schema-native response models until
+you explicitly map tokens back to the public SDK model.
+
+## Endpoint methods
+
+| Method | Transport | Returns | Use for |
+| --- | --- | --- | --- |
+| `client.raw.auth.challenge()` | unauthenticated | `spec.AuthenticationChallengeResponse` | Create the challenge used by token or XAdES authentication. |
+| `client.raw.auth.token_auth(body)` | unauthenticated | `spec.AuthenticationInitResponse` | Start KSeF-token authentication with `InitTokenAuthenticationRequest`. |
+| `client.raw.auth.xades_auth(signed_xml, verify_chain=False)` | unauthenticated | `spec.AuthenticationInitResponse` | Submit externally signed XAdES XML. |
+| `client.raw.auth.auth_status(bearer_token, reference_number)` | temporary auth bearer | `spec.AuthenticationOperationStatusResponse` | Poll authentication operation status. |
+| `client.raw.auth.redeem_token(bearer_token)` | temporary auth bearer | `spec.AuthenticationTokensResponse` | Exchange the temporary authentication token for access and refresh tokens. |
+| `client.raw.auth.refresh_token(bearer_token)` | refresh bearer | `spec.AuthenticationTokenRefreshResponse` | Refresh an access token. |
+| `auth.raw.auth.list_sessions(...)` | authenticated | `spec.AuthenticationListResponse` | List authentication sessions. |
+| `auth.raw.auth.terminate_current_session()` | authenticated | `None` | Terminate the current authentication session. |
+| `auth.raw.auth.terminate_auth_session(reference_number)` | authenticated | `None` | Terminate another authentication session by reference. |
+
+Async clients expose the same method names and await network calls.
+
+## Token authentication sequence
+
+| Step | Call or object | Keep |
+| --- | --- | --- |
+| Create challenge | `client.raw.auth.challenge()` | `challenge.challenge`, `challenge.timestampMs` |
+| Fetch token-encryption certificate | `client.raw.encryption.fetch_public_certificates()` | certificate where usage contains `KsefTokenEncryption` |
+| Encrypt token payload | `encrypt_token(ksef_token, str(challenge.timestampMs), cert.certificate)` | encrypted token payload |
+| Build request | `spec.InitTokenAuthenticationRequest(...)` | `challenge`, `contextIdentifier`, `encryptedToken`, `publicKeyId` |
+| Start operation | `client.raw.auth.token_auth(request)` | `init.authenticationToken.token`, `init.referenceNumber` |
+| Poll | `client.raw.auth.auth_status(...)` | final status code |
+| Redeem | `client.raw.auth.redeem_token(init.authenticationToken.token)` | schema-native access and refresh token response |
+| Bind to SDK | `client.authentication.resume(AuthenticationResumeState.from_tokens(auth_mapper.from_spec(raw_tokens)))` | `AuthenticatedClient` |
+
+## XAdES external signing sequence
+
+| Step | Call or object | Keep |
+| --- | --- | --- |
+| Create challenge | `client.raw.auth.challenge()` | challenge payload for the signing system |
+| Sign outside SDK | HSM, gateway, or external signer | signed XML bytes |
+| Start operation | `client.raw.auth.xades_auth(signed_xml, verify_chain=True)` | `init.authenticationToken.token`, `init.referenceNumber` |
+| Poll | `client.raw.auth.auth_status(...)` | final status code |
+| Redeem | `client.raw.auth.redeem_token(init.authenticationToken.token)` | schema-native access and refresh token response |
+| Bind to SDK | `client.authentication.resume(AuthenticationResumeState.from_tokens(auth_mapper.from_spec(raw_tokens)))` | `AuthenticatedClient` |
+
+## Binding raw tokens
+
+```python
+from ksef2.models import AuthenticationResumeState
+from ksef2.raw.mappers import auth as auth_mapper
+
+raw_tokens = client.raw.auth.redeem_token(init.authenticationToken.token)
+auth_tokens = auth_mapper.from_spec(raw_tokens)
+auth = client.authentication.resume(AuthenticationResumeState.from_tokens(auth_tokens))
+```
+
+After binding, you can use workflow branches such as `auth.invoices` or
+authenticated raw branches such as `auth.raw.invoices`.
+
+## Polling status contract
+
+`auth_status()` uses the temporary authentication token as a bearer token, not
+the final access token. Poll until KSeF returns a terminal authentication status,
+then call `redeem_token()` with the same temporary token.
+
+| Status condition | Caller action |
+| --- | --- |
+| Success status | Redeem the temporary authentication token. |
+| Failure status | Stop and surface the status code/description. |
+| Local timeout | Persist `init.referenceNumber` and decide whether another worker should continue polling. |
+
+## Related reference
+
+<LinkCard
+  title="Authentication methods"
+  href="../../concepts/authentication-methods.mdx"
+  description="Understand token, XAdES, TEST certificate, and profile authentication before dropping to raw endpoints."
+/>
+<LinkCard
+  title="Low-level API"
+  href="overview.mdx"
+  description="Review low-level ownership, model namespaces, and utility exports."
+/>
+<LinkCard
+  title="Endpoint map"
+  href="endpoint-map.mdx"
+  description="Find all raw endpoint branches."
+/>

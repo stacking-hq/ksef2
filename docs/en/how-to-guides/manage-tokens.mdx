@@ -1,0 +1,139 @@
+---
+title: Manage Tokens
+description: Generate, list, inspect, and revoke KSeF tokens through ksef2.
+---
+
+import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Use `auth.tokens` when an authenticated context needs to create or retire KSeF
+tokens for automation. The examples assume you already have an authenticated
+client named `auth`.
+
+## Generate a token
+
+Choose the smallest permission set required by the automation that will use the
+token.
+
+```python
+token = auth.tokens.generate(
+    permissions=["invoice_read"],
+    description="nightly invoice export",
+    timeout=60.0,
+    poll_interval=1.0,
+)
+
+# GenerateTokenResponse
+# {
+#   "reference_number": "20260625-TOKEN-...",
+#   "token": "eyJ..."
+# }
+```
+
+`generate()` submits the token request and waits until KSeF reports the token as
+active. The returned `token` value is the secret your automation will use for
+token authentication later.
+
+<Aside type="caution" title="Token values are shown once">
+  Persist the returned token value immediately in a secret store. Later status
+  and list calls identify tokens by `reference_number`, but they do not recover
+  the secret token value.
+</Aside>
+
+## List tokens
+
+Use `list_page()` for one page or `list_all()` for a full audit pass.
+
+<Tabs syncKey="sdk-token-list">
+  <TabItem label="One page">
+
+```python
+page = auth.tokens.list_page()
+
+# QueryTokensResponse
+# {
+#   "continuation_token": null,
+#   "tokens": [
+#     {
+#       "reference_number": "20260625-TOKEN-...",
+#       "description": "nightly invoice export",
+#       "requested_permissions": ["invoice_read"],
+#       "status": "active"
+#     }
+#   ]
+# }
+
+for item in page.tokens:
+    print(item.reference_number, item.status, item.description)
+```
+
+  </TabItem>
+  <TabItem label="All pages">
+
+```python
+for page in auth.tokens.list_all():
+    for item in page.tokens:
+        print(item.reference_number, item.status, item.description)
+```
+
+  </TabItem>
+</Tabs>
+
+## Inspect or revoke one token
+
+Use the token reference number for later lifecycle operations.
+
+```python
+status = auth.tokens.status(reference_number="20260625-TOKEN-...")
+
+# TokenStatusResponse
+# {
+#   "reference_number": "20260625-TOKEN-...",
+#   "status": "active"
+# }
+```
+
+```python
+auth.tokens.revoke(reference_number="20260625-TOKEN-...")
+```
+
+<Aside type="tip" title="Keep reference and secret separately">
+  Store the token secret in a secret manager. Store the `reference_number` in
+  operational metadata so you can inspect or revoke the token later without
+  exposing the secret.
+</Aside>
+
+## Recommended flow
+
+<Steps>
+
+1. Choose the smallest permission set required by the automation.
+
+2. Generate the token in the authenticated context that should own it.
+
+3. Store the token value in a secret store and the reference number in metadata.
+
+4. List or inspect token references during audits.
+
+5. Revoke unused, expired, or compromised tokens.
+
+</Steps>
+
+## Next workflows
+
+<LinkCard
+  title="Authenticate"
+  href="authenticate.mdx"
+  description="Use a generated KSeF token as one of the SDK authentication methods."
+/>
+
+<LinkCard
+  title="Authentication methods"
+  href="../concepts/authentication-methods.mdx"
+  description="Understand KSeF token, XAdES, TEST certificate, and profile-based authentication."
+/>
+
+<LinkCard
+  title="Client setup"
+  href="client-setup.mdx"
+  description="Create sync or async clients before using authenticated branches."
+/>

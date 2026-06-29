@@ -1,8 +1,12 @@
+from collections.abc import Iterable
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
+from polyfactory import BaseFactory
 
+from ksef2.clients.authenticated import AuthenticatedClient
 from ksef2.clients.base import Client
 from ksef2.clients.testdata import TestDataClient as KSeFTestDataClient
 from ksef2.config import Environment, TimeoutConfig, TransportConfig
@@ -10,8 +14,38 @@ from ksef2.core.exceptions import (
     KSeFClientClosedError,
     KSeFUnsupportedEnvironmentError,
 )
+from ksef2.domain.models.auth import AuthTokens
+from ksef2.domain.models.encryption import (
+    CertUsage,
+    CertUsageEnum,
+    PublicKeyCertificate,
+)
 
 HTTPX_CLIENT_CLASS = httpx.Client
+
+
+class CustomCertificateStore:
+    def __init__(self) -> None:
+        self.certificates: list[PublicKeyCertificate] = []
+
+    def load(self, certs: Iterable[PublicKeyCertificate]) -> None:
+        self.certificates = list(certs)
+
+    def get_valid(
+        self,
+        usage: CertUsage | CertUsageEnum | str,
+    ) -> PublicKeyCertificate:
+        raise AssertionError(f"Unexpected certificate lookup for {usage}.")
+
+    def needs_refresh(
+        self,
+        usage: CertUsage | CertUsageEnum | str,
+        *,
+        at: datetime | None = None,
+    ) -> bool:
+        _ = usage
+        _ = at
+        return True
 
 
 class TestClient:
@@ -101,3 +135,38 @@ class TestClient:
 
         with pytest.raises(KSeFClientClosedError, match="Client is closed"):
             _ = client.authentication
+
+    @patch("ksef2.clients.base.AuthClient")
+    def test_authentication_accessor_uses_custom_certificate_store(
+        self,
+        auth_client_cls: MagicMock,
+    ) -> None:
+        store = CustomCertificateStore()
+        client = Client(
+            environment=Environment.TEST,
+            http_client=MagicMock(spec=HTTPX_CLIENT_CLASS),
+            certificate_store=store,
+        )
+
+        _ = client.authentication
+
+        _, kwargs = auth_client_cls.call_args
+        assert kwargs["certificate_store"] is store
+
+    def test_authenticated_deprecated_wrapper_delegates_to_auth_branch(
+        self,
+        domain_auth_tokens: BaseFactory[AuthTokens],
+    ) -> None:
+        store = CustomCertificateStore()
+        auth_tokens = domain_auth_tokens.build()
+        client = Client(
+            environment=Environment.TEST,
+            http_client=MagicMock(spec=HTTPX_CLIENT_CLASS),
+            certificate_store=store,
+        )
+
+        with pytest.deprecated_call(match="Client.authenticated"):
+            authenticated = client.authenticated(auth_tokens)
+
+        assert isinstance(authenticated, AuthenticatedClient)
+        assert authenticated.resume_state().to_tokens() == auth_tokens

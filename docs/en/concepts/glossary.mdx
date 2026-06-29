@@ -1,0 +1,127 @@
+---
+title: Glossary
+description: Short definitions for KSeF, SDK, invoice, signing, and workflow terms used in the ksef2 documentation.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside type="tip" title="Terms use SDK names">
+  Definitions prefer public SDK names such as `Environment.TEST`,
+  `FormSchema.FA3`, `permanent_storage_date`, and `reference_number` instead of
+  raw OpenAPI field names.
+</Aside>
+
+## Access token
+
+Bearer token redeemed during authentication and used by the authenticated client
+for KSeF API calls.
+
+## Authenticated client
+
+SDK client branch returned by authentication. It is bound to one environment,
+one KSeF context, and one access/refresh token pair.
+
+## Authenticating subject
+
+The person, entity, certificate fingerprint, or token material that proves
+identity when authenticating to a KSeF context.
+
+## Batch session
+
+KSeF session used to upload prepared encrypted invoice package parts and then
+start processing by closing the session.
+
+## Context
+
+The taxpayer or entity being represented during authentication, usually selected
+with NIP or another supported context identifier.
+
+## DEMO
+
+Non-production KSeF environment used for integration checks with non-production
+credentials.
+
+## Environment
+
+SDK value that selects the KSeF API base URL and operational boundary:
+`Environment.TEST`, `Environment.DEMO`, or `Environment.PRODUCTION`.
+
+## Export
+
+Asynchronous KSeF workflow that prepares invoice metadata or invoice content
+matching filters as an encrypted downloadable package.
+
+## Export handle
+
+SDK object containing the export reference number and local decryption material
+needed to fetch and decrypt an export package.
+
+## FA(3)
+
+Invoice form schema represented by `FormSchema.FA3` when opening online or
+batch invoice sessions.
+
+## KSeF number
+
+Identifier assigned by KSeF after successful invoice processing. Store it for
+downloads, reconciliation, support, and UPO workflows.
+
+## HWM
+
+High Water Mark. KSeF's marker that invoice data is complete up to a
+`permanent_storage_date`, used for reliable incremental synchronization.
+
+## Metadata
+
+Searchable invoice information returned by query APIs. Metadata is not the XML
+invoice document.
+
+## NIP
+
+Polish tax identification number commonly used as a taxpayer or context
+identifier.
+
+## Online session
+
+KSeF session used to send individual encrypted invoices and inspect their
+session-bound status and UPO.
+
+## PEPPOL
+
+Public provider lookup area exposed by the root client. It is separate from
+authenticated KSeF invoice processing state.
+
+## Profile
+
+Named local credential configuration compatible with `ksef2-cli` and SDK
+`with_profile()` authentication.
+
+## Reference number
+
+KSeF handle for asynchronous or stateful work, such as authentication, sessions,
+invoice submissions, exports, token generation, permission operations, and
+certificate enrollment.
+
+## `permanent_storage_date`
+
+Metadata date used by KSeF's durable storage and High Water Mark synchronization
+model.
+
+## Root client
+
+Unauthenticated `Client` or `AsyncClient` that owns environment, HTTP transport,
+public lookup branches, and the authentication entry point.
+
+## TEST
+
+Sandbox KSeF environment used for local development, CI, TEST data setup, and
+SDK-generated TEST certificates.
+
+## UPO
+
+Official confirmation available after the relevant session or invoice workflow
+reaches the required processed state.
+
+## XAdES
+
+XML digital signature format used by certificate-based authentication flows.

@@ -1,6 +1,3 @@
-from __future__ import annotations
-
-
 from ksef2.infra.schema.api import spec
 
 

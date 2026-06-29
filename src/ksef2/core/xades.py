@@ -1,7 +1,5 @@
 """Helpers for loading certificates and creating XAdES authentication payloads."""
 
-from __future__ import annotations
-
 import datetime
 from pathlib import Path
 
@@ -45,7 +43,7 @@ def load_certificate_from_pem(source: bytes | str | Path) -> Certificate:
 
     Example — certificate obtained from MCU (DEMO / PRODUCTION)::
 
-        from ksef2.core.xades import load_certificate_from_pem, load_private_key_from_pem
+        from ksef2.xades import load_certificate_from_pem, load_private_key_from_pem
         from ksef2 import Client, Environment
 
         cert = load_certificate_from_pem("cert.pem")
@@ -258,7 +256,7 @@ def sign_xades(
 
 
 class LocalSigner:
-    """A :class:`~ksef2.domain.interfaces.Signer` that signs XML locally."""
+    """Signs XML locally with a certificate and private key."""
 
     def __init__(self, cert: Certificate, private_key: XAdESPrivateKey) -> None:
         self._cert = cert

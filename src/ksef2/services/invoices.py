@@ -12,7 +12,7 @@ from ksef2.core import exceptions
 from ksef2.core.crypto import decrypt_aes_cbc
 from ksef2.core.polling import poll_until
 from ksef2.core.protocols import Middleware
-from ksef2.core.stores import CertificateStore
+from ksef2.core.stores import CertificateStoreProtocol
 from ksef2.domain.models.compression import CompressionType
 from ksef2.domain.models.invoices import (
     ExportHandle,
@@ -48,7 +48,7 @@ class InvoicesService:
         self,
         transport: Middleware,
         download_transport: Middleware,
-        certificate_store: CertificateStore,
+        certificate_store: CertificateStoreProtocol,
         *,
         client: InvoicesClient | None = None,
         ensure_encryption_certificates_loaded: Callable[[], None] | None = None,

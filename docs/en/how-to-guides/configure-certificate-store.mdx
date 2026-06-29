@@ -1,0 +1,149 @@
+---
+title: Configure a Certificate Store
+description: Configure the SDK certificate cache used by token authentication, sessions, and invoice exports.
+---
+
+import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+The SDK stores KSeF public encryption certificates on the root client. Token
+authentication, online and batch sessions, and invoice exports reuse that store
+when they need to encrypt key material for KSeF.
+
+Use the default in-memory store for scripts and workers that can refresh
+certificates from KSeF. Provide a custom store when certificates must be shared
+across processes or persisted in application storage.
+
+## Use the default store
+
+`Client` and `AsyncClient` create `CertificateStore` automatically. The default
+store refreshes valid cached certificates after 24 hours and refreshes
+immediately when the required certificate usage is missing.
+
+Configure a different refresh interval at root-client construction:
+
+<Tabs syncKey="sdk-client-kind">
+  <TabItem label="Sync">
+
+```python
+from datetime import timedelta
+
+from ksef2 import CertificateStore, Client, Environment
+
+store = CertificateStore(refresh_after=timedelta(hours=6))
+
+with Client(Environment.PRODUCTION, certificate_store=store) as client:
+    auth = client.authentication.with_profile("prod-token")
+```
+
+  </TabItem>
+  <TabItem label="Async">
+
+```python
+from datetime import timedelta
+
+from ksef2 import AsyncClient, CertificateStore, Environment
+
+store = CertificateStore(refresh_after=timedelta(hours=6))
+
+async with AsyncClient(Environment.PRODUCTION, certificate_store=store) as client:
+    auth = await client.authentication.with_profile("prod-token")
+```
+
+  </TabItem>
+</Tabs>
+
+Use `refresh_after=None` only for short-lived clients where fetch-once behavior
+is intentional:
+
+```python
+from ksef2 import CertificateStore
+
+store = CertificateStore(refresh_after=None)
+```
+
+<Aside type="note" title="Missing usage still refreshes">
+  `refresh_after=None` does not suppress refreshes when the store lacks the
+  certificate usage required by the workflow. The SDK checks KSeF again before
+  raising `NoCertificateAvailableError`.
+</Aside>
+
+## Provide a custom store
+
+Custom stores implement `CertificateStoreProtocol`. The SDK owns remote
+fetching; the store owns persistence, valid-certificate selection, and freshness
+decisions.
+
+```python
+from collections.abc import Iterable
+from datetime import datetime
+
+from ksef2 import CertificateStoreProtocol, Client, Environment
+from ksef2.domain.models.encryption import (
+    CertUsage,
+    CertUsageEnum,
+    PublicKeyCertificate,
+)
+
+
+class DatabaseCertificateStore:
+    def load(self, certs: Iterable[PublicKeyCertificate]) -> None:
+        """Replace stored public certificates after the SDK fetches them."""
+        ...
+
+    def get_valid(
+        self,
+        usage: CertUsage | CertUsageEnum | str,
+    ) -> PublicKeyCertificate:
+        """Return a currently valid certificate for the requested usage."""
+        ...
+
+    def needs_refresh(
+        self,
+        usage: CertUsage | CertUsageEnum | str,
+        *,
+        at: datetime | None = None,
+    ) -> bool:
+        """Return True when the SDK should fetch certificates from KSeF."""
+        ...
+
+
+store: CertificateStoreProtocol = DatabaseCertificateStore()
+client = Client(Environment.PRODUCTION, certificate_store=store)
+```
+
+## Recommended flow
+
+<Steps>
+
+1. Start with the default `CertificateStore`.
+
+2. Set `refresh_after` when your application has a stricter certificate rotation
+   or startup policy.
+
+3. Implement `CertificateStoreProtocol` only when certificates must survive
+   process restarts or be shared by multiple workers.
+
+4. Keep remote KSeF fetching in the SDK client and keep persistence in the
+   store.
+
+</Steps>
+
+## Related pages
+
+<LinkCard
+  title="Inspect encryption certificates"
+  href="inspect-encryption-certificates.mdx"
+  description="Read and inspect public KSeF encryption certificates directly."
+/>
+
+<LinkCard
+  title="Client setup"
+  href="client-setup.mdx"
+  description="Configure root clients, transport, lifecycle, and authenticated branches."
+/>
+
+<LinkCard
+  title="Encryption"
+  href="../concepts/encryption.mdx"
+  description="Understand how public certificates protect token, session, and export key material."
+/>

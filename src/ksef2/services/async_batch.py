@@ -3,16 +3,22 @@
 import asyncio
 from collections.abc import Awaitable, Callable, Iterable
 from pathlib import Path
-from typing import final
+from typing import Protocol, final, runtime_checkable
 
 from ksef2.clients._async_session import _AwaitableSession
 from ksef2.clients.async_batch import AsyncBatchSessionClient
 from ksef2.core import exceptions
 from ksef2.core.async_protocols import AsyncMiddleware
 from ksef2.core.polling import async_poll_until
-from ksef2.domain.models.batch import BatchInvoice, BatchSessionState, PreparedBatch
+from ksef2.domain.models.batch import (
+    BatchFileInfo,
+    BatchInvoice,
+    BatchSessionResumeState,
+    PreparedBatch,
+)
 from ksef2.domain.models.session import (
     FormSchema,
+    SessionEncryptionMaterial,
     SessionInvoicesResponse,
     SessionStatusResponse,
 )
@@ -24,6 +30,22 @@ from ksef2.services.batch_preparation import (
     load_batch_invoices,
     prepare_batch_package,
 )
+
+
+@runtime_checkable
+class AsyncBatchSessionOpener(Protocol):
+    def __call__(
+        self,
+        *,
+        batch_file: BatchFileInfo,
+        aes_key: bytes,
+        iv: bytes,
+        encrypted_key: bytes,
+        public_key_id: str | None = None,
+        form_code: FormSchema = FormSchema.FA3,
+        offline_mode: bool = False,
+        prepared_batch: PreparedBatch | None = None,
+    ) -> Awaitable[AsyncBatchSessionClient]: ...
 
 
 @final
@@ -46,10 +68,8 @@ class AsyncBatchService:
         *,
         authed_transport: AsyncMiddleware,
         upload_transport: AsyncMiddleware,
-        get_encryption_key: Callable[
-            [], Awaitable[tuple[bytes, bytes, bytes, str | None]]
-        ],
-        open_batch_session: Callable[..., Awaitable[AsyncBatchSessionClient]],
+        get_encryption_key: Callable[[], Awaitable[SessionEncryptionMaterial]],
+        open_batch_session: AsyncBatchSessionOpener,
     ) -> None:
         self._invoice_eps = AsyncInvoicesEndpoints(authed_transport)
         self._session_eps = AsyncSessionEndpoints(authed_transport)
@@ -83,14 +103,14 @@ class AsyncBatchService:
             KSeFEncryptionError: If key or part encryption fails.
             KSeFValidationError: If the invoice list or part size is invalid.
         """
-        aes_key, iv, encrypted_key, public_key_id = await self._get_encryption_key()
+        material = await self._get_encryption_key()
         return await asyncio.to_thread(
             prepare_batch_package,
             invoices=invoices,
-            aes_key=aes_key,
-            iv=iv,
-            encrypted_key=encrypted_key,
-            public_key_id=public_key_id,
+            aes_key=material.aes_key,
+            iv=material.iv,
+            encrypted_key=material.encrypted_key,
+            public_key_id=material.public_key_id,
             form_code=form_code,
             offline_mode=offline_mode,
             max_part_size=max_part_size,
@@ -216,7 +236,7 @@ class AsyncBatchService:
         self,
         *,
         prepared_batch: PreparedBatch,
-    ) -> BatchSessionState:
+    ) -> BatchSessionResumeState:
         """Open, upload, and close a batch session for a prepared package.
 
         Args:
@@ -231,7 +251,7 @@ class AsyncBatchService:
             httpx.HTTPError: If uploading a part to its presigned URL fails.
         """
         async with self.open_session(prepared_batch=prepared_batch) as session:
-            state = session.get_state()
+            state = session.resume_state()
             await session.upload_parts()
         return state
 
@@ -242,7 +262,7 @@ class AsyncBatchService:
         form_code: FormSchema = FormSchema.FA3,
         offline_mode: bool = False,
         max_part_size: int = MAX_BATCH_PART_SIZE,
-    ) -> BatchSessionState:
+    ) -> BatchSessionResumeState:
         """Prepare and submit a batch in one call.
 
         Args:
@@ -273,7 +293,7 @@ class AsyncBatchService:
     async def get_status(
         self,
         *,
-        session: str | BatchSessionState | AsyncBatchSessionClient,
+        session: str | BatchSessionResumeState | AsyncBatchSessionClient,
     ) -> SessionStatusResponse:
         """Fetch the current status of a batch session.
 
@@ -292,7 +312,7 @@ class AsyncBatchService:
     async def list_invoices(
         self,
         *,
-        session: str | BatchSessionState | AsyncBatchSessionClient,
+        session: str | BatchSessionResumeState | AsyncBatchSessionClient,
         page_size: int = 10,
         continuation_token: str | None = None,
     ) -> SessionInvoicesResponse:
@@ -308,7 +328,7 @@ class AsyncBatchService:
     async def list_failed_invoices(
         self,
         *,
-        session: str | BatchSessionState | AsyncBatchSessionClient,
+        session: str | BatchSessionResumeState | AsyncBatchSessionClient,
         page_size: int = 10,
         continuation_token: str | None = None,
     ) -> SessionInvoicesResponse:
@@ -324,7 +344,7 @@ class AsyncBatchService:
     async def get_upo(
         self,
         *,
-        session: str | BatchSessionState | AsyncBatchSessionClient,
+        session: str | BatchSessionResumeState | AsyncBatchSessionClient,
         upo_reference_number: str,
     ) -> bytes:
         """Download the collective UPO for a batch session.
@@ -344,7 +364,7 @@ class AsyncBatchService:
     async def wait_for_completion(
         self,
         *,
-        session: str | BatchSessionState | AsyncBatchSessionClient,
+        session: str | BatchSessionResumeState | AsyncBatchSessionClient,
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> SessionStatusResponse:
@@ -386,10 +406,10 @@ class AsyncBatchService:
 
     @staticmethod
     def _resolve_reference_number(
-        session: str | BatchSessionState | AsyncBatchSessionClient,
+        session: str | BatchSessionResumeState | AsyncBatchSessionClient,
     ) -> str:
         if isinstance(session, str):
             return session
         if isinstance(session, AsyncBatchSessionClient):
-            return session.get_state().reference_number
+            return session.resume_state().reference_number
         return session.reference_number

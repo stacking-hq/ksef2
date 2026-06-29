@@ -5,7 +5,7 @@ from ksef2.domain.models.fa3.attachment import (
     AttachmentTable,
     DataBlock,
 )
-from ksef2.domain.models.fa3.invoice import KsefInvoice
+from ksef2.domain.models.fa3.invoice import KsefInvoice, KsefInvoiceDraft
 from ksef2.domain.models.fa3.footer import (
     FooterRegistry,
     InvoiceFooter,
@@ -52,6 +52,7 @@ from ksef2.domain.models.fa3.header import InvoiceHeader
 from ksef2.domain.models.fa3.references import (
     AdvanceInvoiceReference,
     CorrectedInvoiceReference,
+    DraftIntent,
 )
 
 __all__ = [
@@ -68,6 +69,7 @@ __all__ = [
     "CorrectedSellerEntity",
     "CorrectedInvoiceReference",
     "DataBlock",
+    "DraftIntent",
     "FooterRegistry",
     "InvoiceAddress",
     "InvoiceEntity",
@@ -82,6 +84,7 @@ __all__ = [
     "InvoiceHeader",
     "KsefInvoiceBody",
     "KsefInvoice",
+    "KsefInvoiceDraft",
     "MarginProcedure",
     "NewTransportMeansItem",
     "NewTransportSupply",

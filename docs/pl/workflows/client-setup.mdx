@@ -37,6 +37,29 @@ async with AsyncClient(Environment.TEST) as client:
 Poza lokalnymi przepływami TEST używaj `Environment.DEMO` albo
 `Environment.PRODUCTION`.
 
+## Cache certyfikatów
+
+Klienci główni domyślnie używają pamięciowego magazynu certyfikatów. Magazyn
+odświeża publiczne certyfikaty szyfrowania po 24 godzinach, a wysokopoziomowe
+przepływy uwierzytelniania, sesji i eksportu ładują certyfikaty leniwie, gdy ich
+potrzebują.
+
+Ustaw własny interwał odświeżania, gdy aplikacja ma bardziej rygorystyczną
+politykę startu lub rotacji:
+
+```python
+from datetime import timedelta
+
+from ksef2 import CertificateStore, Client, Environment
+
+store = CertificateStore(refresh_after=timedelta(hours=6))
+client = Client(Environment.PRODUCTION, certificate_store=store)
+```
+
+Przekaż dowolny obiekt implementujący `CertificateStoreProtocol`, gdy
+certyfikaty mają być współdzielone przez magazyn aplikacji, na przykład bazę
+danych lub cache.
+
 Gdy dane uwierzytelniające są zapisane w profilu kompatybilnym z CLI, utwórz
 klienta głównego dla środowiska profilu i uwierzytelnij się przez
 `with_profile()`:
