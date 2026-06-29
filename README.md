@@ -137,7 +137,7 @@ ksef2 profile create prod-token \
 ksef2 profile use prod-token
 
 # example usage of the cli
-ksef2 --profile prod-token invoices metadata \
+ksef2 --profile prod-token invoices list \
   --role seller \
   --date-from 2026-01-01T00:00:00Z
 ```
