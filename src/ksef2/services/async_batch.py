@@ -3,7 +3,7 @@
 import asyncio
 from collections.abc import Awaitable, Callable, Iterable
 from pathlib import Path
-from typing import Protocol, final
+from typing import Protocol, final, runtime_checkable
 
 from ksef2.clients._async_session import _AwaitableSession
 from ksef2.clients.async_batch import AsyncBatchSessionClient
@@ -32,6 +32,7 @@ from ksef2.services.batch_preparation import (
 )
 
 
+@runtime_checkable
 class AsyncBatchSessionOpener(Protocol):
     def __call__(
         self,

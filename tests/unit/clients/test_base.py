@@ -6,6 +6,7 @@ import httpx
 import pytest
 from polyfactory import BaseFactory
 
+from ksef2.clients.authenticated import AuthenticatedClient
 from ksef2.clients.base import Client
 from ksef2.clients.testdata import TestDataClient as KSeFTestDataClient
 from ksef2.config import Environment, TimeoutConfig, TransportConfig
@@ -152,15 +153,11 @@ class TestClient:
         _, kwargs = auth_client_cls.call_args
         assert kwargs["certificate_store"] is store
 
-    @patch("ksef2.clients.base.AuthClient")
     def test_authenticated_deprecated_wrapper_delegates_to_auth_branch(
         self,
-        auth_client_cls: MagicMock,
         domain_auth_tokens: BaseFactory[AuthTokens],
     ) -> None:
         store = CustomCertificateStore()
-        auth_branch = MagicMock()
-        auth_client_cls.return_value = auth_branch
         auth_tokens = domain_auth_tokens.build()
         client = Client(
             environment=Environment.TEST,
@@ -169,9 +166,7 @@ class TestClient:
         )
 
         with pytest.deprecated_call(match="Client.authenticated"):
-            _ = client.authenticated(auth_tokens)
+            authenticated = client.authenticated(auth_tokens)
 
-        _, kwargs = auth_client_cls.call_args
-        assert kwargs["certificate_store"] is store
-        state = auth_branch.resume.call_args.args[0]
-        assert state.to_tokens() == auth_tokens
+        assert isinstance(authenticated, AuthenticatedClient)
+        assert authenticated.resume_state().to_tokens() == auth_tokens

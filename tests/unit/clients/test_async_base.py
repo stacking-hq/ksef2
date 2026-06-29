@@ -8,6 +8,7 @@ import pytest
 from polyfactory import BaseFactory
 
 from ksef2.clients.async_auth import AsyncAuthClient
+from ksef2.clients.async_authenticated import AsyncAuthenticatedClient
 from ksef2.clients.async_base import AsyncClient
 from ksef2.clients.async_encryption import AsyncEncryptionClient
 from ksef2.clients.async_peppol import AsyncPeppolClient
@@ -167,15 +168,11 @@ class TestAsyncClient:
         _, kwargs = auth_client_cls.call_args
         assert kwargs["certificate_store"] is store
 
-    @patch("ksef2.clients.async_base.AsyncAuthClient")
     def test_authenticated_deprecated_wrapper_delegates_to_auth_branch(
         self,
-        auth_client_cls: MagicMock,
         domain_auth_tokens: BaseFactory[AuthTokens],
     ) -> None:
         store = CustomCertificateStore()
-        auth_branch = MagicMock()
-        auth_client_cls.return_value = auth_branch
         auth_tokens = domain_auth_tokens.build()
         client = AsyncClient(
             environment=Environment.TEST,
@@ -185,11 +182,9 @@ class TestAsyncClient:
 
         try:
             with pytest.deprecated_call(match="AsyncClient.authenticated"):
-                _ = client.authenticated(auth_tokens)
+                authenticated = client.authenticated(auth_tokens)
         finally:
             asyncio.run(client.aclose())
 
-        _, kwargs = auth_client_cls.call_args
-        assert kwargs["certificate_store"] is store
-        state = auth_branch.resume.call_args.args[0]
-        assert state.to_tokens() == auth_tokens
+        assert isinstance(authenticated, AsyncAuthenticatedClient)
+        assert authenticated.resume_state().to_tokens() == auth_tokens

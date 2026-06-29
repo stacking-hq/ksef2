@@ -46,14 +46,14 @@ format-check:
     uv run ruff format --check src/ tests/ scripts/gen_sync.py
 
 gen-sync:
-    uv run python scripts/gen_sync.py
+    uv run --group codegen python scripts/gen_sync.py
 
 check-gen-sync:
-    uv run python scripts/gen_sync.py --check
+    uv run --group codegen python scripts/gen_sync.py --check
 
 typecheck:
-    uv run --extra runtime-checks basedpyright --level error
-    uv run --extra runtime-checks basedpyright scripts/gen_sync.py
+    GITHUB_ACTIONS= uv run --extra runtime-checks basedpyright --level error
+    GITHUB_ACTIONS= uv run --extra runtime-checks --group codegen basedpyright scripts/gen_sync.py
 
 
 sync-ksef-api-version:

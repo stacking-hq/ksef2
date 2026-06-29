@@ -5,7 +5,7 @@
 
 from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Protocol, final
+from typing import Protocol, final, runtime_checkable
 
 from ksef2.clients.batch import BatchSessionClient
 from ksef2.core import exceptions
@@ -33,6 +33,7 @@ from ksef2.services.batch_preparation import (
 )
 
 
+@runtime_checkable
 class BatchSessionOpener(Protocol):
     def __call__(
         self,
