@@ -23,6 +23,12 @@ dependencies = [
     "xsdata>=26.1",
 ]
 
+[project.urls]
+Documentation = "https://docs.stacking.me/ksef2/sdk/getting-started/overview/"
+Repository = "https://github.com/stacking-hq/ksef2"
+Issues = "https://github.com/stacking-hq/ksef2/issues"
+Changelog = "https://github.com/stacking-hq/ksef2/blob/main/CHANGELOG.md"
+
 [project.optional-dependencies]
 runtime-checks = [
     "beartype>=0.22.9",

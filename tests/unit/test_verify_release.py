@@ -44,3 +44,33 @@ def test_verify_release_reports_tag_and_wheel_mismatches(tmp_path: Path) -> None
 
     assert "tag 'v0.19.0' does not match project version 'v1.0.0'" in errors
     assert "wheel metadata declares '0.19.0', expected '1.0.0'" in errors
+
+
+def test_verify_release_rejects_unreleased_heading_and_source_mismatch(
+    tmp_path: Path,
+) -> None:
+    dist_directory = write_release_fixture(
+        tmp_path, version="1.0.0", wheel_version="1.0.0"
+    )
+    (tmp_path / "src/ksef2/__version__.py").write_text('version = "0.19.0"\n')
+    (tmp_path / "CHANGELOG.md").write_text("## v1.0.0 (unreleased)\n")
+
+    errors = verify_release(tag="v1.0.0", root=tmp_path, dist_directory=dist_directory)
+
+    assert "src/ksef2/__version__.py declares '0.19.0', expected '1.0.0'" in errors
+    assert any("using the actual release date" in error for error in errors)
+
+
+def test_verify_release_requires_exactly_one_wheel_and_source_distribution(
+    tmp_path: Path,
+) -> None:
+    dist_directory = write_release_fixture(
+        tmp_path, version="1.0.0", wheel_version="1.0.0"
+    )
+    (dist_directory / "ksef2-1.0.0.tar.gz").unlink()
+    (dist_directory / "ksef2-1.0.0-extra.whl").write_bytes(b"extra wheel")
+
+    errors = verify_release(tag="v1.0.0", root=tmp_path, dist_directory=dist_directory)
+
+    assert "expected exactly one ksef2 1.0.0 wheel, found 2" in errors
+    assert "expected exactly one ksef2 1.0.0 source distribution, found 0" in errors

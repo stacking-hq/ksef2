@@ -6,7 +6,7 @@ from pathlib import Path
 from lxml import etree
 
 from ksef2.fa3 import FA3InvoiceBuilder, VatRate
-from ksef2.services.renderers import InvoicePDFExporter
+from ksef2.renderers import InvoicePDFExporter
 
 _MARKER = "pyproject.toml"
 

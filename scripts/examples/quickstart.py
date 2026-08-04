@@ -25,23 +25,23 @@ class ExampleConfig:
 
 
 def run(config: ExampleConfig) -> None:
-    client = Client(config.environment)
-    seller_nip = config.seller_nip or example_seller_nip()
-    invoice_path = config.invoice_path or example_invoice_xml_path()
-    invoice_xml = invoice_path.read_bytes()
+    with Client(config.environment) as client:
+        seller_nip = config.seller_nip or example_seller_nip()
+        invoice_path = config.invoice_path or example_invoice_xml_path()
+        invoice_xml = invoice_path.read_bytes()
 
-    auth = client.authentication.with_test_certificate(nip=seller_nip)
+        auth = client.authentication.with_test_certificate(nip=seller_nip)
 
-    with auth.online_session(form_code=FormSchema.FA3) as session:
-        result = session.send_invoice(invoice_xml=invoice_xml)
-        print(result.reference_number)
+        with auth.online_session(form_code=FormSchema.FA3) as session:
+            result = session.send_invoice(invoice_xml=invoice_xml)
+            print(result.reference_number)
 
-    session = auth.online_session(form_code=FormSchema.FA3)
-    try:
-        result = session.send_invoice(invoice_xml=invoice_xml)
-        print(result.reference_number)
-    finally:
-        session.close()
+        session = auth.online_session(form_code=FormSchema.FA3)
+        try:
+            result = session.send_invoice(invoice_xml=invoice_xml)
+            print(result.reference_number)
+        finally:
+            session.close()
 
 
 def main() -> int:

@@ -13,7 +13,7 @@ import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 ksef2 1.0.0 is the first release that treats documented application-facing
 imports as a compatibility contract for the 1.x line. The SDK currently targets
-KSeF OpenAPI version `2.6.1`.
+KSeF OpenAPI version `2.7.0`.
 
 > **Unofficial SDK.** ksef2 is community-maintained. It is not published,
 > endorsed, or supported by Poland's Ministry of Finance. The official KSeF
@@ -35,7 +35,7 @@ module in the repository.
 | `ksef2` | Root clients, environments, transport config, `FormSchema`, `__version__`, and public exceptions. |
 | `ksef2.clients` | Concrete sync and async client classes for type annotations and advanced construction. |
 | `ksef2.models` | Public SDK request, response, filter, pagination, token, permission, session, batch, and invoice models. |
-| High-level client branches | `client.authentication`, `client.encryption`, `client.peppol`, `client.testdata`, and authenticated branches such as `auth.invoices`, `auth.tokens`, `auth.permissions`, `auth.certificates`, and `auth.limits`. |
+| High-level client branches | `client.authentication`, `client.encryption`, `client.peppol`, `client.testdata`, and authenticated branches such as `auth.invoices`, `auth.tokens`, `auth.permissions`, `auth.certificates`, `auth.limits`, and `auth.collective_identifiers`. |
 | Session helpers | Online and batch session workflows for sending, polling, UPO, and resumable KSeF references. |
 | `ksef2.xades` | Certificate loading, TEST certificate generation, local XAdES signing helpers, and `LocalSigner`. |
 | `ksef2.profiles` | Local `ksef2-cli` compatible profile config helpers. |
@@ -84,6 +84,7 @@ Pre-1.0 releases shaped the SDK around a stable application surface:
 - added invoice metadata pagination, exports, package downloads, and direct
   invoice downloads;
 - added token, permission, certificate, limits, PEPPOL, and TEST-data workflows;
+- added collective-identifier workflows introduced by KSeF OpenAPI 2.7.0;
 - added public FA(3) builder and draft APIs under `ksef2.fa3`;
 - moved public documentation into `getting-started`, `concepts`,
   `how-to-guides`, and `reference`.
@@ -96,16 +97,15 @@ from GitHub Actions and select that commit or branch. The workflow runs only for
 trusted repository events, not pull requests or forks, so KSeF TEST credentials
 are never exposed to untrusted code.
 
-Creating an annotated tag such as `v1.0.0` starts **Publish to PyPI** for the
-tagged commit. Its `integration` job runs the credentialed KSeF TEST suite and
-writes the tag, commit SHA, and `TEST` environment to the GitHub Actions job
-summary. Inspect that sign-off before treating the release as successful.
+Run **Publish to PyPI** manually with the expected tag before creating the real
+tag. The manual run executes the credentialed KSeF TEST suite, builds the wheel
+and source distribution once, verifies their metadata, and smoke-tests the
+wheel on Python 3.12 and 3.13 without publishing.
 
-The `publish` job cannot start until that integration job succeeds. It then
-runs the release checks, verifies that the tag, source version, changelog, and
-built artifacts agree, installs the wheel in a clean environment, and smoke
-tests stable imports before publishing. A failed integration or verification
-step prevents the PyPI upload.
+Creating an annotated tag such as `v1.0.0` repeats those checks for the exact
+tagged commit and uploads one checksummed artifact. The protected `publish` job
+then waits for maintainer approval before sending that exact artifact to PyPI.
+A failed integration, verification, or approval step prevents publication.
 
 ## Upgrade summary
 

@@ -11,7 +11,7 @@ What it demonstrates:
 from dataclasses import dataclass
 from pathlib import Path
 
-from ksef2.services.renderers import InvoicePDFExporter, InvoiceXSLTRenderer
+from ksef2.renderers import InvoicePDFExporter, InvoiceXSLTRenderer
 from scripts.examples._common import repo_root
 
 

@@ -11,7 +11,7 @@ What it demonstrates:
 from dataclasses import dataclass
 
 from ksef2 import Client, Environment
-from ksef2.domain.models.pagination import OffsetPaginationParams
+from ksef2.models import OffsetPaginationParams
 
 
 @dataclass
@@ -22,31 +22,30 @@ class ExampleConfig:
 
 
 def run(config: ExampleConfig) -> None:
-    client = Client(environment=config.environment)
-
-    print("Querying PEPPOL providers...")
-    providers = client.peppol.query(
-        params=OffsetPaginationParams(
-            page_size=config.page_size,
-            page_offset=config.page_offset,
+    with Client(environment=config.environment) as client:
+        print("Querying PEPPOL providers...")
+        providers = client.peppol.query(
+            params=OffsetPaginationParams(
+                page_size=config.page_size,
+                page_offset=config.page_offset,
+            )
         )
-    )
-    print(providers.model_dump_json(indent=2))
+        print(providers.model_dump_json(indent=2))
 
-    print("Querying all PEPPOL from the beginning...")
-    for provider in client.peppol.all():
-        print(provider.model_dump_json(indent=2))
-        break
+        print("Querying all PEPPOL from the beginning...")
+        for provider in client.peppol.all():
+            print(provider.model_dump_json(indent=2))
+            break
 
-    print("Querying all PEPPOL providers with page offset ...")
-    for provider in client.peppol.all(
-        params=OffsetPaginationParams(
-            page_size=config.page_size,
-            page_offset=config.page_offset,
-        )
-    ):
-        print(provider.model_dump_json(indent=2))
-        break
+        print("Querying all PEPPOL providers with page offset ...")
+        for provider in client.peppol.all(
+            params=OffsetPaginationParams(
+                page_size=config.page_size,
+                page_offset=config.page_offset,
+            )
+        ):
+            print(provider.model_dump_json(indent=2))
+            break
 
 
 def main() -> int:

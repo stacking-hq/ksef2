@@ -31,6 +31,8 @@ test-coverage:
 release-check:
     just lint
     just format-check
+    just validate-docs-paths
+    just validate-examples
     just check-ksef-api-version
     just check-generated-artifacts
     just check-gen-sync
@@ -46,10 +48,16 @@ coverage:
 
 
 lint:
-    uv run ruff check src/ tests/ scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py
+    uv run ruff check src/ tests/ scripts/examples scripts/advanced_examples scripts/extract_release_notes.py scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py scripts/validate_examples.py scripts/validate_docs_paths.py
 
 format-check:
-    uv run ruff format --check src/ tests/ scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py
+    uv run ruff format --check src/ tests/ scripts/examples scripts/advanced_examples scripts/extract_release_notes.py scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py scripts/validate_examples.py scripts/validate_docs_paths.py
+
+validate-examples:
+    uv run python scripts/validate_examples.py
+
+validate-docs-paths:
+    uv run python scripts/validate_docs_paths.py
 
 gen-sync:
     uv run --group codegen python scripts/gen_sync.py
@@ -60,7 +68,7 @@ check-gen-sync:
 typecheck:
     GITHUB_ACTIONS= uv run --extra runtime-checks basedpyright src --level warning --warnings
     GITHUB_ACTIONS= uv run --extra runtime-checks basedpyright tests --level error
-    GITHUB_ACTIONS= uv run --extra runtime-checks --group codegen basedpyright scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py --level warning --warnings
+    GITHUB_ACTIONS= uv run --extra runtime-checks --group codegen basedpyright scripts/extract_release_notes.py scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py scripts/validate_examples.py scripts/validate_docs_paths.py --level warning --warnings
 
 
 sync-ksef-api-version:

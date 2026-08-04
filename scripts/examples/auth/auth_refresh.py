@@ -11,7 +11,7 @@ What it demonstrates:
 from dataclasses import dataclass
 
 from ksef2 import Client, Environment
-from ksef2.core.tools import generate_nip
+from scripts.examples._common import generate_example_nip
 
 
 @dataclass
@@ -20,18 +20,22 @@ class ExampleConfig:
 
 
 def run(config: ExampleConfig) -> None:
-    client = Client(environment=config.environment)
-    nip = generate_nip()
+    with Client(environment=config.environment) as client:
+        nip = generate_example_nip()
 
-    print("Authenticating via XAdES...")
-    auth = client.authentication.with_test_certificate(nip=nip)
-    print(f"  Access token valid until:  {auth.auth_tokens.access_token.valid_until}")
-    print(f"  Refresh token valid until: {auth.auth_tokens.refresh_token.valid_until}")
+        print("Authenticating via XAdES...")
+        auth = client.authentication.with_test_certificate(nip=nip)
+        print(
+            f"  Access token valid until:  {auth.auth_tokens.access_token.valid_until}"
+        )
+        print(
+            f"  Refresh token valid until: {auth.auth_tokens.refresh_token.valid_until}"
+        )
 
-    print("Refreshing access token...")
-    refreshed = client.authentication.refresh(refresh_token=auth.refresh_token)
-    print(f"  New access token valid until: {refreshed.access_token.valid_until}")
-    print(f"  New access token preview: {refreshed.access_token.token[:40]}…")
+        print("Refreshing access token...")
+        refreshed = client.authentication.refresh(refresh_token=auth.refresh_token)
+        print(f"  New access token valid until: {refreshed.access_token.valid_until}")
+        print("  New access token issued successfully.")
 
 
 def main() -> int:
