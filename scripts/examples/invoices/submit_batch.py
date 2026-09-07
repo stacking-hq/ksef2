@@ -5,7 +5,7 @@ Prerequisites:
 - set KSEF2_EXAMPLE_INVOICE_XML to a FA(3) XML file valid for that seller
 
 What it demonstrates:
-- preparing multiple XML invoices in memory
+- preparing an XML invoice in memory
 - submitting a batch with `auth.batch.submit_batch()`
 - polling until the batch session completes
 - listing processed invoices and downloading the collective UPO
@@ -22,25 +22,10 @@ from scripts.examples._common import example_invoice_xml_path, example_seller_ni
 @dataclass
 class ExampleConfig:
     environment: Environment = Environment.TEST
-    invoice_count: int = 2
     poll_interval: float = 2.0
     status_timeout: float = 120.0
     seller_nip: str | None = None
     invoice_path: Path | None = None
-
-
-def build_invoices(*, invoice_xml: bytes, count: int) -> list[BatchInvoice]:
-    invoices: list[BatchInvoice] = []
-
-    for ordinal in range(1, count + 1):
-        invoices.append(
-            BatchInvoice(
-                file_name=f"invoice-{ordinal:02d}.xml",
-                content=invoice_xml,
-            )
-        )
-
-    return invoices
 
 
 def run(config: ExampleConfig) -> None:
@@ -50,10 +35,7 @@ def run(config: ExampleConfig) -> None:
         invoice_xml = invoice_path.read_bytes()
 
         auth = client.authentication.with_test_certificate(nip=seller_nip)
-        invoices = build_invoices(
-            invoice_xml=invoice_xml,
-            count=config.invoice_count,
-        )
+        invoices = [BatchInvoice(file_name=invoice_path.name, content=invoice_xml)]
 
         state = auth.batch.submit_batch(
             invoices=invoices,

@@ -72,16 +72,6 @@ pip install "ksef2[runtime-checks]"  # optional beartype runtime checks
 
 Runtime checks are disabled unless `KSEF2_RUNTIME_CHECKS=1` is set.
 
-The CLI is distributed separately under [`stacking-hq/ksef2-cli`](https://github.com/stacking-hq/ksef2-cli).
-Install it when you want terminal workflows,
-scriptable commands, or local profiles:
-
-```bash
-uv tool install ksef2-cli
-# or
-pipx install ksef2-cli
-```
-
 ## Authenticate
 
 Use the authentication method that matches the environment you are working with.
@@ -114,54 +104,14 @@ xades = Client(Environment.DEMO).authentication.with_xades(
     private_key=key,
 )
 
-# you can also use CLI profiles to avoid handling certificates and tokens directly in your code
+# you can also use local profiles to avoid handling certificates and tokens directly in your code
 profile = client.authentication.with_profile("test-company")
 ```
 
-### ksef2-cli profiles
+### Local profiles
 
-The separate [`ksef2-cli`](https://github.com/stacking-hq/ksef2-cli) package
-provides local profiles for repeated CLI work. Profiles store non-secret
-defaults such as environment, NIP, authentication method, certificate paths, and
-the environment variable that contains a secret.
-
-CLI profile setup:
-
-```bash
-ksef2 profile create prod-token \
-  --env production \
-  --nip 5261040828 \
-  --token-env KSEF2_TOKEN
-
-# profile create activates the new profile by default, use this to switch between contexts
-ksef2 profile use prod-token
-
-# example usage of the cli
-ksef2 --profile prod-token invoices list \
-  --role seller \
-  --date-from 2026-01-01T00:00:00Z
-```
-
-These commands add a profile to the local `ksef2-cli` configuration at
-`~/.config/ksef2/config.toml`. Existing legacy
-`~/.config/ksef2-cli/config.toml` files are still read when present.
-
-```toml
-# ksef2-cli local profiles
-# CLI options override the selected profile for one invocation.
-# Store token and password secrets in environment variables.
-active_profile = "prod-token"
-
-[profiles.prod-token]
-environment = "production"
-nip = "5261040828"
-
-[profiles.prod-token.auth]
-type = "token"
-token_env = "KSEF2_TOKEN"
-```
-
-Use defined profiles in the SDK:
+Use `ProfileStore` to save named authentication settings in
+`~/.config/ksef2/config.toml`. Store secret values in environment variables.
 
 ```python
 from ksef2 import Client, Environment
@@ -182,7 +132,7 @@ store.save(
 # match the profile and client environments.
 client = Client(Environment.PRODUCTION)
 
-# defaults to the currently active profile in the CLI configuration.
+# defaults to the currently active profile in the profile configuration.
 active = client.authentication.with_profile()
 
 # or specify which profile to use explicitly.

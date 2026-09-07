@@ -85,7 +85,7 @@ with auth.online_session(form_code=FormSchema.FA3) as session:
     status = session.send_invoice_and_wait(invoice_xml=invoice_xml)
 ```
 
-When credentials live in a CLI-compatible profile, create the root client for
+When credentials live in a local profile, create the root client for
 the profile environment and authenticate through `with_profile()`:
 
 ```python

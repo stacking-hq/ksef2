@@ -6,7 +6,7 @@
   `ksef2.raw`, `ksef2.xades`, and `ksef2.profiles` compatibility surfaces
 - add complete sync and async high-level workflows for authentication, sessions,
   invoices, tokens, permissions, certificates, limits, PEPPOL, and TEST data
-- target KSeF OpenAPI 2.7.0 and expose collective-identifier workflows through
+- target KSeF OpenAPI 2.7.1 and expose collective-identifier workflows through
   matching sync and async public clients
 - add the public FA(3) invoice builder, versioned draft state, and XSD conformance
 - return one-time generated tokens before explicit activation polling

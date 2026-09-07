@@ -44,7 +44,7 @@ SDK dodaje dwie warstwy wygody:
 | Pomocnik SDK | Co dodaje |
 | --- | --- |
 | `with_test_certificate()` | Generuje tymczasowy materiał certyfikatu TEST, a potem używa przepływu XAdES. |
-| `with_profile()` | Czyta lokalną konfigurację profilu `ksef2-cli` i wybiera token, certyfikat TEST, PEM XAdES albo PKCS#12 XAdES. |
+| `with_profile()` | Czyta lokalną konfigurację profilu i wybiera token, certyfikat TEST, PEM XAdES albo PKCS#12 XAdES. |
 
 <Aside type="note" title="Profil nie jest kolejnym credentialem KSeF">
   Profil przechowuje sposób uwierzytelnienia: środowisko, NIP, metodę, ścieżki
@@ -60,7 +60,7 @@ SDK dodaje dwie warstwy wygody:
 | `with_test_certificate()` | Pracujesz z `Environment.TEST` i chcesz najmniej konfiguracji. | Generuje certyfikat TEST z NIP-u i uwierzytelnia się przez XAdES. |
 | `with_token()` | Aplikacja ma już token KSeF dla docelowego kontekstu. | Pobiera certyfikat KSeF do szyfrowania tokenów, szyfruje token ze znacznikiem czasu challenge, rozpoczyna uwierzytelnianie tokenem, odpytuje status i pobiera tokeny. |
 | `with_xades()` | Aplikacja ma certyfikat i klucz prywatny dostępne w Pythonie. | Buduje XML challenge KSeF, podpisuje go XAdES, wysyła podpisany XML, odpytuje status i pobiera tokeny. |
-| `with_profile()` | Chcesz, aby kod SDK i `ksef2-cli` współdzieliły nazwane lokalne ustawienia. | Rozwiązuje wybrany profil i wywołuje odpowiednią metodę SDK. |
+| `with_profile()` | Chcesz używać nazwanych lokalnych ustawień w skryptach Pythona. | Rozwiązuje wybrany profil i wywołuje odpowiednią metodę SDK. |
 
 <CardGrid>
   <LinkCard
@@ -71,7 +71,7 @@ SDK dodaje dwie warstwy wygody:
   <LinkCard
     title="Użyj profili"
     href="../how-to-guides/profiles.mdx"
-    description="Współdziel lokalne ustawienia zgodne z CLI między przepływami terminalowymi i SDK."
+    description="Używaj nazwanych lokalnych ustawień uwierzytelniania w skryptach Pythona."
   />
 </CardGrid>
 
@@ -111,17 +111,13 @@ uwierzytelniania, ścieżki certyfikatów, ustawienia pollingu i nazwę zmiennej
 środowiskowej zawierającej sekret. Nie powinien przechowywać wartości tokenów,
 haseł kluczy prywatnych ani haseł PKCS#12.
 
-Kolejność wyboru profilu jest taka sama w SDK i CLI:
+SDK wybiera profil w tej kolejności:
 
 1. Jawna nazwa profilu przekazana do `with_profile("name")`.
 2. `KSEF2_PROFILE`.
 3. `active_profile` w lokalnej konfiguracji profili.
 
-<Aside type="tip" title="Profile dobrze działają z CLI">
-  Twórz i wybieraj profile przez `ksef2-cli`, gdy ludzie obsługują ten sam
-  kontekst z terminala. Użyj `ProfileStore`, gdy narzędzie w Pythonie ma samo
-  tworzyć albo aktualizować wspólny plik profili.
-</Aside>
+
 
 Środowisko klienta głównego musi zgadzać się ze środowiskiem wybranego profilu.
 Profil `test` używaj z `Client(Environment.TEST)`, profil `demo` z
@@ -196,17 +192,12 @@ metadanych, zarządzania tokenami albo nadawania uprawnień.
   <LinkCard
     title="Użyj profili"
     href="../how-to-guides/profiles.mdx"
-    description="Współdziel lokalną konfigurację ksef2-cli z uwierzytelnianiem SDK i ProfileStore."
+    description="Zarządzaj lokalnymi ustawieniami uwierzytelniania przez ProfileStore i with_profile()."
   />
   <LinkCard
     title="Low-level uwierzytelnianie"
     href="../reference/low-level/authentication.mdx"
     description="Wykonaj operację uwierzytelniania ręcznie, gdy inny system podpisuje XML albo obsługuje wymianę tokenów."
-  />
-  <LinkCard
-    title="Uwierzytelnianie w CLI"
-    href="../../cli/guides/authentication.md"
-    description="Użyj tych samych metod uwierzytelniania z profilami w ksef2-cli."
   />
   <LinkCard
     title="Tokeny i uprawnienia"

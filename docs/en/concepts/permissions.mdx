@@ -32,8 +32,8 @@ requires prior XAdES authentication before the reusable token credential exists.
 
 Tokens should be treated as secrets. Store the token value outside source
 control and prefer environment variables or a secret manager. Profiles can refer
-to token environment variables so CLI and Python code share configuration
-without committing the secret.
+to token environment variables so Python scripts reuse settings without
+committing the secret.
 
 <Aside type="caution" title="Credential success is not authorization">
   A token or certificate can authenticate correctly and still fail the next call

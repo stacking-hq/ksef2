@@ -54,7 +54,9 @@ jobs:
           KSEF_TEST_SUBJECT_NIP: ${{ secrets.KSEF_TEST_SUBJECT_NIP }}
           KSEF_TEST_PERSON_NIP: ${{ secrets.KSEF_TEST_PERSON_NIP }}
           KSEF_TEST_PERSON_PESEL: ${{ secrets.KSEF_TEST_PERSON_PESEL }}
-        run: uv run pytest tests/integration/ -v -m integration
+        run: |
+          uv run pytest tests/integration/ --ignore=tests/integration/test_cli_export_invoices.py -v -rs -m integration --junitxml=integration-results.xml
+          uv run python scripts/verify_integration_results.py integration-results.xml
 
       - name: Record integration sign-off
         run: |
@@ -167,6 +169,7 @@ jobs:
       - name: Create release from the published tag
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
             release-artifact/dist/* \

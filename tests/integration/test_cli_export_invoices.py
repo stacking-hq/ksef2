@@ -33,7 +33,7 @@ def test_cli_export_invoices_with_pem(tmp_path: Path) -> None:
     buyer_nip = invoice_buyer_nip()
     seller_cert, seller_key = generate_test_certificate(seller_nip)
     buyer_cert, buyer_key = generate_test_certificate(buyer_nip)
-    invoice_xml = load_test_invoice_xml()
+    invoice_xml = load_test_invoice_xml(seller_nip=seller_nip, buyer_nip=buyer_nip)
 
     # Write buyer cert/key to PEM files for the CLI
     cert_path = tmp_path / "buyer_cert.pem"

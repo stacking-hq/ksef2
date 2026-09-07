@@ -7,7 +7,7 @@ Prerequisites:
 What it demonstrates:
 - authenticating in TEST
 - opening an online session
-- sending an invoice with both context-manager and manual session handling
+- sending an invoice with context-managed session handling
 """
 
 from dataclasses import dataclass
@@ -35,13 +35,6 @@ def run(config: ExampleConfig) -> None:
         with auth.online_session(form_code=FormSchema.FA3) as session:
             result = session.send_invoice(invoice_xml=invoice_xml)
             print(result.reference_number)
-
-        session = auth.online_session(form_code=FormSchema.FA3)
-        try:
-            result = session.send_invoice(invoice_xml=invoice_xml)
-            print(result.reference_number)
-        finally:
-            session.close()
 
 
 def main() -> int:

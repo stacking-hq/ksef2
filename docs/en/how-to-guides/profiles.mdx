@@ -1,13 +1,12 @@
 ---
 title: Use profiles
-description: Share local ksef2-cli profile configuration with SDK authentication.
+description: Configure named local authentication settings with the SDK.
 ---
 
 import { Aside, LinkCard, Steps } from '@astrojs/starlight/components';
 
-Profiles are local, named authentication settings shared by `ksef2-cli` and the
-SDK. Use them when the same developer workstation needs both terminal commands
-and Python scripts for the same KSeF context.
+Profiles are local, named authentication settings. Use them to reuse a KSeF
+context across Python scripts.
 
 A profile stores non-secret settings: environment, NIP, authentication method,
 certificate paths, polling settings, and the name of the environment variable
@@ -20,47 +19,27 @@ passwords, or PKCS#12 passwords.
   deployment system and read secrets directly from environment variables.
 </Aside>
 
-## Create a profile with the CLI
+## Create a TEST profile
 
-The CLI is the most convenient way to create and inspect profile files.
+```python
+from ksef2 import Environment
+from ksef2.profiles import Profile, ProfileStore, TestCertificateProfileAuth
 
-```bash
-ksef2 profile create test-company \
-  --env test \
-  --nip 5261040828 \
-  --test-cert
-
-ksef2 profile current
-ksef2 profile show test-company
+store = ProfileStore.default()
+store.save(
+    "test-company",
+    Profile(
+        environment=Environment.TEST,
+        nip="5261040828",
+        auth=TestCertificateProfileAuth(),
+    ),
+    activate=True,
+)
 ```
-
-Token and certificate profiles store the environment variable name that holds
-the secret, not the secret value:
-
-```bash
-export KSEF2_TOKEN=replace-with-a-real-ksef-token
-
-ksef2 profile create prod-token \
-  --env production \
-  --nip 5261040828 \
-  --token-env KSEF2_TOKEN
-```
-
-<LinkCard
-  title="CLI configuration"
-  href="../../cli/guides/configuration.md"
-  description="Create, select, inspect, and delete profiles with ksef2-cli."
-/>
-
-<LinkCard
-  title="CLI authentication"
-  href="../../cli/guides/authentication.md"
-  description="Choose token, TEST certificate, PEM XAdES, or PKCS#12 profile authentication from the command line."
-/>
 
 ## Authenticate with a profile
 
-`with_profile()` reads the same profile file as the CLI. Passing no name uses
+`with_profile()` reads the local profile file. Passing no name uses
 the currently selected profile.
 
 ```python
@@ -107,7 +86,7 @@ async with AsyncClient(Environment.TEST) as client:
 
 ## Profile selection order
 
-The SDK selects a profile in the same order as `ksef2-cli`:
+The SDK selects a profile in this order:
 
 1. The explicit name passed to `with_profile("name")`.
 2. `KSEF2_PROFILE` in the process environment.
@@ -138,7 +117,7 @@ with Client(Environment.PRODUCTION) as client:
 ## Manage profiles from SDK code
 
 Use `ProfileStore` when a Python tool should create, update, select, or inspect
-the same profile file used by the CLI. Use `with_profile()` when you only need
+the local profile file. Use `with_profile()` when you only need
 to authenticate.
 
 ```python
@@ -182,7 +161,7 @@ store.save(
 )
 ```
 
-You can perform basic profile management without the CLI, but the CLI is usually more convenient.
+Manage saved profiles with `ProfileStore`:
 
 ```python
 from ksef2.profiles import ProfileStore
@@ -249,9 +228,7 @@ store.save(
    Examples: `KSEF2_TOKEN`, `KSEF2_KEY_PASSWORD`, and
    `KSEF2_P12_PASSWORD`.
 
-2. Create or select the profile with `ksef2-cli`.
-
-   This keeps terminal workflows and Python scripts aligned.
+2. Create or select the profile with `ProfileStore`.
 
 3. Create the SDK root client for the same environment as the profile.
 
