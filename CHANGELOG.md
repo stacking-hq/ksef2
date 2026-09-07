@@ -38,25 +38,41 @@
 - publish canonical project links and validate repository examples without
   exposing authentication material
 
-## v0.19.0 (2026-06-23)
+## v0.19.0 (2026-09-05)
 
 ### Feat
 
-- expose the low-level `ksef2.raw` endpoint API and public raw mappers
-- add the public `ksef2.xades` facade for certificate and XAdES helpers
+- establish documented `ksef2`, `ksef2.clients`, `ksef2.models`, `ksef2.fa3`,
+  `ksef2.raw`, `ksef2.xades`, and `ksef2.profiles` compatibility surfaces
+- add complete sync and async high-level workflows for authentication, sessions,
+  invoices, tokens, permissions, certificates, limits, PEPPOL, and TEST data
+- target KSeF OpenAPI 2.7.1 and expose collective-identifier workflows through
+  matching sync and async public clients
+- add the public FA(3) invoice builder, versioned draft state, and XSD conformance
+- return one-time generated tokens before explicit activation polling
+- version authentication and session resume-state documents
+- store new SDK and CLI profiles under `~/.config/ksef`, while continuing to
+  read existing `~/.config/ksef2-cli` profiles as a fallback
 
-### Docs
+### Fix
 
-- sync README OpenAPI target version with KSeF API 2.6.1
-- document the low-level API, public API contract, error handling, and sync code generation
-
-### Refactor
-
-- remove the FA(3) invoice builder and legacy generated sample-invoice helpers
+- prevent automatic retries from consuming one-shot authentication redemption
+- isolate presigned storage transfers from KSeF authentication and error middleware
+- preserve protected batch recovery state when uploads fail
+- redact bearer tokens, encryption material, and signed URLs from default output
+- normalize invoice filter datetimes and reject ambiguous or reversed ranges
+- reject invalid FA(3) invoice numbers before XML serialization
 
 ### Build
 
-- run `just release-check` in CI and the PyPI publish workflow
+- verify release tags against source and wheel metadata before PyPI upload
+- run live integration tests against the exact tagged release commit
+- gate local FA(3), generated-artifact, coverage, and deprecation contracts
+
+### Docs
+
+- publish the 1.0 public API contract, migration guide, and bilingual workflow
+  documentation
 
 ## v0.18.0 (2026-06-21)
 
