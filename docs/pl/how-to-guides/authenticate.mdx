@@ -1,6 +1,6 @@
 ---
 title: Uwierzytelnij się
-description: Skonfiguruj dane uwierzytelniające ksef2 przez zmienne środowiskowe, tokeny KSeF, certyfikaty XAdES albo profile kompatybilne z CLI.
+description: Skonfiguruj dane uwierzytelniające ksef2 przez zmienne środowiskowe, tokeny KSeF, certyfikaty XAdES albo profile lokalne.
 ---
 
 import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
@@ -17,15 +17,15 @@ którym działa aplikacja.
 
 ## Zmienne środowiskowe
 
-Te nazwy są używane w przykładach i przez profile `ksef2-cli`:
+Te nazwy są używane w przykładach i przez profile SDK:
 
 | Zmienna | Znaczenie |
 | --- | --- |
 | `KSEF2_ENV` | `test`, `demo` albo `production` w przykładach SDK. |
 | `KSEF2_NIP` | NIP podatnika/kontekstu używany przy uwierzytelnianiu. |
 | `KSEF2_TOKEN` | Token KSeF dla uwierzytelniania tokenem. |
-| `KSEF2_PROFILE` | Nazwa profilu wybierana przez `ksef2-cli` i uwierzytelnianie profilami w SDK. |
-| `KSEF2_CONFIG` | Opcjonalna ścieżka do pliku konfiguracji profili CLI. |
+| `KSEF2_PROFILE` | Nazwa profilu wybierana przez uwierzytelnianie profilami w SDK. |
+| `KSEF2_CONFIG` | Opcjonalna ścieżka do pliku konfiguracji profili lokalnych. |
 | `KSEF2_KEY_PASSWORD` | Opcjonalne hasło zaszyfrowanego klucza PEM. |
 | `KSEF2_P12_PASSWORD` | Opcjonalne hasło archiwum PKCS#12/PFX. |
 
@@ -134,42 +134,16 @@ auth = client.authentication.with_xades(
   </TabItem>
 </Tabs>
 
-## Profile kompatybilne z CLI
+## Profile lokalne
 
-`ksef2-cli` i SDK używają tego samego lokalnego pliku profili. Profil
+SDK odczytuje nazwane ustawienia z lokalnego pliku profili. Profil
 przechowuje niesekretne ustawienia: środowisko, NIP, metodę uwierzytelnienia,
 ścieżki certyfikatów, ustawienia pollingu i nazwę zmiennej środowiskowej z
 sekretem. Nie zapisuje wartości tokenów ani haseł certyfikatów.
 
-```bash
-ksef2 profile create test-company \
-  --env test \
-  --nip 5261040828 \
-  --test-cert
+Utwórz i wybierz profil za pomocą [`ProfileStore`](profiles.mdx).
 
-ksef2 profile create prod-token \
-  --env production \
-  --nip "$KSEF2_NIP" \
-  --token-env KSEF2_TOKEN
-```
-
-Wybierz aktywny profil dla kolejnych komend CLI:
-
-```bash
-ksef2 profile use prod-token
-ksef2 --json profile current
-```
-
-Albo wybierz profil dla jednej powłoki lub jednej komendy:
-
-```bash
-export KSEF2_PROFILE=prod-token
-ksef2 --json auth login
-
-ksef2 --profile test-company --json auth login
-```
-
-Kolejność wyboru profilu jest taka sama w CLI i SDK:
+SDK wybiera profil w tej kolejności:
 
 1. Jawna nazwa profilu.
 2. `KSEF2_PROFILE`.
@@ -225,12 +199,7 @@ async with AsyncClient(Environment.PRODUCTION) as client:
 <LinkCard
   title="Użyj profili"
   href="profiles.mdx"
-  description="Twórz profile przez ksef2-cli, uwierzytelniaj się przez with_profile() i zarządzaj profilami przez ProfileStore."
-/>
-<LinkCard
-  title="Uwierzytelnianie w CLI"
-  href="../../cli/guides/authentication.md"
-  description="Użyj tych samych przepływów tokenu, certyfikatu TEST, PEM XAdES, PKCS#12 i profili z poziomu ksef2-cli."
+  description="Twórz profile przez ProfileStore i uwierzytelniaj się przez with_profile()."
 />
 
 ## Zalecany przepływ
@@ -243,8 +212,7 @@ async with AsyncClient(Environment.PRODUCTION) as client:
 
 2. Trzymaj niesekretne ustawienia w jednym miejscu.
 
-   Dla w pełni własnych konfiguracji użyj konfiguracji aplikacji. Jeśli to samo
-   środowisko obsługujesz też z terminala, skorzystaj z profili `ksef2-cli`.
+   Użyj konfiguracji aplikacji albo nazwanych profili SDK.
 
 3. Utwórz klienta bazowego dla środowiska.
 

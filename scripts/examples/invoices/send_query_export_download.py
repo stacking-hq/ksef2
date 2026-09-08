@@ -15,7 +15,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from ksef2 import Client, Environment, FormSchema
-from ksef2.domain.models import InvoicesFilter
+from ksef2.models import InvoicesFilter
 from scripts.examples._common import (
     example_invoice_xml_path,
     example_seller_nip,
@@ -37,45 +37,45 @@ class ExampleConfig:
 
 
 def run(config: ExampleConfig) -> None:
-    client = Client(environment=config.environment)
-    seller_nip = config.seller_nip or example_seller_nip()
-    invoice_path = config.invoice_path or example_invoice_xml_path()
-    invoice_xml = invoice_path.read_bytes()
+    with Client(environment=config.environment) as client:
+        seller_nip = config.seller_nip or example_seller_nip()
+        invoice_path = config.invoice_path or example_invoice_xml_path()
+        invoice_xml = invoice_path.read_bytes()
 
-    auth = client.authentication.with_test_certificate(nip=seller_nip)
+        auth = client.authentication.with_test_certificate(nip=seller_nip)
 
-    with auth.online_session(form_code=FormSchema.FA3) as session:
-        result = session.send_invoice(invoice_xml=invoice_xml)
-        print(f"Invoice sent: {result.reference_number}")
+        with auth.online_session(form_code=FormSchema.FA3) as session:
+            result = session.send_invoice(invoice_xml=invoice_xml)
+            print(f"Invoice sent: {result.reference_number}")
 
-        status = session.wait_for_invoice_ready(
-            invoice_reference_number=result.reference_number,
-            timeout=config.status_timeout,
+            status = session.wait_for_invoice_ready(
+                invoice_reference_number=result.reference_number,
+                timeout=config.status_timeout,
+                poll_interval=config.poll_interval,
+            )
+            print(f"Invoice processed as KSeF number: {status.ksef_number}")
+
+        export = auth.invoices.schedule_export(
+            filters=InvoicesFilter.for_seller(
+                date_from=datetime.now(tz=timezone.utc) - timedelta(days=1),
+                date_to=datetime.now(tz=timezone.utc),
+            )
+        )
+        print(f"Export scheduled: {export.reference_number}")
+
+        package = auth.invoices.wait_for_export_package(
+            reference_number=export.reference_number,
+            timeout=config.export_timeout,
             poll_interval=config.poll_interval,
         )
-        print(f"Invoice processed as KSeF number: {status.ksef_number}")
+        print(f"Export package ready with {len(package.parts)} part(s)")
 
-    export = auth.invoices.schedule_export(
-        filters=InvoicesFilter.for_seller(
-            date_from=datetime.now(tz=timezone.utc) - timedelta(days=1),
-            date_to=datetime.now(tz=timezone.utc),
-        )
-    )
-    print(f"Export scheduled: {export.reference_number}")
-
-    package = auth.invoices.wait_for_export_package(
-        reference_number=export.reference_number,
-        timeout=config.export_timeout,
-        poll_interval=config.poll_interval,
-    )
-    print(f"Export package ready with {len(package.parts)} part(s)")
-
-    for path in auth.invoices.fetch_package(
-        package=package,
-        export=export,
-        target_directory=config.download_dir,
-    ):
-        print(f"Downloaded: {path} ({path.stat().st_size} bytes)")
+        for path in auth.invoices.fetch_package(
+            package=package,
+            export=export,
+            target_directory=config.download_dir,
+        ):
+            print(f"Downloaded: {path} ({path.stat().st_size} bytes)")
 
 
 def main() -> int:

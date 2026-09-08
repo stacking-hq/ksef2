@@ -2,6 +2,7 @@
 
 import argparse
 import ast
+import re
 import sys
 import tomllib
 import zipfile
@@ -52,9 +53,14 @@ def verify_release(*, tag: str, root: Path, dist_directory: Path) -> list[str]:
 
     changelog_heading = f"## v{project_version} "
     changelog = (root / "CHANGELOG.md").read_text()
-    if not changelog.startswith(changelog_heading):
+    first_heading = changelog.splitlines()[0] if changelog else ""
+    release_heading = re.compile(
+        rf"{re.escape(changelog_heading)}\(\d{{4}}-\d{{2}}-\d{{2}}\)"
+    )
+    if release_heading.fullmatch(first_heading) is None:
         errors.append(
-            f"CHANGELOG.md must start with a {changelog_heading.strip()!r} heading"
+            "CHANGELOG.md must start with "
+            f"'{changelog_heading}(YYYY-MM-DD)' using the actual release date"
         )
 
     wheels = sorted(dist_directory.glob(f"ksef2-{project_version}-*.whl"))

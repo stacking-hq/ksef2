@@ -10,17 +10,16 @@ What it demonstrates:
 
 from dataclasses import dataclass
 
-from ksef2 import Client, Environment
-from ksef2.core import exceptions
-from ksef2.core.tools import generate_nip, generate_pesel
-from ksef2.domain.models.testdata import Identifier, Permission
+from ksef2 import Client, Environment, KSeFApiError
+from ksef2.models import Identifier, Permission
+from scripts.examples._common import generate_example_nip, generate_example_pesel
 
 
 def with_automatic_cleanup(client: Client) -> None:
     """Set up test data with automatic cleanup."""
-    organization_nip = generate_nip()
-    person_nip = generate_nip()
-    person_pesel = generate_pesel()
+    organization_nip = generate_example_nip()
+    person_nip = generate_example_nip()
+    person_pesel = generate_example_pesel()
 
     print("Creating test data with automatic cleanup:")
 
@@ -45,7 +44,7 @@ def with_automatic_cleanup(client: Client) -> None:
                 pesel=person_pesel,
                 description="Example person",
             )
-        except exceptions.KSeFApiError:
+        except KSeFApiError:
             print("Person already exists: cleanup will still run on exit.")
 
         print("Granting permissions...")
@@ -63,9 +62,9 @@ def with_automatic_cleanup(client: Client) -> None:
 
 def manual_cleanup(client: Client) -> None:
     """Manually set up and clean up test data."""
-    organization_nip = generate_nip()
-    person_nip = generate_nip()
-    person_pesel = generate_pesel()
+    organization_nip = generate_example_nip()
+    person_nip = generate_example_nip()
+    person_pesel = generate_example_pesel()
 
     print("Creating test data with manual cleanup:")
 
@@ -90,7 +89,7 @@ def manual_cleanup(client: Client) -> None:
             pesel=person_pesel,
             description="Example person",
         )
-    except exceptions.KSeFApiError:
+    except KSeFApiError:
         print("Person already exists: ...")
 
     print("Granting permissions...")
@@ -123,10 +122,10 @@ class ExampleConfig:
 
 
 def run(config: ExampleConfig) -> None:
-    client = Client(environment=config.environment)
-    with_automatic_cleanup(client)
-    print()
-    manual_cleanup(client)
+    with Client(environment=config.environment) as client:
+        with_automatic_cleanup(client)
+        print()
+        manual_cleanup(client)
 
 
 def main() -> int:

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ksef2"
-version = "0.19.0"
+version = "1.0.0"
 description = "Python SDK and Tools for Poland's KSeF (Krajowy System e-Faktur) API"
 readme = "README.md"
 authors = [{ name = "Artur Podsiadły" }]
@@ -22,6 +22,12 @@ dependencies = [
     "camel-converter>=5.1.0",
     "xsdata>=26.1",
 ]
+
+[project.urls]
+Documentation = "https://docs.stacking.me/ksef2/sdk/getting-started/overview/"
+Repository = "https://github.com/stacking-hq/ksef2"
+Issues = "https://github.com/stacking-hq/ksef2/issues"
+Changelog = "https://github.com/stacking-hq/ksef2/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 runtime-checks = [
@@ -69,7 +75,7 @@ baselineFile = ".basedpyright/baseline.json"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.19.0"
+version = "1.0.0"
 tag_format = "v$version"
 update_changelog_on_bump = true
 version_files = [

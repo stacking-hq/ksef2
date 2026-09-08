@@ -11,7 +11,7 @@ What it demonstrates:
 from dataclasses import dataclass
 
 from ksef2 import Client, Environment
-from ksef2.core.tools import generate_nip
+from scripts.examples._common import generate_example_nip
 
 
 @dataclass
@@ -20,23 +20,23 @@ class ExampleConfig:
 
 
 def run(config: ExampleConfig) -> None:
-    client = Client(environment=config.environment)
-    organization_nip = generate_nip()
+    with Client(environment=config.environment) as client:
+        organization_nip = generate_example_nip()
 
-    with client.testdata.temporal() as temp:
-        temp.create_subject(
-            nip=organization_nip,
-            subject_type="enforcement_authority",
-            description="Permission query example",
-        )
-
-        auth = client.authentication.with_test_certificate(nip=organization_nip)
-
-        print(
-            auth.permissions.get_attachment_permission_status().model_dump_json(
-                indent=2
+        with client.testdata.temporal() as temp:
+            temp.create_subject(
+                nip=organization_nip,
+                subject_type="enforcement_authority",
+                description="Permission query example",
             )
-        )
+
+            auth = client.authentication.with_test_certificate(nip=organization_nip)
+
+            print(
+                auth.permissions.get_attachment_permission_status().model_dump_json(
+                    indent=2
+                )
+            )
 
 
 def main() -> int:

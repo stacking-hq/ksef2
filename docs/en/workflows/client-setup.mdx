@@ -58,7 +58,7 @@ client = Client(Environment.PRODUCTION, certificate_store=store)
 Pass any object implementing `CertificateStoreProtocol` when certificates should
 be shared through application storage such as a database or cache.
 
-When credentials live in a CLI-compatible profile, create the root client for
+When credentials live in a local profile, create the root client for
 the profile environment and authenticate through `with_profile()`:
 
 ```python

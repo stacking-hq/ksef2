@@ -1,7 +1,7 @@
 """Authenticate with a pre-generated KSeF token.
 
 Prerequisites:
-- replace `KSEF_TOKEN` with a valid token for the target context
+- set `KSEF2_EXAMPLE_TOKEN` to a valid token for the target context
 
 What it demonstrates:
 - token-based authentication
@@ -11,31 +11,29 @@ What it demonstrates:
 from dataclasses import dataclass
 
 from ksef2 import Client, Environment
-from ksef2.core.tools import generate_nip
-
-KSEF_TOKEN = "<your-token-here>"
+from scripts.examples._common import example_seller_nip, required_env
 
 
 @dataclass
 class ExampleConfig:
     environment: Environment = Environment.TEST
-    ksef_token: str = KSEF_TOKEN
+    ksef_token: str | None = None
+    nip: str | None = None
 
 
 def run(config: ExampleConfig) -> None:
-    client = Client(environment=config.environment)
-    nip = generate_nip()
+    with Client(environment=config.environment) as client:
+        ksef_token = config.ksef_token or required_env("KSEF2_EXAMPLE_TOKEN")
+        nip = config.nip or example_seller_nip()
 
-    print("Authenticating via KSeF token...")
-    auth = client.authentication.with_token(
-        ksef_token=config.ksef_token,
-        nip=nip,
-    )
+        print("Authenticating via KSeF token...")
+        auth = client.authentication.with_token(
+            ksef_token=ksef_token,
+            nip=nip,
+        )
 
-    print(f"Access token:  {auth.access_token[:40]}…")
-    print(f"  Valid until: {auth.auth_tokens.access_token.valid_until}")
-    print(f"Refresh token: {auth.refresh_token[:40]}…")
-    print(f"  Valid until: {auth.auth_tokens.refresh_token.valid_until}")
+        print(f"  Valid until: {auth.auth_tokens.access_token.valid_until}")
+        print(f"  Valid until: {auth.auth_tokens.refresh_token.valid_until}")
 
 
 def main() -> int:

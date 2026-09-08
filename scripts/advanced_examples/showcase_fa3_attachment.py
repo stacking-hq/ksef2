@@ -1,3 +1,10 @@
+"""Inspect the internal FA(3) attachment domain-to-spec mapping.
+
+This is an advanced repository-maintainer example. It intentionally uses
+internal modules because the mapper is not part of the stable public SDK API.
+Use the public FA(3) builders for application code.
+"""
+
 from dataclasses import asdict
 from pprint import pprint
 

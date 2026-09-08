@@ -45,7 +45,7 @@ The SDK adds two convenience layers:
 | SDK helper | What it adds |
 | --- | --- |
 | `with_test_certificate()` | Generates temporary TEST certificate material, then uses the XAdES flow. |
-| `with_profile()` | Reads local `ksef2-cli` profile configuration and dispatches to token, TEST certificate, PEM XAdES, or PKCS#12 XAdES authentication. |
+| `with_profile()` | Reads local profile configuration and dispatches to token, TEST certificate, PEM XAdES, or PKCS#12 XAdES authentication. |
 
 <Aside type="note" title="Profiles are not another KSeF credential">
   A profile stores how to authenticate: environment, NIP, method, certificate
@@ -60,7 +60,7 @@ The SDK adds two convenience layers:
 | `with_test_certificate()` | You are developing against `Environment.TEST` and want the least setup. | Generates a TEST certificate from the NIP and authenticates through XAdES. |
 | `with_token()` | Your application already has a KSeF token for the target context. | Loads the KSeF token-encryption certificate, encrypts the token with the challenge timestamp, submits token authentication, polls status, and redeems tokens. |
 | `with_xades()` | Your application has certificate and private-key material available to Python. | Builds the KSeF challenge XML, signs it with XAdES, submits the signed XML, polls status, and redeems tokens. |
-| `with_profile()` | You want SDK code and `ksef2-cli` to share named local authentication settings. | Resolves the selected profile and calls the matching SDK method. |
+| `with_profile()` | You want Python scripts to reuse named local authentication settings. | Resolves the selected profile and calls the matching SDK method. |
 
 <CardGrid>
   <LinkCard
@@ -71,7 +71,7 @@ The SDK adds two convenience layers:
   <LinkCard
     title="Use profiles"
     href="../how-to-guides/profiles.mdx"
-    description="Share CLI-compatible local authentication settings between command-line and SDK workflows."
+    description="Reuse named local authentication settings across Python scripts."
   />
 </CardGrid>
 
@@ -111,17 +111,13 @@ certificate paths, polling settings, and the name of the environment variable
 that contains a secret. It should not store token values, private-key
 passwords, or PKCS#12 passwords.
 
-Profile selection follows the same order in the SDK and CLI:
+The SDK selects profiles in this order:
 
 1. Explicit profile name passed to `with_profile("name")`.
 2. `KSEF2_PROFILE`.
 3. `active_profile` in the local profile config.
 
-<Aside type="tip" title="Profiles work well with the CLI">
-  Create and select profiles with `ksef2-cli` when humans operate the same
-  context from the terminal. Use `ProfileStore` when a Python tool should
-  create or update the shared profile file itself.
-</Aside>
+
 
 The root client environment must match the selected profile environment. A
 `test` profile belongs with `Client(Environment.TEST)`, a `demo` profile with
@@ -196,17 +192,12 @@ granting permissions.
   <LinkCard
     title="Use profiles"
     href="../how-to-guides/profiles.mdx"
-    description="Share local ksef2-cli profile configuration with SDK authentication and ProfileStore."
+    description="Manage local authentication settings with ProfileStore and with_profile()."
   />
   <LinkCard
     title="Low-level authentication"
     href="../reference/low-level/authentication.mdx"
     description="Run the authentication operation manually when another system signs XML or owns token exchange."
-  />
-  <LinkCard
-    title="CLI authentication"
-    href="../../cli/guides/authentication.md"
-    description="Use the same profile-backed authentication methods from ksef2-cli."
   />
   <LinkCard
     title="Tokens and permissions"

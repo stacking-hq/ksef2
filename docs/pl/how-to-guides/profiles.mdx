@@ -1,13 +1,12 @@
 ---
 title: Użyj profili
-description: Współdziel lokalną konfigurację profili ksef2-cli z uwierzytelnianiem SDK.
+description: Skonfiguruj nazwane lokalne ustawienia uwierzytelniania w SDK.
 ---
 
 import { Aside, LinkCard, Steps } from '@astrojs/starlight/components';
 
-Profile to lokalne, nazwane ustawienia uwierzytelniania współdzielone przez
-`ksef2-cli` i SDK. Używaj ich wtedy, gdy ta sama stacja developerska wykonuje
-komendy w terminalu i skrypty Pythona dla tego samego kontekstu KSeF.
+Profile to lokalne, nazwane ustawienia uwierzytelniania. Używaj ich, aby
+korzystać z tego samego kontekstu KSeF w skryptach Pythona.
 
 Profil przechowuje ustawienia niesekretne: środowisko, NIP, metodę
 uwierzytelnienia, ścieżki certyfikatów, ustawienia pollingu i nazwę zmiennej
@@ -21,47 +20,27 @@ haseł kluczy prywatnych ani haseł PKCS#12.
   środowiskowych.
 </Aside>
 
-## Utwórz profil w CLI
+## Utwórz profil TEST
 
-CLI jest najwygodniejszą drogą do tworzenia i sprawdzania pliku profili.
+```python
+from ksef2 import Environment
+from ksef2.profiles import Profile, ProfileStore, TestCertificateProfileAuth
 
-```bash
-ksef2 profile create test-company \
-  --env test \
-  --nip 5261040828 \
-  --test-cert
-
-ksef2 profile current
-ksef2 profile show test-company
+store = ProfileStore.default()
+store.save(
+    "test-company",
+    Profile(
+        environment=Environment.TEST,
+        nip="5261040828",
+        auth=TestCertificateProfileAuth(),
+    ),
+    activate=True,
+)
 ```
-
-Profile tokenowe i certyfikatowe zapisują nazwę zmiennej środowiskowej, która
-zawiera sekret, a nie samą wartość sekretu:
-
-```bash
-export KSEF2_TOKEN=podmien-na-prawdziwy-token-ksef
-
-ksef2 profile create prod-token \
-  --env production \
-  --nip 5261040828 \
-  --token-env KSEF2_TOKEN
-```
-
-<LinkCard
-  title="Konfiguracja CLI"
-  href="../../cli/guides/configuration.md"
-  description="Twórz, wybieraj, sprawdzaj i usuwaj profile w ksef2-cli."
-/>
-
-<LinkCard
-  title="Uwierzytelnianie CLI"
-  href="../../cli/guides/authentication.md"
-  description="Wybierz profil tokenowy, certyfikat TEST, PEM XAdES albo PKCS#12 z poziomu komendy."
-/>
 
 ## Uwierzytelnij się profilem
 
-`with_profile()` czyta ten sam plik profili co CLI. Wywołanie bez nazwy używa
+`with_profile()` czyta lokalny plik profili. Wywołanie bez nazwy używa
 wybranego profilu.
 
 ```python
@@ -108,7 +87,7 @@ async with AsyncClient(Environment.TEST) as client:
 
 ## Kolejność wyboru profilu
 
-SDK wybiera profil w tej samej kolejności co `ksef2-cli`:
+SDK wybiera profil w tej kolejności:
 
 1. Jawna nazwa przekazana do `with_profile("name")`.
 2. `KSEF2_PROFILE` w środowisku procesu.
@@ -139,7 +118,7 @@ with Client(Environment.PRODUCTION) as client:
 ## Zarządzaj profilami z kodu SDK
 
 Użyj `ProfileStore`, gdy narzędzie w Pythonie ma tworzyć, aktualizować,
-wybierać albo sprawdzać ten sam plik profili co CLI. Użyj `with_profile()`,
+wybierać albo sprawdzać lokalny plik profili. Użyj `with_profile()`,
 gdy potrzebujesz tylko uwierzytelnienia.
 
 ```python
@@ -248,7 +227,7 @@ store.save(
 
    Przykłady: `KSEF2_TOKEN`, `KSEF2_KEY_PASSWORD` i `KSEF2_P12_PASSWORD`.
 
-2. Utwórz albo wybierz profil przez `ksef2-cli`.
+2. Utwórz albo wybierz profil za pomocą `ProfileStore`.
 
    Dzięki temu workflow w terminalu i skrypty Pythona używają tych samych
    ustawień.

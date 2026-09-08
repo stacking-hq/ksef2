@@ -1,7 +1,7 @@
 """End-to-end tests that execute the example scripts against Environment.TEST.
 
 Each test imports and calls the main() function of a self-contained example.
-Invoice-submission examples require a caller-provided FA(3) XML fixture.
+Invoice-submission examples use a fresh FA(3) invoice for the TEST seller.
 
 Skipped examples (require external config not available in CI):
   - auth/auth_xades_demo.py    — needs MCU certificate files
@@ -30,13 +30,25 @@ import scripts.examples.testdata.attachments as attachments_example
 import scripts.examples.testdata.block_context as block_context_example
 import scripts.examples.testdata.setup_test_data as setup_test_data_example
 from ksef2 import Client
-from ksef2.core.exceptions import KSeFExportTimeoutError
+from tests.integration.conftest import KSeFCredentials
+from tests.integration.invoice_payload import load_test_invoice_xml
 
-_requires_invoice_fixture = pytest.mark.skipif(
-    not os.environ.get("KSEF2_EXAMPLE_INVOICE_XML")
-    or not os.environ.get("KSEF2_EXAMPLE_SELLER_NIP"),
-    reason="invoice examples require KSEF2_EXAMPLE_INVOICE_XML and KSEF2_EXAMPLE_SELLER_NIP",
-)
+
+@pytest.fixture
+def example_invoice(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    ksef_credentials: KSeFCredentials,
+) -> None:
+    seller_nip = os.environ.get(
+        "KSEF2_EXAMPLE_SELLER_NIP", ksef_credentials.subject_nip
+    )
+    if not os.environ.get("KSEF2_EXAMPLE_INVOICE_XML"):
+        invoice_path = tmp_path / "invoice.xml"
+        invoice_path.write_bytes(load_test_invoice_xml(seller_nip=seller_nip))
+        monkeypatch.setenv("KSEF2_EXAMPLE_INVOICE_XML", str(invoice_path))
+    monkeypatch.setenv("KSEF2_EXAMPLE_SELLER_NIP", seller_nip)
+
 
 # ── auth ──────────────────────────────────────────────────────────────────────
 
@@ -95,18 +107,18 @@ def test_example_session_resume() -> None:
 
 
 @pytest.mark.integration
-@_requires_invoice_fixture
+@pytest.mark.usefixtures("example_invoice")
 def test_example_quickstart() -> None:
-    """Quickstart: authenticate and send an invoice (context manager + manual).
+    """Quickstart: authenticate and send an invoice with a managed session.
 
     Covers: XAdES auth → open session via context manager → send invoice →
-    open session manually → send invoice → terminate.
+    close the session.
     """
     quickstart_example.main()
 
 
 @pytest.mark.integration
-@_requires_invoice_fixture
+@pytest.mark.usefixtures("example_invoice")
 def test_example_send_invoice() -> None:
     """Send a single invoice and immediately download it by KSeF number.
 
@@ -117,36 +129,30 @@ def test_example_send_invoice() -> None:
 
 
 @pytest.mark.integration
-@_requires_invoice_fixture
-def test_example_send_query_export_download(capsys: pytest.CaptureFixture[str]) -> None:
+@pytest.mark.usefixtures("example_invoice")
+def test_example_send_query_export_download() -> None:
     """Full invoice lifecycle: send, query status, schedule export, download.
 
     Covers: testdata setup → XAdES auth → open session → send invoice →
     poll status → schedule export → fetch package → cleanup.
     """
-    try:
-        send_example.main()
-    except KSeFExportTimeoutError as exc:
-        captured = capsys.readouterr()
-        assert "Export scheduled:" in captured.out
-        pytest.skip(
-            f"KSeF TEST export package {exc.reference_number} "
-            f"was not ready after {exc.timeout}s"
-        )
+    send_example.main()
 
 
 @pytest.mark.integration
-@_requires_invoice_fixture
-def test_example_send_batch() -> None:
+@pytest.mark.usefixtures("example_invoice")
+def test_example_send_batch(capsys: pytest.CaptureFixture[str]) -> None:
     """Prepare, upload, and process a batch session end to end."""
     send_batch_example.main()
+    assert "(total=1, ok=1, failed=0)" in capsys.readouterr().out
 
 
 @pytest.mark.integration
-@_requires_invoice_fixture
-def test_example_submit_batch() -> None:
+@pytest.mark.usefixtures("example_invoice")
+def test_example_submit_batch(capsys: pytest.CaptureFixture[str]) -> None:
     """Prepare and submit a batch in one high-level call."""
     submit_batch_example.main()
+    assert "(total=1, ok=1, failed=0)" in capsys.readouterr().out
 
 
 @pytest.mark.integration

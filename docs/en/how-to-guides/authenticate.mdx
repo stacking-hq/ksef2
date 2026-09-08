@@ -1,6 +1,6 @@
 ---
 title: Authenticate
-description: Configure ksef2 credentials with environment variables, KSeF tokens, XAdES certificates, or CLI-compatible profiles.
+description: Configure ksef2 credentials with environment variables, KSeF tokens, XAdES certificates, or local profiles.
 ---
 
 import { Aside, LinkCard, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
@@ -17,16 +17,15 @@ method for the context you are operating as.
 
 ## Environment variables
 
-These names are used by examples in this documentation and by `ksef2-cli`
-profiles:
+These names are used by the examples and SDK profiles:
 
 | Variable | Purpose |
 | --- | --- |
 | `KSEF2_ENV` | `test`, `demo`, or `production` for SDK examples. |
 | `KSEF2_NIP` | Taxpayer/context NIP used during authentication. |
 | `KSEF2_TOKEN` | KSeF token for token authentication. |
-| `KSEF2_PROFILE` | CLI profile name selected by `ksef2-cli` and SDK profile auth. |
-| `KSEF2_CONFIG` | Optional path to the CLI profile config file. |
+| `KSEF2_PROFILE` | Profile name selected by SDK profile authentication. |
+| `KSEF2_CONFIG` | Optional path to the local profile config file. |
 | `KSEF2_KEY_PASSWORD` | Optional encrypted PEM private-key password. |
 | `KSEF2_P12_PASSWORD` | Optional PKCS#12/PFX archive password. |
 
@@ -137,42 +136,16 @@ auth = client.authentication.with_xades(
   </TabItem>
 </Tabs>
 
-## CLI-compatible profiles
+## Local profiles
 
-`ksef2-cli` and the SDK share the same local profile file. A profile stores
+The SDK reads named settings from a local profile file. A profile stores
 non-secret defaults such as environment, NIP, auth method, certificate paths,
 polling settings, and the name of the environment variable that contains a
 secret. It does not store token values or certificate passwords.
 
-```bash
-ksef2 profile create test-company \
-  --env test \
-  --nip 5261040828 \
-  --test-cert
+Create and select a profile with [`ProfileStore`](profiles.mdx).
 
-ksef2 profile create prod-token \
-  --env production \
-  --nip "$KSEF2_NIP" \
-  --token-env KSEF2_TOKEN
-```
-
-Select the active profile for future CLI commands:
-
-```bash
-ksef2 profile use prod-token
-ksef2 --json profile current
-```
-
-Or select a profile for one shell or one command:
-
-```bash
-export KSEF2_PROFILE=prod-token
-ksef2 --json auth login
-
-ksef2 --profile test-company --json auth login
-```
-
-Profile selection order is the same in the CLI and SDK:
+The SDK selects a profile in this order:
 
 1. Explicit profile name.
 2. `KSEF2_PROFILE`.
@@ -227,12 +200,7 @@ async with AsyncClient(Environment.PRODUCTION) as client:
 <LinkCard
   title="Use profiles"
   href="profiles.mdx"
-  description="Create profiles with ksef2-cli, authenticate with with_profile(), and manage profiles through ProfileStore."
-/>
-<LinkCard
-  title="CLI authentication"
-  href="../../cli/guides/authentication.md"
-  description="Use the same token, TEST certificate, PEM XAdES, PKCS#12, and profile flows from ksef2-cli."
+  description="Create profiles with ProfileStore and authenticate with with_profile()."
 />
 
 ## Recommended flow
@@ -245,8 +213,7 @@ async with AsyncClient(Environment.PRODUCTION) as client:
 
 2. Keep non-secret defaults in one place.
 
-   Use application config for fully custom setups, or `ksef2-cli` profiles when
-   the same environment is also operated from the command line.
+   Use application configuration or named SDK profiles.
 
 3. Create the root client for the selected environment.
 

@@ -6,6 +6,10 @@ The examples are organized by shape, not just by API area.
 - `<domain>/...`: focused examples for one API area such as auth, invoices, or sessions.
 - `scenarios/...`: multi-step demos that coordinate test data, multiple actors, or several SDK surfaces in one flow.
 
+Everything under `scripts/examples/` uses the supported public SDK imports and
+closes its client explicitly. Internal implementation showcases live under
+`scripts/advanced_examples/` and are not compatibility promises.
+
 Run examples as modules from the repository root.
 Use `uv run -m ...`:
 
@@ -24,3 +28,8 @@ export KSEF2_EXAMPLE_SELLER_NIP=5261040828
 export KSEF2_EXAMPLE_INVOICE_XML=/path/to/invoice.xml
 uv run -m scripts.examples.invoices.send_invoice
 ```
+
+Authentication examples read credentials from the environment. Set
+`KSEF2_EXAMPLE_TOKEN` for token authentication, or `KSEF_NIP`, `KSEF_CERT`, and
+`KSEF_KEY` for an MCU certificate. Examples report references and expiry times;
+they never print bearer-token values.
