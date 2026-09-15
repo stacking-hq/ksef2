@@ -68,7 +68,7 @@ class TestLimitEndpoints:
     ):
         # Arrange
         expected = resp_factory.build()
-        expected_dump = expected.model_dump(mode="json")
+        expected_dump = expected.model_dump(mode="json", by_alias=True)
 
         # Act
         fake_transport.enqueue(expected_dump)
@@ -203,7 +203,7 @@ class TestLimitEndpoints:
         resp_factory: BaseFactory[BaseModel],
     ):
         # Arrange
-        response_data = resp_factory.build().model_dump(mode="json") | {
+        response_data = resp_factory.build().model_dump(mode="json", by_alias=True) | {
             "invalid_field": "invalid"
         }
 
@@ -318,7 +318,8 @@ class TestLimitEndpoints:
         for exc, code in responses_to_try:
             # Act
             fake_transport.enqueue(
-                status_code=code, json_body=response.model_dump(mode="json")
+                status_code=code,
+                json_body=response.model_dump(mode="json", by_alias=True),
             )
 
             with pytest.raises(exc):

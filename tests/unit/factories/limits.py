@@ -58,7 +58,13 @@ class DomainRateLimitValuesFactory(ModelFactory[domain_limits.RateLimitValues]):
 @register_fixture(name="domain_limit_rate")
 class DomainApiRateLimitsFactory(ModelFactory[domain_limits.ApiRateLimits]):
     online_session: domain_limits.RateLimitValues = DomainRateLimitValuesFactory.build()
+    online_session_close: domain_limits.RateLimitValues = (
+        DomainRateLimitValuesFactory.build()
+    )
     batch_session: domain_limits.RateLimitValues = DomainRateLimitValuesFactory.build()
+    batch_session_close: domain_limits.RateLimitValues = (
+        DomainRateLimitValuesFactory.build()
+    )
     invoice_send: domain_limits.RateLimitValues = DomainRateLimitValuesFactory.build()
     invoice_status: domain_limits.RateLimitValues = DomainRateLimitValuesFactory.build()
     session_list: domain_limits.RateLimitValues = DomainRateLimitValuesFactory.build()
@@ -76,7 +82,12 @@ class DomainApiRateLimitsFactory(ModelFactory[domain_limits.ApiRateLimits]):
     invoice_download: domain_limits.RateLimitValues = (
         DomainRateLimitValuesFactory.build()
     )
+    collective_identifier: domain_limits.RateLimitValues = (
+        DomainRateLimitValuesFactory.build()
+    )
     other: domain_limits.RateLimitValues = DomainRateLimitValuesFactory.build()
+    anonymous: domain_limits.RateLimitValues = DomainRateLimitValuesFactory.build()
+    global_: domain_limits.RateLimitValues = DomainRateLimitValuesFactory.build()
 
 
 @register_fixture(name="limit_context_resp")
@@ -88,7 +99,19 @@ class EffectiveSubjectLimitsFactory(ModelFactory[spec.EffectiveSubjectLimits]): 
 
 
 @register_fixture(name="limit_rate_resp")
-class EffectiveApiRateLimitsFactory(ModelFactory[spec.EffectiveApiRateLimits]): ...
+class EffectiveApiRateLimitsFactory(ModelFactory[spec.EffectiveApiRateLimits]):
+    onlineSessionClose = spec.EffectiveApiRateLimitValues(
+        perSecond=10, perMinute=100, perHour=1000
+    )
+    batchSessionClose = spec.EffectiveApiRateLimitValues(
+        perSecond=10, perMinute=100, perHour=1000
+    )
+    anonymous = spec.EffectiveApiRateLimitValues(
+        perSecond=10, perMinute=100, perHour=1000
+    )
+    global_ = spec.EffectiveApiRateLimitValues(
+        perSecond=10, perMinute=100, perHour=1000
+    )
 
 
 @register_fixture(name="limit_set_session_req")

@@ -92,11 +92,11 @@ class ApiRateLimitValuesOverride(BaseModel):
 class ApiRateLimitsOverride(BaseModel):
     onlineSession: ApiRateLimitValuesOverride
     """
-    Limity dla otwierania/zamykania sesji interaktywnych.
+    Limity dla otwierania sesji interaktywnych.
     """
     batchSession: ApiRateLimitValuesOverride
     """
-    Limity dla otwierania/zamykania sesji wsadowych.
+    Limity dla otwierania sesji wsadowych.
     """
     invoiceSend: ApiRateLimitValuesOverride
     """
@@ -764,11 +764,19 @@ class EffectiveApiRateLimitValues(BaseModel):
 class EffectiveApiRateLimits(BaseModel):
     onlineSession: EffectiveApiRateLimitValues
     """
-    Limity dla otwierania/zamykania sesji interaktywnych.
+    Limity dla otwierania sesji interaktywnych.
+    """
+    onlineSessionClose: EffectiveApiRateLimitValues
+    """
+    Limity dla zamykania sesji interaktywnych.
     """
     batchSession: EffectiveApiRateLimitValues
     """
-    Limity dla otwierania/zamykania sesji wsadowych.
+    Limity dla otwierania sesji wsadowych.
+    """
+    batchSessionClose: EffectiveApiRateLimitValues
+    """
+    Limity dla zamykania sesji wsadowych.
     """
     invoiceSend: EffectiveApiRateLimitValues
     """
@@ -813,6 +821,14 @@ class EffectiveApiRateLimits(BaseModel):
     other: EffectiveApiRateLimitValues
     """
     Limity dla pozostałych operacji API.
+    """
+    anonymous: EffectiveApiRateLimitValues
+    """
+    Limity dla anonimowych operacji API (nieuwierzytelnionych).
+    """
+    global_: Annotated[EffectiveApiRateLimitValues, Field(alias="global")]
+    """
+    Limity globalne dla wszystkich operacji API (per adres IP).
     """
 
 
@@ -1084,7 +1100,7 @@ class ForbiddenProblemDetails(BaseModel):
     """
     Identyfikator śledzenia błędu.
     """
-    timestamp: AwareDatetime
+    timestamp: AwareDatetime | None = None
     """
     Data i czas wystąpienia błędu w UTC.
     """
@@ -3636,7 +3652,7 @@ class PublicKeyCertificate(BaseModel):
     """
     Identyfikator certyfikatu.
     """
-    publicKeyId: Base64Str
+    publicKeyId: Annotated[Base64Str, Field(max_length=44, min_length=44)]
     """
     Identyfikator klucza, używany jako selektor w wywołaniach, w których klient wskazuje, jakiego klucza publicznego użył do szyfrowania.
     """

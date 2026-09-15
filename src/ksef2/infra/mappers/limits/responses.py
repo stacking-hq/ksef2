@@ -94,7 +94,9 @@ def _map_rate_limit_values(values: spec.EffectiveApiRateLimitValues) -> RateLimi
 def _(response: spec.EffectiveApiRateLimits) -> ApiRateLimits:
     return ApiRateLimits(
         online_session=_map_rate_limit_values(response.onlineSession),
+        online_session_close=_map_rate_limit_values(response.onlineSessionClose),
         batch_session=_map_rate_limit_values(response.batchSession),
+        batch_session_close=_map_rate_limit_values(response.batchSessionClose),
         invoice_send=_map_rate_limit_values(response.invoiceSend),
         invoice_status=_map_rate_limit_values(response.invoiceStatus),
         session_list=_map_rate_limit_values(response.sessionList),
@@ -106,4 +108,6 @@ def _(response: spec.EffectiveApiRateLimits) -> ApiRateLimits:
         invoice_download=_map_rate_limit_values(response.invoiceDownload),
         collective_identifier=_map_rate_limit_values(response.collectiveIdentifier),
         other=_map_rate_limit_values(response.other),
+        anonymous=_map_rate_limit_values(response.anonymous),
+        global_=_map_rate_limit_values(response.global_),
     )
