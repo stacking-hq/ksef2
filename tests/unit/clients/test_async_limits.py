@@ -17,7 +17,7 @@ class TestAsyncLimitsClient:
     ) -> None:
         client = AsyncLimitsClient(async_fake_transport)
         response = limit_context_resp.build()
-        async_fake_transport.enqueue(response.model_dump(mode="json"))
+        async_fake_transport.enqueue(response.model_dump(mode="json", by_alias=True))
 
         result = asyncio.run(client.get_context_limits())
 
@@ -31,7 +31,7 @@ class TestAsyncLimitsClient:
     ) -> None:
         client = AsyncLimitsClient(async_fake_transport)
         response = limit_subject_resp.build()
-        async_fake_transport.enqueue(response.model_dump(mode="json"))
+        async_fake_transport.enqueue(response.model_dump(mode="json", by_alias=True))
 
         result = asyncio.run(client.get_subject_limits())
 
@@ -44,7 +44,7 @@ class TestAsyncLimitsClient:
     ) -> None:
         client = AsyncLimitsClient(async_fake_transport)
         response = limit_rate_resp.build()
-        async_fake_transport.enqueue(response.model_dump(mode="json"))
+        async_fake_transport.enqueue(response.model_dump(mode="json", by_alias=True))
 
         result = asyncio.run(client.get_api_rate_limits())
 

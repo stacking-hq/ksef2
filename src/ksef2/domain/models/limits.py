@@ -56,7 +56,9 @@ class ApiRateLimits(KSeFBaseModel):
     """Rate limits grouped by API operation family."""
 
     online_session: RateLimitValues
+    online_session_close: RateLimitValues
     batch_session: RateLimitValues
+    batch_session_close: RateLimitValues
     invoice_send: RateLimitValues
     invoice_status: RateLimitValues
     session_list: RateLimitValues
@@ -68,3 +70,5 @@ class ApiRateLimits(KSeFBaseModel):
     invoice_download: RateLimitValues
     collective_identifier: RateLimitValues
     other: RateLimitValues
+    anonymous: RateLimitValues
+    global_: RateLimitValues

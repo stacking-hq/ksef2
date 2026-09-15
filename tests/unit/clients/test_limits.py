@@ -16,7 +16,7 @@ class TestLimitsClient:
         limit_context_resp: BaseFactory[spec.EffectiveContextLimits],
     ) -> None:
         response = limit_context_resp.build()
-        fake_transport.enqueue(response.model_dump(mode="json"))
+        fake_transport.enqueue(response.model_dump(mode="json", by_alias=True))
 
         result = limits_client.get_context_limits()
 
@@ -31,7 +31,7 @@ class TestLimitsClient:
         limit_subject_resp: BaseFactory[spec.EffectiveSubjectLimits],
     ) -> None:
         response = limit_subject_resp.build()
-        fake_transport.enqueue(response.model_dump(mode="json"))
+        fake_transport.enqueue(response.model_dump(mode="json", by_alias=True))
 
         result = limits_client.get_subject_limits()
 
@@ -46,7 +46,7 @@ class TestLimitsClient:
         limit_rate_resp: BaseFactory[spec.EffectiveApiRateLimits],
     ) -> None:
         response = limit_rate_resp.build()
-        fake_transport.enqueue(response.model_dump(mode="json"))
+        fake_transport.enqueue(response.model_dump(mode="json", by_alias=True))
 
         result = limits_client.get_api_rate_limits()
 
