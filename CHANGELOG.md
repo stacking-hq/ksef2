@@ -1,3 +1,9 @@
+## v0.20.0 (2026-09-15)
+
+### Fix
+
+- **limits**: support OpenAPI 2.8 rate limit groups
+
 ## v0.19.0 (2026-09-05)
 
 ### Feat
