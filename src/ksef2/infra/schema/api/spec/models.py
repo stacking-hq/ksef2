@@ -905,11 +905,13 @@ class EntityDetails(BaseModel):
 class EntityPermissionItemScope(StrEnum):
     InvoiceWrite = "InvoiceWrite"
     InvoiceRead = "InvoiceRead"
+    CollectiveIdentifierManage = "CollectiveIdentifierManage"
 
 
 class EntityPermissionType(StrEnum):
     InvoiceWrite = "InvoiceWrite"
     InvoiceRead = "InvoiceRead"
+    CollectiveIdentifierManage = "CollectiveIdentifierManage"
 
 
 class EntityPermissionsContextIdentifierType(StrEnum):
@@ -1193,6 +1195,7 @@ class IdDocument(BaseModel):
 class IndirectPermissionType(StrEnum):
     InvoiceRead = "InvoiceRead"
     InvoiceWrite = "InvoiceWrite"
+    CollectiveIdentifierManage = "CollectiveIdentifierManage"
 
 
 class IndirectPermissionsSubjectIdentifierType(StrEnum):
