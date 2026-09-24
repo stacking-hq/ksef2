@@ -1,109 +1,128 @@
 ---
 title: Publish an SDK release
-description: Prepare a reviewed release PR and recover failed release runs.
+description: Bump one version, write the changelog, tag the merged commit, and recover failed publish runs.
 ---
+
+## Version source
+
+`project.version` in `pyproject.toml` is the only version this repository
+declares. `uv version --bump` rewrites it and re-locks `uv.lock`.
+`ksef2.__version__` reads installed distribution metadata, so an installed SDK
+reports the version it was installed as and cannot drift from the declaration.
 
 ## Check repository setup
 
-Before the first automated release, merge the release automation into `main`.
 Confirm these settings with a repository administrator:
 
-- Protect `main` with required PR review and CI checks. The automation treats
-  merging a release PR as authorization to release.
-- Allow the release workflow's `GITHUB_TOKEN` to create tags and dispatch Actions
-  workflows. If a tag ruleset restricts creation, authorize this workflow.
-- Keep the `pypi` environment's required reviewers and deployment rules. Its
-  approval applies to the publish job after integration tests pass.
+- Protect `main` with required PR review and CI checks. Merging a release is not
+  authorization to publish; pushing the tag is.
+- Keep both tag rulesets. `Release tag creation` allows only repository
+  administrators to create `refs/tags/v*`, and `Immutable release tags` rejects
+  updating or deleting them. The publish steps below therefore need
+  administrator rights.
+- Keep the `pypi` environment's required reviewers and deployment rules. That
+  approval applies to the upload job after integration tests pass.
 - Configure the PyPI trusted publisher for `stacking-hq/ksef2`, workflow
-  `publish.yml`, and environment `pypi`.
+  `publish.yml`, and environment `pypi`. The upload uses OIDC, so no `PYPI_TOKEN`
+  or personal access token is involved.
 - Retain the integration credentials `KSEF_TEST_SUBJECT_NIP`,
   `KSEF_TEST_PERSON_NIP`, and `KSEF_TEST_PERSON_PESEL`. Keep
   `DOCS_DISPATCH_TOKEN` configured if releases should deploy documentation.
 
-No additional personal access token or GitHub App is required for publication.
+## Bump and document
 
-## Prepare and merge the release PR
+```bash
+just bump patch        # or minor, or major
+just changelog-seed    # commits since the previous tag, one bullet per line
+```
 
-1. Create a branch named `release/X.Y.Z` in `stacking-hq/ksef2` from current
-   `main`. For example, use `release/0.21.0`. Choose a stable SDK version greater
-   than the PR base version. Do not use the KSeF API version or a prerelease suffix.
-2. Set the same version in `project.version` and `tool.commitizen.version` in
-   `pyproject.toml`.
-3. Start `CHANGELOG.md` with `## vX.Y.Z (YYYY-MM-DD)` and describe the release.
-4. Run `uv lock` to update the package version in the lockfile.
-5. Run `just release-check` and review the release changes in a PR targeting
-   `main`. Resolve CI failures before merging.
-6. Merge the reviewed PR. Watch **Release merged PR**, then **Publish to PyPI**.
-7. After integration passes, approve the `pypi` deployment when prompted. Check
-   that the release checks, artifact verification, wheel smoke test, and upload
-   succeed before announcing the release.
+1. Edit `CHANGELOG.md`. Start the new section with `## vX.Y.Z (YYYY-MM-DD)` at the
+   top of the file and rewrite the seeded bullets for people who upgrade.
+   `scripts/verify_release.py` fails the publish run when that heading is absent.
+2. Run `just release-check`.
+3. Open a PR targeting `main`. A release changes `pyproject.toml`, `uv.lock`, and
+   `CHANGELOG.md`. Review it like any other change, then merge.
+
+Merging publishes nothing.
+
+## Publish
+
+```bash
+just tag 0.21.1
+```
+
+`just tag` refuses when the requested version does not match `project.version`,
+then creates and pushes the annotated tag. Tags are immutable, so check the
+version and the commit before pushing.
+
+Pushing `vX.Y.Z` starts **Publish to PyPI**:
 
 ```mermaid
 flowchart LR
-  PR[Reviewed release PR merged] --> V[Validate merged commit]
-  V --> T[Create version tag]
-  T --> D[Dispatch publish.yml at tag]
-  D --> I[KSeF TEST integration]
-  I --> P[pypi approval, checks, and upload]
+  B["just bump"] --> P[pyproject.toml and uv.lock]
+  C[CHANGELOG section] --> PR[reviewed PR]
+  P --> PR
+  PR --> M[merge to main]
+  M --> T["just tag: admin pushes vX.Y.Z"]
+  T --> I[KSeF TEST integration]
+  I --> A[pypi approval]
+  A --> U[release-check, artifact verify, smoke test, upload]
 ```
 
-The tag targets the PR's exact merged commit, even if `main` advances before the
-workflow starts. The action rejects inconsistent versions, a missing leading
-changelog heading, a commit outside `main`, and any existing version tag.
-Ordinary PR merges and release branches from forks do not start publishing.
+Approve the `pypi` deployment when prompted, then confirm the upload before
+announcing anything:
 
-The action explicitly dispatches `publish.yml` at the new tag. A tag created
-with `GITHUB_TOKEN` does not trigger the existing tag-push workflow, but
-[`workflow_dispatch` is exempt from event suppression](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow).
-Both entry points run the same checks against a pinned commit.
+```bash
+gh run list --workflow=publish.yml --limit 3
+gh run watch RUN_ID
+```
+
+Create the GitHub Release only after the upload succeeded, so notes never
+announce a version that is not installable:
+
+```bash
+just release 0.21.1
+```
+
+`just release` extracts the `## vX.Y.Z` section of `CHANGELOG.md`, fails when the
+section is missing, and passes it to `gh release create` as the release body. The
+changelog section is the source of truth because it is the only release text that
+passes review; the GitHub body is derived from it instead of written a second
+time.
 
 ## Recover a failed release
 
-Never delete, move, or overwrite a release tag to retry a release.
+Never delete, move, or overwrite a release tag. The rulesets reject it, and PyPI
+rejects a second upload of the same version.
 
-- If validation failed before tagging, inspect the failed run. Fix release
-  metadata in a new reviewed release PR. Rerunning the old event still validates
-  its original merged commit.
-- If a transient failure occurred before tag creation, rerun **Release merged
-  PR** after confirming that the tag is absent.
-- If the tag exists but dispatch failed, confirm that it targets the merged PR
-  commit, then dispatch **Publish to PyPI** at that tag. Use the full merged SHA:
+- Before the tag push, fix `pyproject.toml`, `uv.lock`, or `CHANGELOG.md` in a new
+  reviewed PR. A failure before tagging has no side effects.
+- If the tag exists and a job failed, rerun the failed jobs of that
+  **Publish to PyPI** run. The `pypi` approval and the release checks still apply.
+- If the tag exists but no run started, dispatch the workflow at the tag. This is
+  the only reason manual dispatch exists, and it runs the same checks against the
+  same immutable tag:
 
   ```bash
-  gh workflow run publish.yml --repo stacking-hq/ksef2 --ref v0.21.0 --field release_sha=FULL_MERGED_SHA
+  gh workflow run publish.yml --repo stacking-hq/ksef2 --ref v0.21.1
   ```
 
-- If integration or publishing failed, rerun failed jobs in the existing
-  **Publish to PyPI** run. The `pypi` approval and release checks still apply.
-- If upload may have succeeded, inspect PyPI and the run logs before retrying.
-  PyPI does not allow replacing an uploaded version. For code changes, prepare
-  a new release PR with a higher version.
-- If only documentation deployment failed, rerun that failed job. Do not repeat
-  the package upload.
+- If the upload may have succeeded, inspect PyPI and the run logs before any
+  retry. Code changes after a successful upload need a new release with a higher
+  version.
+- If only the documentation dispatch failed, rerun that job. Do not repeat the
+  upload.
 
-Rerunning the tag-creation job with an existing tag fails, even when its SHA
-matches. Dispatch at a branch or with a mismatched SHA fails before integration.
-Concurrent publish runs for the same ref are serialized, but duplicate runs can
-still attempt an upload. Check existing runs before dispatching a retry.
+Concurrent publish runs for the same ref are serialized, but a duplicate run can
+still attempt an upload. Check existing runs before retrying.
 
-## Verify automation without releasing
-
-Run the offline regression tests:
+## Check the release tooling without publishing
 
 ```bash
-uv run pytest tests/unit/test_release_pr.py tests/unit/test_verify_release.py -q
+uv run pytest tests/unit/test_verify_release.py -q
 ```
 
-These tests use temporary Git repositories and a fake `gh` executable. They
-exercise tag creation and dispatch failures without creating repository tags or
-contacting PyPI.
-
-To validate a saved `pull_request.closed` event locally, fetch `origin/main` and
-check out the event's `merge_commit_sha`. Run:
-
-```bash
-python -m scripts.release_pr --event /path/to/event.json
-```
-
-The command reads remote tags but does not create a tag or dispatch a workflow.
-Only `--execute` enables those operations. Do not use that flag for a dry run.
+The test builds a temporary tree with a fake `pyproject.toml`, changelog, wheel,
+and sdist, then confirms `scripts/verify_release.py` accepts a matching tag and
+reports both a tag that disagrees with `project.version` and a wheel whose
+`METADATA` disagrees.

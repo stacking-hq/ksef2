@@ -28,6 +28,30 @@ test-coverage:
     uv run python scripts/test_coverage_badge.py
 
 
+# --- release ------------------------------------------------------------
+# Flow: just bump <part> -> write the CHANGELOG section -> PR to main -> merge
+# -> just tag <version> -> just release <version>
+
+# Bump project.version in pyproject.toml and the version in uv.lock
+bump part:
+    uv version --bump {{ part }}
+
+# List commits since the previous tag, one bullet per line, for the CHANGELOG
+changelog-seed:
+    git log "$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)"..HEAD --pretty='- %s'
+
+# Tag the merged commit and push it; repo tag rulesets allow administrators only
+tag version:
+    test "$(uv version --short)" = "{{ version }}" || { echo "project.version is not {{ version }}"; exit 1; }
+    git tag -a "v{{ version }}" -m "v{{ version }}"
+    git push origin "v{{ version }}"
+
+# Create the GitHub Release with this version's CHANGELOG section as its body
+release version:
+    awk -v want="## v{{ version }} " 'index($0, want) == 1 { found = 1; next } found && /^## / { exit } found' CHANGELOG.md > /tmp/ksef2-release-notes.md
+    test -s /tmp/ksef2-release-notes.md || { echo "CHANGELOG.md has no '## v{{ version }}' section"; exit 1; }
+    gh release create "v{{ version }}" --target main --title "v{{ version }}" --notes-file /tmp/ksef2-release-notes.md
+
 release-check:
     just lint
     just format-check
@@ -46,10 +70,10 @@ coverage:
 
 
 lint:
-    uv run ruff check src/ tests/ scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py scripts/release_pr.py
+    uv run ruff check src/ tests/ scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py
 
 format-check:
-    uv run ruff format --check src/ tests/ scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py scripts/release_pr.py
+    uv run ruff format --check src/ tests/ scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py
 
 gen-sync:
     uv run --group codegen python scripts/gen_sync.py
@@ -60,7 +84,7 @@ check-gen-sync:
 typecheck:
     GITHUB_ACTIONS= uv run --extra runtime-checks basedpyright src --level warning --warnings
     GITHUB_ACTIONS= uv run --extra runtime-checks basedpyright tests --level error
-    GITHUB_ACTIONS= uv run --extra runtime-checks --group codegen basedpyright scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py scripts/release_pr.py --level warning --warnings
+    GITHUB_ACTIONS= uv run --extra runtime-checks --group codegen basedpyright scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py --level warning --warnings
 
 
 sync-ksef-api-version:

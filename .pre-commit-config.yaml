@@ -17,12 +17,6 @@ repos:
       - id: ruff-format
 
 
-  - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.13.9
-    hooks:
-    - id: commitizen
-      stages: [commit-msg]
-
   - repo: https://github.com/qoomon/git-conventional-commits
     rev: v2.7.2
     hooks:
