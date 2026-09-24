@@ -76,6 +76,8 @@ def entity_permission_from_literal(value: str) -> spec.EntityPermissionType:
             return spec.EntityPermissionType.InvoiceRead
         case "invoice_write":
             return spec.EntityPermissionType.InvoiceWrite
+        case "collective_identifier_manage":
+            return spec.EntityPermissionType.CollectiveIdentifierManage
         case _:
             raise ValueError(f"Unknown entity permission type: {value!r}")
 
@@ -96,6 +98,8 @@ def indirect_permission_from_literal(value: str) -> spec.IndirectPermissionType:
             return spec.IndirectPermissionType.InvoiceRead
         case "invoice_write":
             return spec.IndirectPermissionType.InvoiceWrite
+        case "collective_identifier_manage":
+            return spec.IndirectPermissionType.CollectiveIdentifierManage
         case _:
             raise ValueError(f"Unknown indirect permission type: {value!r}")
 
@@ -108,6 +112,8 @@ def indirect_permission_from_enum(
             return spec.IndirectPermissionType.InvoiceRead
         case IndirectPermissionTypeEnum.INVOICE_WRITE:
             return spec.IndirectPermissionType.InvoiceWrite
+        case IndirectPermissionTypeEnum.COLLECTIVE_IDENTIFIER_MANAGE:
+            return spec.IndirectPermissionType.CollectiveIdentifierManage
         case _ as unreachable:  # pyright: ignore[reportUnnecessaryComparison]
             assert_never(unreachable)
 

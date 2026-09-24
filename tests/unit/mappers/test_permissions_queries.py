@@ -414,6 +414,18 @@ class TestPermissionsQueryResponseMapper:
         assert output.permission_type == "invoice_write"
         assert output.can_delegate is True
 
+    def test_maps_collective_identifier_entity_permission(
+        self,
+        perm_entity_permission_item: BaseFactory[spec.EntityPermissionItem],
+    ) -> None:
+        mapped_input = perm_entity_permission_item.build(
+            permissionScope=spec.EntityPermissionItemScope.CollectiveIdentifierManage,
+        )
+
+        output = entity_from_spec(mapped_input)
+
+        assert output.permission_type == "collective_identifier_manage"
+
     def test_maps_personal_permission_item(
         self,
         perm_personal_permission_item: BaseFactory[spec.PersonalPermission],

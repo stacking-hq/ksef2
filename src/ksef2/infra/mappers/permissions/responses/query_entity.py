@@ -122,6 +122,8 @@ def entity_permission_scope_from_spec(
             return "invoice_read"
         case spec.EntityPermissionItemScope.InvoiceWrite:
             return "invoice_write"
+        case spec.EntityPermissionItemScope.CollectiveIdentifierManage:
+            return "collective_identifier_manage"
         case _ as unreachable:  # pyright: ignore[reportUnnecessaryComparison]
             assert_never(unreachable)
 
