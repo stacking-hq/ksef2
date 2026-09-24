@@ -4,12 +4,9 @@ on:
   push:
     tags:
       - "v*"
+  # Recovery only: start publishing for an existing immutable tag when the
+  # tag push started no run. The release-ref job still rejects non-tag refs.
   workflow_dispatch:
-    inputs:
-      release_sha:
-        description: Exact merged commit targeted by the release tag
-        required: true
-        type: string
 
 permissions:
   contents: read
@@ -29,8 +26,6 @@ jobs:
           persist-credentials: false
 
       - name: Verify immutable release ref
-        env:
-          EXPECTED_SHA: ${{ inputs.release_sha }}
         shell: bash
         run: |
           set -euo pipefail
@@ -39,9 +34,6 @@ jobs:
           [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]] || { echo "::error::Checkout SHA mismatch"; exit 1; }
           [[ "$(git rev-parse "$GITHUB_REF^{commit}")" == "$GITHUB_SHA" ]] || { echo "::error::Tag moved from release SHA"; exit 1; }
           git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            [[ "$EXPECTED_SHA" == "$GITHUB_SHA" ]] || { echo "::error::Dispatch SHA mismatch"; exit 1; }
-          fi
 
   integration:
     needs: release-ref
