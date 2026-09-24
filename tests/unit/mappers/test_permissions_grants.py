@@ -30,6 +30,22 @@ from tests.unit.factories.permissions import (
 
 
 class TestPermissionsGrantRequestMapper:
+    def test_maps_collective_identifier_permissions(self) -> None:
+        assert (
+            entity_permission_from_literal("collective_identifier_manage")
+            == spec.EntityPermissionType.CollectiveIdentifierManage
+        )
+        assert (
+            indirect_permission_from_literal("collective_identifier_manage")
+            == spec.IndirectPermissionType.CollectiveIdentifierManage
+        )
+        assert (
+            indirect_permission_from_enum(
+                domain_permissions.IndirectPermissionTypeEnum.COLLECTIVE_IDENTIFIER_MANAGE
+            )
+            == spec.IndirectPermissionType.CollectiveIdentifierManage
+        )
+
     def test_maps_grant_person_request_payload(self) -> None:
         request = DomainGrantPersonPermissionsRequestFactory.build(
             permissions=["invoice_read", "credentials_manage"],

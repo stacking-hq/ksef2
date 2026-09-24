@@ -49,7 +49,9 @@ type PersonalPermissionScope = Literal[
     "collective_identifier_manage",
 ]
 
-type EntityPermissionType = Literal["invoice_read", "invoice_write"]
+type EntityPermissionType = Literal[
+    "invoice_read", "invoice_write", "collective_identifier_manage"
+]
 
 type AuthorizationPermissionType = Literal[
     "self_invoicing", "rr_invoicing", "tax_representative", "pef_invoicing"
@@ -57,7 +59,9 @@ type AuthorizationPermissionType = Literal[
 
 type AuthorizationSubjectIdentifierType = Literal["nip", "peppol_id"]
 
-type IndirectPermissionType = Literal["invoice_read", "invoice_write"]
+type IndirectPermissionType = Literal[
+    "invoice_read", "invoice_write", "collective_identifier_manage"
+]
 
 type IndirectTargetIdentifierType = Literal["nip", "all_partners", "internal_id"]
 
@@ -143,6 +147,7 @@ class EntityPermissionTypeEnum(StrEnum):
 
     INVOICE_READ = "invoice_read"
     INVOICE_WRITE = "invoice_write"
+    COLLECTIVE_IDENTIFIER_MANAGE = "collective_identifier_manage"
 
 
 class AuthorizationPermissionTypeEnum(StrEnum):
@@ -166,6 +171,7 @@ class IndirectPermissionTypeEnum(StrEnum):
 
     INVOICE_READ = "invoice_read"
     INVOICE_WRITE = "invoice_write"
+    COLLECTIVE_IDENTIFIER_MANAGE = "collective_identifier_manage"
 
 
 class IndirectTargetIdentifierTypeEnum(StrEnum):

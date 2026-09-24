@@ -2,7 +2,7 @@
   "openapi": "3.0.4",
   "info": {
     "title": "KSeF API TE",
-    "description": "**Wersja API:** 2.8.0 (build 2.8.0-te-20260917.2+b307519c705081d0f24ebd3330f2d7376019d83d)<br>\n**Klucze publiczne** Ministerstwa Finansów (dla danego środowiska): [Pobierz klucze](#tag/Certyfikaty-klucza-publicznego)<br>\n**Historia zmian:** [Changelog](https://github.com/CIRFMF/ksef-api/blob/main/api-changelog.md)<br>\n**Rozszerzona dokumentacja API:** [ksef-docs](https://github.com/CIRFMF/ksef-api/tree/main)\n\n**Adres serwera API:**\n- Środowisko TEST: `https://api-test.ksef.mf.gov.pl/v2`\n",
+    "description": "**Wersja API:** 2.8.1 (build 2.8.1-te-20260922.2+5329bb414170efdc518fd9f580bfcc2b530eec40)<br>\n**Klucze publiczne** Ministerstwa Finansów (dla danego środowiska): [Pobierz klucze](#tag/Certyfikaty-klucza-publicznego)<br>\n**Historia zmian:** [Changelog](https://github.com/CIRFMF/ksef-api/blob/main/api-changelog.md)<br>\n**Rozszerzona dokumentacja API:** [ksef-docs](https://github.com/CIRFMF/ksef-api/tree/main)\n\n**Adres serwera API:**\n- Środowisko TEST: `https://api-test.ksef.mf.gov.pl/v2`\n",
     "version": "v2"
   },
   "servers": [
@@ -2353,7 +2353,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                                         | Details                                                | \n|---------------------|------------------------------------------------------------------------------|--------------------------------------------------------|\n| 71001               | Faktura nie może zostac przypisana do Identyfikatora Zbiorczego.                        | Faktura o numerze KSeF {ksefNumber} nie może zostac przypisana do Identyfikatora Zbiorczego. |\n| 71002               | Faktura jest już przypisana do maksymalnej liczby Identyfikatorów Zbiorczych.            | Faktura o numerze KSeF {ksefNumber} jest już przypisana do maksymalnej liczby Identyfikatorów Zbiorczych. |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                         | Details                                                | \n|---------------------|------------------------------------------------------------------------------|--------------------------------------------------------|\n| 71001               | Faktura o podanym identyfikatorze nie istnieje.                        | Faktura o numerze KSeF {ksefNumber} nie została znaleziona. |\n| 71002               | Faktura jest już przypisana do maksymalnej liczby Identyfikatorów Zbiorczych.            | Faktura o numerze KSeF {ksefNumber} jest już przypisana do maksymalnej liczby Identyfikatorów Zbiorczych. |\n| 71004               | Faktury mają różnych sprzedawców.                       | Faktura o numerze KSeF {ksefNumber} ma innego sprzedawcę.   |\n| 71005               | Powtórzony numer KSeF w żądaniu.                       | Powtórzony numer KSeF {ksefNumber}. |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -2511,7 +2511,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21418               | Przesłany token kontynuacji jest nieprawidłowy.     |  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -2683,7 +2683,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21418               | Przesłany token kontynuacji jest nieprawidłowy.     |  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -2830,7 +2830,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21418               | Przesłany token kontynuacji jest nieprawidłowy.     |  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -4136,7 +4136,7 @@
           "Nadawanie uprawnień"
         ],
         "summary": "Nadanie podmiotom uprawnień do obsługi faktur",
-        "description": "Metoda pozwala na nadanie podmiotowi wskazanemu w żądaniu uprawnień do obsługi faktur podmiotu kontekstu.  \nW żądaniu określane są nadawane uprawnienia ze zbioru:  \n- **InvoiceWrite** – wystawianie faktur  \n- **InvoiceRead** – przeglądanie faktur  \n            \nMetoda pozwala na wybór dowolnej kombinacji powyższych uprawnień.  \nDla każdego uprawnienia może być ustawiona flaga **canDelegate**, mówiąca o możliwości jego dalszego przekazywania poprzez nadawanie w sposób pośredni.\n\n> Więcej informacji:\n> - [Nadawanie uprawnień](https://github.com/CIRFMF/ksef-api/blob/main/uprawnienia.md#nadanie-podmiotom-uprawnie%C5%84-do-obs%C5%82ugi-faktur)\n\n**Headers:**\n\n`X-Error-Format: problem-details` - ustawienie tego nagłówka powoduje zwracanie błędów w formacie **Problem Details** (`application/problem+json`).\n\n**Wymagane uprawnienie**: `CredentialsManage`.",
+        "description": "Metoda pozwala na nadanie podmiotowi wskazanemu w żądaniu uprawnień do obsługi faktur podmiotu kontekstu.  \nW żądaniu określane są nadawane uprawnienia ze zbioru:  \n- **InvoiceWrite** – wystawianie faktur  \n- **InvoiceRead** – przeglądanie faktur  \n- **CollectiveIdentifierManage** – zarządzanie identyfikatorami zbiorczymi  \n            \nMetoda pozwala na wybór dowolnej kombinacji powyższych uprawnień.  \nDla każdego uprawnienia może być ustawiona flaga **canDelegate**, mówiąca o możliwości jego dalszego przekazywania poprzez nadawanie w sposób pośredni.\n\n> Więcej informacji:\n> - [Nadawanie uprawnień](https://github.com/CIRFMF/ksef-api/blob/main/uprawnienia.md#nadanie-podmiotom-uprawnie%C5%84-do-obs%C5%82ugi-faktur)\n\n**Headers:**\n\n`X-Error-Format: problem-details` - ustawienie tego nagłówka powoduje zwracanie błędów w formacie **Problem Details** (`application/problem+json`).\n\n**Wymagane uprawnienie**: `CredentialsManage`.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4411,7 +4411,7 @@
           "Nadawanie uprawnień"
         ],
         "summary": "Nadanie uprawnień w sposób pośredni",
-        "description": "Metoda pozwala na nadanie w sposób pośredni osobie wskazanej w żądaniu uprawnień do obsługi faktur innego podmiotu – klienta.  \nMoże to być jedna z możliwości:  \n- nadanie uprawnień generalnych – do obsługi wszystkich klientów  \n- nadanie uprawnień selektywnych – do obsługi wskazanego klienta  \n            \nUprawnienie selektywne może być nadane wyłącznie wtedy, gdy klient nadał wcześniej podmiotowi bieżącego kontekstu dowolne uprawnienie z prawem do jego dalszego przekazywania (patrz [POST /v2/permissions/entities/grants](/docs/v2/index.html#tag/Nadawanie-uprawnien/paths/~1permissions~1entities~1grants/post)).  \n            \nW żądaniu określane są nadawane uprawnienia ze zbioru:  \n- **InvoiceWrite** – wystawianie faktur  \n- **InvoiceRead** – przeglądanie faktur  \n            \nMetoda pozwala na wybór dowolnej kombinacji powyższych uprawnień.\n\n> Więcej informacji:\n> - [Nadawanie uprawnień](https://github.com/CIRFMF/ksef-api/blob/main/uprawnienia.md#nadanie-uprawnie%C5%84-w-spos%C3%B3b-po%C5%9Bredni)\n\n**Headers:**\n\n`X-Error-Format: problem-details` - ustawienie tego nagłówka powoduje zwracanie błędów w formacie **Problem Details** (`application/problem+json`).\n\n**Wymagane uprawnienie**: `CredentialsManage`.",
+        "description": "Metoda pozwala na nadanie w sposób pośredni osobie wskazanej w żądaniu uprawnień do obsługi faktur innego podmiotu – klienta.  \nMoże to być jedna z możliwości:  \n- nadanie uprawnień generalnych – do obsługi wszystkich klientów  \n- nadanie uprawnień selektywnych – do obsługi wskazanego klienta  \n            \nUprawnienie selektywne może być nadane wyłącznie wtedy, gdy klient nadał wcześniej podmiotowi bieżącego kontekstu dowolne uprawnienie z prawem do jego dalszego przekazywania (patrz [POST /v2/permissions/entities/grants](/docs/v2/index.html#tag/Nadawanie-uprawnien/paths/~1permissions~1entities~1grants/post)).  \n            \nW żądaniu określane są nadawane uprawnienia ze zbioru:  \n- **InvoiceWrite** – wystawianie faktur  \n- **InvoiceRead** – przeglądanie faktur  \n- **CollectiveIdentifierManage** – zarządzanie identyfikatorami zbiorczymi  \n            \nMetoda pozwala na wybór dowolnej kombinacji powyższych uprawnień.\n\n> Więcej informacji:\n> - [Nadawanie uprawnień](https://github.com/CIRFMF/ksef-api/blob/main/uprawnienia.md#nadanie-uprawnie%C5%84-w-spos%C3%B3b-po%C5%9Bredni)\n\n**Headers:**\n\n`X-Error-Format: problem-details` - ustawienie tego nagłówka powoduje zwracanie błędów w formacie **Problem Details** (`application/problem+json`).\n\n**Wymagane uprawnienie**: `CredentialsManage`.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -9952,7 +9952,7 @@
           "Wyszukiwanie nadanych uprawnień"
         ],
         "summary": "Pobranie listy uprawnień do obsługi faktur w bieżącym kontekście",
-        "description": " Metoda pozwala na odczytanie otrzymanych uprawnień do obsługi faktur w bieżącym kontekście logowania.  \n\n W odpowiedzi przekazywane są następujące uprawnienia:  \n - nadane podmiotowi do obsługi faktur przez inny podmiot \n\n Uprawnienia zwracane przez operację obejmują:  \n - **InvoiceWrite** – wystawianie faktur  \n - **InvoiceRead** – przeglądanie faktur  \n\n Odpowiedź może być filtrowana na podstawie następujących parametrów:  \n - **contextIdentifier** – identyfikator podmiotu, który nadał uprawnienie do obsługi faktur  \n\n#### Stronicowanie wyników\nZapytanie zwraca **jedną stronę wyników** o numerze i rozmiarze podanym w ścieżce.\n- Przy pierwszym wywołaniu należy ustawić parametr `pageOffset = 0`.  \n- Jeżeli dostępna jest kolejna strona wyników, w odpowiedzi pojawi się flaga **`hasMore`**.  \n- W takim przypadku można wywołać zapytanie ponownie z kolejnym numerem strony.\n\n > Więcej informacji:\n > - [Pobieranie listy uprawnień](https://github.com/CIRFMF/ksef-api/blob/main/uprawnienia.md#pobranie-listy-uprawnie%C5%84-do-obs%C5%82ugi-faktur-w-bie%C5%BC%C4%85cym-kontek%C5%9Bcie)\n\n**Headers:**\n\n`X-Error-Format: problem-details` - ustawienie tego nagłówka powoduje zwracanie błędów w formacie **Problem Details** (`application/problem+json`).\n\n**Sortowanie:**\n\n- startDate (Desc)\n- id (Asc)\n\n\n\n**Wymagane jedno z uprawnień**: `CredentialsManage`, `CredentialsRead`.",
+        "description": " Metoda pozwala na odczytanie otrzymanych uprawnień do obsługi faktur w bieżącym kontekście logowania.  \n\n W odpowiedzi przekazywane są następujące uprawnienia:  \n - nadane podmiotowi do obsługi faktur przez inny podmiot \n\n Uprawnienia zwracane przez operację obejmują:  \n - **InvoiceWrite** – wystawianie faktur  \n - **InvoiceRead** – przeglądanie faktur  \n - **CollectiveIdentifierManage** – zarządzanie identyfikatorami zbiorczymi  \n\n Odpowiedź może być filtrowana na podstawie następujących parametrów:  \n - **contextIdentifier** – identyfikator podmiotu, który nadał uprawnienie do obsługi faktur  \n\n#### Stronicowanie wyników\nZapytanie zwraca **jedną stronę wyników** o numerze i rozmiarze podanym w ścieżce.\n- Przy pierwszym wywołaniu należy ustawić parametr `pageOffset = 0`.  \n- Jeżeli dostępna jest kolejna strona wyników, w odpowiedzi pojawi się flaga **`hasMore`**.  \n- W takim przypadku można wywołać zapytanie ponownie z kolejnym numerem strony.\n\n > Więcej informacji:\n > - [Pobieranie listy uprawnień](https://github.com/CIRFMF/ksef-api/blob/main/uprawnienia.md#pobranie-listy-uprawnie%C5%84-do-obs%C5%82ugi-faktur-w-bie%C5%BC%C4%85cym-kontek%C5%9Bcie)\n\n**Headers:**\n\n`X-Error-Format: problem-details` - ustawienie tego nagłówka powoduje zwracanie błędów w formacie **Problem Details** (`application/problem+json`).\n\n**Sortowanie:**\n\n- startDate (Desc)\n- id (Asc)\n\n\n\n**Wymagane jedno z uprawnień**: `CredentialsManage`, `CredentialsRead`.",
         "parameters": [
           {
             "name": "pageOffset",
@@ -13437,14 +13437,16 @@
       "EntityPermissionItemScope": {
         "enum": [
           "InvoiceWrite",
-          "InvoiceRead"
+          "InvoiceRead",
+          "CollectiveIdentifierManage"
         ],
         "type": "string"
       },
       "EntityPermissionType": {
         "enum": [
           "InvoiceWrite",
-          "InvoiceRead"
+          "InvoiceRead",
+          "CollectiveIdentifierManage"
         ],
         "type": "string"
       },
@@ -14524,7 +14526,8 @@
       "IndirectPermissionType": {
         "enum": [
           "InvoiceRead",
-          "InvoiceWrite"
+          "InvoiceWrite",
+          "CollectiveIdentifierManage"
         ],
         "type": "string"
       },
