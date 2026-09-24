@@ -1,3 +1,10 @@
+## v0.21.0 (2026-09-24)
+
+### Feat
+
+- update OpenAPI spec to KSeF API 2.8.1 and regenerate models (#113)
+- update OpenAPI spec to KSeF API 2.8.0 and regenerate models
+
 ## v0.20.0 (2026-09-15)
 
 ### Fix
