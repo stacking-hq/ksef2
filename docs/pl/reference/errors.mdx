@@ -155,7 +155,8 @@ handlery nadal go łapią.
 
 Dla duplikatu (`440`) `extensions` zawiera `originalKsefNumber` i
 `originalSessionReferenceNumber`. Wywołujący, który odzyskuje wysyłkę z utraconą
-odpowiedzią, może na ich podstawie potraktować fakturę jako już przyjętą.
+odpowiedzią, może na podstawie `originalKsefNumber` odszukać oryginalną fakturę
+i, jeśli to ta sama faktura, potraktować ją jako już przyjętą.
 
 ## Powiązana referencja
 

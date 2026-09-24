@@ -154,7 +154,8 @@ still catch it.
 
 For a duplicate (`440`), `extensions` carries `originalKsefNumber` and
 `originalSessionReferenceNumber`. A caller recovering from a send whose
-response was lost can use them to treat the invoice as already accepted.
+response was lost can use `originalKsefNumber` to look up the original invoice
+and, if it is the same invoice, treat it as already accepted.
 
 ## Related reference
 
