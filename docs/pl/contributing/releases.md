@@ -28,7 +28,7 @@ Publikacja nie wymaga dodatkowego tokena osobistego ani aplikacji GitHub.
    na przykład `release/0.21.0`. Wybierz stabilną wersję SDK wyższą od wersji
    bazowej PR. Nie używaj wersji API KSeF ani sufiksu wersji wstępnej.
 2. Ustaw tę samą wersję w `project.version` i `tool.commitizen.version` w
-   `pyproject.toml` oraz w `src/ksef2/__version__.py`.
+   `pyproject.toml`.
 3. Rozpocznij `CHANGELOG.md` nagłówkiem `## vX.Y.Z (YYYY-MM-DD)` i opisz zmiany.
 4. Uruchom `uv lock`, aby zaktualizować wersję pakietu w pliku blokady.
 5. Uruchom `just release-check` i przeprowadź przegląd PR do `main`.
