@@ -10,6 +10,7 @@ from ksef2.clients.async_online import AsyncOnlineSessionClient
 from ksef2.core.exceptions import (
     KSeFClientClosedError,
     KSeFInvoiceProcessingTimeoutError,
+    KSeFInvoiceRejectedError,
     KSeFSessionError,
     NoCertificateAvailableError,
 )
@@ -167,6 +168,77 @@ class TestAsyncOnlineSessionClient:
             )
 
         assert len(async_fake_transport.calls) == 1
+
+    def test_wait_for_invoice_ready_keeps_duplicate_extensions(
+        self,
+        async_fake_transport: AsyncFakeTransport,
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
+        inv_session_invoice_status_resp: BaseFactory[spec.SessionInvoiceStatusResponse],
+    ) -> None:
+        client = _build_client(async_fake_transport, domain_online_session_state)
+        invoice_reference_number = "20250625-EE-319D7EE000-B67F415CDC-2C"
+        original_ksef_number = "5265877635-20250626-0100001AF629-AF"
+        async_fake_transport.enqueue(
+            inv_session_invoice_status_resp.build(
+                referenceNumber=invoice_reference_number,
+                ksefNumber=None,
+                status=spec.InvoiceStatusInfo(
+                    code=440,
+                    description="Duplikat faktury",
+                    extensions={"originalKsefNumber": original_ksef_number},
+                ),
+            ).model_dump(mode="json")
+        )
+
+        with pytest.raises(KSeFInvoiceRejectedError) as raised:
+            asyncio.run(
+                client.wait_for_invoice_ready(
+                    invoice_reference_number=invoice_reference_number,
+                    timeout=1.0,
+                    poll_interval=0.0,
+                )
+            )
+
+        error = raised.value
+        assert isinstance(error, KSeFSessionError)
+        assert error.invoice_reference_number == invoice_reference_number
+        assert error.status_code == 440
+        assert error.extensions["originalKsefNumber"] == original_ksef_number
+        assert error.status.status.code == 440
+        assert error.context["code"] == "INVOICE_REJECTED"
+
+    def test_wait_for_invoice_ready_keeps_rejection_details(
+        self,
+        async_fake_transport: AsyncFakeTransport,
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
+        inv_session_invoice_status_resp: BaseFactory[spec.SessionInvoiceStatusResponse],
+    ) -> None:
+        client = _build_client(async_fake_transport, domain_online_session_state)
+        invoice_reference_number = "20250625-EE-319D7EE000-B67F415CDC-2C"
+        details = ["Nieprawidłowa wartość w polu P_2"]
+        async_fake_transport.enqueue(
+            inv_session_invoice_status_resp.build(
+                referenceNumber=invoice_reference_number,
+                ksefNumber=None,
+                status=spec.InvoiceStatusInfo(
+                    code=450,
+                    description="Błąd weryfikacji semantyki dokumentu faktury",
+                    details=details,
+                ),
+            ).model_dump(mode="json")
+        )
+
+        with pytest.raises(KSeFInvoiceRejectedError, match="P_2") as raised:
+            asyncio.run(
+                client.wait_for_invoice_ready(
+                    invoice_reference_number=invoice_reference_number,
+                    timeout=1.0,
+                    poll_interval=0.0,
+                )
+            )
+
+        assert raised.value.details == details
+        assert raised.value.extensions == {}
 
     def test_wait_for_invoice_ready_raises_on_timeout(
         self,
