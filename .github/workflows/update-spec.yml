@@ -66,9 +66,9 @@ jobs:
             openapi.json
             src/ksef2/__openapi_version__.py
             src/ksef2/infra/schema/api/spec/models.py
-          branch: chore/update-openapi-spec
-          commit-message: "chore: update OpenAPI spec to KSeF API ${{ steps.version.outputs.ksef_api_version }} and regenerate models"
-          title: "chore: update OpenAPI spec to KSeF API ${{ steps.version.outputs.ksef_api_version }} and regenerate models"
+          branch: feat/update-openapi-spec
+          commit-message: "feat: update OpenAPI spec to KSeF API ${{ steps.version.outputs.ksef_api_version }} and regenerate models"
+          title: "feat: update OpenAPI spec to KSeF API ${{ steps.version.outputs.ksef_api_version }} and regenerate models"
           body: |
             The KSeF OpenAPI spec has changed. This PR contains the
             updated `openapi.json` and regenerated model code.
