@@ -46,10 +46,10 @@ coverage:
 
 
 lint:
-    uv run ruff check src/ tests/ scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py
+    uv run ruff check src/ tests/ scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py scripts/release_pr.py
 
 format-check:
-    uv run ruff format --check src/ tests/ scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py
+    uv run ruff format --check src/ tests/ scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py scripts/release_pr.py
 
 gen-sync:
     uv run --group codegen python scripts/gen_sync.py
@@ -60,7 +60,7 @@ check-gen-sync:
 typecheck:
     GITHUB_ACTIONS= uv run --extra runtime-checks basedpyright src --level warning --warnings
     GITHUB_ACTIONS= uv run --extra runtime-checks basedpyright tests --level error
-    GITHUB_ACTIONS= uv run --extra runtime-checks --group codegen basedpyright scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py --level warning --warnings
+    GITHUB_ACTIONS= uv run --extra runtime-checks --group codegen basedpyright scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py scripts/release_pr.py --level warning --warnings
 
 
 sync-ksef-api-version:

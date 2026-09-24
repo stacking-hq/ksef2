@@ -455,6 +455,13 @@
               "pl": "Synchronizacja kodu sync/async"
             },
             "path": "contributing/sync-generation.md"
+          },
+          {
+            "label": "Publish an SDK release",
+            "translations": {
+              "pl": "Opublikuj wydanie SDK"
+            },
+            "path": "contributing/releases.md"
           }
         ]
       }
