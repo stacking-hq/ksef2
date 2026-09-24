@@ -1,6 +1,7 @@
 """Public package facade for the KSeF 2 SDK."""
 
 import os
+from importlib.metadata import version
 
 
 _TRUE_ENV_VALUES = {"1", "true", "yes", "on"}
@@ -40,7 +41,8 @@ if os.environ.get("KSEF2_RUNTIME_CHECKS", "").lower() in _TRUE_ENV_VALUES:
 from ksef2.clients.async_base import AsyncClient
 from ksef2.clients.base import Client
 from ksef2.domain.models import FormSchema
-from ksef2.__version__ import version as __version__
+
+__version__ = version("ksef2")
 from ksef2.config import (
     ConnectionPoolConfig,
     Environment,

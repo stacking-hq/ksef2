@@ -10,8 +10,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TypedDict, cast
 
-from scripts.verify_release import read_source_version
-
 
 class Repository(TypedDict):
     full_name: str
@@ -88,9 +86,6 @@ def validate_release(event: MergeEvent, root: Path) -> Release | None:
         raise ValueError("Release branch and project version disagree")
     if pyproject["tool"]["commitizen"]["version"] != version:
         raise ValueError("Commitizen and project versions disagree")
-    if read_source_version(root / "src/ksef2/__version__.py") != version:
-        raise ValueError("Source and project versions disagree")
-
     previous = tomllib.loads(git(root, "show", f"{base_sha}:pyproject.toml"))
     previous_version = cast(str, previous["project"]["version"])
     if re.fullmatch(VERSION_PATTERN, previous_version) is None:

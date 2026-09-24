@@ -74,8 +74,7 @@ version = "0.21.0"
 tag_format = "v$version"
 update_changelog_on_bump = true
 version_files = [
-    "pyproject.toml:version",
-    "src/ksef2/__version__.py"
+    "pyproject.toml:version"
 ]
 
 

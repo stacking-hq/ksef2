@@ -28,13 +28,11 @@ def release_repo(tmp_path: Path) -> tuple[Path, MergeEvent]:
     _ = git(root, "config", "user.email", "test@example.invalid")
     _ = git(root, "config", "user.name", "Release test")
     _ = git(root, "checkout", "-b", "main")
-    (root / "src/ksef2").mkdir(parents=True)
     for version in ("0.20.0", "0.21.0"):
         _ = (root / "pyproject.toml").write_text(
             f'[project]\nversion = "{version}"\n'
             f'[tool.commitizen]\nversion = "{version}"\n'
         )
-        _ = (root / "src/ksef2/__version__.py").write_text(f'version = "{version}"\n')
         _ = (root / "CHANGELOG.md").write_text(
             f"## v{version} (2026-09-24)\n\n- Release changes\n"
         )
@@ -115,7 +113,6 @@ def test_fork_cannot_release(release_repo: tuple[Path, MergeEvent]) -> None:
             '[tool.commitizen]\nversion = "0.20.0"',
             "Commitizen",
         ),
-        ("src/ksef2/__version__.py", "0.21.0", "0.20.0", "Source"),
         ("CHANGELOG.md", "## v0.21.0", "## v0.20.0", "CHANGELOG"),
     ],
 )
@@ -137,7 +134,7 @@ def test_release_must_increase_version(
     release_repo: tuple[Path, MergeEvent], version: str
 ) -> None:
     root, event = release_repo
-    for filename in ("pyproject.toml", "src/ksef2/__version__.py", "CHANGELOG.md"):
+    for filename in ("pyproject.toml", "CHANGELOG.md"):
         path = root / filename
         _ = path.write_text(path.read_text().replace("0.21.0", version))
     _ = git(root, "commit", "-am", "No version increase")

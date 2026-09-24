@@ -28,7 +28,7 @@ No additional personal access token or GitHub App is required for publication.
    `main`. For example, use `release/0.21.0`. Choose a stable SDK version greater
    than the PR base version. Do not use the KSeF API version or a prerelease suffix.
 2. Set the same version in `project.version` and `tool.commitizen.version` in
-   `pyproject.toml`, and in `src/ksef2/__version__.py`.
+   `pyproject.toml`.
 3. Start `CHANGELOG.md` with `## vX.Y.Z (YYYY-MM-DD)` and describe the release.
 4. Run `uv lock` to update the package version in the lockfile.
 5. Run `just release-check` and review the release changes in a PR targeting

@@ -1,7 +1,6 @@
 """Verify that a release tag and built distributions describe one SDK version."""
 
 import argparse
-import ast
 import sys
 import tomllib
 import zipfile
@@ -13,23 +12,6 @@ from typing import cast
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def read_source_version(path: Path) -> str:
-    """Read the literal ``version`` assignment without importing the package."""
-    module = ast.parse(path.read_text(), filename=str(path))
-    for statement in module.body:
-        if not isinstance(statement, ast.Assign) or len(statement.targets) != 1:
-            continue
-        target = statement.targets[0]
-        if (
-            isinstance(target, ast.Name)
-            and target.id == "version"
-            and isinstance(statement.value, ast.Constant)
-            and isinstance(statement.value.value, str)
-        ):
-            return statement.value.value
-    raise ValueError(f"No literal version assignment found in {path}")
-
-
 def verify_release(*, tag: str, root: Path, dist_directory: Path) -> list[str]:
     """Return release metadata mismatches without publishing any artifact."""
     errors: list[str] = []
@@ -39,17 +21,10 @@ def verify_release(*, tag: str, root: Path, dist_directory: Path) -> list[str]:
     project = cast(dict[str, object], pyproject["project"])
     project_version = cast(str, project["version"])
 
-    source_version = read_source_version(root / "src/ksef2/__version__.py")
     expected_tag = f"v{project_version}"
 
     if tag != expected_tag:
         errors.append(f"tag {tag!r} does not match project version {expected_tag!r}")
-    if source_version != project_version:
-        errors.append(
-            "src/ksef2/__version__.py "
-            f"declares {source_version!r}, expected {project_version!r}"
-        )
-
     changelog_heading = f"## v{project_version} "
     changelog = (root / "CHANGELOG.md").read_text()
     if not changelog.startswith(changelog_heading):

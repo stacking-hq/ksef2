@@ -5,12 +5,10 @@ from scripts.verify_release import verify_release
 
 
 def write_release_fixture(root: Path, *, version: str, wheel_version: str) -> Path:
-    (root / "src/ksef2").mkdir(parents=True)
     (root / "dist").mkdir()
     (root / "pyproject.toml").write_text(
         f'[project]\nname = "ksef2"\nversion = "{version}"\n'
     )
-    (root / "src/ksef2/__version__.py").write_text(f'version = "{version}"\n')
     (root / "CHANGELOG.md").write_text(f"## v{version} (2026-07-10)\n")
     (root / f"dist/ksef2-{version}.tar.gz").write_bytes(b"source distribution")
 
@@ -23,7 +21,7 @@ def write_release_fixture(root: Path, *, version: str, wheel_version: str) -> Pa
     return root / "dist"
 
 
-def test_verify_release_accepts_matching_tag_source_and_artifacts(
+def test_verify_release_accepts_matching_tag_and_artifacts(
     tmp_path: Path,
 ) -> None:
     dist_directory = write_release_fixture(
