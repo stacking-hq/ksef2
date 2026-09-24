@@ -239,6 +239,9 @@ just release-check
 Additional development tasks live in the `justfile`, including integration
 tests, API coverage checks, OpenAPI model regeneration, and release tooling.
 
+For package releases, follow the
+[maintainer release instructions](docs/en/contributing/releases.md).
+
 ## Contributing
 
 Issues and pull requests are welcome. Before opening a PR, run the focused test
