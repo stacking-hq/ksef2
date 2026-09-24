@@ -202,10 +202,13 @@ class TestAsyncOnlineSessionClient:
         error = raised.value
         assert isinstance(error, KSeFSessionError)
         assert error.invoice_reference_number == invoice_reference_number
-        assert error.status_code == 440
+        assert error.invoice_status_code == 440
         assert error.extensions["originalKsefNumber"] == original_ksef_number
         assert error.status.status.code == 440
+        assert invoice_reference_number in str(error)
         assert error.context["code"] == "INVOICE_REJECTED"
+        assert error.context["invoice_status_code"] == 440
+        assert error.context["description"] == "Duplikat faktury"
 
     def test_wait_for_invoice_ready_keeps_rejection_details(
         self,

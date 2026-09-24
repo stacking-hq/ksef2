@@ -95,7 +95,9 @@ class OnlineSessionClient:
 
         Raises:
             KSeFEncryptionError: If invoice encryption fails.
-            KSeFSessionError: If invoice processing reaches a failed terminal status.
+            KSeFInvoiceRejectedError: If invoice processing reaches a failed
+                terminal status. It subclasses ``KSeFSessionError`` and keeps the
+                status ``details`` and ``extensions``.
             KSeFInvoiceProcessingTimeoutError: If polling exceeds ``timeout``.
         """
         self._ensure_open()

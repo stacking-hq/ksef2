@@ -21,7 +21,7 @@ błędów API lub uwierzytelnienia KSeF.
 | `KSeFRateLimitError` | `KSeFApiError` | `RATE_LIMIT_ERROR` | `retry_after`, `status_code`, `response` |
 | `KSeFExternalTransferError` | `KSeFException` | `EXTERNAL_TRANSFER_ERROR` | `operation`, `host`, `reference_number`, `part_ordinal`, `status_code`, `outcome_ambiguous` |
 | `KSeFBatchUploadError` | `KSeFExternalTransferError` | `BATCH_UPLOAD_ERROR` | Atrybuty transferu zewnętrznego oraz `recovery_state()` |
-| `KSeFInvoiceRejectedError` | `KSeFSessionError` | `INVOICE_REJECTED` | `invoice_reference_number`, `status_code`, `description`, `details`, `extensions`, `status` |
+| `KSeFInvoiceRejectedError` | `KSeFSessionError` | `INVOICE_REJECTED` | `invoice_reference_number`, `invoice_status_code`, `description`, `details`, `extensions`, `status` |
 
 Łap węższe podklasy przed `KSeFException`, gdy workflow ma konkretną akcję
 odzyskiwania.
@@ -49,8 +49,8 @@ except httpx.HTTPError as exc:
 | `KSeFValidationError` | `VALIDATION_ERROR` | Niepoprawne dane wejściowe SDK, błędny payload odpowiedzi, błędny profil albo błędne argumenty sesji/batch. |
 | `KSeFInvoiceRenderingError` | `INVOICE_RENDERING_ERROR` | Błędy opcjonalnego renderowania XSLT/PDF. |
 | `KSeFEncryptionError` | `ENCRYPTION_ERROR` | Błąd szyfrowania tokenu, klucza symetrycznego, faktury albo deszyfrowania. |
-| `KSeFSessionError` | `SESSION_ERROR` | Naruszenie stanu sesji, na przykład użycie zamkniętej sesji. |
-| `KSeFInvoiceRejectedError` | `INVOICE_REJECTED` | KSeF zakończył przetwarzanie faktury z sesji interaktywnej i ją odrzucił (`wait_for_invoice_ready()`). |
+| `KSeFSessionError` | `SESSION_ERROR` | Naruszenie stanu sesji, na przykład użycie zamkniętej sesji. Klasa bazowa `KSeFInvoiceRejectedError`. |
+| `KSeFInvoiceRejectedError` | `INVOICE_REJECTED` | KSeF zakończył przetwarzanie faktury z sesji interaktywnej i ją odrzucił (`wait_for_invoice_ready()`, `send_invoice_and_wait()`). |
 | `KSeFAuthTokenRedemptionError` | `AUTH_TOKEN_REDEMPTION_ERROR` | Jednorazowy redeem uwierzytelnienia utracił odpowiedź i mógł się powieść. |
 | `KSeFExternalTransferError` | `EXTERNAL_TRANSFER_ERROR` | Upload lub download przez presigned URL został odrzucony albo utracił odpowiedź. |
 | `KSeFBatchUploadError` | `BATCH_UPLOAD_ERROR` | Upload części batch nie powiódł się, ale chroniony stan odzyskiwania pozostaje dostępny. |
@@ -142,21 +142,27 @@ sprawdzanie statusu.
 ## Atrybuty odrzucenia faktury
 
 `KSeFInvoiceRejectedError` dziedziczy po `KSeFSessionError`, więc istniejące
-handlery nadal go łapią.
+handlery nadal go łapią. Łap `KSeFInvoiceRejectedError` przed
+`KSeFSessionError`, gdy tylko naruszenie stanu sesji wymaga otwarcia sesji od
+nowa albo ponownego uwierzytelnienia.
 
 | Atrybut | Typ | Znaczenie |
 | --- | --- | --- |
 | `invoice_reference_number` | `str` | Numer referencyjny odrzuconej faktury. |
-| `status_code` | `int` | Kod statusu faktury KSeF, na przykład `440` albo `450`. |
+| `invoice_status_code` | `int` | Kod statusu faktury KSeF, na przykład `440` albo `450`. To nie jest status HTTP. |
 | `description` | `str` | Opis statusu KSeF. |
 | `details` | `list[str]` | Szczegóły statusu KSeF; pusta lista, gdy ich brak. |
 | `extensions` | `dict[str, str | None]` | Rozszerzenia statusu KSeF; pusty słownik, gdy ich brak. |
 | `status` | `SessionInvoiceStatusResponse` | Pełna odpowiedź statusu. |
 
+W przeciwieństwie do `KSeFApiError.status_code`, które zawsze jest statusem HTTP,
+`invoice_status_code` pochodzi ze statusu faktury KSeF.
+
 Dla duplikatu (`440`) `extensions` zawiera `originalKsefNumber` i
 `originalSessionReferenceNumber`. Wywołujący, który odzyskuje wysyłkę z utraconą
-odpowiedzią, może na podstawie `originalKsefNumber` odszukać oryginalną fakturę
-i, jeśli to ta sama faktura, potraktować ją jako już przyjętą.
+odpowiedzią, może przekazać `originalKsefNumber` do `download_invoice()` i
+porównać pobraną fakturę z wysłaną. Jeśli to ta sama faktura, może uznać ją za
+już przyjętą.
 
 ## Powiązana referencja
 
