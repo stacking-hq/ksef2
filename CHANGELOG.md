@@ -1,12 +1,14 @@
+## v0.22.1 (2026-09-25)
+
+### Fix
+
+- Preserve invoice rejection details and extensions in `KSeFInvoiceRejectedError` for sync and async clients (#118).
+
 ## v0.22.0 (2026-09-25)
 
-### Feat
+### Changed
 
-- refactor(release): make tags the release gate and drop commitizen (#121)
-- refactor: derive __version__ from installed package metadata (#120)
-- bump: version 0.20.0 → 0.21.0 (#116)
-- build: update update-spec.yml (#117)
-- chore(release): publish reviewed release PRs through validated tags (#115)
+- Derive `ksef2.__version__` from installed package metadata (#120).
 
 ## v0.21.0 (2026-09-24)
 
