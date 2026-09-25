@@ -1,3 +1,20 @@
+## v0.22.0 (2026-09-25)
+
+### Feat
+
+- refactor(release): make tags the release gate and drop commitizen (#121)
+- refactor: derive __version__ from installed package metadata (#120)
+- bump: version 0.20.0 → 0.21.0 (#116)
+- build: update update-spec.yml (#117)
+- chore(release): publish reviewed release PRs through validated tags (#115)
+
+## v0.21.0 (2026-09-24)
+
+### Feat
+
+- update OpenAPI spec to KSeF API 2.8.1 and regenerate models (#113)
+- update OpenAPI spec to KSeF API 2.8.0 and regenerate models
+
 ## v0.20.0 (2026-09-15)
 
 ### Fix

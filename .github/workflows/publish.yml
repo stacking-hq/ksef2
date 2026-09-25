@@ -4,15 +4,48 @@ on:
   push:
     tags:
       - "v*"
+  # Recovery only: start publishing for an existing immutable tag when the
+  # tag push started no run. The release-ref job still rejects non-tag refs.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
+  release-ref:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify immutable release ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF_TYPE" == "tag" ]] || { echo "::error::Publication requires a tag"; exit 1; }
+          [[ "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo "::error::Invalid release tag"; exit 1; }
+          [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]] || { echo "::error::Checkout SHA mismatch"; exit 1; }
+          [[ "$(git rev-parse "$GITHUB_REF^{commit}")" == "$GITHUB_SHA" ]] || { echo "::error::Tag moved from release SHA"; exit 1; }
+          git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main
+
   integration:
+    needs: release-ref
     runs-on: ubuntu-latest
     permissions:
       contents: read
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
 
       - uses: astral-sh/setup-uv@v4
 
@@ -41,6 +74,7 @@ jobs:
 
   publish:
     needs: integration
+    environment: pypi
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -48,6 +82,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
 
       - uses: astral-sh/setup-uv@v4
 

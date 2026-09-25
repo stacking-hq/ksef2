@@ -28,6 +28,30 @@ test-coverage:
     uv run python scripts/test_coverage_badge.py
 
 
+# --- release ------------------------------------------------------------
+# Flow: just bump <part> -> write the CHANGELOG section -> PR to main -> merge
+# -> just tag <version> -> just release <version>
+
+# Bump project.version in pyproject.toml and the version in uv.lock
+bump part:
+    uv version --bump {{ part }}
+
+# List commits since the previous tag, one bullet per line, for the CHANGELOG
+changelog-seed:
+    git log "$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)"..HEAD --pretty='- %s'
+
+# Tag the merged commit and push it; repo tag rulesets allow administrators only
+tag version:
+    test "$(uv version --short)" = "{{ version }}" || { echo "project.version is not {{ version }}"; exit 1; }
+    git tag -a "v{{ version }}" -m "v{{ version }}"
+    git push origin "v{{ version }}"
+
+# Create the GitHub Release with this version's CHANGELOG section as its body
+release version:
+    awk -v want="## v{{ version }} " 'index($0, want) == 1 { found = 1; next } found && /^## / { exit } found' CHANGELOG.md > /tmp/ksef2-release-notes.md
+    test -s /tmp/ksef2-release-notes.md || { echo "CHANGELOG.md has no '## v{{ version }}' section"; exit 1; }
+    gh release create "v{{ version }}" --target main --title "v{{ version }}" --notes-file /tmp/ksef2-release-notes.md
+
 release-check:
     just lint
     just format-check

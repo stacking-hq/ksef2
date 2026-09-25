@@ -242,6 +242,9 @@ just release-check
 Dodatkowe zadania developerskie są w `justfile`, w tym testy integracyjne,
 sprawdzanie pokrycia API, regenerowanie modeli OpenAPI i narzędzia release.
 
+Aby wydać pakiet, skorzystaj z
+[instrukcji wydania dla maintainerów](docs/pl/contributing/releases.md).
+
 ## Licencja
 
 [MIT](https://github.com/stacking-hq/ksef2/blob/main/LICENSE.md)
