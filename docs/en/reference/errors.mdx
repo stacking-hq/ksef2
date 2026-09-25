@@ -20,6 +20,7 @@ described below instead of KSeF API/authentication classification.
 | `KSeFRateLimitError` | `KSeFApiError` | `RATE_LIMIT_ERROR` | `retry_after`, `status_code`, `response` |
 | `KSeFExternalTransferError` | `KSeFException` | `EXTERNAL_TRANSFER_ERROR` | `operation`, `host`, `reference_number`, `part_ordinal`, `status_code`, `outcome_ambiguous` |
 | `KSeFBatchUploadError` | `KSeFExternalTransferError` | `BATCH_UPLOAD_ERROR` | External-transfer attributes plus `recovery_state()` |
+| `KSeFInvoiceRejectedError` | `KSeFSessionError` | `INVOICE_REJECTED` | `invoice_reference_number`, `invoice_status_code`, `description`, `details`, `extensions`, `status` |
 
 Catch narrower subclasses before `KSeFException` when the workflow has a
 specific recovery action.
@@ -47,7 +48,8 @@ except httpx.HTTPError as exc:
 | `KSeFValidationError` | `VALIDATION_ERROR` | Invalid SDK input, invalid response payload, invalid profile config, or invalid session/batch arguments. |
 | `KSeFInvoiceRenderingError` | `INVOICE_RENDERING_ERROR` | Optional XSLT/PDF rendering failures. |
 | `KSeFEncryptionError` | `ENCRYPTION_ERROR` | Token, symmetric-key, invoice encryption, or decryption failure. |
-| `KSeFSessionError` | `SESSION_ERROR` | Session-state violation, such as using a closed session. |
+| `KSeFSessionError` | `SESSION_ERROR` | Session-state violation, such as using a closed session. Base class of `KSeFInvoiceRejectedError`. |
+| `KSeFInvoiceRejectedError` | `INVOICE_REJECTED` | KSeF finished processing an online-session invoice and rejected it (`wait_for_invoice_ready()`, `send_invoice_and_wait()`). |
 | `KSeFAuthTokenRedemptionError` | `AUTH_TOKEN_REDEMPTION_ERROR` | A one-shot authentication redemption lost its response and may have succeeded. |
 | `KSeFExternalTransferError` | `EXTERNAL_TRANSFER_ERROR` | A presigned external-storage upload or download was rejected or lost its response. |
 | `KSeFBatchUploadError` | `BATCH_UPLOAD_ERROR` | A batch-part upload failed while protected recovery state remains available. |
@@ -135,6 +137,30 @@ status check.
 | `retry_after` | `int | None` | Seconds from KSeF `Retry-After`; `None` when absent. |
 | `status_code` | `int` | Always `429`. |
 | `response` | `BaseModel | None` | Parsed KSeF error payload when available. |
+
+## Invoice rejection attributes
+
+`KSeFInvoiceRejectedError` subclasses `KSeFSessionError`, so existing handlers
+still catch it. Catch `KSeFInvoiceRejectedError` before `KSeFSessionError` when
+only a session-state violation should reopen or re-authenticate a session.
+
+| Attribute | Type | Meaning |
+| --- | --- | --- |
+| `invoice_reference_number` | `str` | Reference number of the rejected invoice. |
+| `invoice_status_code` | `int` | KSeF invoice status, for example `440` or `450`. Not an HTTP status. |
+| `description` | `str` | KSeF status description. |
+| `details` | `list[str]` | KSeF status details; empty when absent. |
+| `extensions` | `dict[str, str | None]` | KSeF status extensions; empty when absent. |
+| `status` | `SessionInvoiceStatusResponse` | The full status response. |
+
+Unlike `KSeFApiError.status_code`, which is always an HTTP status,
+`invoice_status_code` comes from the KSeF invoice status object.
+
+For a duplicate (`440`), `extensions` carries `originalKsefNumber` and
+`originalSessionReferenceNumber`. A caller recovering from a send whose
+response was lost can pass `originalKsefNumber` to `download_invoice()` and
+compare it against the submitted invoice. If it is the same invoice, treat the
+rejection as already accepted.
 
 ## Related reference
 

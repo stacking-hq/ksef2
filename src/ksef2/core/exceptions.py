@@ -4,6 +4,8 @@ from typing import Any, Literal
 from pydantic import BaseModel
 from enum import IntEnum
 
+from ksef2.domain.models.session import SessionInvoiceStatusResponse
+
 
 class ExceptionCode(IntEnum):
     """Enumeration of all possible exception codes."""
@@ -198,7 +200,13 @@ class KSeFEncryptionError(KSeFException):
 
 
 class KSeFSessionError(KSeFException):
-    """Raised on session-state violations (e.g. sending invoice on closed session)."""
+    """Raised on session-state violations (e.g. sending invoice on closed session).
+
+    ``KSeFInvoiceRejectedError`` derives from this class so existing handlers
+    keep working, which means handling ``KSeFSessionError`` also catches
+    invoices that KSeF rejected. Handle the subclass first when only a
+    session-state violation needs recovery.
+    """
 
     code: str = "SESSION_ERROR"
 
@@ -207,6 +215,50 @@ class KSeFSessionError(KSeFException):
         message: str,
     ) -> None:
         super().__init__(f"{self.code}: {message}")
+
+
+class KSeFInvoiceRejectedError(KSeFSessionError):
+    """Raised when KSeF finishes processing an invoice and rejects it.
+
+    Raised by ``wait_for_invoice_ready()`` and ``send_invoice_and_wait()``.
+    ``invoice_status_code`` is a KSeF invoice status, such as 440 or 450, and is
+    not an HTTP status.
+
+    The full status response is kept, so callers can act on what KSeF said:
+    ``details`` explains a semantic rejection (for example 450), and
+    ``extensions`` carries structured data such as ``originalKsefNumber`` for a
+    duplicate (440).
+    """
+
+    code: str = "INVOICE_REJECTED"
+
+    def __init__(
+        self,
+        invoice_reference_number: str,
+        status: SessionInvoiceStatusResponse,
+    ) -> None:
+        self.invoice_reference_number = invoice_reference_number
+        self.status = status
+        self.invoice_status_code = status.status.code
+        self.description = status.status.description
+        self.details = status.status.details or []
+        self.extensions = status.status.extensions or {}
+
+        message = (
+            "Invoice processing failed: "
+            f"{invoice_reference_number} "
+            f"({self.invoice_status_code}: {self.description})"
+        )
+        if self.details:
+            message += f" - {'; '.join(self.details)}"
+        super().__init__(message)
+        self.context.update(
+            invoice_reference_number=invoice_reference_number,
+            invoice_status_code=self.invoice_status_code,
+            description=self.description,
+            details=self.details,
+            extensions=self.extensions,
+        )
 
 
 class NoCertificateAvailableError(KSeFException):

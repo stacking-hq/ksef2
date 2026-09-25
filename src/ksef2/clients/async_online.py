@@ -92,7 +92,9 @@ class AsyncOnlineSessionClient:
 
         Raises:
             KSeFEncryptionError: If invoice encryption fails.
-            KSeFSessionError: If invoice processing reaches a failed terminal status.
+            KSeFInvoiceRejectedError: If invoice processing reaches a failed
+                terminal status. It subclasses ``KSeFSessionError`` and keeps the
+                status ``details`` and ``extensions``.
             KSeFInvoiceProcessingTimeoutError: If polling exceeds ``timeout``.
         """
         self._ensure_open()
@@ -150,7 +152,9 @@ class AsyncOnlineSessionClient:
         """Poll invoice status until it succeeds, fails, or times out.
 
         Raises:
-            KSeFSessionError: If invoice processing reaches a failed terminal status.
+            KSeFInvoiceRejectedError: If invoice processing reaches a failed
+                terminal status. It subclasses ``KSeFSessionError`` and keeps the
+                status ``details`` and ``extensions``.
             KSeFInvoiceProcessingTimeoutError: If polling exceeds ``timeout``.
         """
         self._ensure_open()
@@ -160,9 +164,9 @@ class AsyncOnlineSessionClient:
                 invoice_reference_number=invoice_reference_number
             )
             if status.status.code >= 400:
-                raise exceptions.KSeFSessionError(
-                    "Invoice processing failed: "
-                    f"{invoice_reference_number} ({status.status.code}: {status.status.description})"
+                raise exceptions.KSeFInvoiceRejectedError(
+                    invoice_reference_number=invoice_reference_number,
+                    status=status,
                 )
             return status
 
