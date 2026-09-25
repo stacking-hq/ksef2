@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ksef2"
-version = "0.21.0"
+version = "0.22.0"
 description = "Python SDK and Tools for Poland's KSeF (Krajowy System e-Faktur) API"
 readme = "README.md"
 authors = [{ name = "Artur Podsiadły" }]
