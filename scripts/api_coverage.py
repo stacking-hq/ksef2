@@ -1,17 +1,38 @@
 import json
-import sys
 from pathlib import Path
+from typing import TypedDict, cast
 
 from ksef2.core.routes import ALL_ROUTES
 
 OPENAPI_PATH = Path(__file__).resolve().parent.parent / "openapi.json"
 BADGE_PATH = Path(__file__).resolve().parent.parent / "coverage.json"
 
+Endpoint = tuple[str, str]  # (method, path)
 
-def load_openapi_endpoints() -> set[str]:
-    with open(OPENAPI_PATH) as f:
-        spec = json.load(f)
-    return {path for path, methods in spec["paths"].items() for method in methods}
+
+class CoverageBadge(TypedDict):
+    schemaVersion: int
+    label: str
+    message: str
+    color: str
+
+
+def load_openapi_endpoints() -> set[Endpoint]:
+    data = cast(object, json.loads(OPENAPI_PATH.read_text()))
+    if not isinstance(data, dict):
+        raise ValueError(f"{OPENAPI_PATH.name} must contain a JSON object")
+
+    paths = cast(dict[str, object], data).get("paths")
+    if not isinstance(paths, dict):
+        raise ValueError(f"{OPENAPI_PATH.name} is missing the paths object")
+
+    endpoints: set[Endpoint] = set()
+    for path, operations in cast(dict[str, object], paths).items():
+        if not isinstance(operations, dict):
+            raise ValueError(f"{OPENAPI_PATH.name} {path} must contain a JSON object")
+        for method in cast(dict[str, object], operations):
+            endpoints.add((method.upper(), path))
+    return endpoints
 
 
 def badge_color(pct: int) -> str:
@@ -24,41 +45,50 @@ def badge_color(pct: int) -> str:
     return "e05d44"
 
 
-def main() -> None:
-    api_endpoints = load_openapi_endpoints()
-    sdk_endpoints = set(map(str, ALL_ROUTES))
-    covered = set(ALL_ROUTES) & api_endpoints
-    total = len(api_endpoints)
-    count = len(covered)
-    pct = round(count / total * 100) if total else 0
+def render_badge(badge: CoverageBadge) -> str:
+    return json.dumps(badge, indent=2) + "\n"
 
-    badge = {
+
+def sort_by_path(endpoint: Endpoint) -> tuple[str, str]:
+    method, path = endpoint
+    return path, method
+
+
+def report(label: str, endpoints: set[Endpoint]) -> None:
+    if not endpoints:
+        return
+    print(f"\n{label} ({len(endpoints)}):")
+    for method, path in sorted(endpoints, key=sort_by_path):
+        print(f"    {method:6} {path}")
+
+
+def main() -> int:
+    api_endpoints = load_openapi_endpoints()
+    sdk_endpoints: set[Endpoint] = {(route.method, route.path) for route in ALL_ROUTES}
+    covered = api_endpoints & sdk_endpoints
+    missing = api_endpoints - sdk_endpoints
+    unexpected = sdk_endpoints - api_endpoints
+    pct = round(len(covered) / len(api_endpoints) * 100) if api_endpoints else 0
+
+    badge: CoverageBadge = {
         "schemaVersion": 1,
         "label": "KSeF API coverage",
-        "message": f"{count} / {total} ({pct}%)",
+        "message": f"{len(covered)} / {len(api_endpoints)} ({pct}%)",
         "color": badge_color(pct),
     }
+    badge_text = render_badge(badge)
+    _ = BADGE_PATH.write_text(badge_text)
+    print(badge_text, end="")
 
-    with open(BADGE_PATH, "w") as f:
-        json.dump(badge, f, indent=2)
-        f.write("\n")
+    report("Missing endpoints", missing)
+    report("SDK endpoints not in OpenAPI", unexpected)
 
-    print(json.dumps(badge, indent=2))
+    if missing or unexpected:
+        print("\nCoverage check failed: every (method, path) pair must match the spec.")
+        return 1
 
-    missing = sorted(api_endpoints - sdk_endpoints)
-    if missing:
-        print(f"\nMissing endpoints ({len(missing)}):")
-        for path in missing:
-            print(f"    {path}")
-
-    extra = sorted(sdk_endpoints - api_endpoints)
-    if extra:
-        print(f"\nSDK endpoints not in OpenAPI ({len(extra)}):")
-        for path in extra:
-            print(f"    {path}")
-
-    sys.exit(0 if pct == 100 else 1)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

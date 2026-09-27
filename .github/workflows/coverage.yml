@@ -24,7 +24,7 @@ jobs:
         run: just sync
 
       - name: Generate coverage report
-        run: just coverage || true
+        run: just coverage
 
       - name: Commit coverage.json if changed
         uses: stefanzweifel/git-auto-commit-action@v5
