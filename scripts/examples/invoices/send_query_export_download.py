@@ -2,7 +2,6 @@
 
 Prerequisites:
 - set KSEF2_EXAMPLE_SELLER_NIP to the TEST seller NIP
-- set KSEF2_EXAMPLE_INVOICE_XML to a FA(3) XML file valid for that seller
 
 What it demonstrates:
 - invoice submission and status polling
@@ -17,7 +16,7 @@ from pathlib import Path
 from ksef2 import Client, Environment, FormSchema
 from ksef2.domain.models import InvoicesFilter
 from scripts.examples._common import (
-    example_invoice_xml_path,
+    example_invoice_xml,
     example_seller_nip,
     repo_root,
 )
@@ -30,7 +29,6 @@ class ExampleConfig:
     status_timeout: float = 60.0
     export_timeout: float = 120.0
     seller_nip: str | None = None
-    invoice_path: Path | None = None
     download_dir: Path = field(
         default_factory=lambda: repo_root() / "downloads" / "invoice_export"
     )
@@ -39,8 +37,7 @@ class ExampleConfig:
 def run(config: ExampleConfig) -> None:
     client = Client(environment=config.environment)
     seller_nip = config.seller_nip or example_seller_nip()
-    invoice_path = config.invoice_path or example_invoice_xml_path()
-    invoice_xml = invoice_path.read_bytes()
+    invoice_xml = example_invoice_xml(seller_nip=seller_nip)
 
     auth = client.authentication.with_test_certificate(nip=seller_nip)
 

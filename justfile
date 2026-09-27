@@ -6,6 +6,12 @@ integration:
 e2e:
     source .env.test && uv run --extra pdf python -m pytest tests/integration/test_examples.py -v -m integration
 
+# Run the release-blocking integration gate and reject workflows that never ran
+# (requires KSEF credentials in .env)
+release-integration:
+    uv run --extra pdf python -m pytest tests/integration/ -v -rs -m integration --junitxml=output/release-integration.xml
+    uv run python scripts/verify_integration_results.py output/release-integration.xml
+
 
 sync:
     uv sync --all-groups
@@ -71,10 +77,10 @@ coverage:
 
 
 lint:
-    uv run ruff check src/ tests/ scripts/api_coverage.py scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py
+    uv run ruff check src/ tests/ scripts/api_coverage.py scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_integration_results.py scripts/verify_release.py
 
 format-check:
-    uv run ruff format --check src/ tests/ scripts/api_coverage.py scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py
+    uv run ruff format --check src/ tests/ scripts/api_coverage.py scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_integration_results.py scripts/verify_release.py
 
 gen-sync:
     uv run --group codegen python scripts/gen_sync.py
@@ -85,7 +91,7 @@ check-gen-sync:
 typecheck:
     GITHUB_ACTIONS= uv run --extra runtime-checks basedpyright src --level warning --warnings
     GITHUB_ACTIONS= uv run --extra runtime-checks basedpyright tests --level error
-    GITHUB_ACTIONS= uv run --extra runtime-checks --group codegen basedpyright scripts/api_coverage.py scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_release.py --level warning --warnings
+    GITHUB_ACTIONS= uv run --extra runtime-checks --group codegen basedpyright scripts/api_coverage.py scripts/gen_sync.py scripts/sync_generated_artifacts.py scripts/test_coverage_badge.py scripts/verify_integration_results.py scripts/verify_release.py --level warning --warnings
 
 
 sync-ksef-api-version:

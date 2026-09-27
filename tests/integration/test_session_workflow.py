@@ -26,8 +26,8 @@ from ksef2.domain.models.testdata import (
 )
 from ksef2.endpoints.session import SessionEndpoints
 from tests.integration.conftest import KSeFCredentials
+from scripts.examples._common import example_invoice_xml
 from tests.integration.invoice_payload import invoice_seller_nip
-from tests.integration.invoice_payload import load_test_invoice_xml
 
 
 @pytest.fixture(scope="module")
@@ -84,7 +84,9 @@ def workflow_context(ksef_credentials: KSeFCredentials):
         )
 
         with auth.online_session(form_code=FormSchema.FA3) as session:
-            result = session.send_invoice(invoice_xml=load_test_invoice_xml())
+            result = session.send_invoice(
+                invoice_xml=example_invoice_xml(seller_nip=seller_nip)
+            )
 
             # Give KSeF time to process the invoice
             time.sleep(5)
@@ -258,7 +260,9 @@ def test_get_session_upo_by_reference(ksef_credentials: KSeFCredentials):
         )
 
         with auth.online_session(form_code=FormSchema.FA3) as session:
-            _ = session.send_invoice(invoice_xml=load_test_invoice_xml())
+            _ = session.send_invoice(
+                invoice_xml=example_invoice_xml(seller_nip=seller_nip)
+            )
             state = session.resume_state()
 
         resumed = auth.resume_online_session(state=state)
