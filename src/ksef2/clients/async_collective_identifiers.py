@@ -7,6 +7,7 @@ from ksef2.core.async_protocols import AsyncMiddleware
 from ksef2.domain.models.collective_identifiers import (
     CollectiveIdentifierInvoice,
     CollectiveIdentifierInvoicesPage,
+    CollectiveIdentifierInvoicesQuery,
     CollectiveIdentifierReferencesPage,
     CollectiveIdentifiersPage,
     CollectiveIdentifiersQuery,
@@ -112,15 +113,18 @@ class AsyncCollectiveIdentifiersClient:
     async def list_invoices(
         self,
         *,
-        collective_identifier_number: str,
+        collective_identifier_numbers: list[str],
         continuation_token: str | None = None,
         params: CollectiveIdentifierParams | None = None,
     ) -> CollectiveIdentifierInvoicesPage:
-        """Fetch one page of invoices in a collective identifier."""
+        """Fetch one page of invoices inside the supplied collective identifiers."""
         parameters = params or CollectiveIdentifierParams()
+        query = CollectiveIdentifierInvoicesQuery(
+            collective_identifier_numbers=collective_identifier_numbers
+        )
         return from_spec(
             await self._endpoints.list_invoices(
-                collective_identifier_number=collective_identifier_number,
+                body=to_spec(query),
                 continuation_token=continuation_token,
                 **parameters.to_query_params(),
             )
@@ -129,20 +133,20 @@ class AsyncCollectiveIdentifiersClient:
     async def list_all_invoices(
         self,
         *,
-        collective_identifier_number: str,
+        collective_identifier_numbers: list[str],
         params: CollectiveIdentifierParams | None = None,
     ) -> AsyncIterator[CollectiveIdentifierInvoicesPage]:
-        """Iterate through every invoice page for a collective identifier."""
+        """Iterate through every invoice page for the supplied collective identifiers."""
         parameters = params or CollectiveIdentifierParams()
         response = await self.list_invoices(
-            collective_identifier_number=collective_identifier_number,
+            collective_identifier_numbers=collective_identifier_numbers,
             params=parameters,
         )
         yield response
 
         while continuation_token := response.continuation_token:
             response = await self.list_invoices(
-                collective_identifier_number=collective_identifier_number,
+                collective_identifier_numbers=collective_identifier_numbers,
                 continuation_token=continuation_token,
                 params=parameters,
             )

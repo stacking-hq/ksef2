@@ -75,21 +75,20 @@ class CollectiveIdentifiersEndpoints(BaseEndpoints):
 
     def list_invoices(
         self,
-        collective_identifier_number: str,
+        body: spec.CollectiveIdentifierInvoicesQueryRequest,
         continuation_token: str | None = None,
         **params: Unpack[CollectiveIdentifierQueryParams],
     ) -> spec.CollectiveIdentifierInvoicesQueryResponse:
-        """Fetch invoices belonging to one collective identifier."""
+        """Fetch one page of invoices inside the supplied collective identifiers."""
         headers = (
             {"x-continuation-token": continuation_token} if continuation_token else None
         )
         return self._parse(
-            self._transport.get(
-                path=routes.CollectiveIdentifierRoutes.LIST_INVOICES.format(
-                    collectiveIdentifierNumber=collective_identifier_number
-                ),
+            self._transport.post(
+                path=routes.CollectiveIdentifierRoutes.LIST_INVOICES,
                 params=self.build_params(params, _QUERY_PARAMS),
                 headers=headers,
+                json=body.model_dump(mode="json", by_alias=True),
             ),
             spec.CollectiveIdentifierInvoicesQueryResponse,
         )

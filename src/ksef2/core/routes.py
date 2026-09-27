@@ -118,7 +118,7 @@ class CollectiveIdentifierRoutes(StrEnum):
     GENERATE = "/collective-identifiers"
     QUERY = "/collective-identifiers/query"
     QUERY_BY_KSEF_NUMBER = "/collective-identifiers/ksef/{ksefNumber}"
-    LIST_INVOICES = "/collective-identifiers/{collectiveIdentifierNumber}/invoices"
+    LIST_INVOICES = "/collective-identifiers/invoices"
 
 
 class CertificateRoutes(StrEnum):
@@ -153,6 +153,7 @@ RETRYABLE_POST_PATHS = frozenset(
         AuthRoutes.REFRESH_TOKEN,
         InvoiceRoutes.QUERY_METADATA,
         CollectiveIdentifierRoutes.QUERY,
+        CollectiveIdentifierRoutes.LIST_INVOICES,
         CertificateRoutes.QUERY,
         CertificateRoutes.RETRIEVE,
         QueryPermissionsRoutes.QUERY_PERSONAL_GRANTS,

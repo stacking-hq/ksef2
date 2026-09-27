@@ -64,6 +64,13 @@ class CollectiveIdentifiersByKsefNumberResponseFactory(
     ]
 
 
+@register_fixture(name="collective_invoices_req")
+class CollectiveIdentifierInvoicesRequestFactory(
+    ModelFactory[spec.CollectiveIdentifierInvoicesQueryRequest]
+):
+    collectiveIdentifierNumbers = [_COLLECTIVE_IDENTIFIER_NUMBER]
+
+
 @register_fixture(name="collective_invoices_resp")
 class CollectiveIdentifierInvoicesResponseFactory(
     ModelFactory[spec.CollectiveIdentifierInvoicesQueryResponse]
