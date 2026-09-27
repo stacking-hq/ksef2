@@ -1,7 +1,8 @@
 """End-to-end tests that execute the example scripts against Environment.TEST.
 
 Each test imports and calls the main() function of a self-contained example.
-Invoice-submission examples require a caller-provided FA(3) XML fixture.
+Batch examples build their own FA(3) invoices and only need the TEST seller NIP;
+the single-invoice examples still take a caller-provided FA(3) XML fixture.
 
 Skipped examples (require external config not available in CI):
   - auth/auth_xades_demo.py    — needs MCU certificate files
@@ -31,12 +32,31 @@ import scripts.examples.testdata.block_context as block_context_example
 import scripts.examples.testdata.setup_test_data as setup_test_data_example
 from ksef2 import Client
 from ksef2.core.exceptions import KSeFExportTimeoutError
+from tests.integration.conftest import KSeFCredentials
 
 _requires_invoice_fixture = pytest.mark.skipif(
     not os.environ.get("KSEF2_EXAMPLE_INVOICE_XML")
     or not os.environ.get("KSEF2_EXAMPLE_SELLER_NIP"),
     reason="invoice examples require KSEF2_EXAMPLE_INVOICE_XML and KSEF2_EXAMPLE_SELLER_NIP",
 )
+
+
+@pytest.fixture
+def example_invoice(
+    monkeypatch: pytest.MonkeyPatch,
+    ksef_credentials: KSeFCredentials,
+) -> None:
+    """Point the invoice examples at the TEST subject.
+
+    The batch examples generate their own FA(3) invoices, so the seller NIP is
+    all they need. A caller-supplied KSEF2_EXAMPLE_INVOICE_XML is left in place
+    and the examples rewrite its invoice number per invoice.
+    """
+    monkeypatch.setenv(
+        "KSEF2_EXAMPLE_SELLER_NIP",
+        os.environ.get("KSEF2_EXAMPLE_SELLER_NIP", ksef_credentials.subject_nip),
+    )
+
 
 # ── auth ──────────────────────────────────────────────────────────────────────
 
@@ -136,17 +156,41 @@ def test_example_send_query_export_download(capsys: pytest.CaptureFixture[str]) 
 
 
 @pytest.mark.integration
-@_requires_invoice_fixture
-def test_example_send_batch() -> None:
-    """Prepare, upload, and process a batch session end to end."""
+def test_example_send_batch(
+    example_invoice: None, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Prepare, upload, and process a two-invoice batch session end to end.
+
+    Covers: prepare batch → open session → upload parts → close → poll →
+    list invoices → download collective UPO.
+
+    Each invoice carries its own number; reusing one number makes KSeF
+    reject the later part with 440 Duplikat faktury while the session itself
+    still reports success.
+    """
     send_batch_example.main()
+
+    captured = capsys.readouterr()
+    assert "total=2, ok=2, failed=0" in captured.out
+    assert captured.out.count("status=200") == 2
 
 
 @pytest.mark.integration
-@_requires_invoice_fixture
-def test_example_submit_batch() -> None:
-    """Prepare and submit a batch in one high-level call."""
+def test_example_submit_batch(
+    example_invoice: None, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Prepare and submit a two-invoice batch in one high-level call.
+
+    Covers: submit_batch → poll → list invoices → download collective UPO.
+
+    Covers the same duplicate-number rule as the manual batch example: two invoices
+    with one number come back as ok=1, failed=1.
+    """
     submit_batch_example.main()
+
+    captured = capsys.readouterr()
+    assert "total=2, ok=2, failed=0" in captured.out
+    assert captured.out.count("status=200") == 2
 
 
 @pytest.mark.integration
