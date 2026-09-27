@@ -6,7 +6,7 @@ import pytest
 
 from ksef2.config import RetryConfig
 from ksef2.core.middlewares.retry import RetryMiddleware
-from ksef2.core.routes import AuthRoutes
+from ksef2.core.routes import AuthRoutes, CollectiveIdentifierRoutes
 from tests.unit.fakes.transport import FakeTransport
 
 
@@ -129,6 +129,27 @@ class TestRetryMiddleware:
         middleware = RetryMiddleware(transport, RetryConfig(max_attempts=2))
 
         response = middleware.post("/invoices/query/metadata", json={"foo": "bar"})
+
+        assert response.status_code == 200
+        assert len(transport.calls) == 2
+        sleep_mock.assert_called_once()
+
+    @patch("ksef2.core.middlewares.retry.time.sleep")
+    def test_retries_collective_identifier_invoices_post(
+        self,
+        sleep_mock,
+    ) -> None:
+        transport = FakeTransport()
+        transport.enqueue(status_code=503, json_body={"message": "busy"})
+        transport.enqueue(status_code=200, json_body={"invoices": []})
+        middleware = RetryMiddleware(transport, RetryConfig(max_attempts=2))
+
+        response = middleware.post(
+            CollectiveIdentifierRoutes.LIST_INVOICES,
+            json={
+                "collectiveIdentifierNumbers": ["1111111111-IZ202607-65ED02180000-E7"]
+            },
+        )
 
         assert response.status_code == 200
         assert len(transport.calls) == 2

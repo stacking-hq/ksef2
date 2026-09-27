@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from ksef2.domain.models.collective_identifiers import (
     CollectiveIdentifierInvoice,
     CollectiveIdentifierInvoicePayment,
+    CollectiveIdentifierInvoicesQuery,
     CollectiveIdentifiersQuery,
 )
 from ksef2.infra.schema.api import spec
@@ -35,6 +36,12 @@ def to_spec(
 def to_spec(
     request: CollectiveIdentifiersQuery,
 ) -> spec.CollectiveIdentifiersQueryRequest: ...
+
+
+@overload
+def to_spec(
+    request: CollectiveIdentifierInvoicesQuery,
+) -> spec.CollectiveIdentifierInvoicesQueryRequest: ...
 
 
 def to_spec(
@@ -88,4 +95,13 @@ def _(
         invoiceCountFrom=request.invoice_count_from,
         invoiceCountTo=request.invoice_count_to,
         createdInCurrentContext=request.created_in_current_context,
+    )
+
+
+@_to_spec.register
+def _(
+    request: CollectiveIdentifierInvoicesQuery,
+) -> spec.CollectiveIdentifierInvoicesQueryRequest:
+    return spec.CollectiveIdentifierInvoicesQueryRequest(
+        collectiveIdentifierNumbers=list(request.collective_identifier_numbers)
     )

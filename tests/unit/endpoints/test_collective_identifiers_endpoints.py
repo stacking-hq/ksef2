@@ -75,23 +75,31 @@ class TestCollectiveIdentifiersEndpoints:
             ksefNumber=_KSEF_NUMBER
         )
 
-    def test_list_invoices(
+    def test_list_invoices_sends_identifier_numbers_and_pagination_state(
         self,
         fake_transport: FakeTransport,
+        collective_invoices_req: BaseFactory[
+            spec.CollectiveIdentifierInvoicesQueryRequest
+        ],
         collective_invoices_resp: BaseFactory[
             spec.CollectiveIdentifierInvoicesQueryResponse
         ],
     ) -> None:
+        request = collective_invoices_req.build()
         expected = collective_invoices_resp.build()
         fake_transport.enqueue(expected.model_dump(mode="json"))
 
         result = CollectiveIdentifiersEndpoints(fake_transport).list_invoices(
-            _COLLECTIVE_IDENTIFIER_NUMBER
+            request,
+            continuation_token="next-page",
+            pageSize=25,
         )
 
         assert result == expected
         call = fake_transport.calls[0]
-        assert call.method == "GET"
-        assert call.path == CollectiveIdentifierRoutes.LIST_INVOICES.format(
-            collectiveIdentifierNumber=_COLLECTIVE_IDENTIFIER_NUMBER
-        )
+        assert call.method == "POST"
+        assert call.path == "/collective-identifiers/invoices"
+        assert call.json == request.model_dump(mode="json")
+        assert call.headers == {"x-continuation-token": "next-page"}
+        assert call.params is not None
+        assert call.params["pageSize"] == "25"

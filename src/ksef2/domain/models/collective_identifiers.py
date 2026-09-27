@@ -40,6 +40,15 @@ class CollectiveIdentifiersQuery(KSeFBaseModel):
     created_in_current_context: bool | None = None
 
 
+class CollectiveIdentifierInvoicesQuery(KSeFBaseModel):
+    """Collective identifiers to expand into their member invoices.
+
+    KSeF accepts at most 10 identifiers in one request.
+    """
+
+    collective_identifier_numbers: list[str] = Field(min_length=1, max_length=10)
+
+
 class CollectiveIdentifierSummary(KSeFBaseModel):
     """Collective identifier returned by a context query."""
 

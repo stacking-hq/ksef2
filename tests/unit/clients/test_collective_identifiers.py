@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 
+import pytest
 from polyfactory.factories import BaseFactory
+from pydantic import ValidationError
 
 from ksef2.clients.collective_identifiers import CollectiveIdentifiersClient
 from ksef2.core.routes import CollectiveIdentifierRoutes
@@ -10,6 +12,7 @@ from ksef2.domain.models.collective_identifiers import (
 )
 from ksef2.infra.schema.api import spec
 from tests.unit.factories.collective_identifiers import (
+    CollectiveIdentifierInvoicesResponseFactory,
     CollectiveIdentifiersQueryResponseFactory,
 )
 from tests.unit.fakes.transport import FakeTransport
@@ -96,7 +99,7 @@ class TestCollectiveIdentifiersClient:
 
         identifiers = client.query_by_ksef_number(ksef_number=_KSEF_NUMBER)
         invoices = client.list_invoices(
-            collective_identifier_number=_COLLECTIVE_IDENTIFIER_NUMBER
+            collective_identifier_numbers=[_COLLECTIVE_IDENTIFIER_NUMBER]
         )
 
         assert (
@@ -104,11 +107,65 @@ class TestCollectiveIdentifiersClient:
             == _COLLECTIVE_IDENTIFIER_NUMBER
         )
         assert invoices.invoices[0].ksef_number == _KSEF_NUMBER
-        assert [call.path for call in fake_transport.calls] == [
-            CollectiveIdentifierRoutes.QUERY_BY_KSEF_NUMBER.format(
-                ksefNumber=_KSEF_NUMBER
+        assert [(call.method, call.path) for call in fake_transport.calls] == [
+            (
+                "GET",
+                CollectiveIdentifierRoutes.QUERY_BY_KSEF_NUMBER.format(
+                    ksefNumber=_KSEF_NUMBER
+                ),
             ),
-            CollectiveIdentifierRoutes.LIST_INVOICES.format(
-                collectiveIdentifierNumber=_COLLECTIVE_IDENTIFIER_NUMBER
-            ),
+            ("POST", CollectiveIdentifierRoutes.LIST_INVOICES),
         ]
+        assert fake_transport.calls[1].json == {
+            "collectiveIdentifierNumbers": [_COLLECTIVE_IDENTIFIER_NUMBER]
+        }
+
+    def test_list_all_invoices_follows_continuation_token(
+        self,
+        fake_transport: FakeTransport,
+    ) -> None:
+        first = CollectiveIdentifierInvoicesResponseFactory.build(
+            continuationToken="next-page"
+        )
+        second = CollectiveIdentifierInvoicesResponseFactory.build(
+            continuationToken=None
+        )
+        fake_transport.enqueue(first.model_dump(mode="json"))
+        fake_transport.enqueue(second.model_dump(mode="json"))
+
+        pages = list(
+            CollectiveIdentifiersClient(fake_transport).list_all_invoices(
+                collective_identifier_numbers=[_COLLECTIVE_IDENTIFIER_NUMBER]
+            )
+        )
+
+        assert len(pages) == 2
+        assert pages[0].continuation_token == "next-page"
+        assert fake_transport.calls[1].headers == {"x-continuation-token": "next-page"}
+        assert fake_transport.calls[1].json == {
+            "collectiveIdentifierNumbers": [_COLLECTIVE_IDENTIFIER_NUMBER]
+        }
+
+    @pytest.mark.parametrize(
+        "collective_identifier_numbers",
+        ([], [_COLLECTIVE_IDENTIFIER_NUMBER] * 11),
+        ids=["empty", "more-than-ten"],
+    )
+    def test_list_invoices_rejects_identifier_count_outside_spec_range(
+        self,
+        fake_transport: FakeTransport,
+        collective_identifier_numbers: list[str],
+    ) -> None:
+        # A queued response keeps an unvalidated request from raising inside the
+        # transport, so a missing limit surfaces as DID NOT RAISE.
+        fake_transport.enqueue(
+            CollectiveIdentifierInvoicesResponseFactory.build().model_dump(mode="json")
+        )
+        client = CollectiveIdentifiersClient(fake_transport)
+
+        with pytest.raises(ValidationError, match="collective_identifier_numbers"):
+            _ = client.list_invoices(
+                collective_identifier_numbers=collective_identifier_numbers
+            )
+
+        assert fake_transport.calls == []
