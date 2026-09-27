@@ -17,10 +17,12 @@ uv run -m scripts.examples.invoices.submit_batch
 uv run --extra pdf -m scripts.examples.invoices.batch_export_to_pdf
 ```
 
-`quickstart.py` needs no configuration at all: it carries a TEST seller NIP,
-because KSeF TEST accepts any well-formed NIP together with a generated test
-certificate. Pass `ExampleConfig(seller_nip=...)` to `run()` to submit as another
-subject.
+`quickstart.py` is self-contained and needs no configuration: it carries its own
+invoice builder and a TEST seller NIP, because KSeF TEST accepts any well-formed
+NIP together with a generated test certificate. Copy the file out and it runs. Pass
+`ExampleConfig(seller_nip=...)` to `run()` to submit as another subject. It waits
+for each invoice to be processed and prints the KSeF number, so a rejected invoice
+raises instead of quietly printing a second reference number.
 
 The other invoice examples read the seller NIP from the environment and build
 their own FA(3) invoices:
