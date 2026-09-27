@@ -19,9 +19,9 @@ from cryptography.hazmat.primitives.serialization import (
 
 from ksef2 import Client, Environment, FormSchema
 from ksef2.xades import generate_test_certificate
+from scripts.examples._common import example_invoice_xml
 from tests.integration.invoice_payload import invoice_buyer_nip
 from tests.integration.invoice_payload import invoice_seller_nip
-from tests.integration.invoice_payload import load_test_invoice_xml
 
 
 @pytest.mark.integration
@@ -33,7 +33,7 @@ def test_cli_export_invoices_with_pem(tmp_path: Path) -> None:
     buyer_nip = invoice_buyer_nip()
     seller_cert, seller_key = generate_test_certificate(seller_nip)
     buyer_cert, buyer_key = generate_test_certificate(buyer_nip)
-    invoice_xml = load_test_invoice_xml(seller_nip=seller_nip)
+    invoice_xml = example_invoice_xml(seller_nip=seller_nip)
 
     # Write buyer cert/key to PEM files for the CLI
     cert_path = tmp_path / "buyer_cert.pem"

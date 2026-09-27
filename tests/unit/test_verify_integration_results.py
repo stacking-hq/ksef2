@@ -89,14 +89,14 @@ def test_skipped_workflow_is_rejected_and_reports_the_reason(
 ) -> None:
     report = _write(
         tmp_path,
-        _with_outcome(_EMITTED_NAME, "skipped", "Set KSEF2_TEST_INVOICE_XML"),
+        _with_outcome(_EMITTED_NAME, "skipped", "Set KSEF2_TEST_INVOICE_SELLER_NIP"),
     )
 
     errors = verify_integration_results(report)
 
     assert len(errors) == 1
     assert "SKIPPED" in errors[0]
-    assert "Set KSEF2_TEST_INVOICE_XML" in errors[0]
+    assert "Set KSEF2_TEST_INVOICE_SELLER_NIP" in errors[0]
 
 
 def test_missing_workflow_is_rejected(tmp_path: Path) -> None:
