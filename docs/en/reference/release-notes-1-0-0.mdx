@@ -12,8 +12,8 @@ import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 </Aside>
 
 ksef2 1.0.0 is the first release that treats documented application-facing
-imports as a compatibility contract for the 1.x line. The SDK currently targets
-KSeF OpenAPI version `2.6.1`.
+imports as a compatibility contract for the 1.x line.
+The SDK currently targets KSeF OpenAPI version `2.8.1`.
 
 > **Unofficial SDK.** ksef2 is community-maintained. It is not published,
 > endorsed, or supported by Poland's Ministry of Finance. The official KSeF
@@ -35,7 +35,8 @@ module in the repository.
 | `ksef2` | Root clients, environments, transport config, `FormSchema`, `__version__`, and public exceptions. |
 | `ksef2.clients` | Concrete sync and async client classes for type annotations and advanced construction. |
 | `ksef2.models` | Public SDK request, response, filter, pagination, token, permission, session, batch, and invoice models. |
-| High-level client branches | `client.authentication`, `client.encryption`, `client.peppol`, `client.testdata`, and authenticated branches such as `auth.invoices`, `auth.tokens`, `auth.permissions`, `auth.certificates`, and `auth.limits`. |
+| High-level client branches | `client.authentication`, `client.encryption`, `client.peppol`, `client.testdata`, and authenticated branches such as `auth.invoices`, `auth.tokens`, `auth.permissions`, `auth.certificates`, `auth.collective_identifiers`, and `auth.limits`. |
+| Collective identifier workflows | `auth.collective_identifiers` generates a collective identifier for supplied invoices, queries identifiers page by page, resolves the identifiers attached to one KSeF number, and lists the invoices inside selected collective identifiers. |
 | Session helpers | Online and batch session workflows for sending, polling, UPO, and resumable KSeF references. |
 | `ksef2.xades` | Certificate loading, TEST certificate generation, local XAdES signing helpers, and `LocalSigner`. |
 | `ksef2.profiles` | Local `ksef2-cli` compatible profile config helpers. |
@@ -96,16 +97,28 @@ from GitHub Actions and select that commit or branch. The workflow runs only for
 trusted repository events, not pull requests or forks, so KSeF TEST credentials
 are never exposed to untrusted code.
 
-Creating an annotated tag such as `v1.0.0` starts **Publish to PyPI** for the
-tagged commit. Its `integration` job runs the credentialed KSeF TEST suite and
-writes the tag, commit SHA, and `TEST` environment to the GitHub Actions job
+Pushing an annotated tag such as `v1.0.0` starts **Publish to PyPI** for the
+tagged commit. The `release-ref` job runs first and rejects any run that is not
+an immutable `vX.Y.Z` tag whose commit is reachable from `main`. Dispatching the
+workflow for an existing tag is recovery only and repeats the same check.
+
+The `integration` job then runs the credentialed KSeF TEST suite on that commit
+and writes the tag, commit SHA, and `TEST` environment to the GitHub Actions job
 summary. Inspect that sign-off before treating the release as successful.
 
-The `publish` job cannot start until that integration job succeeds. It then
-runs the release checks, verifies that the tag, source version, changelog, and
-built artifacts agree, installs the wheel in a clean environment, and smoke
-tests stable imports before publishing. A failed integration or verification
-step prevents the PyPI upload.
+The `publish` job needs that integration job to succeed and a maintainer
+approval in the `pypi` environment. It runs `just release-check`, then
+`scripts/verify_release.py --tag`, which compares the tag with
+`project.version` in `pyproject.toml`, requires this version's `CHANGELOG.md`
+heading, and checks that exactly one wheel and one source distribution exist
+whose metadata declares that version. It installs the wheel in a clean
+environment and smoke tests stable imports before the OIDC upload. A failed ref
+check, integration run, verification, or missing `pypi` approval prevents the
+PyPI upload.
+
+After a successful upload the `notify-docs` job dispatches a documentation
+deployment for the tag. When `DOCS_DISPATCH_TOKEN` is not configured that step
+skips itself and the release still publishes.
 
 ## Upgrade summary
 

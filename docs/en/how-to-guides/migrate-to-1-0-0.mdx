@@ -76,10 +76,10 @@ and TEST-only `client.testdata` for public or setup work on the root client.
 
 ## 4. Migrate profile configuration
 
-New SDK and CLI profiles are stored in `~/.config/ksef/config.toml`. Existing
-`~/.config/ksef2-cli/config.toml` files remain readable as a fallback, so no
-manual move is required before upgrading. New writes use the new location; set
-`KSEF2_CONFIG` when an application must keep an explicit profile path.
+New SDK and CLI profiles are stored in `~/.config/ksef2/config.toml`. Existing
+`~/.config/ksef2-cli/config.toml` files are still read as a legacy fallback, so
+no manual move is required before upgrading. New writes use the new location;
+set `KSEF2_CONFIG` when an application must keep an explicit profile path.
 
 ## 5. Migrate persisted resume and draft state
 
