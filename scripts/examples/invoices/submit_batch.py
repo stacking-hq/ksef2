@@ -2,8 +2,6 @@
 
 Prerequisites:
 - set KSEF2_EXAMPLE_SELLER_NIP to the TEST seller NIP
-- optionally set KSEF2_EXAMPLE_INVOICE_XML to a FA(3) XML file valid for that seller;
-  without it this example builds its own FA(3) invoices
 
 What it demonstrates:
 - preparing multiple FA(3) invoices in memory, each with its own invoice number,
@@ -14,7 +12,6 @@ What it demonstrates:
 """
 
 from dataclasses import dataclass
-from pathlib import Path
 
 from ksef2 import Client, Environment, FormSchema
 from scripts.examples._common import example_batch_invoices, example_seller_nip
@@ -27,7 +24,6 @@ class ExampleConfig:
     poll_interval: float = 2.0
     status_timeout: float = 120.0
     seller_nip: str | None = None
-    invoice_path: Path | None = None
 
 
 def run(config: ExampleConfig) -> None:
@@ -38,7 +34,6 @@ def run(config: ExampleConfig) -> None:
     invoices = example_batch_invoices(
         seller_nip=seller_nip,
         count=config.invoice_count,
-        invoice_path=config.invoice_path,
     )
 
     state = auth.batch.submit_batch(

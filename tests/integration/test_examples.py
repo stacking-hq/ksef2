@@ -38,16 +38,14 @@ EXPORT_TIMEOUT_SKIP_MARKER = "KSEF2_EXPORT_TIMEOUT"
 
 
 @pytest.fixture
-def example_invoice(
+def example_seller(
     monkeypatch: pytest.MonkeyPatch,
     ksef_credentials: KSeFCredentials,
 ) -> None:
     """Point the invoice examples at the TEST subject.
 
-    The batch examples generate their own FA(3) invoices and the single-invoice
-    examples build one through the same generator, so the seller NIP is all the
-    environment they need. A caller-supplied KSEF2_EXAMPLE_INVOICE_XML is still
-    honoured and the examples rewrite its invoice number per invoice.
+    Every invoice example builds its own FA(3) invoice through
+    ``example_invoice_xml``, so the seller NIP is all the environment they need.
     """
     monkeypatch.setenv(
         "KSEF2_EXAMPLE_SELLER_NIP",
@@ -112,17 +110,23 @@ def test_example_session_resume() -> None:
 
 
 @pytest.mark.integration
-def test_example_quickstart(example_invoice: None) -> None:
+def test_example_quickstart(ksef_credentials: KSeFCredentials) -> None:
     """Quickstart: authenticate and send an invoice (context manager + manual).
 
     Covers: XAdES auth → open session via context manager → send invoice →
     open session manually → send invoice → terminate.
+
+    The example hardcodes a TEST seller NIP so it runs with no setup; the test
+    passes the credentials subject instead, which is what ``ExampleConfig`` is
+    for.
     """
-    quickstart_example.main()
+    quickstart_example.run(
+        quickstart_example.ExampleConfig(seller_nip=ksef_credentials.subject_nip)
+    )
 
 
 @pytest.mark.integration
-def test_example_send_invoice(example_invoice: None) -> None:
+def test_example_send_invoice(example_seller: None) -> None:
     """Send a single invoice and immediately download it by KSeF number.
 
     Covers: testdata setup → XAdES auth → open session → send invoice →
@@ -133,7 +137,7 @@ def test_example_send_invoice(example_invoice: None) -> None:
 
 @pytest.mark.integration
 def test_example_send_query_export_download(
-    example_invoice: None, capsys: pytest.CaptureFixture[str]
+    example_seller: None, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """Full invoice lifecycle: send, query status, schedule export, download.
 
@@ -161,7 +165,7 @@ def test_example_send_query_export_download(
 
 @pytest.mark.integration
 def test_example_send_batch(
-    example_invoice: None, capsys: pytest.CaptureFixture[str]
+    example_seller: None, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """Prepare, upload, and process a two-invoice batch session end to end.
 
@@ -181,7 +185,7 @@ def test_example_send_batch(
 
 @pytest.mark.integration
 def test_example_submit_batch(
-    example_invoice: None, capsys: pytest.CaptureFixture[str]
+    example_seller: None, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """Prepare and submit a two-invoice batch in one high-level call.
 

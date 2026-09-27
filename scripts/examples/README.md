@@ -17,32 +17,22 @@ uv run -m scripts.examples.invoices.submit_batch
 uv run --extra pdf -m scripts.examples.invoices.batch_export_to_pdf
 ```
 
-The batch examples need only the TEST seller NIP; they build their own FA(3) invoices:
+`quickstart.py` needs no configuration at all: it carries a TEST seller NIP,
+because KSeF TEST accepts any well-formed NIP together with a generated test
+certificate. Pass `ExampleConfig(seller_nip=...)` to `run()` to submit as another
+subject.
+
+The other invoice examples read the seller NIP from the environment and build
+their own FA(3) invoices:
 
 ```bash
 export KSEF2_EXAMPLE_SELLER_NIP=5261040828
-uv run -m scripts.examples.invoices.send_batch
-uv run -m scripts.examples.invoices.submit_batch
-```
-
-Every invoice in the batch gets its own number, because KSeF identifies an invoice by
-seller plus number and rejects a repeat with `440 Duplikat faktury`. Set
-`KSEF2_EXAMPLE_INVOICE_XML` to send your own FA(3) file instead; the examples keep
-that document as-is and rewrite only its `<P_2>` invoice number per invoice.
-
-The single-invoice examples build one FA(3) invoice the same way, so they need only
-the seller NIP too:
-
-```bash
-export KSEF2_EXAMPLE_SELLER_NIP=5261040828
-uv run -m scripts.examples.quickstart
 uv run -m scripts.examples.invoices.send_invoice
+uv run -m scripts.examples.invoices.send_batch
 ```
 
-`quickstart.py` sends twice, once per session style, so it builds two invoices: one
-document sent twice would be rejected as `440 Duplikat faktury` on the second pass,
-and because the example does not poll invoice status it would print a reference
-number for an invoice that never landed.
-
-When `KSEF2_EXAMPLE_INVOICE_XML` points at a file, each send still gets its own
-`<P_2>`: the file is reused as-is apart from that number.
+Every invoice gets its own number, because KSeF identifies an invoice by seller
+plus number and rejects a repeat with `440 Duplikat faktury`. That includes the
+two invoices `quickstart.py` sends, one per session style: a single document sent
+twice would be rejected on the second pass, and because the example does not poll
+invoice status it would print a reference number for an invoice that never landed.

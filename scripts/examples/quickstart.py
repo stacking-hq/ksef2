@@ -1,7 +1,8 @@
 """Send a minimal invoice in the TEST environment.
 
-Prerequisites:
-- set KSEF2_EXAMPLE_SELLER_NIP to the TEST seller NIP
+Needs no setup; run it as-is:
+
+    uv run -m scripts.examples.quickstart
 
 What it demonstrates:
 - authenticating in TEST
@@ -10,44 +11,43 @@ What it demonstrates:
 """
 
 from dataclasses import dataclass
-from pathlib import Path
 
 from ksef2 import Client, Environment, FormSchema
-from scripts.examples._common import (
-    example_invoice_source_path,
-    example_invoice_xml,
-    example_seller_nip,
-)
+from scripts.examples._common import example_invoice_xml
+
+# KSeF TEST accepts any well-formed NIP together with a generated test
+# certificate, so the quickstart needs no configuration. Pass
+# ExampleConfig(seller_nip=...) to submit as another subject, for example the
+# subject your own TEST credentials belong to.
+SELLER_NIP = "5261040828"
 
 
 @dataclass
 class ExampleConfig:
     environment: Environment = Environment.TEST
-    seller_nip: str | None = None
-    invoice_path: Path | None = None
+    seller_nip: str = SELLER_NIP
 
 
 def run(config: ExampleConfig) -> None:
     client = Client(config.environment)
-    seller_nip = config.seller_nip or example_seller_nip()
-    source_path = example_invoice_source_path(config.invoice_path)
-
-    # Each send needs its own invoice, so each gets its own <P_2>: KSeF keys an
-    # invoice on seller plus number and rejects the repeat with 440 Duplikat
-    # faktury. Reusing one document here prints two reference numbers while the
-    # second invoice never lands, because this example does not poll status.
-    first_invoice = example_invoice_xml(seller_nip=seller_nip, source_path=source_path)
-    second_invoice = example_invoice_xml(seller_nip=seller_nip, source_path=source_path)
-
+    seller_nip = config.seller_nip
     auth = client.authentication.with_test_certificate(nip=seller_nip)
 
+    # Two sends, two invoices. KSeF keys an invoice on seller plus <P_2> and
+    # rejects a repeat with 440 Duplikat faktury, and this example does not poll
+    # invoice status, so one document sent twice would print a reference number
+    # for an invoice that never landed.
     with auth.online_session(form_code=FormSchema.FA3) as session:
-        result = session.send_invoice(invoice_xml=first_invoice)
+        result = session.send_invoice(
+            invoice_xml=example_invoice_xml(seller_nip=seller_nip)
+        )
         print(result.reference_number)
 
     session = auth.online_session(form_code=FormSchema.FA3)
     try:
-        result = session.send_invoice(invoice_xml=second_invoice)
+        result = session.send_invoice(
+            invoice_xml=example_invoice_xml(seller_nip=seller_nip)
+        )
         print(result.reference_number)
     finally:
         session.close()
