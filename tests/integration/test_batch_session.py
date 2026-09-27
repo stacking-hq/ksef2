@@ -29,7 +29,7 @@ class TestBatchSession:
         """Open, upload, close, and inspect a real batch session."""
         client = Client(environment=Environment.TEST)
         seller_nip = invoice_seller_nip(ksef_credentials.subject_nip)
-        invoice_xml = load_test_invoice_xml()
+        invoice_xml = load_test_invoice_xml(seller_nip=seller_nip)
 
         with client.testdata.temporal() as temp:
             if seller_nip != ksef_credentials.subject_nip:

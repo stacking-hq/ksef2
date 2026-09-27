@@ -30,12 +30,52 @@ def required_env(name: str) -> str:
     raise RuntimeError(f"Set {name} before running this example.")
 
 
-def example_invoice_xml_path() -> Path:
-    return Path(required_env(EXAMPLE_INVOICE_XML_ENV)).expanduser()
-
-
 def example_seller_nip() -> str:
     return required_env(EXAMPLE_SELLER_NIP_ENV)
+
+
+def example_invoice_source_path(invoice_path: Path | None = None) -> Path | None:
+    """Return the caller-supplied FA(3) file to base invoices on, if there is one.
+
+    ``KSEF2_EXAMPLE_INVOICE_XML`` is optional: with no file configured the examples
+    generate their own FA(3) documents instead of failing.
+    """
+    if invoice_path is not None:
+        return invoice_path
+    configured = os.environ.get(EXAMPLE_INVOICE_XML_ENV)
+    if not configured:
+        return None
+    return Path(configured).expanduser()
+
+
+def example_invoice_number() -> str:
+    """Return a fresh FA(3) ``<P_2>`` number that KSeF has not seen from this seller."""
+    return f"{EXAMPLE_INVOICE_NUMBER_PREFIX}-{uuid4().hex}"
+
+
+def example_invoice_xml(
+    *,
+    seller_nip: str,
+    invoice_number: str | None = None,
+    source_path: Path | None = None,
+) -> bytes:
+    """Return one XSD-valid FA(3) invoice issued by ``seller_nip``.
+
+    The invoice number defaults to a fresh :func:`example_invoice_number`, because
+    KSeF identifies an invoice by seller plus ``<P_2>`` and rejects a repeat with
+    ``440 Duplikat faktury``. Pass ``source_path`` to reuse a real document; only
+    its ``<P_2>`` is rewritten, everything else is kept as-is.
+
+    This is the single FA(3) generator in the repository: the integration tests
+    build their fixtures through it too, so there is one builder call site. It
+    never reads ``KSEF2_EXAMPLE_INVOICE_XML`` itself, so a stray value in the
+    environment cannot change what a caller gets; resolve that with
+    :func:`example_invoice_source_path` and pass it in.
+    """
+    number = example_invoice_number() if invoice_number is None else invoice_number
+    if source_path is None:
+        return _generated_invoice_xml(seller_nip=seller_nip, invoice_number=number)
+    return _invoice_xml_with_number(source_path, number)
 
 
 def example_batch_invoices(
@@ -56,23 +96,16 @@ def example_batch_invoices(
     ``KSEF2_EXAMPLE_INVOICE_XML`` points at a file; then that document is reused
     with only its invoice number rewritten per invoice.
     """
-    configured_path = os.environ.get(EXAMPLE_INVOICE_XML_ENV)
-    source_path = invoice_path
-    if source_path is None and configured_path:
-        source_path = Path(configured_path).expanduser()
-
+    source_path = example_invoice_source_path(invoice_path)
     batch_tag = f"{EXAMPLE_INVOICE_NUMBER_PREFIX}-{uuid4().hex}"
     invoices: list[BatchInvoice] = []
 
     for ordinal in range(1, count + 1):
-        invoice_number = f"{batch_tag}-{ordinal:02d}"
-        if source_path is None:
-            content = _generated_invoice_xml(
-                seller_nip=seller_nip,
-                invoice_number=invoice_number,
-            )
-        else:
-            content = _invoice_xml_with_number(source_path, invoice_number)
+        content = example_invoice_xml(
+            seller_nip=seller_nip,
+            invoice_number=f"{batch_tag}-{ordinal:02d}",
+            source_path=source_path,
+        )
         invoices.append(
             BatchInvoice(
                 file_name=f"invoice-{ordinal:02d}.xml",

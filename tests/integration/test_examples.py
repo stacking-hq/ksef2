@@ -34,11 +34,7 @@ from ksef2 import Client
 from ksef2.core.exceptions import KSeFExportTimeoutError
 from tests.integration.conftest import KSeFCredentials
 
-_requires_invoice_fixture = pytest.mark.skipif(
-    not os.environ.get("KSEF2_EXAMPLE_INVOICE_XML")
-    or not os.environ.get("KSEF2_EXAMPLE_SELLER_NIP"),
-    reason="invoice examples require KSEF2_EXAMPLE_INVOICE_XML and KSEF2_EXAMPLE_SELLER_NIP",
-)
+EXPORT_TIMEOUT_SKIP_MARKER = "KSEF2_EXPORT_TIMEOUT"
 
 
 @pytest.fixture
@@ -48,9 +44,10 @@ def example_invoice(
 ) -> None:
     """Point the invoice examples at the TEST subject.
 
-    The batch examples generate their own FA(3) invoices, so the seller NIP is
-    all they need. A caller-supplied KSEF2_EXAMPLE_INVOICE_XML is left in place
-    and the examples rewrite its invoice number per invoice.
+    The batch examples generate their own FA(3) invoices and the single-invoice
+    examples build one through the same generator, so the seller NIP is all the
+    environment they need. A caller-supplied KSEF2_EXAMPLE_INVOICE_XML is still
+    honoured and the examples rewrite its invoice number per invoice.
     """
     monkeypatch.setenv(
         "KSEF2_EXAMPLE_SELLER_NIP",
@@ -115,8 +112,7 @@ def test_example_session_resume() -> None:
 
 
 @pytest.mark.integration
-@_requires_invoice_fixture
-def test_example_quickstart() -> None:
+def test_example_quickstart(example_invoice: None) -> None:
     """Quickstart: authenticate and send an invoice (context manager + manual).
 
     Covers: XAdES auth → open session via context manager → send invoice →
@@ -126,8 +122,7 @@ def test_example_quickstart() -> None:
 
 
 @pytest.mark.integration
-@_requires_invoice_fixture
-def test_example_send_invoice() -> None:
+def test_example_send_invoice(example_invoice: None) -> None:
     """Send a single invoice and immediately download it by KSeF number.
 
     Covers: testdata setup → XAdES auth → open session → send invoice →
@@ -137,12 +132,21 @@ def test_example_send_invoice() -> None:
 
 
 @pytest.mark.integration
-@_requires_invoice_fixture
-def test_example_send_query_export_download(capsys: pytest.CaptureFixture[str]) -> None:
+def test_example_send_query_export_download(
+    example_invoice: None, capsys: pytest.CaptureFixture[str]
+) -> None:
     """Full invoice lifecycle: send, query status, schedule export, download.
 
     Covers: testdata setup → XAdES auth → open session → send invoice →
     poll status → schedule export → fetch package → cleanup.
+
+    KSeF TEST builds export packages on its own schedule, so a scheduled export
+    can legitimately stay unready. This is the one skip the release gate
+    tolerates, and it tolerates it by marker, not by test name: the reason
+    carries EXPORT_TIMEOUT_SKIP_MARKER and
+    scripts/verify_integration_results.py accepts only that. Any other skip
+    reason, and any skip in the other six required workflows, still fails the
+    gate.
     """
     try:
         send_example.main()
@@ -150,8 +154,8 @@ def test_example_send_query_export_download(capsys: pytest.CaptureFixture[str]) 
         captured = capsys.readouterr()
         assert "Export scheduled:" in captured.out
         pytest.skip(
-            f"KSeF TEST export package {exc.reference_number} "
-            f"was not ready after {exc.timeout}s"
+            f"{EXPORT_TIMEOUT_SKIP_MARKER} KSeF TEST export package "
+            f"{exc.reference_number} was not ready after {exc.timeout}s"
         )
 
 
