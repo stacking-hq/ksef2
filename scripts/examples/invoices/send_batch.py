@@ -2,10 +2,13 @@
 
 Prerequisites:
 - set KSEF2_EXAMPLE_SELLER_NIP to the TEST seller NIP
-- set KSEF2_EXAMPLE_INVOICE_XML to a FA(3) XML file valid for that seller
+- optionally set KSEF2_EXAMPLE_INVOICE_XML to a FA(3) XML file valid for that seller;
+  without it this example builds its own FA(3) invoices
 
 What it demonstrates:
-- preparing multiple XML invoices for a batch session
+- preparing multiple FA(3) invoices for a batch session, each with its own invoice
+  number, because KSeF rejects a repeated number from one seller with 440
+  Duplikat faktury
 - opening a batch session and uploading encrypted parts
 - closing the session and polling until processing completes
 - listing processed invoices and downloading the collective UPO
@@ -15,8 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ksef2 import Client, Environment, FormSchema
-from ksef2.domain.models import BatchInvoice
-from scripts.examples._common import example_invoice_xml_path, example_seller_nip
+from scripts.examples._common import example_batch_invoices, example_seller_nip
 
 
 @dataclass
@@ -29,30 +31,15 @@ class ExampleConfig:
     invoice_path: Path | None = None
 
 
-def build_invoices(*, invoice_xml: bytes, count: int) -> list[BatchInvoice]:
-    invoices: list[BatchInvoice] = []
-
-    for ordinal in range(1, count + 1):
-        invoices.append(
-            BatchInvoice(
-                file_name=f"invoice-{ordinal:02d}.xml",
-                content=invoice_xml,
-            )
-        )
-
-    return invoices
-
-
 def run(config: ExampleConfig) -> None:
     client = Client(environment=config.environment)
     seller_nip = config.seller_nip or example_seller_nip()
-    invoice_path = config.invoice_path or example_invoice_xml_path()
-    invoice_xml = invoice_path.read_bytes()
 
     auth = client.authentication.with_test_certificate(nip=seller_nip)
-    invoices = build_invoices(
-        invoice_xml=invoice_xml,
+    invoices = example_batch_invoices(
+        seller_nip=seller_nip,
         count=config.invoice_count,
+        invoice_path=config.invoice_path,
     )
 
     prepared_batch = auth.batch.prepare_batch(
