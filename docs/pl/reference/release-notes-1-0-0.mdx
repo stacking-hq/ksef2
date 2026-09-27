@@ -1,6 +1,6 @@
 ---
 title: Notatki wydania 1.0.0
-description: Granica stabilności, wspierane przepływy i zmiany względem wersji pre-1.0 w pierwszym stabilnym wydaniu SDK.
+description: Granica stabilności i udokumentowana publiczna powierzchnia pierwszego stabilnego wydania SDK.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
@@ -71,71 +71,9 @@ Nie buduj kodu aplikacji na tych ścieżkach:
 Te ścieżki mogą nadal być importowalne dla implementacji SDK, testów i
 narzędzi, ale mogą zmieniać się bez wydania 2.0.
 
-## Co zmieniło się od pre-1.0
-
-Wydania pre-1.0 ukształtowały SDK wokół stabilnej powierzchni aplikacyjnej:
-
-- normalne przepływy zostały skonsolidowane wokół `Client` albo `AsyncClient`,
-  potem `client.authentication`, potem modułów uwierzytelnionych takich jak
-  `auth.invoices`;
-- powierzchnie klientów sync i async mają zgodne nazwy modułów;
-- dodano publiczne fasady `ksef2.xades` i `ksef2.profiles`;
-- dodano `ksef2.raw` dla dostępu endpointowego schema-native bez importowania
-  wewnętrznych modułów generowanych;
-- udokumentowano publiczne klasy wyjątków, błędy API KSeF, rate limity i
-  lokalne timeouty pollingu;
-- dodano paginację metadanych faktur, eksporty, pobieranie paczek i bezpośrednie
-  pobieranie faktur;
-- dodano przepływy tokenów, uprawnień, certyfikatów, limitów, PEPPOL i danych
-  TEST;
-- dodano publiczny builder FA(3) i API draftów pod `ksef2.fa3`;
-- dokumentacja publiczna została podzielona na `getting-started`, `concepts`,
-  `how-to-guides` i `reference`.
-
-## Zatwierdzenie wydania
-
-Stabilne wydania są zatwierdzane względem jednego, dokładnego commita zaufanego
-repozytorium. Przed utworzeniem tagu wydania maintainer może ręcznie uruchomić
-workflow **Integration Tests** w GitHub Actions i wybrać ten commit albo branch.
-Workflow działa tylko dla zaufanych zdarzeń repozytorium, a nie dla pull requestów
-ani forków, więc dane TEST KSeF nie są udostępniane niezaufanemu kodowi.
-
-Oznaczenie adnotowanym tagiem, na przykład `v1.0.0`, uruchamia **Publish to
-PyPI** dla otagowanego commita. Jako pierwszy działa job `release-ref`, który
-odrzuca każde uruchomienie inne niż niezmienny tag `vX.Y.Z` wskazujący commit
-osiągalny z `main`. Ręczne uruchomienie workflow dla istniejącego tagu służy
-tylko odzyskiwaniu i powtarza te same kontrole.
-
-Następnie job `integration` uruchamia uwierzytelniony zestaw testów KSeF TEST na
-tym commicie i zapisuje tag, SHA commita oraz środowisko `TEST` w podsumowaniu
-joba GitHub Actions. Przed uznaniem wydania za udane sprawdź ten zapis
-zatwierdzenia.
-
-Job `publish` wymaga sukcesu joba integracyjnego oraz zatwierdzenia maintainera
-w środowisku `pypi`. Uruchamia `just release-check`, a potem
-`scripts/verify_release.py --tag`, który porównuje tag z `project.version` w
-`pyproject.toml`, wymaga nagłówka tej wersji w `CHANGELOG.md` i sprawdza, czy
-istnieje dokładnie jeden wheel oraz jedno archiwum źródłowe z tą wersją w
-metadanych. Instaluje wheel w czystym środowisku i testuje stabilne importy przed
-uploadem z OIDC. Nieudana kontrola referencji, integracji albo weryfikacji bądź
-brak zatwierdzenia `pypi` blokuje upload do PyPI.
-
-Gdy upload się powiedzie, job `notify-docs` wysyła zdarzenie wdrożenia
-dokumentacji dla tego tagu. Gdy `DOCS_DISPATCH_TOKEN` nie jest skonfigurowany,
-ten krok pomija siebie, a wydanie nadal się publikuje.
-
-## Skrót migracji
-
-Przenieś importy aplikacji na udokumentowane ścieżki publiczne, przetestuj
-uwierzytelnianie i przepływy faktur w TEST albo DEMO, a stare linki
-dokumentacji zamień na aktualne trasy Starlight.
+## Powiązane strony
 
 <CardGrid>
-  <LinkCard
-    title="Migracja do 1.0.0"
-    href="../how-to-guides/migrate-to-1-0-0.mdx"
-    description="Zaktualizuj importy, kod przepływów, obsługę błędów i linki dokumentacji z wersji pre-1.0."
-  />
   <LinkCard
     title="Kontrakt publicznego API"
     href="public-api.mdx"

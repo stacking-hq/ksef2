@@ -29,7 +29,7 @@ def test_validate_docs_paths_accepts_the_canonical_profile_path(
 def test_validate_docs_paths_reports_the_retired_profile_path(tmp_path: Path) -> None:
     write_page(
         tmp_path,
-        "en/how-to-guides/migrate-to-1-0-0.mdx",
+        "en/how-to-guides/legacy-profiles.mdx",
         f"New profiles are stored in `{OBSOLETE_PROFILE_PATH}`.\n"
         f"Legacy `{LEGACY_FALLBACK_PROFILE_PATH}` files are still readable.\n",
     )
@@ -42,7 +42,7 @@ def test_validate_docs_paths_reports_the_retired_profile_path(tmp_path: Path) ->
     errors = validate_docs_paths(tmp_path)
 
     assert (
-        f"en/how-to-guides/migrate-to-1-0-0.mdx: uses retired {OBSOLETE_PROFILE_PATH}"
+        f"en/how-to-guides/legacy-profiles.mdx: uses retired {OBSOLETE_PROFILE_PATH}"
         in errors
     )
 

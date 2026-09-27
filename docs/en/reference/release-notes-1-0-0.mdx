@@ -1,6 +1,6 @@
 ---
 title: ksef2 1.0.0 Release Notes
-description: Stability boundary, supported workflows, and pre-1.0 changes for the first stable ksef2 SDK release.
+description: Stability boundary and the documented public surface of the first stable ksef2 SDK release.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
@@ -70,68 +70,9 @@ Do not build application code on these paths:
 These paths may remain importable for SDK implementation, tests, and tooling,
 but they can change without a 2.0 release.
 
-## What changed from pre-1.0
-
-Pre-1.0 releases shaped the SDK around a stable application surface:
-
-- consolidated normal workflows around `Client` or `AsyncClient`, then
-  `client.authentication`, then authenticated branches such as `auth.invoices`;
-- added matching sync and async client surfaces;
-- exposed public `ksef2.xades` and `ksef2.profiles` facades;
-- exposed `ksef2.raw` for schema-native endpoint access without importing
-  internal generated modules;
-- documented public exception classes, KSeF API errors, rate-limit errors, and
-  local polling timeouts;
-- added invoice metadata pagination, exports, package downloads, and direct
-  invoice downloads;
-- added token, permission, certificate, limits, PEPPOL, and TEST-data workflows;
-- added public FA(3) builder and draft APIs under `ksef2.fa3`;
-- moved public documentation into `getting-started`, `concepts`,
-  `how-to-guides`, and `reference`.
-
-## Release sign-off
-
-Stable releases are signed off against one exact trusted commit. Before creating
-a release tag, a maintainer can run the **Integration Tests** workflow manually
-from GitHub Actions and select that commit or branch. The workflow runs only for
-trusted repository events, not pull requests or forks, so KSeF TEST credentials
-are never exposed to untrusted code.
-
-Pushing an annotated tag such as `v1.0.0` starts **Publish to PyPI** for the
-tagged commit. The `release-ref` job runs first and rejects any run that is not
-an immutable `vX.Y.Z` tag whose commit is reachable from `main`. Dispatching the
-workflow for an existing tag is recovery only and repeats the same check.
-
-The `integration` job then runs the credentialed KSeF TEST suite on that commit
-and writes the tag, commit SHA, and `TEST` environment to the GitHub Actions job
-summary. Inspect that sign-off before treating the release as successful.
-
-The `publish` job needs that integration job to succeed and a maintainer
-approval in the `pypi` environment. It runs `just release-check`, then
-`scripts/verify_release.py --tag`, which compares the tag with
-`project.version` in `pyproject.toml`, requires this version's `CHANGELOG.md`
-heading, and checks that exactly one wheel and one source distribution exist
-whose metadata declares that version. It installs the wheel in a clean
-environment and smoke tests stable imports before the OIDC upload. A failed ref
-check, integration run, verification, or missing `pypi` approval prevents the
-PyPI upload.
-
-After a successful upload the `notify-docs` job dispatches a documentation
-deployment for the tag. When `DOCS_DISPATCH_TOKEN` is not configured that step
-skips itself and the release still publishes.
-
-## Upgrade summary
-
-Move application imports to the documented public paths, retest authentication
-and invoice workflows against TEST or DEMO, and replace old documentation links
-with the current Starlight routes.
+## Related pages
 
 <CardGrid>
-  <LinkCard
-    title="Migrate to 1.0.0"
-    href="../how-to-guides/migrate-to-1-0-0.mdx"
-    description="Upgrade pre-1.0 imports, workflow code, error handling, and documentation links."
-  />
   <LinkCard
     title="Public API contract"
     href="public-api.mdx"
