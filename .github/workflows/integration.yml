@@ -1,0 +1,62 @@
+name: Integration (TEST)
+
+# Publish to PyPI only runs on a tag, and its release-ref job rejects any non-tag
+# ref, so the invoice integration tests never ran on a normal commit to main. A green
+# branch protection check proved nothing and a broken release was discovered only after
+# the tag was cut. This workflow runs the same command on commits and pull requests.
+# See #131.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration:
+    name: KSeF TEST
+    # Fork pull requests have no access to the KSeF TEST secrets. Their runs skip the
+    # job rather than submitting nothing and reporting success; the same tests still
+    # run in the branch workflow on push.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    env:
+      CI: "true"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@v4
+
+      - name: Install Python 3.12
+        run: uv python install 3.12
+
+      - name: Install WeasyPrint system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0 libharfbuzz-subset0
+
+      - name: Install dependencies
+        run: uv sync --all-groups --extra pdf
+
+      - name: Run integration tests against KSeF TEST
+        env:
+          KSEF_TEST_SUBJECT_NIP: ${{ secrets.KSEF_TEST_SUBJECT_NIP }}
+          KSEF_TEST_PERSON_NIP: ${{ secrets.KSEF_TEST_PERSON_NIP }}
+          KSEF_TEST_PERSON_PESEL: ${{ secrets.KSEF_TEST_PERSON_PESEL }}
+        run: |
+          mkdir -p output
+          uv run --extra pdf python -m pytest tests/integration/ -v -rs -m integration \
+            --junitxml=output/release-integration.xml
+
+      # A green pytest exit does not mean the invoice workflows reached KSeF. Several
+      # of them used to hide behind a missing-environment skip, so check the report.
+      - name: Verify the required KSeF workflows ran
+        run: uv run python scripts/verify_integration_results.py output/release-integration.xml
