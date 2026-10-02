@@ -12,12 +12,23 @@ OUTPUT_PATH = ROOT / "src" / "ksef2" / "__openapi_version__.py"
 
 MARKER = "**Wersja API:** "
 
+# Every documented line that states the target OpenAPI version, keyed by file.
+# The docs release notes are listed here so an OpenAPI bump fails
+# `just check-ksef-api-version` until both locales are rewritten.
 README_LINES: dict[Path, tuple[str, str]] = {
     ROOT / "README.md": (
         "The SDK currently targets KSeF OpenAPI version ",
         "The SDK currently targets KSeF OpenAPI version `{version}`.",
     ),
     ROOT / "README.pl.md": (
+        "SDK obecnie celuje w wersję OpenAPI KSeF ",
+        "SDK obecnie celuje w wersję OpenAPI KSeF `{version}`.",
+    ),
+    ROOT / "docs/en/reference/release-notes-1-0-0.mdx": (
+        "The SDK currently targets KSeF OpenAPI version ",
+        "The SDK currently targets KSeF OpenAPI version `{version}`.",
+    ),
+    ROOT / "docs/pl/reference/release-notes-1-0-0.mdx": (
         "SDK obecnie celuje w wersję OpenAPI KSeF ",
         "SDK obecnie celuje w wersję OpenAPI KSeF `{version}`.",
     ),
