@@ -113,6 +113,37 @@ wynikająca z tego zmiana może trafić do wydania minor. Jest opisana w
 changelogu pod nagłówkiem „KSeF API changes”, żeby nie pomylić jej z decyzją
 SDK. Zmiany łamiące, które SDK inicjuje samo, nadal wymagają major version bump.
 
+## Wycofywane API
+
+Te API działają przez całe 1.x. Każde z nich emituje `DeprecationWarning` raz na
+wywołanie, jest oznaczone PEP 702 `@deprecated`, więc type checkery i IDE
+wskazują miejsca użycia, i zostanie usunięte w ksef2 2.0. Python ukrywa
+`DeprecationWarning` poza `__main__` i runnerami testów, więc uruchom testy z
+`python -W error::DeprecationWarning`, żeby je znaleźć.
+
+| Wycofane | Użyj zamiast | Usunięte w |
+| --- | --- | --- |
+| `Client.authenticated(tokens)` i `AsyncClient.authenticated(tokens)` | `client.authentication.resume(AuthenticationResumeState.from_tokens(tokens))` | 2.0 |
+| `get_state()` w klientach sesji online i wsadowej | `resume_state()` | 2.0 |
+| `BatchSessionClient.access_token` | `AuthenticatedClient.access_token` klienta nadrzędnego | 2.0 |
+| `dump_state()` w stanie wznowienia sesji | `to_dict()` | 2.0 |
+| `model_dump_sensitive()` w stanie wznowienia sesji | `to_dict()` | 2.0 |
+| `model_dump_sensitive_json()` w stanie wznowienia sesji | `to_json()` | 2.0 |
+| `from_state()` w stanie wznowienia sesji | `from_dict()` | 2.0 |
+| `BaseSessionState`, `OnlineSessionState`, `BatchSessionState` | `BaseSessionResumeState`, `OnlineSessionResumeState`, `BatchSessionResumeState` | 2.0 |
+| argument `access_token=` w `from_encoded()` stanu wznowienia sesji (ignorowany) | Zapisuj `AuthenticationResumeState` osobno | 2.0 |
+| klucz `access_token` w zapisanym stanie wznowienia sesji (ignorowany; stare pliki nadal się wczytują) | Zapisuj `AuthenticationResumeState` osobno | 2.0 |
+
+`FA3InvoiceBuilder.dump_state()` i `from_state()` to osobne API szkiców buildera
+i nie są wycofane.
+
+### Polityka wycofywania
+
+W 1.x API jest wycofywane w wydaniu minor: dostaje `@deprecated` (albo ostrzeżenie
+na poziomie modułu dla aliasów), komunikat w formie „`X` is deprecated and will
+be removed in ksef2 2.0; use `Y` instead." oraz wpis w changelogu. Usunięcie
+następuje dopiero w kolejnym wydaniu major.
+
 ## Referencja
 
 <LinkCard
