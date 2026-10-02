@@ -1,3 +1,116 @@
+## v1.0.0 (2026-10-03)
+
+ksef2 1.0.0 is the first stable release. It targets KSeF OpenAPI 2.8.1 and
+starts the 1.x compatibility contract. There is one breaking change since 0.22.2
+(collective-identifier invoice queries), so read that section before upgrading.
+
+### Highlights
+
+- The documented import paths (`ksef2`, `ksef2.clients`, `ksef2.models`,
+  `ksef2.fa3`, `ksef2.xades`, `ksef2.profiles`, `ksef2.renderers`, `ksef2.raw`,
+  `ksef2.raw.mappers`) are the compatibility contract for the whole 1.x line.
+  See the [public API contract](https://docs.stacking.me/ksef2/sdk/reference/public-api/)
+  and the [1.0.0 release notes](https://docs.stacking.me/ksef2/sdk/reference/release-notes-1-0-0/).
+- TODO(#142): summarise the public API contract changes from the merged PR
+  (internal modules, `model_dump()` redaction, KSeF-forced breaking changes).
+
+### Breaking changes
+
+- **Collective-identifier invoice queries (#128).** KSeF API 2.8.1 replaced
+  `GET /collective-identifiers/{collectiveIdentifierNumber}/invoices` with
+  `POST /collective-identifiers/invoices`, which takes up to 10 identifiers in
+  the body. The old call is removed, not deprecated. Migration is mechanical:
+
+  ```python
+  # before (0.22.x)
+  page = auth.collective_identifiers.list_invoices(collective_identifier_number=cid)
+  everything = auth.collective_identifiers.list_all_invoices(
+      collective_identifier_number=cid
+  )
+
+  # after (1.0.0)
+  page = auth.collective_identifiers.list_invoices(collective_identifier_numbers=[cid])
+  everything = auth.collective_identifiers.list_all_invoices(
+      collective_identifier_numbers=[cid]
+  )
+  ```
+
+  The high-level client validates 1 to 10 identifiers before sending. The raw
+  endpoint now takes a request body instead of a path parameter:
+
+  ```python
+  from ksef2.raw import spec
+
+  # before (0.22.x)
+  auth.raw.collective_identifiers.list_invoices(cid)
+
+  # after (1.0.0)
+  auth.raw.collective_identifiers.list_invoices(
+      spec.CollectiveIdentifierInvoicesQueryRequest(collectiveIdentifierNumbers=[cid])
+  )
+  ```
+
+### Deprecated
+
+Nothing is removed in 1.0.0. Deprecated APIs keep working through 1.x and are
+removed in ksef2 2.0. From 1.0.0 the policy is: deprecate in a minor release with
+`@deprecated` and a changelog entry, remove only in the next major.
+
+- TODO(#145): confirm this list against the merged PR. The following now carry
+  `@deprecated` (PEP 702), so type checkers and IDEs flag call sites, and their
+  warnings name the replacement and say "removed in ksef2 2.0":
+  - the `*SessionState` aliases
+  - `Client.authenticated()`
+  - `get_state()`
+  - `BatchSessionClient.access_token`
+  - resume-state `dump_state()`, `model_dump_sensitive()`,
+    `model_dump_sensitive_json()` and `from_state()`
+  - `from_encoded(access_token=...)`
+  - the stored `access_token` key (saved resume state that has it still loads)
+- TODO(#145): importing a name from an internal path (`ksef2.domain.*`,
+  `ksef2.core.*`, `ksef2.services.*`, `ksef2.infra.*`, `ksef2.endpoints.*`) from
+  code outside the `ksef2` package now emits a `DeprecationWarning` naming the
+  public import to use. Nothing moves in 1.x. `DeprecationWarning` is hidden by
+  default outside `__main__` and test runners; run with `-W default::DeprecationWarning`
+  to see it.
+- TODO(#145): `ProfileConfig` accepts the flat `auth_timeout` key written by
+  ksef2-cli 0.0.2, maps it to the poll settings and warns (if it ships in #145).
+
+### KSeF API
+
+- Targets KSeF OpenAPI 2.8.1.
+- API coverage is 100% of the 83 endpoints in the spec. `scripts/api_coverage.py`
+  now compares `(method, path)` pairs and fails the check on a gap (#129).
+
+### Fixes
+
+- Give each invoice in the batch examples its own FA(3) number (#135).
+
+### Build and CI
+
+- Run the invoice integration workflows against KSeF TEST instead of skipping
+  them (#138).
+- Compare `(method, path)` pairs in the API coverage check and enforce the
+  result (#129).
+- Remove the in-repo CLI script and its integration test; the CLI lives in the
+  separate `ksef2-cli` package (#137).
+- TODO(#140): integration gate wording, once the PR merges.
+- TODO(#141): release pipeline and packaging changes (PyPI metadata, classifiers,
+  docs dispatch).
+
+### Docs
+
+- TODO(#132): list the new 1.0 docs pages (SDK overview, public API contract,
+  release notes) once the PR merges.
+- TODO(ksef2-docs#4): docs deploy fixes, once the PR merges.
+
+### Release history note
+
+Two earlier versions never reached PyPI. v0.21.0 was bumped but never tagged; its
+changes (OpenAPI 2.8.1) shipped in v0.22.0. The v0.22.1 tag points at a commit
+whose project version was still 0.22.0, so the publish run failed its version
+check; its fix (#118) shipped in v0.22.2. PyPI goes 0.20.0, 0.22.0, 0.22.2, 1.0.0.
+
 ## v0.22.2 (2026-09-25)
 
 ## v0.22.1 (2026-09-25)
