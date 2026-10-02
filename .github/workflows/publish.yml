@@ -37,6 +37,10 @@ jobs:
 
   integration:
     needs: release-ref
+    # Shared with .github/workflows/integration.yml so live KSeF TEST runs never overlap.
+    concurrency:
+      group: ksef-test-live
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -58,12 +62,20 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-groups --extra pdf
 
-      - name: Run integration tests for release tag
+      - name: Run integration tests against KSeF TEST
         env:
           KSEF_TEST_SUBJECT_NIP: ${{ secrets.KSEF_TEST_SUBJECT_NIP }}
           KSEF_TEST_PERSON_NIP: ${{ secrets.KSEF_TEST_PERSON_NIP }}
           KSEF_TEST_PERSON_PESEL: ${{ secrets.KSEF_TEST_PERSON_PESEL }}
-        run: uv run pytest tests/integration/ -v -m integration
+        run: |
+          mkdir -p output
+          uv run --extra pdf python -m pytest tests/integration/ -v -rs -m integration \
+            --junitxml=output/release-integration.xml
+
+      # Same command and same gate as .github/workflows/integration.yml, which is what
+      # runs them on ordinary commits. Keep the two in step.
+      - name: Verify the required KSeF workflows ran
+        run: uv run python scripts/verify_integration_results.py output/release-integration.xml
 
       - name: Record integration sign-off
         run: |
