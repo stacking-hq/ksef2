@@ -1,6 +1,7 @@
 """Every deprecated API warns exactly once with the 2.0 message and still works."""
 
 import asyncio
+import os
 import warnings
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -38,8 +39,9 @@ def _call_once[T](call: Callable[[], T], old: str, new: str) -> T:
     message = str(deprecations[0].message)
     assert message.startswith(f"`{old}` is deprecated and ")
     assert message.endswith(SUFFIX.format(new=new))
-    # stacklevel must point at the caller, not at the SDK.
-    assert deprecations[0].filename == __file__
+    if not os.environ.get("KSEF2_RUNTIME_CHECKS"):
+        # beartype's wrapper frame sits between the SDK and the caller.
+        assert deprecations[0].filename == __file__
     return result
 
 

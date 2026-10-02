@@ -131,11 +131,11 @@ class ProfileConfig(BaseModel):
         the equivalent attempt count is ``ceil(auth_timeout / poll_interval)``.
         Explicit ``max_poll_attempts`` wins. Other unknown keys stay ignored.
         """
-        if not isinstance(data, Mapping):
+        if not isinstance(data, dict):
             return data
-        profile_data = cast(Mapping[str, object], data)
+        profile_data = cast(dict[str, object], data)
         if "auth_timeout" not in profile_data:
-            return data
+            return profile_data
 
         warnings.warn(
             "The `auth_timeout` profile key is deprecated and will be removed "
@@ -152,13 +152,13 @@ class ProfileConfig(BaseModel):
             or timeout <= 0
             or profile_data.get("max_poll_attempts") is not None
         ):
-            return data
+            return profile_data
 
         interval = profile_data.get("poll_interval")
         if isinstance(interval, bool) or not isinstance(interval, int | float):
             interval = 1.0
         if interval <= 0:
-            return data
+            return profile_data
         mapped = dict(profile_data)
         mapped["max_poll_attempts"] = max(1, math.ceil(timeout / interval))
         return mapped
