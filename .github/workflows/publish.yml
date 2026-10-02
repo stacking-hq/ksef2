@@ -18,7 +18,16 @@ concurrency:
 jobs:
   release-ref:
     runs-on: ubuntu-latest
+    env:
+      DOCS_DISPATCH_TOKEN: ${{ secrets.DOCS_DISPATCH_TOKEN }}
     steps:
+      # Fail before the integration and upload jobs exist rather than after an
+      # irreversible PyPI upload, when notify-docs would be the only thing left.
+      - name: Require the docs dispatch token
+        shell: bash
+        run: |
+          [[ -n "$DOCS_DISPATCH_TOKEN" ]] || { echo "::error::DOCS_DISPATCH_TOKEN is not configured; refusing to release before upload"; exit 1; }
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
@@ -115,11 +124,17 @@ jobs:
         run: uv run python scripts/verify_release.py --tag "$GITHUB_REF_NAME"
 
       - name: Install and smoke-test the built wheel
+        shell: bash
         run: |
+          set -euo pipefail
           wheel="dist/ksef2-${GITHUB_REF_NAME#v}-py3-none-any.whl"
-          uv venv --python 3.12 .release-venv
-          uv pip install --python .release-venv/bin/python "$wheel"
-          .release-venv/bin/python -c "from ksef2 import AsyncClient, Client; from ksef2.clients import Client as FacadeClient; from ksef2.models import AuthenticationResumeState; assert FacadeClient is Client"
+          for v in 3.12 3.13 3.14; do
+            venv_path=".release-venv-$v"
+            uv python install "$v"
+            uv venv --python "$v" "$venv_path"
+            uv pip install --python "$venv_path/bin/python" "$wheel"
+            "$venv_path/bin/python" -c "from ksef2 import AsyncClient, Client; from ksef2.clients import Client as FacadeClient; from ksef2.models import AuthenticationResumeState; assert FacadeClient is Client"
+          done
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -133,8 +148,8 @@ jobs:
           DOCS_DISPATCH_TOKEN: ${{ secrets.DOCS_DISPATCH_TOKEN }}
         run: |
           if [ -z "$DOCS_DISPATCH_TOKEN" ]; then
-            echo "::notice::DOCS_DISPATCH_TOKEN is not configured; skipping docs deployment dispatch."
-            exit 0
+            echo "::error::DOCS_DISPATCH_TOKEN is not configured; the docs deployment was not dispatched."
+            exit 1
           fi
 
           curl --fail-with-body -X POST \
