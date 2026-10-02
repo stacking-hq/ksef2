@@ -37,6 +37,10 @@ jobs:
 
   integration:
     needs: release-ref
+    # Shared with .github/workflows/integration.yml so live KSeF TEST runs never overlap.
+    concurrency:
+      group: ksef-test-live
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       contents: read

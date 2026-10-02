@@ -3,21 +3,24 @@ name: Integration (TEST)
 # Publish to PyPI only runs on a tag, and its release-ref job rejects any non-tag
 # ref, so the invoice integration tests never ran on a normal commit to main. A green
 # branch protection check proved nothing and a broken release was discovered only after
-# the tag was cut. This workflow runs the same command on commits and pull requests.
-# See #131.
+# the tag was cut. This workflow runs the same command on commits and pull requests,
+# and on the daily schedule that used to live in integration-tests.yml. See #131, #140.
+#
+# There is deliberately no path filter. On push it would let a docs-only commit to main
+# go without a live run, so "Integration is green on the commit to tag" could rest on an
+# older commit. On pull_request it would weaken the gate itself.
 on:
+  schedule:
+    - cron: "0 4 * * *"  # Daily at 4 AM UTC
   push:
     branches:
       - main
+      - release/**
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
-
-concurrency:
-  group: integration-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   integration:
@@ -26,6 +29,11 @@ jobs:
     # job rather than submitting nothing and reporting success; the same tests still
     # run in the branch workflow on push.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    # One live KSeF TEST run at a time across every workflow (publish.yml's integration
+    # job uses the same group). Never cancel a run in flight: it owns session teardown.
+    concurrency:
+      group: ksef-test-live
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     env:
       CI: "true"
