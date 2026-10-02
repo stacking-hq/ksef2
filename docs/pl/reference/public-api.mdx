@@ -133,6 +133,7 @@ wskazują miejsca użycia, i zostanie usunięte w ksef2 2.0. Python ukrywa
 | `BaseSessionState`, `OnlineSessionState`, `BatchSessionState` | `BaseSessionResumeState`, `OnlineSessionResumeState`, `BatchSessionResumeState` | 2.0 |
 | argument `access_token=` w `from_encoded()` stanu wznowienia sesji (ignorowany) | Zapisuj `AuthenticationResumeState` osobno | 2.0 |
 | klucz `access_token` w zapisanym stanie wznowienia sesji (ignorowany; stare pliki nadal się wczytują) | Zapisuj `AuthenticationResumeState` osobno | 2.0 |
+| klucz `auth_timeout` w profilu zapisanym przez ksef2-cli 0.0.2 | `max_poll_attempts` (i opcjonalnie `poll_interval`) | 2.0 |
 
 `FA3InvoiceBuilder.dump_state()` i `from_state()` to osobne API szkiców buildera
 i nie są wycofane.

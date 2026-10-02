@@ -5,9 +5,11 @@ import tomllib
 from collections.abc import Mapping
 from enum import StrEnum
 import json
+import math
 from pathlib import Path
 import re
-from typing import Self
+import warnings
+from typing import Self, cast
 
 from cryptography.x509 import Certificate
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
@@ -119,6 +121,47 @@ class ProfileConfig(BaseModel):
     max_poll_attempts: int | None = Field(
         default=None, ge=1, description="Authentication polling attempts."
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _map_legacy_auth_timeout(cls, data: object) -> object:
+        """Accept the flat ``auth_timeout`` key written by ksef2-cli 0.0.2.
+
+        ``with_profile()`` waits ``max_poll_attempts * poll_interval`` seconds, so
+        the equivalent attempt count is ``ceil(auth_timeout / poll_interval)``.
+        Explicit ``max_poll_attempts`` wins. Other unknown keys stay ignored.
+        """
+        if not isinstance(data, Mapping):
+            return data
+        profile_data = cast(Mapping[str, object], data)
+        if "auth_timeout" not in profile_data:
+            return data
+
+        warnings.warn(
+            "The `auth_timeout` profile key is deprecated and will be removed "
+            "in ksef2 2.0; use `max_poll_attempts` (and optionally "
+            "`poll_interval`) instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        timeout = profile_data["auth_timeout"]
+        if (
+            isinstance(timeout, bool)
+            or not isinstance(timeout, int | float)
+            or not math.isfinite(timeout)
+            or timeout <= 0
+            or profile_data.get("max_poll_attempts") is not None
+        ):
+            return data
+
+        interval = profile_data.get("poll_interval")
+        if isinstance(interval, bool) or not isinstance(interval, int | float):
+            interval = 1.0
+        if interval <= 0:
+            return data
+        mapped = dict(profile_data)
+        mapped["max_poll_attempts"] = max(1, math.ceil(timeout / interval))
+        return mapped
 
     @field_validator("environment", mode="before")
     @classmethod

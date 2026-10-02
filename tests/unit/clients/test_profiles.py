@@ -245,3 +245,59 @@ def test_profile_store_selects_and_deletes_profiles(tmp_path) -> None:
     assert deleted.nip == "2222222222"
     assert store.current() is None
     assert list(store.list()) == ["first"]
+
+
+_LEGACY_PROFILE = """
+[profiles.legacy]
+environment = "test"
+nip = "1111111111"
+{extra}
+
+[profiles.legacy.auth]
+type = "test_certificate"
+"""
+
+
+def _load_legacy(tmp_path: Path, extra: str) -> Profile:
+    config_path = tmp_path / "config.toml"
+    config_path.write_text(_LEGACY_PROFILE.format(extra=extra))
+    return load_profile_config(config_path).profiles["legacy"]
+
+
+@pytest.mark.parametrize(
+    ("extra", "attempts", "interval"),
+    [
+        ("auth_timeout = 180.0", 180, None),
+        ("auth_timeout = 12", 12, None),
+        ("auth_timeout = 0.5", 1, None),
+        ("auth_timeout = 10.0\npoll_interval = 4.0", 3, 4.0),
+    ],
+)
+def test_legacy_auth_timeout_maps_to_poll_settings_with_warning(
+    tmp_path: Path, extra: str, attempts: int, interval: float | None
+) -> None:
+    with pytest.deprecated_call(match="`auth_timeout` profile key is deprecated"):
+        profile = _load_legacy(tmp_path, extra)
+
+    assert profile.max_poll_attempts == attempts
+    assert profile.poll_interval == interval
+    # Same formula with_profile() uses to derive its timeout.
+    assert attempts * (interval or 1.0) >= float(extra.split()[2].split("\n")[0])
+
+
+def test_legacy_auth_timeout_does_not_override_explicit_max_poll_attempts(
+    tmp_path: Path,
+) -> None:
+    with pytest.deprecated_call(match="auth_timeout"):
+        profile = _load_legacy(tmp_path, "auth_timeout = 180.0\nmax_poll_attempts = 7")
+
+    assert profile.max_poll_attempts == 7
+
+
+def test_other_unknown_profile_keys_stay_ignored_without_warning(
+    tmp_path: Path,
+) -> None:
+    profile = _load_legacy(tmp_path, 'output = "json"\nverbose = true')
+
+    assert profile.max_poll_attempts is None
+    assert not hasattr(profile, "output")

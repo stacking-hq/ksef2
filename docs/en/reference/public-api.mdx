@@ -133,6 +133,7 @@ outside `__main__` and test runners, so run your tests with
 | `BaseSessionState`, `OnlineSessionState`, `BatchSessionState` | `BaseSessionResumeState`, `OnlineSessionResumeState`, `BatchSessionResumeState` | 2.0 |
 | `access_token=` argument of `from_encoded()` on session resume state (ignored) | Persist `AuthenticationResumeState` separately | 2.0 |
 | `access_token` key in stored session resume state (ignored; old files still load) | Persist `AuthenticationResumeState` separately | 2.0 |
+| `auth_timeout` key in a profile written by ksef2-cli 0.0.2 | `max_poll_attempts` (and optionally `poll_interval`) | 2.0 |
 
 `FA3InvoiceBuilder.dump_state()` and `from_state()` are a separate builder
 draft API and are not deprecated.
