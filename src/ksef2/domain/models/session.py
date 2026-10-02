@@ -17,6 +17,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from typing_extensions import deprecated
 
 from ksef2.domain.models.base import KSeFBaseModel, KSeFPersistedModel
 
@@ -296,12 +297,11 @@ class ListSessionsResponse(KSeFBaseModel):
     sessions: list[SessionSummary]
 
 
-def _warn_deprecated(old_name: str, new_name: str) -> None:
-    warnings.warn(
-        f"{old_name} is deprecated and will be removed in a future release; "
-        f"use {new_name} instead.",
-        DeprecationWarning,
-        stacklevel=3,
+def deprecation_message(old_name: str, new_name: str) -> str:
+    """Build the standard 2.0-removal deprecation message."""
+    return (
+        f"`{old_name}` is deprecated and will be removed in ksef2 2.0; "
+        f"use `{new_name}` instead."
     )
 
 
@@ -352,8 +352,9 @@ class BaseSessionResumeState(KSeFPersistedModel):
             return state_data
 
         warnings.warn(
-            "Session resume state access_token is deprecated and ignored; "
-            "persist AuthenticationResumeState separately.",
+            "The `access_token` key in session resume state is deprecated and "
+            "will be removed in ksef2 2.0; it is ignored, persist "
+            "`AuthenticationResumeState` separately instead.",
             DeprecationWarning,
             stacklevel=3,
         )
@@ -421,33 +422,45 @@ class BaseSessionResumeState(KSeFPersistedModel):
         """Restore resume state from JSON exported by ``to_json()``."""
         return cls.model_validate_json(state)
 
+    @deprecated(
+        "`dump_state()` is deprecated and will be removed in ksef2 2.0; "
+        "use `to_dict()` instead."
+    )
     def dump_state(
         self,
         *,
         mode: Literal["json", "python"] | str = "python",
     ) -> dict[str, object]:
         """Deprecated compatibility wrapper for ``to_dict()``."""
-        _warn_deprecated("dump_state()", "to_dict()")
         return self.to_dict(mode=mode)
 
+    @deprecated(
+        "`model_dump_sensitive()` is deprecated and will be removed in ksef2 2.0; "
+        "use `to_dict()` instead."
+    )
     def model_dump_sensitive(
         self,
         *,
         mode: Literal["json", "python"] | str = "python",
     ) -> dict[str, object]:
         """Deprecated compatibility wrapper for ``to_dict()``."""
-        _warn_deprecated("model_dump_sensitive()", "to_dict()")
         return self.to_dict(mode=mode)
 
+    @deprecated(
+        "`model_dump_sensitive_json()` is deprecated and will be removed in ksef2 2.0; "
+        "use `to_json()` instead."
+    )
     def model_dump_sensitive_json(self, *, indent: int | None = None) -> str:
         """Deprecated compatibility wrapper for ``to_json()``."""
-        _warn_deprecated("model_dump_sensitive_json()", "to_json()")
         return self.to_json(indent=indent)
 
     @classmethod
+    @deprecated(
+        "`from_state()` is deprecated and will be removed in ksef2 2.0; "
+        "use `from_dict()` instead."
+    )
     def from_state(cls, state: Mapping[str, object]) -> Self:
         """Deprecated compatibility wrapper for ``from_dict()``."""
-        _warn_deprecated("from_state()", "from_dict()")
         return cls.from_dict(state)
 
 
@@ -489,8 +502,10 @@ class OnlineSessionResumeState(BaseSessionResumeState):
         """
         if access_token is not None:
             warnings.warn(
-                "OnlineSessionResumeState.from_encoded(access_token=...) is "
-                "deprecated and ignored; persist AuthenticationResumeState separately.",
+                "The `access_token` argument of "
+                "`OnlineSessionResumeState.from_encoded()` is deprecated and will "
+                "be removed in ksef2 2.0; it is ignored, persist "
+                "`AuthenticationResumeState` separately instead.",
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -511,13 +526,16 @@ if TYPE_CHECKING:
 _DEPRECATED_SESSION_EXPORTS = {
     "BaseSessionState": (
         BaseSessionResumeState,
-        "BaseSessionState is deprecated and will be removed in a future release; "
-        "use BaseSessionResumeState instead.",
+        deprecation_message(
+            "ksef2.domain.models.session.BaseSessionState", "BaseSessionResumeState"
+        ),
     ),
     "OnlineSessionState": (
         OnlineSessionResumeState,
-        "OnlineSessionState is deprecated and will be removed in a future release; "
-        "use OnlineSessionResumeState instead.",
+        deprecation_message(
+            "ksef2.domain.models.session.OnlineSessionState",
+            "OnlineSessionResumeState",
+        ),
     ),
 }
 

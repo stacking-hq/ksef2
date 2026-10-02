@@ -33,6 +33,7 @@ dependencies = [
     "tenacity>=9.0",
     "camel-converter>=5.1.0",
     "xsdata>=26.1",
+    "typing-extensions>=4.5",
 ]
 
 [project.urls]
