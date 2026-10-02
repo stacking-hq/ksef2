@@ -31,7 +31,7 @@ test-fa3-contracts:
 
 test-coverage:
     uv run python -m pytest --cov=ksef2 --cov-config=.coveragerc.toml --cov-report=xml tests/unit/ -v
-    uv run python scripts/test_coverage_badge.py
+    uv run python scripts/test_coverage_badge.py --reference-python 3.12
 
 
 # --- release ------------------------------------------------------------

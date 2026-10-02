@@ -27,8 +27,11 @@ Potwierdź z administratorem repozytorium następujące ustawienia:
   `publish.yml` i środowiska `pypi`. Publikacja używa OIDC, więc nie ma tu
   `PYPI_TOKEN` ani tokena osobistego.
 - Zachowaj sekrety integracyjne `KSEF_TEST_SUBJECT_NIP`, `KSEF_TEST_PERSON_NIP`
-  i `KSEF_TEST_PERSON_PESEL`. Ustaw `DOCS_DISPATCH_TOKEN`, jeśli wydania mają
-  wdrażać dokumentację.
+  i `KSEF_TEST_PERSON_PESEL`. Ustaw `DOCS_DISPATCH_TOKEN`, czyli token o
+  szczegółowych uprawnieniach dla `stacking-hq/ksef2-docs` z dostępem Contents do
+  odczytu i zapisu. Wydanie bez niego kończy się błędem w zadaniu `release-ref`,
+  przed testami integracyjnymi i wysyłką, więc brak tokena nie zostawi
+  opublikowanej wersji bez wdrożenia dokumentacji.
 
 ## Zmień wersję i opisz zmiany
 
@@ -67,7 +70,7 @@ flowchart LR
   M --> T["just tag: administrator pcha vX.Y.Z"]
   T --> I[Integracja KSeF TEST]
   I --> A[zgoda pypi]
-  A --> U[release-check, weryfikacja artefaktów, test instalacji, wysyłka]
+  A --> U[release-check, weryfikacja artefaktów, test instalacji na 3.12-3.14, wysyłka]
 ```
 
 Zatwierdź wdrożenie `pypi`, gdy pojawi się prośba, i sprawdź wysyłkę przed jakąkolwiek
@@ -110,7 +113,8 @@ PyPI odrzuca ponowne wysłanie tej samej wersji.
 - Jeśli pakiet mógł już trafić do PyPI, sprawdź PyPI i logi przed ponowieniem.
   Zmiany kodu po udanej wysyłce wymagają nowego wydania z wyższą wersją.
 - Jeśli nie powiodło się tylko wdrożenie dokumentacji, ponów to zadanie. Nie
-  powtarzaj wysyłania pakietu.
+  powtarzaj wysyłania pakietu. Zadanie kończy się błędem, a nie pomija kroku, gdy
+  brakuje `DOCS_DISPATCH_TOKEN`, więc najpierw dodaj ten sekret.
 
 Publikacje tego samego ref wykonują się kolejno, ale powtórne uruchomienie nadal może
 podjąć próbę wysłania pakietu. Sprawdź istniejące uruchomienia przed ponowieniem.
