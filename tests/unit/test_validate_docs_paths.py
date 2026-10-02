@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from scripts.validate_docs_paths import (
@@ -5,6 +6,7 @@ from scripts.validate_docs_paths import (
     LEGACY_FALLBACK_PROFILE_PATH,
     OBSOLETE_PROFILE_PATH,
     validate_docs_paths,
+    validate_manifest_pages,
 )
 
 
@@ -73,3 +75,54 @@ def test_validate_docs_paths_fails_when_no_documentation_matches(
     errors = validate_docs_paths(tmp_path)
 
     assert errors == [f"{tmp_path}: no documentation files found to validate"]
+
+
+def write_manifest(root: Path, *pages: str) -> None:
+    manifest = {
+        "locales": ["en", "pl"],
+        "sidebar": {
+            "link": pages[0],
+            "categories": [{"items": [{"path": page} for page in pages]}],
+        },
+    }
+    _ = (root / "docs.manifest.json").write_text(json.dumps(manifest), "utf-8")
+
+
+def test_validate_manifest_pages_accepts_pages_present_in_both_locales(
+    tmp_path: Path,
+) -> None:
+    for locale in ("en", "pl"):
+        write_page(tmp_path, f"{locale}/a.mdx", "a\n")
+    write_manifest(tmp_path, "a.mdx")
+
+    assert validate_manifest_pages(tmp_path) == []
+
+
+def test_validate_manifest_pages_reports_an_entry_missing_from_one_locale(
+    tmp_path: Path,
+) -> None:
+    write_page(tmp_path, "en/a.mdx", "a\n")
+    write_page(tmp_path, "en/b.mdx", "b\n")
+    write_page(tmp_path, "pl/a.mdx", "a\n")
+    write_manifest(tmp_path, "a.mdx", "b.mdx")
+
+    assert validate_manifest_pages(tmp_path) == [
+        "docs.manifest.json: b.mdx has no page in pl/"
+    ]
+
+
+def test_validate_manifest_pages_reports_an_entry_missing_from_every_locale(
+    tmp_path: Path,
+) -> None:
+    write_manifest(tmp_path, "does-not-exist.mdx")
+
+    assert validate_manifest_pages(tmp_path) == [
+        "docs.manifest.json: does-not-exist.mdx has no page in en/",
+        "docs.manifest.json: does-not-exist.mdx has no page in pl/",
+    ]
+
+
+def test_validate_manifest_pages_fails_without_a_manifest(tmp_path: Path) -> None:
+    errors = validate_manifest_pages(tmp_path)
+
+    assert errors == [f"{tmp_path / 'docs.manifest.json'}: manifest not found"]
