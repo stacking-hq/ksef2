@@ -17,6 +17,7 @@ stabilne w linii 1.x.
 | `ksef2.models` | Modele żądań, odpowiedzi, filtrów, paginacji, tokenów, uprawnień, sesji i batchy. |
 | `ksef2.fa3` | Publiczny builder faktur FA(3), drafty buildera oraz typy modelu faktury używane przez aplikacje. |
 | `ksef2.xades` | Ładowanie certyfikatów, generowanie certyfikatów TEST, lokalne podpisy XAdES i `LocalSigner`. |
+| `ksef2.testdata` | Pomocniki tylko dla TEST, które generują poprawne numery NIP i PESEL (`generate_nip`, `generate_pesel`). |
 | `ksef2.profiles` | Helpery konfiguracji profili zgodnych z `ksef2-cli`. |
 | `ksef2.renderers` | Opcjonalne lokalne helpery renderowania faktur XSLT/PDF. |
 | `ksef2.raw` | Klienty endpointów niskiego poziomu, modele `spec` i `supp` oraz narzędzia kryptograficzne. |
@@ -67,6 +68,8 @@ Unikaj tych ścieżek w kodzie aplikacyjnym:
 - `ksef2.infra.*`: wygenerowane schemy i wewnętrzne mappery;
 - `ksef2.endpoints.*`: implementacja endpointów i transportu;
 - `ksef2.core.*`: wewnętrzne moduły protokołu, transportu, middleware i helperów;
+- `ksef2.domain.*`: wewnętrzne moduły implementacji modeli; te same modele
+  importuj z `ksef2.models` (albo z `ksef2.fa3` dla modeli buildera FA(3));
 - `ksef2.services.*`: implementacja workflow komponowana przez klienta; cztery
   udokumentowane typy usług importuj z `ksef2.clients` albo używaj modułów klienta;
 - `scripts/*`: narzędzia repozytorium, nie API pakietu.
@@ -74,11 +77,41 @@ Unikaj tych ścieżek w kodzie aplikacyjnym:
 Część ścieżek internal może być importowalna dla implementacji SDK albo testów,
 ale nie jest kontraktem kompatybilności dla kodu aplikacyjnego.
 
+## Sekrety i serializacja
+
+Modele przenoszące sekrety lub podpisane adresy URL (tokeny dostępu i
+odświeżania, klucze AES i IV, presigned URL-e pobierania i wysyłki, tokeny
+jednorazowe) ukrywają je w `model_dump()`, `model_dump_json()` i `repr()`. Te
+metody służą do logowania i wyświetlania. **Nie są formatem trwałego zapisu**:
+zredagowanego wyniku nie da się wczytać z powrotem, a jego walidacja może się
+nie powieść. Na przykład `UpoPage.model_validate(page.model_dump())` zgłasza
+błąd, bo `download_url` jest wykluczony z dumpa, ale wymagany przez model.
+
+Stan zapisuj i odtwarzaj jawnymi metodami:
+
+- `to_dict()` i `to_json()` w modelach stanu wznowienia
+  (`AuthenticationResumeState`, `OnlineSessionResumeState`,
+  `BatchSessionResumeState`) eksportują pełne poświadczenia; odtworzysz je przez
+  `from_dict()` lub `from_json()`.
+- `to_sensitive_dict()` w modelach odpowiedzi z sekretami, takich jak `UpoPage`,
+  `GenerateTokenResponse` i `ExportHandle`, eksportuje pola sekretne do
+  świadomego, chronionego użycia.
+
+Wynik tych metod traktuj jak poświadczenie: przechowuj go zaszyfrowany, nigdy
+nie loguj i nie commituj.
+
 ## Reguła kompatybilności
 
 Po 1.0 usunięcie albo zmiana nazwy stabilnej ścieżki importu wymaga major
 version bump. Dodatkowe API może wejść w minor release. Patch release powinien
 zachować udokumentowane importy i zachowanie poza poprawkami błędów.
+
+### Zmiany wymuszone przez KSeF
+
+Gdy KSeF usuwa lub zmienia endpoint w sposób, którego SDK nie może wchłonąć,
+wynikająca z tego zmiana może trafić do wydania minor. Jest opisana w
+changelogu pod nagłówkiem „KSeF API changes”, żeby nie pomylić jej z decyzją
+SDK. Zmiany łamiące, które SDK inicjuje samo, nadal wymagają major version bump.
 
 ## Referencja
 

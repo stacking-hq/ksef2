@@ -12,8 +12,8 @@ What it demonstrates:
 from dataclasses import dataclass
 
 from ksef2 import Client, Environment
-from ksef2.core.tools import generate_nip, generate_pesel
-from ksef2.domain.models.testdata import Identifier, Permission
+from ksef2.models import Identifier, Permission
+from ksef2.testdata import generate_nip, generate_pesel
 
 
 @dataclass

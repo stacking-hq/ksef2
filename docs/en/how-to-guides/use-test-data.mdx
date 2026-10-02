@@ -112,6 +112,18 @@ with client.testdata.temporal() as data:
   workflows that depend on it in DEMO or PRODUCTION.
 </Aside>
 
+## Generate identifiers
+
+`ksef2.testdata` generates checksum-valid NIP and PESEL numbers so every test
+run can use fresh sandbox subjects:
+
+```python
+from ksef2.testdata import generate_nip, generate_pesel
+
+nip = generate_nip()
+pesel = generate_pesel()
+```
+
 ## Recommended flow
 
 <Steps>

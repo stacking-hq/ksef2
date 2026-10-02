@@ -14,7 +14,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from ksef2 import Client, Environment, FormSchema
-from ksef2.domain.models import InvoicesFilter
+from ksef2.models import InvoicesFilter
 from scripts.examples._common import (
     example_invoice_xml,
     example_seller_nip,

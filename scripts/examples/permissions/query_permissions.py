@@ -12,17 +12,19 @@ import time
 from dataclasses import dataclass
 
 from ksef2 import Client, Environment
-from ksef2.core.tools import generate_nip, generate_pesel
-from ksef2.domain.models import EntityPermission, Identifier, Permission
-from ksef2.domain.models.pagination import OffsetPaginationParams
-from ksef2.domain.models.permissions import (
+from ksef2.models import (
     AuthorizationPermissionsQuery,
+    EntityPermission,
     EuEntityPermissionsQuery,
+    Identifier,
+    OffsetPaginationParams,
+    Permission,
     PersonalPermissionsQuery,
     PersonPermissionsQuery,
     SubordinateEntityRolesQuery,
     SubunitPermissionsQuery,
 )
+from ksef2.testdata import generate_nip, generate_pesel
 
 
 @dataclass

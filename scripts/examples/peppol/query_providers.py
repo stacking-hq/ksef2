@@ -11,7 +11,7 @@ What it demonstrates:
 from dataclasses import dataclass
 
 from ksef2 import Client, Environment
-from ksef2.domain.models.pagination import OffsetPaginationParams
+from ksef2.models import OffsetPaginationParams
 
 
 @dataclass

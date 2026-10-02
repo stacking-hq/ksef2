@@ -11,8 +11,8 @@ What it demonstrates:
 from dataclasses import dataclass
 
 from ksef2 import Client, Environment
-from ksef2.core.tools import generate_nip
-from ksef2.domain.models.testdata import AuthContextIdentifier
+from ksef2.models import AuthContextIdentifier
+from ksef2.testdata import generate_nip
 
 
 @dataclass
