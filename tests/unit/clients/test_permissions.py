@@ -47,7 +47,7 @@ class TestPermissionsClient:
         )
         expected_request = grant_to_spec(request)
 
-        assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "POST"
         assert str(call.path) == GrantPermissionsRoutes.GRANT_PERSON
@@ -72,7 +72,7 @@ class TestPermissionsClient:
             entity_name=request.entity_name,
         )
 
-        assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "POST"
         assert str(call.path) == GrantPermissionsRoutes.GRANT_ENTITY
@@ -95,7 +95,7 @@ class TestPermissionsClient:
             entity_name=request.entity_name,
         )
 
-        assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "POST"
         assert str(call.path) == GrantPermissionsRoutes.GRANT_AUTHORIZATION
@@ -124,7 +124,7 @@ class TestPermissionsClient:
             request.model_copy(update={"target_value": "1234567890-12345"})
         )
 
-        assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "POST"
         assert str(call.path) == GrantPermissionsRoutes.GRANT_INDIRECT
@@ -153,7 +153,7 @@ class TestPermissionsClient:
             subunit_name=request.subunit_name,
         )
 
-        assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "POST"
         assert str(call.path) == GrantPermissionsRoutes.GRANT_SUBUNITS
@@ -174,7 +174,7 @@ class TestPermissionsClient:
             description=request.description,
         )
 
-        assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "POST"
         assert str(call.path) == GrantPermissionsRoutes.GRANT_EU_ENTITY
@@ -197,7 +197,7 @@ class TestPermissionsClient:
             eu_entity_name=request.eu_entity_name,
         )
 
-        assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "POST"
         assert str(call.path) == GrantPermissionsRoutes.GRANT_ADMINISTERED_EU_ENTITY
@@ -352,13 +352,14 @@ class TestPermissionsClient:
             permission_id="123e4567-e89b-12d3-a456-426614174000"
         )
 
-        assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "DELETE"
         assert call.path.endswith(
             "/authorizations/grants/123e4567-e89b-12d3-a456-426614174000"
         )
 
+    @legacy_api
     def test_revoke_common(
         self,
         permissions_client: PermissionsClient,
@@ -373,6 +374,24 @@ class TestPermissionsClient:
         )
 
         assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        call = fake_transport.calls[0]
+        assert call.method == "DELETE"
+        assert call.path.endswith("/common/grants/123e4567-e89b-12d3-a456-426614174000")
+
+    def test_revoke(
+        self,
+        permissions_client: PermissionsClient,
+        fake_transport: FakeTransport,
+        perm_op_resp: BaseFactory[spec.PermissionsOperationResponse],
+    ):
+        expected = perm_op_resp.build()
+        fake_transport.enqueue(expected.model_dump(mode="json"))
+
+        result = permissions_client.revoke(
+            permission_id="123e4567-e89b-12d3-a456-426614174000"
+        )
+
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "DELETE"
         assert call.path.endswith("/common/grants/123e4567-e89b-12d3-a456-426614174000")

@@ -8,10 +8,14 @@ from dataclasses import dataclass
 from typing import Any
 
 import pytest
+from polyfactory import BaseFactory
 from pydantic import BaseModel
 
+from ksef2._clients.async_permissions import AsyncPermissionsClient
 from ksef2._clients.async_tokens import AsyncTokensClient
+from ksef2._clients.permissions import PermissionsClient
 from ksef2._clients.tokens import TokensClient
+from ksef2._domain.models.permissions import GrantPermissionsResponse
 from ksef2._infra.schema.api import spec
 from tests.unit.factories.tokens import TokenStatusResponseFactory
 
@@ -214,3 +218,27 @@ class TestDeprecatedTokenAliases:
         )
 
         assert status.status == "pending"
+
+
+class TestDeprecatedPermissionAliases:
+    def test_revoke_common_warns_once_and_returns_the_plain_response(
+        self,
+        flavor: Flavor,
+        perm_op_resp: BaseFactory[spec.PermissionsOperationResponse],
+    ) -> None:
+        response = perm_op_resp.build()
+        flavor.transport.enqueue(response.model_dump(mode="json"))
+        cls = AsyncPermissionsClient if flavor.is_async else PermissionsClient
+        permissions = cls(flavor.transport)
+
+        result = once(
+            flavor,
+            lambda: permissions.revoke_common(permission_id="permission-id"),
+            "revoke_common()",
+            "revoke()",
+        )
+
+        assert isinstance(result, GrantPermissionsResponse)
+        assert result.reference_number == response.referenceNumber
+        assert flavor.transport.calls[0].method == "DELETE"
+        assert flavor.transport.calls[0].path.endswith("/common/grants/permission-id")
