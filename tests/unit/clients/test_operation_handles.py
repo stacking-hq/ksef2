@@ -11,12 +11,24 @@ from polyfactory import BaseFactory
 
 from ksef2._clients._async_handles import AsyncOperationHandle
 from ksef2._clients._handles import OperationHandle
+from ksef2._clients.async_permissions import AsyncPermissionsClient
 from ksef2._clients.async_tokens import AsyncTokensClient
+from ksef2._clients.permissions import PermissionsClient
 from ksef2._clients.tokens import TokensClient
 from ksef2._core import exceptions
 from ksef2._core.routes import TokenRoutes
+from ksef2._domain.models.permissions import GrantPermissionsResponse
 from ksef2._domain.models.tokens import GenerateTokenResponse
 from ksef2._infra.schema.api import spec
+from tests.unit.factories.permissions import (
+    DomainGrantAuthorizationPermissionsRequestFactory,
+    DomainGrantEntityPermissionsRequestFactory,
+    DomainGrantEuEntityAdministrationRequestFactory,
+    DomainGrantEuEntityPermissionsRequestFactory,
+    DomainGrantIndirectPermissionsRequestFactory,
+    DomainGrantPersonPermissionsRequestFactory,
+    DomainGrantSubunitPermissionsRequestFactory,
+)
 from tests.unit.factories.tokens import TokenStatusResponseFactory
 from tests.unit.flavors import Flavor
 
@@ -161,4 +173,127 @@ class TestGeneratedToken:
         status = flavor.run(generated.get_status())
 
         assert status.status == "pending"
+        assert len(flavor.transport.calls) == 2
+
+
+GRANTS = {
+    "grant_person": DomainGrantPersonPermissionsRequestFactory,
+    "grant_entity": DomainGrantEntityPermissionsRequestFactory,
+    "grant_authorization": DomainGrantAuthorizationPermissionsRequestFactory,
+    "grant_indirect": DomainGrantIndirectPermissionsRequestFactory,
+    "grant_subunit": DomainGrantSubunitPermissionsRequestFactory,
+    "grant_eu_entity": DomainGrantEuEntityPermissionsRequestFactory,
+    "grant_eu_entity_administration": DomainGrantEuEntityAdministrationRequestFactory,
+}
+REVOKES = ("revoke", "revoke_authorization")
+PERMISSION_ID = "123e4567-e89b-12d3-a456-426614174000"
+OPERATION_REF = "20250625-EU-2F14610000-3AC9C8E13B-AB"
+
+
+def _operation_status(code: int, description: str) -> dict[str, Any]:
+    return {"status": {"code": code, "description": description}}
+
+
+class TestPermissionOperation:
+    def _permissions(self, flavor: Flavor) -> Any:
+        cls = AsyncPermissionsClient if flavor.is_async else PermissionsClient
+        return cls(flavor.transport)
+
+    def _start(
+        self,
+        flavor: Flavor,
+        operation_resp: BaseFactory[spec.PermissionsOperationResponse],
+        method: str,
+    ) -> Any:
+        flavor.transport.enqueue(
+            operation_resp.build(referenceNumber=OPERATION_REF).model_dump(mode="json")
+        )
+        permissions = self._permissions(flavor)
+        if method in GRANTS:
+            request = GRANTS[method].build()
+            kwargs = {
+                name: getattr(request, name) for name in type(request).model_fields
+            }
+        else:
+            kwargs = {"permission_id": PERMISSION_ID}
+        return flavor.run(getattr(permissions, method)(**kwargs))
+
+    @pytest.mark.parametrize("method", [*GRANTS, *REVOKES])
+    def test_every_grant_and_revoke_returns_a_handle(
+        self,
+        flavor: Flavor,
+        perm_op_resp: BaseFactory[spec.PermissionsOperationResponse],
+        method: str,
+    ) -> None:
+        operation = self._start(flavor, perm_op_resp, method)
+
+        assert _handle_base(flavor) in type(operation).__mro__
+        assert operation.reference_number == OPERATION_REF
+        assert isinstance(operation.response, GrantPermissionsResponse)
+        for field in GrantPermissionsResponse.model_fields:
+            assert getattr(operation, field) == getattr(operation.response, field)
+        with pytest.raises(AttributeError):
+            _ = operation.no_such_field
+        assert len(flavor.transport.calls) == 1
+
+    def test_wait_returns_the_final_status(
+        self,
+        flavor: Flavor,
+        perm_op_resp: BaseFactory[spec.PermissionsOperationResponse],
+    ) -> None:
+        operation = self._start(flavor, perm_op_resp, "revoke")
+        flavor.transport.enqueue(_operation_status(100, "in progress"))
+        flavor.transport.enqueue(_operation_status(200, "done"))
+
+        status = flavor.run(operation.wait(timeout=1.0, poll_interval=0.0))
+
+        assert status.status.code == 200
+        assert len(flavor.transport.calls) == 3
+        assert flavor.transport.calls[1].method == "GET"
+        assert OPERATION_REF in flavor.transport.calls[1].path
+
+    @pytest.mark.parametrize("code", [400, 410, 420, 430, 440, 450, 500, 550])
+    def test_wait_raises_when_ksef_does_not_apply_the_operation(
+        self,
+        flavor: Flavor,
+        perm_op_resp: BaseFactory[spec.PermissionsOperationResponse],
+        code: int,
+    ) -> None:
+        operation = self._start(flavor, perm_op_resp, "grant_entity")
+        flavor.transport.enqueue(_operation_status(code, "rejected"))
+
+        with pytest.raises(exceptions.KSeFPermissionOperationFailedError) as raised:
+            _ = flavor.run(operation.wait(timeout=1.0, poll_interval=0.0))
+
+        assert raised.value.reference_number == OPERATION_REF
+        assert raised.value.operation_status_code == code
+        assert raised.value.description == "rejected"
+
+    def test_wait_times_out(
+        self,
+        flavor: Flavor,
+        perm_op_resp: BaseFactory[spec.PermissionsOperationResponse],
+    ) -> None:
+        operation = self._start(flavor, perm_op_resp, "grant_person")
+        flavor.transport.enqueue(_operation_status(100, "in progress"))
+
+        with pytest.raises(
+            exceptions.KSeFPermissionOperationTimeoutError, match="not finished"
+        ) as raised:
+            _ = flavor.run(operation.wait(timeout=0.0, poll_interval=0.0))
+
+        assert raised.value.reference_number == OPERATION_REF
+        assert raised.value.timeout == 0.0
+
+    def test_get_status_does_not_wait(
+        self,
+        flavor: Flavor,
+        perm_op_resp: BaseFactory[spec.PermissionsOperationResponse],
+    ) -> None:
+        operation = self._start(flavor, perm_op_resp, "revoke")
+        flavor.transport.enqueue(_operation_status(100, "in progress"))
+
+        status = flavor.run(operation.get_status())
+
+        assert status.status.code == 100
         assert len(flavor.transport.calls) == 2

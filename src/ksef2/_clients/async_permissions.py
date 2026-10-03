@@ -1,11 +1,13 @@
 """Async permissions branch client."""
 
 from collections.abc import AsyncGenerator, Awaitable, Callable, Coroutine, Sequence
-from typing import final
+from typing import cast, final, override
 
 from typing_extensions import deprecated
 
+from ksef2._clients._async_handles import AsyncOperationHandle
 from ksef2._clients._async_pager import AsyncPager
+from ksef2._core import exceptions
 from ksef2._core.async_protocols import AsyncMiddleware
 from ksef2._domain.models.pagination import OffsetPaginationParams
 from ksef2._domain.models.permissions import (
@@ -93,6 +95,116 @@ def _offset_pager[PageT, ItemT](
 
 
 @final
+class AsyncPermissionOperation(
+    AsyncOperationHandle[
+        PermissionOperationStatusResponse, PermissionOperationStatusResponse
+    ]
+):
+    """Handle to a permission grant or revoke that KSeF applies asynchronously.
+
+    Returned by every ``grant_*()`` and ``revoke*()`` call of
+    ``auth.permissions``. It exposes every field of the response, for example
+    ``reference_number``, and ``wait()`` polls the operation until KSeF has
+    finished it. ``get_operation_status()`` on the permissions client reads the
+    same status for a reference number you stored earlier.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
+    """
+
+    def __init__(
+        self,
+        client: "AsyncPermissionsClient",
+        response: GrantPermissionsResponse,
+    ) -> None:
+        """Create the handle.
+
+        Args:
+            client: Permissions client used to poll the operation's status.
+            response: Response returned by KSeF when it accepted the operation.
+        """
+        super().__init__(response.reference_number)
+        self._client = client
+        self._response = response
+
+    def __getattr__(self, name: str) -> object:
+        if name in GrantPermissionsResponse.model_fields:
+            return cast(object, getattr(self._response, name))
+        raise AttributeError(
+            f"{type(self).__name__!r} object has no attribute {name!r}"
+        )
+
+    @property
+    def response(self) -> GrantPermissionsResponse:
+        """Get the plain operation response.
+
+        Returns:
+            The data model KSeF returned when it accepted the operation.
+        """
+        return self._response
+
+    @override
+    async def get_status(self) -> PermissionOperationStatusResponse:
+        """Fetch the operation's current status without waiting.
+
+        Returns:
+            The operation status; ``status.code`` is ``200`` once it has completed successfully.
+        """
+        return await self._client.get_operation_status(
+            reference_number=self.reference_number
+        )
+
+    @override
+    def _is_pending(self, status: PermissionOperationStatusResponse) -> bool:
+        return status.status.code == 100
+
+    @override
+    def _check_status(self, status: PermissionOperationStatusResponse) -> None:
+        if status.status.code not in (100, 200):
+            raise exceptions.KSeFPermissionOperationFailedError(
+                reference_number=self.reference_number,
+                status_code=status.status.code,
+                description=status.status.description,
+            )
+
+    @override
+    def _timeout_error(self, timeout: float) -> BaseException:
+        return exceptions.KSeFPermissionOperationTimeoutError(
+            reference_number=self.reference_number,
+            timeout=timeout,
+        )
+
+    @override
+    async def _finish(
+        self, status: PermissionOperationStatusResponse
+    ) -> PermissionOperationStatusResponse:
+        return status
+
+    async def wait(
+        self,
+        *,
+        timeout: float = 60.0,
+        poll_interval: float = 1.0,
+    ) -> PermissionOperationStatusResponse:
+        """Poll until KSeF has finished the operation.
+
+        Args:
+            timeout: Maximum number of seconds to wait before giving up.
+            poll_interval: Delay in seconds between status checks.
+
+        Returns:
+            The final status, with ``status.code`` ``200``.
+
+        Raises:
+            KSeFPermissionOperationFailedError: If KSeF finishes the operation without applying it.
+            KSeFPermissionOperationTimeoutError: If polling exceeds ``timeout``.
+        """
+        return await self._wait(timeout, poll_interval)
+
+
+@final
 class AsyncPermissionsClient:
     """Async high-level API for permission grants, revocations, and queries.
 
@@ -118,6 +230,11 @@ class AsyncPermissionsClient:
         self._query_eps = AsyncQueryPermissionsEndpoints(transport)
         self._get_eps = AsyncGetPermissionsEndpoints(transport)
 
+    def _operation(
+        self, response: GrantPermissionsResponse
+    ) -> AsyncPermissionOperation:
+        return AsyncPermissionOperation(self, response)
+
     async def grant_person(
         self,
         *,
@@ -127,7 +244,7 @@ class AsyncPermissionsClient:
         description: str,
         first_name: str,
         last_name: str,
-    ) -> GrantPermissionsResponse:
+    ) -> AsyncPermissionOperation:
         """Grant person-scoped permissions to a subject identifier.
 
         Args:
@@ -139,7 +256,7 @@ class AsyncPermissionsClient:
             last_name: Last name of the person receiving the permissions.
 
         Returns:
-            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+            A handle to the asynchronous grant operation; call ``wait()`` to wait until KSeF has applied it.
         """
         body = grant_to_spec(
             GrantPersonPermissionsRequest(
@@ -151,7 +268,9 @@ class AsyncPermissionsClient:
                 last_name=last_name,
             )
         )
-        return grant_from_spec(await self._grant_eps.grant_person(request=body))
+        return self._operation(
+            grant_from_spec(await self._grant_eps.grant_person(request=body))
+        )
 
     async def grant_entity(
         self,
@@ -160,7 +279,7 @@ class AsyncPermissionsClient:
         permissions: list[EntityPermission],
         description: str,
         entity_name: str,
-    ) -> GrantPermissionsResponse:
+    ) -> AsyncPermissionOperation:
         """Grant entity permissions to a NIP-identified entity.
 
         Args:
@@ -170,7 +289,7 @@ class AsyncPermissionsClient:
             entity_name: Full name of the entity receiving the permissions.
 
         Returns:
-            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+            A handle to the asynchronous grant operation; call ``wait()`` to wait until KSeF has applied it.
         """
         body = grant_to_spec(
             GrantEntityPermissionsRequest(
@@ -180,7 +299,9 @@ class AsyncPermissionsClient:
                 entity_name=entity_name,
             )
         )
-        return grant_from_spec(await self._grant_eps.grant_entity(request=body))
+        return self._operation(
+            grant_from_spec(await self._grant_eps.grant_entity(request=body))
+        )
 
     async def grant_authorization(
         self,
@@ -190,7 +311,7 @@ class AsyncPermissionsClient:
         permission: AuthorizationPermissionType,
         description: str,
         entity_name: str,
-    ) -> GrantPermissionsResponse:
+    ) -> AsyncPermissionOperation:
         """Grant an authorization permission such as self-invoicing.
 
         Args:
@@ -201,7 +322,7 @@ class AsyncPermissionsClient:
             entity_name: Full name of the entity being authorized.
 
         Returns:
-            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+            A handle to the asynchronous grant operation; call ``wait()`` to wait until KSeF has applied it.
         """
         body = grant_to_spec(
             GrantAuthorizationPermissionsRequest(
@@ -212,7 +333,9 @@ class AsyncPermissionsClient:
                 entity_name=entity_name,
             )
         )
-        return grant_from_spec(await self._grant_eps.grant_authorization(request=body))
+        return self._operation(
+            grant_from_spec(await self._grant_eps.grant_authorization(request=body))
+        )
 
     async def grant_indirect(
         self,
@@ -225,7 +348,7 @@ class AsyncPermissionsClient:
         last_name: str,
         target_type: IndirectTargetIdentifierType | None = None,
         target_value: str | None = None,
-    ) -> GrantPermissionsResponse:
+    ) -> AsyncPermissionOperation:
         """Grant indirect permissions, optionally limited to a target entity.
 
         Args:
@@ -239,7 +362,7 @@ class AsyncPermissionsClient:
             target_value: Identifier of the partner context the grant is limited to; ``None`` when the target is all partners.
 
         Returns:
-            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+            A handle to the asynchronous grant operation; call ``wait()`` to wait until KSeF has applied it.
         """
         body = grant_to_spec(
             GrantIndirectPermissionsRequest(
@@ -253,7 +376,9 @@ class AsyncPermissionsClient:
                 target_value=target_value,
             )
         )
-        return grant_from_spec(await self._grant_eps.grant_indirect(request=body))
+        return self._operation(
+            grant_from_spec(await self._grant_eps.grant_indirect(request=body))
+        )
 
     async def grant_subunit(
         self,
@@ -266,7 +391,7 @@ class AsyncPermissionsClient:
         first_name: str,
         last_name: str,
         subunit_name: str | None = None,
-    ) -> GrantPermissionsResponse:
+    ) -> AsyncPermissionOperation:
         """Grant permissions within a subunit context.
 
         Args:
@@ -280,7 +405,7 @@ class AsyncPermissionsClient:
             subunit_name: Display name of the subunit; optional.
 
         Returns:
-            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+            A handle to the asynchronous grant operation; call ``wait()`` to wait until KSeF has applied it.
         """
         body = grant_to_spec(
             GrantSubunitPermissionsRequest(
@@ -294,7 +419,9 @@ class AsyncPermissionsClient:
                 subunit_name=subunit_name,
             )
         )
-        return grant_from_spec(await self._grant_eps.grant_subunit(request=body))
+        return self._operation(
+            grant_from_spec(await self._grant_eps.grant_subunit(request=body))
+        )
 
     async def grant_eu_entity(
         self,
@@ -302,7 +429,7 @@ class AsyncPermissionsClient:
         subject_value: str,
         permissions: list[EuEntityPermissionType],
         description: str,
-    ) -> GrantPermissionsResponse:
+    ) -> AsyncPermissionOperation:
         """Grant permissions to an EU entity identified by fingerprint data.
 
         Args:
@@ -311,7 +438,7 @@ class AsyncPermissionsClient:
             description: Free-text reason for the grant.
 
         Returns:
-            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+            A handle to the asynchronous grant operation; call ``wait()`` to wait until KSeF has applied it.
         """
         body = grant_to_spec(
             GrantEuEntityPermissionsRequest(
@@ -320,7 +447,9 @@ class AsyncPermissionsClient:
                 description=description,
             )
         )
-        return grant_from_spec(await self._grant_eps.grant_eu_entity(request=body))
+        return self._operation(
+            grant_from_spec(await self._grant_eps.grant_eu_entity(request=body))
+        )
 
     async def grant_eu_entity_administration(
         self,
@@ -330,7 +459,7 @@ class AsyncPermissionsClient:
         context_value: str,
         description: str,
         eu_entity_name: str,
-    ) -> GrantPermissionsResponse:
+    ) -> AsyncPermissionOperation:
         """Grant administration rights for an EU entity in a VAT UE context.
 
         Args:
@@ -341,7 +470,7 @@ class AsyncPermissionsClient:
             eu_entity_name: Full name of the EU entity.
 
         Returns:
-            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+            A handle to the asynchronous grant operation; call ``wait()`` to wait until KSeF has applied it.
         """
         body = grant_to_spec(
             GrantEuEntityAdministrationRequest(
@@ -352,35 +481,76 @@ class AsyncPermissionsClient:
                 eu_entity_name=eu_entity_name,
             )
         )
-        return grant_from_spec(
-            await self._grant_eps.grant_administered_eu_entity(request=body)
+        return self._operation(
+            grant_from_spec(
+                await self._grant_eps.grant_administered_eu_entity(request=body)
+            )
         )
 
     async def revoke_authorization(
         self,
         *,
         permission_id: str,
-    ) -> GrantPermissionsResponse:
+    ) -> AsyncPermissionOperation:
         """Revoke an authorization permission by permission id.
 
         Args:
             permission_id: Identifier of the authorization permission, from a query result.
 
         Returns:
-            The reference of the asynchronous revoke operation; poll ``get_operation_status()`` for the result.
+            A handle to the asynchronous revoke operation; call ``wait()`` to wait until KSeF has applied it.
         """
+        return self._operation(
+            grant_from_spec(
+                await self._revoke_eps.revoke_authorization(
+                    permission_id=permission_id,
+                )
+            )
+        )
+
+    async def _revoke(self, permission_id: str) -> GrantPermissionsResponse:
         return grant_from_spec(
-            await self._revoke_eps.revoke_authorization(
+            await self._revoke_eps.revoke_person(
                 permission_id=permission_id,
             )
         )
 
-    async def revoke_common(
+    async def revoke(
         self,
         *,
         permission_id: str,
-    ) -> GrantPermissionsResponse:
+    ) -> AsyncPermissionOperation:
         """Revoke a non-authorization permission by permission id.
+
+        Use ``revoke_authorization()`` for authorization permissions such as self-invoicing.
+
+        Args:
+            permission_id: Identifier of the permission, from a query result.
+
+        Returns:
+            A handle to the asynchronous revoke operation; call ``wait()`` to wait until KSeF has applied it.
+
+        Example:
+            ```python
+            operation = await auth.permissions.revoke(permission_id=permission.id)
+            await operation.wait()
+            ```
+        """
+        return self._operation(await self._revoke(permission_id))
+
+    @deprecated(
+        "`revoke_common()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `revoke()` instead."
+    )
+    def revoke_common(
+        self,
+        *,
+        permission_id: str,
+    ) -> Coroutine[None, None, GrantPermissionsResponse]:
+        """Deprecated: revoke a non-authorization permission by permission id.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``revoke()`` instead.
 
         Args:
             permission_id: Identifier of the permission, from a query result.
@@ -388,11 +558,7 @@ class AsyncPermissionsClient:
         Returns:
             The reference of the asynchronous revoke operation; poll ``get_operation_status()`` for the result.
         """
-        return grant_from_spec(
-            await self._revoke_eps.revoke_person(
-                permission_id=permission_id,
-            )
-        )
+        return self._revoke(permission_id)
 
     async def get_attachment_permission_status(self) -> AttachmentPermissionStatus:
         """Return whether attachments are currently allowed for the subject.

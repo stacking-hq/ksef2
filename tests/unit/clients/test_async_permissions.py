@@ -36,7 +36,7 @@ class TestAsyncPermissionsClient:
             )
         )
 
-        assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         assert async_fake_transport.calls[0].method == "POST"
 
     @legacy_api
