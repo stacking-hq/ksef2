@@ -80,7 +80,7 @@ restored = FA3InvoiceBuilder.from_state(draft)
 from ksef2 import FormSchema
 
 with auth.online_session(form_code=FormSchema.FA3) as session:
-    status = session.send_invoice_and_wait(invoice_xml=xml_bytes)
+    status = session.send_invoice(xml_bytes).wait()
     print(status.ksef_number)
 ```
 

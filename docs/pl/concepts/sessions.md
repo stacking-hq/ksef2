@@ -86,12 +86,10 @@ Normalny przepływ obsługuje wysokopoziomowy serwis `auth.batch`:
 5. Wgraj wszystkie części, zamknij sesję i polluj status.
 
 ```python
-prepared = auth.batch.prepare_batch_from_paths(
-    invoice_paths=["invoice-1.xml", "invoice-2.xml"],
-)
+prepared = auth.batch.prepare([Path("invoice-1.xml"), Path("invoice-2.xml")])
 
-state = auth.batch.submit_prepared_batch(prepared_batch=prepared)
-print(state.reference_number)
+session = auth.batch.submit(prepared)
+print(session.reference_number)
 ```
 
 Dla przepływów batch zachowaj mapowanie między lokalnymi plikami źródłowymi a
@@ -114,7 +112,7 @@ wypisuj go i nie zapisuj w logach. Do audytu i wsparcia zapisuj odpowiedzi
 statusowe oraz historię sesji.
 
 ```python
-status = auth.batch.get_status(session=state.reference_number)
+status = session.get_status()
 print(
     status.status.code,
     status.invoice_count,

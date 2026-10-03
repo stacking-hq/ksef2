@@ -28,17 +28,15 @@ def run(config: ExampleConfig) -> None:
     auth = client.authentication.with_test_certificate(nip=seller_nip)
 
     with auth.online_session(form_code=FormSchema.FA3) as session:
-        result = session.send_invoice(invoice_xml=invoice_xml)
+        submission = session.send_invoice(invoice_xml)
 
-        print(f"Invoice has been sent, reference number: {result.reference_number}")
+        print(f"Invoice has been sent, reference number: {submission.reference_number}")
 
-        status = session.wait_for_invoice_ready(
-            invoice_reference_number=result.reference_number
-        )
+        status = submission.wait()
 
         if status.ksef_number:
-            downloaded_invoice = auth.invoices.wait_for_invoice_download(
-                ksef_number=status.ksef_number
+            downloaded_invoice = auth.invoices.download(
+                status.ksef_number, timeout=120.0
             )
             print(f"Downloaded invoice of size {len(downloaded_invoice)} bytes")
 

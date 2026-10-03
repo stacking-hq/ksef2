@@ -238,7 +238,7 @@ The SDK still accepts it, converts it to `max_poll_attempts` with the formula
 `with_profile()` uses (`timeout = max_poll_attempts * poll_interval`, so
 `max_poll_attempts = ceil(auth_timeout / poll_interval)`, with a default
 interval of 1 second), and emits a `DeprecationWarning`. An explicit
-`max_poll_attempts` wins. `auth_timeout` is removed in ksef2 2.0; replace it
+`max_poll_attempts` wins. `auth_timeout` is removed in ksef2 1.10.0; replace it
 with `max_poll_attempts` and optionally `poll_interval`.
 
 Any other unknown key in a profile is ignored without a warning, so tool-specific

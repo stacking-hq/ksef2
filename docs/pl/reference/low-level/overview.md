@@ -53,7 +53,7 @@ from ksef2.raw import spec, supp
 | Poziom | Co posiada SDK | Co posiada caller | Typowe wejście |
 | --- | --- | --- | --- |
 | Workflow | Kolejność endpointów, szyfrowanie, polling i mapowanie modeli. | Dane biznesowe i persystencja. | `auth.invoices`, `auth.batch`, klienci sesji. |
-| Step-level | Szczegóły protokołu dla jednego kroku workflow SDK. | Kolejność i zapis stanu między krokami. | `session.send_invoice()`, `session.wait_for_invoice_ready()`. |
+| Step-level | Szczegóły protokołu dla jednego kroku workflow SDK. | Kolejność i zapis stanu między krokami. | `session.send_invoice()`, `submission.wait()`. |
 | Low-level | Transport, parsowanie odpowiedzi, mapowanie wyjątków. | Kolejność endpointów, payloady ze schematu, obsługa szyfrowania, polling. | `client.raw`, `auth.raw`. |
 
 Główna zasada dotyczy właściciela sesji: jeśli low-level kod otwiera sesję, ten

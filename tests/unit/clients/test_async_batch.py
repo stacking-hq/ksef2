@@ -24,6 +24,7 @@ from ksef2._domain.models.batch import (
 from ksef2._domain.models.session import FormSchema
 from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import AsyncFakeTransport
+from tests.unit.helpers import legacy_api
 
 
 def _build_authenticated_client(
@@ -274,6 +275,7 @@ class TestAsyncBatchSessionClient:
             referenceNumber=state.reference_number
         )
 
+    @legacy_api
     def test_get_upo_downloads_collective_session_upo(
         self,
         async_fake_transport: AsyncFakeTransport,

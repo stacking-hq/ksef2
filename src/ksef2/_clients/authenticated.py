@@ -6,6 +6,8 @@
 from functools import cached_property
 from typing import final
 
+from typing_extensions import deprecated
+
 from ksef2._clients.batch import BatchSessionClient
 from ksef2._clients.certificates import CertificatesClient
 from ksef2._clients.collective_identifiers import (
@@ -227,7 +229,9 @@ class AuthenticatedClient:
         Returns:
             An online session client bound to the saved state.
         """
-        return OnlineSessionClient(transport=self._authed_transport, state=state)
+        return OnlineSessionClient(
+            transport=self._authed_transport, state=state, resumed=True
+        )
 
     def batch_session(
         self,
@@ -240,7 +244,7 @@ class AuthenticatedClient:
         """Open a batch session for upload work.
 
         Args:
-            prepared_batch: Prepared batch payload created by ``auth.batch.prepare_batch()``.
+            prepared_batch: Prepared batch payload created by ``auth.batch.prepare()``.
             batch_file: Declared ZIP package metadata and encrypted part metadata.
             form_code: Invoice schema declared for the batch session when ``batch_file``
                 is provided directly.
@@ -260,11 +264,12 @@ class AuthenticatedClient:
             ```python
             from ksef2.models import BatchInvoice
 
-            prepared = auth.batch.prepare_batch(
-                invoices=[BatchInvoice(file_name="invoice-1.xml", content=xml_bytes)],
+            prepared = auth.batch.prepare(
+                [BatchInvoice(file_name="invoice-1.xml", content=xml_bytes)],
             )
             with auth.batch_session(prepared_batch=prepared) as session:
                 session.upload_parts()
+            final = session.wait()
             ```
         """
         return self._open_batch_session_from_input(
@@ -351,6 +356,35 @@ class AuthenticatedClient:
             access_token=self.access_token,
         )
 
+    def _open_batch_session_with_material(
+        self,
+        *,
+        batch_file: BatchFileInfo,
+        aes_key: bytes,
+        iv: bytes,
+        encrypted_key: bytes,
+        public_key_id: str | None = None,
+        form_code: FormSchema = FormSchema.FA3,
+        offline_mode: bool = False,
+        prepared_batch: PreparedBatch | None = None,
+    ) -> BatchSessionClient:
+        return self._open_batch_session(
+            batch_file=batch_file,
+            encryption_material=SessionEncryptionMaterial(
+                aes_key=aes_key,
+                iv=iv,
+                encrypted_key=encrypted_key,
+                public_key_id=public_key_id,
+            ),
+            form_code=form_code,
+            offline_mode=offline_mode,
+            prepared_batch=prepared_batch,
+        )
+
+    @deprecated(
+        "`open_batch_session()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `raw` instead."
+    )
     def open_batch_session(
         self,
         *,
@@ -363,7 +397,10 @@ class AuthenticatedClient:
         offline_mode: bool = False,
         prepared_batch: PreparedBatch | None = None,
     ) -> BatchSessionClient:
-        """Open a batch session using caller-prepared encryption metadata.
+        """Deprecated: open a batch session using caller-prepared encryption metadata.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``auth.batch_session()`` for the standard flow, or ``raw`` for caller-supplied encryption material.
 
         Args:
             batch_file: Declared ZIP package metadata and encrypted part metadata.
@@ -382,14 +419,12 @@ class AuthenticatedClient:
         Raises:
             KSeFValidationError: If the batch session request is invalid.
         """
-        return self._open_batch_session(
+        return self._open_batch_session_with_material(
             batch_file=batch_file,
-            encryption_material=SessionEncryptionMaterial(
-                aes_key=aes_key,
-                iv=iv,
-                encrypted_key=encrypted_key,
-                public_key_id=public_key_id,
-            ),
+            aes_key=aes_key,
+            iv=iv,
+            encrypted_key=encrypted_key,
+            public_key_id=public_key_id,
             form_code=form_code,
             offline_mode=offline_mode,
             prepared_batch=prepared_batch,
@@ -412,6 +447,7 @@ class AuthenticatedClient:
             state=state,
             upload_transport=self._transfer_transport,
             access_token=self.access_token,
+            resumed=True,
         )
 
     @cached_property
@@ -445,7 +481,7 @@ class AuthenticatedClient:
             authed_transport=self._authed_transport,
             upload_transport=self._transfer_transport,
             get_encryption_key=self._get_encryption_material,
-            open_batch_session=self.open_batch_session,
+            open_batch_session=self._open_batch_session_with_material,
         )
 
     @cached_property

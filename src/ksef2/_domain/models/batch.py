@@ -296,7 +296,7 @@ class BatchSessionResumeState(BaseSessionResumeState):
     - get_aes_key_bytes(), get_iv_bytes() helper methods
 
     Deprecated:
-        The alias ``BatchSessionState`` is removed in ksef2 2.0; use ``BatchSessionResumeState``.
+        The alias ``BatchSessionState`` is removed in ksef2 1.10.0; use ``BatchSessionResumeState``.
     """
 
     part_upload_requests: list[PartUploadRequest] = Field(exclude=True, repr=False)
@@ -355,7 +355,7 @@ class BatchSessionResumeState(BaseSessionResumeState):
             warnings.warn(
                 "The `access_token` argument of "
                 "`BatchSessionResumeState.from_encoded()` is deprecated and will "
-                "be removed in ksef2 2.0; it is ignored, persist "
+                "be removed in ksef2 1.10.0; it is ignored, persist "
                 "`AuthenticationResumeState` separately instead.",
                 DeprecationWarning,
                 stacklevel=2,

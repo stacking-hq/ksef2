@@ -78,7 +78,7 @@ manager so the SDK closes the remote session when the block exits:
 from ksef2 import FormSchema
 
 with auth.online_session(form_code=FormSchema.FA3) as session:
-    status = session.send_invoice_and_wait(invoice_xml=invoice_xml)
+    status = session.send_invoice(invoice_xml).wait()
 ```
 
 When credentials live in a CLI-compatible profile, create the root client for

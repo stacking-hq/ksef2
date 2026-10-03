@@ -1,14 +1,13 @@
 """Integration tests for the online session workflow.
 
-Covers: sessions.open_online (context manager), send_invoice, download_invoice,
-get_status, list_invoices, list_failed_invoices, get_invoice_upo_by_ksef_number,
-get_invoice_upo_by_reference, resume_state, sessions.resume.
+Covers: sessions.open_online (context manager), send_invoice and its handle,
+invoices.download, get_status, list_invoices, list_failed_invoices,
+download_invoice_upo (by KSeF number and by reference), the session wait() and
+download_upo(), resume_state, sessions.resume.
 
 Run with:
     uv run pytest tests/integration/test_session_workflow.py -v -m integration
 """
-
-import time
 
 import pytest
 
@@ -24,7 +23,6 @@ from ksef2._domain.models.testdata import (
     Identifier,
     Permission,
 )
-from ksef2._endpoints.session import SessionEndpoints
 from tests.integration.conftest import KSeFCredentials
 from scripts.examples._common import example_invoice_xml
 from tests.integration.invoice_payload import invoice_seller_nip
@@ -84,12 +82,10 @@ def workflow_context(ksef_credentials: KSeFCredentials):
         )
 
         with auth.online_session(form_code=FormSchema.FA3) as session:
-            result = session.send_invoice(
-                invoice_xml=example_invoice_xml(seller_nip=seller_nip)
+            submission = session.send_invoice(
+                example_invoice_xml(seller_nip=seller_nip)
             )
-
-            # Give KSeF time to process the invoice
-            time.sleep(5)
+            status = submission.wait(timeout=90.0)
 
             invoices_list = session.list_invoices()
 
@@ -97,7 +93,9 @@ def workflow_context(ksef_credentials: KSeFCredentials):
                 "client": client,
                 "auth": auth,
                 "session": session,
-                "invoice_ref": result.reference_number,
+                "submission": submission,
+                "invoice_ref": submission.reference_number,
+                "ksef_number": status.ksef_number,
                 "invoices_list": invoices_list,
             }
 
@@ -129,55 +127,59 @@ def test_resume_state_returns_session_state(workflow_context):
 
 @pytest.mark.integration
 def test_download_invoice_returns_xml_bytes(workflow_context):
-    """download_invoice returns non-empty XML bytes."""
+    """invoices.download polls until the invoice is available and returns XML bytes."""
     from ksef2._clients.authenticated import AuthenticatedClient
 
     auth: AuthenticatedClient = workflow_context["auth"]
-    invoices_list = workflow_context["invoices_list"]
+    ksef_number = workflow_context["ksef_number"]
 
-    if not invoices_list.invoices or not invoices_list.invoices[0].ksef_number:
-        pytest.skip("No processed invoice with ksef_number available")
-
-    ksef_number = invoices_list.invoices[0].ksef_number
-    xml_bytes = auth.invoices.wait_for_invoice_download(ksef_number=ksef_number)
+    xml_bytes = auth.invoices.download(ksef_number, timeout=120.0)
 
     assert isinstance(xml_bytes, bytes)
     assert len(xml_bytes) > 0
 
 
 # ---------------------------------------------------------------------------
-# get_invoice_upo_by_ksef_number
+# download_invoice_upo
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.integration
-def test_get_invoice_upo_by_ksef_number(workflow_context):
+def test_download_invoice_upo_by_ksef_number(workflow_context):
     """UPO by KSeF number returns non-empty bytes."""
     session: OnlineSessionClient = workflow_context["session"]
-    invoices_list = workflow_context["invoices_list"]
+    ksef_number = workflow_context["ksef_number"]
 
-    if not invoices_list.invoices or not invoices_list.invoices[0].ksef_number:
-        pytest.skip("No processed invoice with ksef_number available")
-
-    ksef_number = invoices_list.invoices[0].ksef_number
-    upo = session.get_invoice_upo_by_ksef_number(ksef_number=ksef_number)
+    upo = session.download_invoice_upo(ksef_number=ksef_number)
 
     assert isinstance(upo, bytes)
     assert len(upo) > 0
 
 
 # ---------------------------------------------------------------------------
-# get_invoice_upo_by_reference
+# download_invoice_upo by reference, and the handle
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.integration
-def test_get_invoice_upo_by_reference(workflow_context):
+def test_download_invoice_upo_by_reference(workflow_context):
     """UPO by invoice reference number returns non-empty bytes."""
     session: OnlineSessionClient = workflow_context["session"]
     invoice_ref = workflow_context["invoice_ref"]
 
-    upo = session.get_invoice_upo_by_reference(invoice_reference_number=invoice_ref)
+    upo = session.download_invoice_upo(reference_number=invoice_ref)
+
+    assert isinstance(upo, bytes)
+    assert len(upo) > 0
+
+
+@pytest.mark.integration
+def test_submission_handle_downloads_its_upo(workflow_context):
+    """The send_invoice handle exposes the reference number and downloads the UPO."""
+    submission = workflow_context["submission"]
+
+    assert submission.reference_number == workflow_context["invoice_ref"]
+    upo = submission.download_upo()
 
     assert isinstance(upo, bytes)
     assert len(upo) > 0
@@ -260,29 +262,23 @@ def test_get_session_upo_by_reference(ksef_credentials: KSeFCredentials):
         )
 
         with auth.online_session(form_code=FormSchema.FA3) as session:
-            _ = session.send_invoice(
-                invoice_xml=example_invoice_xml(seller_nip=seller_nip)
-            )
+            _ = session.send_invoice(example_invoice_xml(seller_nip=seller_nip))
             state = session.resume_state()
 
-        resumed = auth.resume_online_session(state=state)
-
-        deadline = time.monotonic() + 90.0
-        status = resumed.get_status()
-        while (
-            status.upo is None or not status.upo.pages
-        ) and time.monotonic() < deadline:
-            time.sleep(2.0)
-            status = resumed.get_status()
-
+        # The session is closed here, so wait() returns its terminal status.
+        status = session.wait(timeout=90.0)
         assert status.upo is not None
         assert status.upo.pages
 
-        upo_reference_number = status.upo.pages[0].reference_number
-        upo_xml = SessionEndpoints(auth._authed_transport).get_session_upo(
-            state.reference_number,
-            upo_reference_number,
-        )
+        upo_pages = session.download_upo()
+
+        assert len(upo_pages) == len(status.upo.pages)
+        assert all(isinstance(page, bytes) and page for page in upo_pages)
+
+        # A resumed session client waits without having closed the session itself.
+        resumed = auth.resume_online_session(state=state)
+        assert resumed.wait(timeout=90.0).status.code == 200
+        upo_xml = resumed.download_upo()[0]
 
         assert isinstance(upo_xml, bytes)
         assert len(upo_xml) > 0

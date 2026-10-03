@@ -53,7 +53,7 @@ from ksef2.raw import spec, supp
 | Level | SDK owns | Caller owns | Typical entry point |
 | --- | --- | --- | --- |
 | Workflow | Endpoint order, encryption, polling, and model mapping. | Business inputs and persistence. | `auth.invoices`, `auth.batch`, session clients. |
-| Step-level | Protocol details for one SDK workflow step. | Ordering and persistence between steps. | `session.send_invoice()`, `session.wait_for_invoice_ready()`. |
+| Step-level | Protocol details for one SDK workflow step. | Ordering and persistence between steps. | `session.send_invoice()`, `submission.wait()`. |
 | Low-level | Transport, response parsing, exception mapping. | Endpoint order, schema-native payloads, encryption custody, polling. | `client.raw`, `auth.raw`. |
 
 The main ownership rule is session consistency: if low-level code opens a

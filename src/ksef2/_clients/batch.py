@@ -10,6 +10,7 @@ from typing_extensions import deprecated
 
 from ksef2._core import exceptions
 from ksef2._core.external_transfer import ExternalTransferClient
+from ksef2._core.polling import poll_until
 from ksef2._core.protocols import Middleware
 from ksef2._domain.models import BatchSessionResumeState
 from ksef2._domain.models.batch import PartUploadRequest, PreparedBatch
@@ -46,6 +47,7 @@ class BatchSessionClient:
         upload_transport: Middleware | None = None,
         prepared_batch: PreparedBatch | None = None,
         access_token: str | None = None,
+        resumed: bool = False,
     ) -> None:
         """Create the session client.
 
@@ -55,6 +57,7 @@ class BatchSessionClient:
             upload_transport: Middleware used to upload parts to the presigned URLs; defaults to ``transport``.
             prepared_batch: Prepared batch whose parts ``upload_parts()`` uploads; ``None`` for a resumed session without payload.
             access_token: Bearer token, kept only for the deprecated ``access_token`` accessor.
+            resumed: Whether the client was rebuilt from saved state. A resumed client cannot tell whether the session is still open, so ``wait()`` does not refuse to run on it.
         """
         self._transport = transport
         self._external_transfers = ExternalTransferClient(upload_transport or transport)
@@ -64,6 +67,7 @@ class BatchSessionClient:
         self._invoice_eps = InvoicesEndpoints(transport)
         self._session_eps = SessionEndpoints(transport)
         self._closed = False
+        self._resumed = resumed
 
     def _ensure_open(self) -> None:
         if self._closed:
@@ -81,13 +85,13 @@ class BatchSessionClient:
     @property
     @deprecated(
         "`BatchSessionClient.access_token` is deprecated and will be removed in "
-        "ksef2 2.0; use `AuthenticatedClient.access_token` instead."
+        "ksef2 1.10.0; use `AuthenticatedClient.access_token` instead."
     )
     def access_token(self) -> str:
         """Deprecated compatibility accessor for the current bearer token.
 
         Deprecated:
-            Will be removed in ksef2 2.0. Use ``AuthenticatedClient.access_token`` instead.
+            Will be removed in ksef2 1.10.0. Use ``AuthenticatedClient.access_token`` instead.
 
         Returns:
             The bearer access token the session was opened with.
@@ -142,14 +146,14 @@ class BatchSessionClient:
         return self._state
 
     @deprecated(
-        "`get_state()` is deprecated and will be removed in ksef2 2.0; "
+        "`get_state()` is deprecated and will be removed in ksef2 1.10.0; "
         "use `resume_state()` instead."
     )
     def get_state(self) -> BatchSessionResumeState:
         """Deprecated compatibility wrapper for ``resume_state()``.
 
         Deprecated:
-            Will be removed in ksef2 2.0. Use ``resume_state()`` instead.
+            Will be removed in ksef2 1.10.0. Use ``resume_state()`` instead.
 
         Returns:
             The same state as ``resume_state()``.
@@ -214,8 +218,15 @@ class BatchSessionClient:
             )
         )
 
+    @deprecated(
+        "`get_upo()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `download_upo()` instead."
+    )
     def get_upo(self, *, upo_reference_number: str) -> bytes:
-        """Download the collective UPO for the batch session.
+        """Deprecated: download one page of the collective UPO for the batch session.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``download_upo()`` instead.
 
         Args:
             upo_reference_number: Reference number of the UPO, taken from the session status.
@@ -227,6 +238,82 @@ class BatchSessionClient:
             reference_number=self._state.reference_number,
             upo_reference_number=upo_reference_number,
         )
+
+    def wait(
+        self,
+        *,
+        timeout: float = 120.0,
+        poll_interval: float = 2.0,
+    ) -> SessionStatusResponse:
+        """Poll until KSeF reports a terminal status for the closed batch session.
+
+        KSeF processes the batch after the session is closed, so call this after
+        ``auth.batch.submit()`` or after leaving the ``with`` block of a batch session.
+
+        Args:
+            timeout: Maximum number of seconds to wait before giving up.
+            poll_interval: Delay in seconds between session status checks.
+
+        Returns:
+            The final successful session status, including the session UPO references.
+
+        Raises:
+            KSeFSessionError: If the session is still open, or if batch processing reaches a failed terminal status.
+            KSeFBatchSessionTimeoutError: If polling exceeds ``timeout``.
+        """
+        if not self._closed and not self._resumed:
+            raise exceptions.KSeFSessionError(
+                f"Batch session {self.reference_number} is still open. "
+                "Close the session before calling `wait()`: upload the parts and "
+                "leave the `with` block, or use `auth.batch.submit()`."
+            )
+
+        def _poll() -> SessionStatusResponse:
+            status = self.get_status()
+            if status.status.code >= 400:
+                raise exceptions.KSeFSessionError(
+                    "Batch session processing failed: "
+                    f"{self.reference_number} ({status.status.code}: {status.status.description})"
+                )
+            return status
+
+        return poll_until(
+            operation=_poll,
+            retry_predicate=lambda status: status.status.code < 200,
+            poll_interval=poll_interval,
+            timeout_seconds=timeout,
+            timeout_error_factory=lambda: exceptions.KSeFBatchSessionTimeoutError(
+                reference_number=self.reference_number,
+                timeout=timeout,
+            ),
+        )
+
+    def download_upo(self) -> list[bytes]:
+        """Download every page of the collective UPO for the batch session.
+
+        Resolves the UPO page references from the session status, so you do not
+        look them up yourself. Call it after ``wait()``.
+
+        Returns:
+            The XML bytes of each UPO page, in order; empty if KSeF issued no UPO because no invoice was accepted.
+
+        Raises:
+            KSeFSessionError: If KSeF has not finished processing the session yet.
+        """
+        status = self.get_status()
+        if status.status.code < 200:
+            raise exceptions.KSeFSessionError(
+                f"Batch session {self.reference_number} is not processed yet. "
+                "Call `wait()` first."
+            )
+        pages = status.upo.pages if status.upo else []
+        return [
+            self._session_eps.get_session_upo(
+                reference_number=self._state.reference_number,
+                upo_reference_number=page.reference_number,
+            )
+            for page in pages
+        ]
 
     def upload_parts(self) -> None:
         """Upload the prepared batch parts using the session's presigned URLs.
@@ -244,7 +331,7 @@ class BatchSessionClient:
             raise exceptions.KSeFValidationError(
                 "Batch session has no prepared batch attached. "
                 "Open it through auth.batch_session(prepared_batch=...) "
-                "or auth.batch.open_session(prepared_batch=...)."
+                "or send the batch with auth.batch.submit()."
             )
 
         upload_requests = {

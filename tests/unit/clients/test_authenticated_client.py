@@ -32,7 +32,7 @@ from ksef2._services.batch import BatchService
 from ksef2._services.invoices import InvoicesService
 from tests.unit.conftest import _TOKEN
 from tests.unit.fakes.transport import FakeTransport
-from tests.unit.helpers import VALID_PUBLIC_KEY_ID
+from tests.unit.helpers import VALID_PUBLIC_KEY_ID, legacy_api
 from ksef2._core.crypto import sha256_b64
 
 
@@ -434,6 +434,7 @@ class TestEncryptionAndSessions:
         with pytest.deprecated_call(match="BatchSessionClient.access_token"):
             assert batch_client.access_token == _TOKEN
 
+    @legacy_api
     def test_open_batch_session_uses_supplied_encryption_material(
         self,
         fake_transport: FakeTransport,

@@ -6,8 +6,8 @@ Prerequisites:
 What it demonstrates:
 - preparing multiple FA(3) invoices in memory, each with its own invoice number,
   because KSeF rejects a repeated number from one seller with 440 Duplikat faktury
-- submitting a batch with `auth.batch.submit_batch()`
-- polling until the batch session completes
+- submitting a batch with `auth.batch.submit()`
+- waiting until the batch session completes
 - listing processed invoices and downloading the collective UPO
 """
 
@@ -36,14 +36,10 @@ def run(config: ExampleConfig) -> None:
         count=config.invoice_count,
     )
 
-    state = auth.batch.submit_batch(
-        invoices=invoices,
-        form_code=FormSchema.FA3,
-    )
-    print(f"Submitted batch session: {state.reference_number}")
+    session = auth.batch.submit(invoices, form_code=FormSchema.FA3)
+    print(f"Submitted batch session: {session.reference_number}")
 
-    status = auth.batch.wait_for_completion(
-        session=state,
+    status = session.wait(
         timeout=config.status_timeout,
         poll_interval=config.poll_interval,
     )
@@ -57,7 +53,7 @@ def run(config: ExampleConfig) -> None:
     if status.failed_invoice_count:
         print("Batch completed with failed invoices; inspect the status output.")
 
-    invoices_page = auth.batch.list_invoices(session=state)
+    invoices_page = session.list_invoices()
     for invoice in invoices_page.invoices:
         print(
             "Invoice result: "
@@ -66,16 +62,8 @@ def run(config: ExampleConfig) -> None:
             f"status={invoice.status.code} {invoice.status.description}"
         )
 
-    if status.upo and status.upo.pages:
-        for upo_page in status.upo.pages:
-            upo_xml = auth.batch.get_upo(
-                session=state,
-                upo_reference_number=upo_page.reference_number,
-            )
-            print(
-                "Downloaded collective UPO page "
-                f"{upo_page.reference_number} of size {len(upo_xml)} bytes"
-            )
+    for number, upo_xml in enumerate(session.download_upo(), start=1):
+        print(f"Downloaded collective UPO page {number} of size {len(upo_xml)} bytes")
 
 
 def main() -> int:

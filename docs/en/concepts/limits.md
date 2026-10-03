@@ -48,9 +48,8 @@ limit overrides inside ordinary invoice processing code.
 ## Polling deadlines
 
 Many KSeF workflows are asynchronous. The SDK provides helpers such as
-`send_invoice_and_wait()`, `wait_for_invoice_ready()`,
-`wait_for_export_package()`, `wait_for_invoice_download()`, and token activation
-polling.
+`.wait()` on invoice submissions, sessions, export jobs and `search()` results,
+`download(..., timeout=...)`, and token activation polling.
 
 Those helper timeouts are workflow wait limits. They are not the same as HTTP
 socket timeouts. A polling timeout means the expected KSeF state was not reached
