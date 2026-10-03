@@ -15,7 +15,7 @@ from ksef2._domain.models.session import FormSchema
 from ksef2._infra.mappers.invoices import to_spec
 from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import AsyncFakeTransport
-from tests.unit.helpers import VALID_PUBLIC_KEY_ID
+from tests.unit.helpers import VALID_PUBLIC_KEY_ID, legacy_api
 
 
 def _with_metadata_page_state(
@@ -283,6 +283,7 @@ class TestAsyncInvoicesClient:
 
 
 class TestAsyncAuthenticatedInvoicesService:
+    @legacy_api
     def test_query_metadata_uses_bearer_transport(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -311,6 +312,7 @@ class TestAsyncAuthenticatedInvoicesService:
         "ksef2._clients.async_invoices.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
     )
+    @legacy_api
     def test_schedule_export_loads_certificates_when_store_empty(
         self,
         _mock_generate_session_key: MagicMock,

@@ -3,10 +3,19 @@
 
 """High-level invoice workflow service."""
 
-from collections.abc import Callable, Iterator
+from collections.abc import (
+    Callable,
+    Generator,
+    Iterator,
+)
 from pathlib import Path
-from typing import final
+from typing import final, override
 
+from typing_extensions import deprecated
+
+from ksef2._clients._handles import OperationHandle
+from ksef2._clients._pager import Pager
+from ksef2._clients.exported_invoices import ExportedInvoices
 from ksef2._clients.invoices import InvoicesClient
 from ksef2._core import exceptions
 from ksef2._core.crypto import decrypt_aes_cbc
@@ -21,6 +30,7 @@ from ksef2._domain.models.invoices import (
     InvoiceMetadata,
     InvoicePackage,
     InvoicesFilter,
+    PackagePart,
     QueryInvoicesMetadataResponse,
 )
 from ksef2._domain.models.pagination import InvoiceMetadataParams
@@ -28,6 +38,100 @@ from ksef2._logging import get_logger
 from ksef2._services.export_parts import safe_part_filename
 
 logger = get_logger(__name__)
+
+
+@final
+class ExportJob(OperationHandle[InvoiceExportStatusResponse, ExportedInvoices]):
+    """Handle to a scheduled invoice export.
+
+    Returned by ``auth.invoices.export()``. ``wait()`` polls until KSeF has built
+    the package, then downloads, decrypts and joins its parts into an
+    ``ExportedInvoices`` result. The handle holds the keys needed to decrypt the
+    package, so keep it in memory only.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
+    """
+
+    def __init__(
+        self,
+        reference_number: str,
+        *,
+        get_status: Callable[[], InvoiceExportStatusResponse],
+        download_parts: Callable[[InvoicePackage], list[bytes]],
+    ) -> None:
+        """Create the handle.
+
+        Args:
+            reference_number: Reference number of the export.
+            get_status: Coroutine function returning the current export status.
+            download_parts: Coroutine function that downloads and decrypts every part of a package, in order.
+        """
+        super().__init__(reference_number)
+        self._get_status = get_status
+        self._download_parts = download_parts
+
+    @override
+    def get_status(self) -> InvoiceExportStatusResponse:
+        """Fetch the export's current status without waiting.
+
+        Returns:
+            The export status, with package metadata once the export is ready.
+        """
+        return self._get_status()
+
+    @override
+    def _is_pending(self, status: InvoiceExportStatusResponse) -> bool:
+        return status.status.code < 200
+
+    @override
+    def _check_status(self, status: InvoiceExportStatusResponse) -> None:
+        if status.status.code >= 210:
+            raise exceptions.KSeFExportFailedError(
+                reference_number=self.reference_number,
+                status_code=status.status.code,
+                description=status.status.description,
+                details=status.status.details,
+            )
+
+    @override
+    def _timeout_error(self, timeout: float) -> BaseException:
+        return exceptions.KSeFExportTimeoutError(
+            reference_number=self.reference_number,
+            timeout=timeout,
+        )
+
+    @override
+    def _finish(self, status: InvoiceExportStatusResponse) -> ExportedInvoices:
+        package = status.package
+        parts = self._download_parts(package) if package else []
+        return ExportedInvoices(parts, package=package)
+
+    def wait(
+        self,
+        *,
+        timeout: float = 120.0,
+        poll_interval: float = 2.0,
+    ) -> ExportedInvoices:
+        """Poll until the export is ready, then download and decrypt the package.
+
+        Args:
+            timeout: Maximum number of seconds to wait for the export to become ready.
+            poll_interval: Delay in seconds between export status checks.
+
+        Returns:
+            The decrypted package: iterate ``invoices()``, read ``metadata`` or ``save()`` it to disk.
+
+        Raises:
+            KSeFExportFailedError: If KSeF reports that the export failed, was cancelled or expired.
+            KSeFExportTimeoutError: If polling exceeds ``timeout``.
+            KSeFEncryptionError: If a downloaded package part cannot be decrypted.
+            KSeFExternalTransferError: If external storage rejects a part download or
+                its outcome cannot be determined.
+        """
+        return self._wait(timeout, poll_interval)
 
 
 @final
@@ -74,13 +178,147 @@ class InvoicesService:
     def _noop(self) -> None:
         return None
 
+    def search(
+        self,
+        filters: InvoicesFilter,
+        params: InvoiceMetadataParams | None = None,
+    ) -> Pager[InvoiceMetadata]:
+        """Search invoice metadata, following KSeF page and truncation mechanics.
+
+        Nothing is requested until the result is consumed. Iterate it for every
+        matching invoice, call ``pages()`` for page-sized lists, ``first_page()``
+        for one request only, or ``wait()`` to poll until KSeF has indexed at
+        least one matching invoice.
+
+        Args:
+            filters: Criteria selecting the invoices.
+            params: Page size and sort order; defaults are used when ``None``.
+
+        Returns:
+            A paging object over the metadata of matching invoices.
+
+        Raises:
+            KSeFMetadataPaginationError: If KSeF returns inconsistent pagination
+                boundaries while paging.
+
+        Example:
+            ```python
+            from ksef2.models import InvoicesFilter
+
+            filters = InvoicesFilter.for_seller(date_from="2026-01-01T00:00:00+01:00")
+            for invoice in auth.invoices.search(filters):
+                print(invoice.ksef_number, invoice.gross_amount)
+            ```
+        """
+
+        def _pages() -> Generator[list[InvoiceMetadata], None]:
+            for page in self._client.query_metadata_pages(
+                filters=filters,
+                params=params,
+            ):
+                yield list(page.invoices)
+
+        return Pager(
+            _pages,
+            timeout_error=lambda timeout: exceptions.KSeFInvoiceQueryTimeoutError(
+                timeout=timeout
+            ),
+        )
+
+    def download(
+        self,
+        ksef_number: str,
+        *,
+        timeout: float | None = None,
+        poll_interval: float = 2.0,
+    ) -> bytes:
+        """Download one processed invoice by KSeF number.
+
+        Args:
+            ksef_number: KSeF number of the invoice.
+            timeout: Seconds to keep polling while KSeF has not made the invoice available yet; ``None`` tries once.
+            poll_interval: Delay in seconds between download attempts when ``timeout`` is set.
+
+        Returns:
+            The invoice XML as bytes.
+
+        Raises:
+            KSeFApiError: If KSeF rejects the download, for example because the invoice is not processed yet and ``timeout`` is ``None``.
+            KSeFInvoiceDownloadTimeoutError: If ``timeout`` is set and polling exceeds it.
+
+        Example:
+            ```python
+            xml = auth.invoices.download(ksef_number, timeout=60)
+            ```
+        """
+        if timeout is None:
+            return self._client.download_invoice(ksef_number=ksef_number)
+        return self._poll_download(
+            ksef_number=ksef_number,
+            timeout=timeout,
+            poll_interval=poll_interval,
+        )
+
+    def export(
+        self,
+        filters: InvoicesFilter,
+        *,
+        only_metadata: bool = False,
+        compression_type: CompressionType | str | None = None,
+    ) -> ExportJob:
+        """Schedule an encrypted invoice export.
+
+        Args:
+            filters: Criteria selecting the invoices to export.
+            only_metadata: Export only invoice metadata instead of full invoice XML.
+            compression_type: Compression applied to the package; ``None`` for the server default.
+
+        Returns:
+            A handle to the export. Call its ``wait()`` to download the decrypted package.
+
+        Raises:
+            NoCertificateAvailableError: If no valid symmetric-key certificate is
+                available.
+            KSeFEncryptionError: If export key encryption fails.
+
+        Example:
+            ```python
+            job = auth.invoices.export(filters)
+            package = job.wait()
+            package.save("out/")
+            ```
+        """
+        handle = self._schedule_export(
+            filters=filters,
+            only_metadata=only_metadata,
+            compression_type=compression_type,
+        )
+
+        def _download_parts(package: InvoicePackage) -> list[bytes]:
+            return self._download_package_parts(package=package, export=handle)
+
+        return ExportJob(
+            handle.reference_number,
+            get_status=lambda: self._client.get_export_status(
+                reference_number=handle.reference_number
+            ),
+            download_parts=_download_parts,
+        )
+
+    @deprecated(
+        "`query_metadata()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `search()` instead."
+    )
     def query_metadata(
         self,
         *,
         filters: InvoicesFilter,
         params: InvoiceMetadataParams | None = None,
     ) -> QueryInvoicesMetadataResponse:
-        """Fetch one invoice metadata page matching the provided filters.
+        """Deprecated: fetch one invoice metadata page matching the provided filters.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``search()`` instead; ``first_page()`` fetches one page.
 
         Args:
             filters: Criteria selecting the invoices.
@@ -91,13 +329,20 @@ class InvoicesService:
         """
         return self._client.query_metadata(filters=filters, params=params)
 
+    @deprecated(
+        "`query_metadata_pages()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `search()` instead."
+    )
     def query_metadata_pages(
         self,
         *,
         filters: InvoicesFilter,
         params: InvoiceMetadataParams | None = None,
     ) -> Iterator[QueryInvoicesMetadataResponse]:
-        """Fetch metadata pages, following KSeF page and truncation mechanics.
+        """Deprecated: fetch metadata pages, following KSeF page and truncation mechanics.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``search().pages()`` instead.
 
         Args:
             filters: Criteria selecting the invoices.
@@ -116,13 +361,20 @@ class InvoicesService:
         ):
             yield page
 
+    @deprecated(
+        "`all_metadata()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `search()` instead."
+    )
     def all_metadata(
         self,
         *,
         filters: InvoicesFilter,
         params: InvoiceMetadataParams | None = None,
     ) -> Iterator[InvoiceMetadata]:
-        """Iterate over all invoice metadata items matching the provided filters.
+        """Deprecated: iterate over all invoice metadata items matching the provided filters.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``search()`` instead.
 
         Args:
             filters: Criteria selecting the invoices.
@@ -138,8 +390,15 @@ class InvoicesService:
         for invoice in self._client.all_metadata(filters=filters, params=params):
             yield invoice
 
+    @deprecated(
+        "`download_invoice()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `download()` instead."
+    )
     def download_invoice(self, *, ksef_number: str) -> bytes:
-        """Download one processed invoice by KSeF number.
+        """Deprecated: download one processed invoice by KSeF number.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``download()`` instead.
 
         Args:
             ksef_number: KSeF number of the invoice.
@@ -149,6 +408,10 @@ class InvoicesService:
         """
         return self._client.download_invoice(ksef_number=ksef_number)
 
+    @deprecated(
+        "`wait_for_invoice_download()` is deprecated and will be removed in "
+        "ksef2 1.10.0; use `download()` instead."
+    )
     def wait_for_invoice_download(
         self,
         *,
@@ -156,7 +419,10 @@ class InvoicesService:
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> bytes:
-        """Poll until KSeF makes a processed invoice available for download.
+        """Deprecated: poll until KSeF makes a processed invoice available for download.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``download(ksef_number, timeout=...)`` instead.
 
         Args:
             ksef_number: KSeF number of the invoice.
@@ -169,10 +435,22 @@ class InvoicesService:
         Raises:
             KSeFInvoiceDownloadTimeoutError: If polling exceeds ``timeout``.
         """
+        return self._poll_download(
+            ksef_number=ksef_number,
+            timeout=timeout,
+            poll_interval=poll_interval,
+        )
 
+    def _poll_download(
+        self,
+        *,
+        ksef_number: str,
+        timeout: float,
+        poll_interval: float,
+    ) -> bytes:
         def _poll() -> bytes | None:
             try:
-                return self.download_invoice(ksef_number=ksef_number)
+                return self._client.download_invoice(ksef_number=ksef_number)
             except exceptions.KSeFApiError as exc:
                 if (
                     exc.status_code == 400
@@ -194,6 +472,10 @@ class InvoicesService:
         assert result is not None
         return result
 
+    @deprecated(
+        "`schedule_export()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `export()` instead."
+    )
     def schedule_export(
         self,
         *,
@@ -201,7 +483,10 @@ class InvoicesService:
         only_metadata: bool = False,
         compression_type: CompressionType | str | None = None,
     ) -> ExportHandle:
-        """Schedule an encrypted invoice export.
+        """Deprecated: schedule an encrypted invoice export.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``export()`` instead.
 
         Args:
             filters: Criteria selecting the invoices to export.
@@ -215,16 +500,20 @@ class InvoicesService:
             NoCertificateAvailableError: If no valid symmetric-key certificate is
                 available.
             KSeFEncryptionError: If export key encryption fails.
-
-        Example:
-            ```python
-            handle = auth.invoices.schedule_export(filters=filters)
-            package = auth.invoices.wait_for_export_package(
-                reference_number=handle.reference_number,
-            )
-            parts = auth.invoices.fetch_package_bytes(package=package, export=handle)
-            ```
         """
+        return self._schedule_export(
+            filters=filters,
+            only_metadata=only_metadata,
+            compression_type=compression_type,
+        )
+
+    def _schedule_export(
+        self,
+        *,
+        filters: InvoicesFilter,
+        only_metadata: bool,
+        compression_type: CompressionType | str | None,
+    ) -> ExportHandle:
         self._ensure_encryption_certificates_loaded()
         cert = self._certificate_store.get_valid("symmetric_key_encryption")
         return self._client.schedule_export(
@@ -235,12 +524,19 @@ class InvoicesService:
             compression_type=compression_type,
         )
 
+    @deprecated(
+        "`get_export_status()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `export()` instead."
+    )
     def get_export_status(
         self,
         *,
         reference_number: str,
     ) -> InvoiceExportStatusResponse:
-        """Fetch the current status for a scheduled invoice export.
+        """Deprecated: fetch the current status for a scheduled invoice export.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``export()`` and ``ExportJob.get_status()`` instead.
 
         Args:
             reference_number: Reference number of the export, from ``ExportHandle.reference_number``.
@@ -250,14 +546,21 @@ class InvoicesService:
         """
         return self._client.get_export_status(reference_number=reference_number)
 
+    @deprecated(
+        "`fetch_package()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `export().wait()` instead."
+    )
     def fetch_package(
         self,
         *,
         package: InvoicePackage,
         export: ExportHandle,
-        target_directory: Path | str = Path("."),
+        target_directory: Path | str = ".",
     ) -> list[Path]:
-        """Download and decrypt all parts of an export package to disk.
+        """Deprecated: download and decrypt all parts of an export package to disk.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``export().wait()`` and ``ExportedInvoices.save()`` instead.
 
         Args:
             package: Package metadata from the export status.
@@ -274,29 +577,24 @@ class InvoicesService:
             KSeFExternalTransferError: If external storage rejects a part download or
                 its outcome cannot be determined.
         """
+        return self._fetch_package(
+            package=package, export=export, target_directory=target_directory
+        )
+
+    def _fetch_package(
+        self,
+        *,
+        package: InvoicePackage,
+        export: ExportHandle,
+        target_directory: Path | str = ".",
+    ) -> list[Path]:
         target_path = Path(target_directory)
         target_path.mkdir(parents=True, exist_ok=True)
 
         saved_files: list[Path] = []
 
-        for part in package.parts:
-            logger.info(
-                "Downloading export package part",
-                part_name=part.part_name,
-                part_ordinal=part.ordinal_number,
-                reference_number=export.reference_number,
-            )
-            encrypted_part = self._external_transfers.download_part(
-                url=str(part.url),
-                reference_number=export.reference_number,
-                part_ordinal=part.ordinal_number,
-            )
-
-            zip_data = decrypt_aes_cbc(
-                encrypted_part,
-                key=export.aes_key,
-                iv=export.iv,
-            )
+        for part in sorted(package.parts, key=lambda part: part.ordinal_number):
+            zip_data = self._download_part(part=part, export=export)
 
             output_filename = safe_part_filename(part.part_name)
             output_file = target_path / output_filename
@@ -311,13 +609,20 @@ class InvoicesService:
 
         return saved_files
 
+    @deprecated(
+        "`fetch_package_bytes()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `export().wait()` instead."
+    )
     def fetch_package_bytes(
         self,
         *,
         package: InvoicePackage,
         export: ExportHandle,
     ) -> list[bytes]:
-        """Download and decrypt all parts of an export package in memory.
+        """Deprecated: download and decrypt all parts of an export package in memory.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``export().wait()`` and ``ExportedInvoices.archive`` instead.
 
         Args:
             package: Package metadata from the export status.
@@ -331,28 +636,41 @@ class InvoicesService:
             KSeFExternalTransferError: If external storage rejects a part download or
                 its outcome cannot be determined.
         """
-        result: list[bytes] = []
-        for part in package.parts:
-            logger.info(
-                "Downloading export package part",
-                part_name=part.part_name,
-                part_ordinal=part.ordinal_number,
-                reference_number=export.reference_number,
-            )
-            encrypted_part = self._external_transfers.download_part(
-                url=str(part.url),
-                reference_number=export.reference_number,
-                part_ordinal=part.ordinal_number,
-            )
-            result.append(
-                decrypt_aes_cbc(
-                    encrypted_part,
-                    key=export.aes_key,
-                    iv=export.iv,
-                )
-            )
-        return result
+        return self._download_package_parts(package=package, export=export)
 
+    def _download_package_parts(
+        self,
+        *,
+        package: InvoicePackage,
+        export: ExportHandle,
+    ) -> list[bytes]:
+        return [
+            self._download_part(part=part, export=export)
+            for part in sorted(package.parts, key=lambda part: part.ordinal_number)
+        ]
+
+    def _download_part(self, *, part: PackagePart, export: ExportHandle) -> bytes:
+        logger.info(  # pyright: ignore[reportAny]
+            "Downloading export package part",
+            part_name=part.part_name,
+            part_ordinal=part.ordinal_number,
+            reference_number=export.reference_number,
+        )
+        encrypted_part = self._external_transfers.download_part(
+            url=str(part.url),
+            reference_number=export.reference_number,
+            part_ordinal=part.ordinal_number,
+        )
+        return decrypt_aes_cbc(
+            encrypted_part,
+            key=export.aes_key,
+            iv=export.iv,
+        )
+
+    @deprecated(
+        "`wait_for_invoices()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `search().wait()` instead."
+    )
     def wait_for_invoices(
         self,
         *,
@@ -360,7 +678,10 @@ class InvoicesService:
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> QueryInvoicesMetadataResponse:
-        """Poll invoice metadata until at least one invoice matches the filters.
+        """Deprecated: poll invoice metadata until at least one invoice matches the filters.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``search(filters).wait()`` instead.
 
         Args:
             filters: Criteria selecting the invoices.
@@ -374,7 +695,7 @@ class InvoicesService:
             KSeFInvoiceQueryTimeoutError: If polling exceeds ``timeout``.
         """
         return poll_until(
-            operation=lambda: self.query_metadata(filters=filters),
+            operation=lambda: self._client.query_metadata(filters=filters),
             retry_predicate=lambda result: not result.invoices,
             poll_interval=poll_interval,
             timeout_seconds=timeout,
@@ -383,6 +704,10 @@ class InvoicesService:
             ),
         )
 
+    @deprecated(
+        "`wait_for_export_package()` is deprecated and will be removed in "
+        "ksef2 1.10.0; use `export().wait()` instead."
+    )
     def wait_for_export_package(
         self,
         *,
@@ -390,7 +715,10 @@ class InvoicesService:
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> InvoicePackage:
-        """Poll export status until KSeF exposes a downloadable package.
+        """Deprecated: poll export status until KSeF exposes a downloadable package.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``export().wait()`` instead.
 
         Args:
             reference_number: Reference number of the export, from ``ExportHandle.reference_number``.
@@ -403,8 +731,23 @@ class InvoicesService:
         Raises:
             KSeFExportTimeoutError: If polling exceeds ``timeout``.
         """
+        return self._wait_for_export_package(
+            reference_number=reference_number,
+            timeout=timeout,
+            poll_interval=poll_interval,
+        )
+
+    def _wait_for_export_package(
+        self,
+        *,
+        reference_number: str,
+        timeout: float = 120.0,
+        poll_interval: float = 2.0,
+    ) -> InvoicePackage:
         status = poll_until(
-            operation=lambda: self.get_export_status(reference_number=reference_number),
+            operation=lambda: self._client.get_export_status(
+                reference_number=reference_number
+            ),
             retry_predicate=lambda status: (
                 not (status.package and status.package.parts)
             ),
@@ -418,6 +761,10 @@ class InvoicesService:
         assert status.package is not None
         return status.package
 
+    @deprecated(
+        "`export_and_download()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `export().wait()` instead."
+    )
     def export_and_download(
         self,
         *,
@@ -427,7 +774,10 @@ class InvoicesService:
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> list[bytes]:
-        """Schedule an export, wait for it, and download the decrypted package.
+        """Deprecated: schedule an export, wait for it, and download the decrypted package.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``export().wait()`` instead; ``ExportedInvoices.archive`` is the joined ZIP.
 
         Args:
             filters: Criteria selecting the invoices to export.
@@ -446,24 +796,42 @@ class InvoicesService:
             KSeFExportTimeoutError: If polling exceeds ``timeout``.
             KSeFExternalTransferError: If external storage rejects a part download or
                 its outcome cannot be determined.
-
-        Example:
-            ```python
-            from ksef2.models import InvoicesFilter
-
-            parts = auth.invoices.export_and_download(
-                filters=InvoicesFilter.for_seller(date_from="2026-01-01T00:00:00+01:00"),
-            )
-            ```
         """
-        handle = self.schedule_export(
+        return self._export_and_download(
+            filters=filters,
+            only_metadata=only_metadata,
+            compression_type=compression_type,
+            timeout=timeout,
+            poll_interval=poll_interval,
+        )
+
+    def _export_and_download(
+        self,
+        *,
+        filters: InvoicesFilter,
+        only_metadata: bool = False,
+        compression_type: CompressionType | str | None = None,
+        timeout: float = 120.0,
+        poll_interval: float = 2.0,
+    ) -> list[bytes]:
+        handle = self._schedule_export(
             filters=filters,
             only_metadata=only_metadata,
             compression_type=compression_type,
         )
-        package = self.wait_for_export_package(
-            reference_number=handle.reference_number,
-            timeout=timeout,
+        status = poll_until(
+            operation=lambda: self._client.get_export_status(
+                reference_number=handle.reference_number
+            ),
+            retry_predicate=lambda status: (
+                not (status.package and status.package.parts)
+            ),
             poll_interval=poll_interval,
+            timeout_seconds=timeout,
+            timeout_error_factory=lambda: exceptions.KSeFExportTimeoutError(
+                reference_number=handle.reference_number,
+                timeout=timeout,
+            ),
         )
-        return self.fetch_package_bytes(package=package, export=handle)
+        assert status.package is not None
+        return self._download_package_parts(package=status.package, export=handle)
