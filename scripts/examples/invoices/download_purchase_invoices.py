@@ -2,7 +2,7 @@
 
 For each NIP the script authenticates with the certificate
 downloaded from MCU, schedules an export of all purchase invoices in the
-requested date range, and saves the resulting ZIP packages to disk.
+requested date range, and saves the decrypted package contents to disk.
 
 Directory layout expected for certificates (files downloaded from KSeF/MCU)::
 
@@ -64,25 +64,20 @@ def download_for_nip(client: Client, nip: str, config: ExampleConfig) -> None:
     target_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"[{nip}] Scheduling export of purchase invoices...")
-    export = auth.invoices.schedule_export(
-        filters=InvoicesFilter.for_buyer(
+    job = auth.invoices.export(
+        InvoicesFilter.for_buyer(
             date_from=config.date_from,
             date_to=config.date_to,
         )
     )
 
-    package = auth.invoices.wait_for_export_package(
-        reference_number=export.reference_number,
+    package = job.wait(
         timeout=config.export_timeout,
         poll_interval=config.poll_interval,
     )
 
-    for path in auth.invoices.fetch_package(
-        package=package,
-        export=export,
-        target_directory=target_dir,
-    ):
-        print(f"[{nip}] Downloaded: {path} ({path.stat().st_size:,} bytes)")
+    for path in package.save(target_dir):
+        print(f"[{nip}] Saved: {path} ({path.stat().st_size:,} bytes)")
 
     print(f"[{nip}] Done.")
 

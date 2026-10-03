@@ -44,10 +44,7 @@ class TestBatchSession:
                 content=invoice_xml,
             )
 
-            prepared_batch = auth.batch.prepare_batch(
-                invoices=[invoice],
-                form_code=FormSchema.FA3,
-            )
+            prepared_batch = auth.batch.prepare([invoice], form_code=FormSchema.FA3)
 
             with auth.batch_session(prepared_batch=prepared_batch) as batch_session:
                 assert batch_session.reference_number
@@ -62,21 +59,20 @@ class TestBatchSession:
                 assert upload_req.headers
 
                 batch_session.upload_parts()
-                state = batch_session.resume_state()
 
-            status = auth.batch.wait_for_completion(
-                session=state,
-                timeout=120.0,
-                poll_interval=2.0,
-            )
+            status = batch_session.wait(timeout=120.0, poll_interval=2.0)
             assert status.status.code == 200
             assert status.invoice_count == 1
             assert status.successful_invoice_count == 1
             assert status.failed_invoice_count == 0
 
-            invoices_page = auth.batch.list_invoices(session=state)
+            invoices_page = batch_session.list_invoices()
             assert len(invoices_page.invoices) == 1
             assert invoices_page.invoices[0].reference_number
+
+            upo_pages = batch_session.download_upo()
+            assert upo_pages
+            assert all(isinstance(page, bytes) and page for page in upo_pages)
 
     def test_batch_file_info_model(self) -> None:
         """Test that BatchFileInfo request validates correctly."""

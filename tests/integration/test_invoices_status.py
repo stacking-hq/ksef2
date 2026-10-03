@@ -84,10 +84,10 @@ def session_with_invoice(ksef_credentials: KSeFCredentials):
         access_token = auth.access_token
 
         with auth.online_session(form_code=FormSchema.FA3) as session:
-            result = session.send_invoice(
-                invoice_xml=example_invoice_xml(seller_nip=seller_nip)
+            submission = session.send_invoice(
+                example_invoice_xml(seller_nip=seller_nip)
             )
-            invoice_ref = result.reference_number
+            invoice_ref = submission.reference_number
             session_ref = session.resume_state().reference_number
 
             yield client, access_token, session_ref, invoice_ref, session

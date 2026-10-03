@@ -142,7 +142,7 @@ def test_example_send_query_export_download(
     """Full invoice lifecycle: send, query status, schedule export, download.
 
     Covers: testdata setup → XAdES auth → open session → send invoice →
-    poll status → schedule export → fetch package → cleanup.
+    wait for status → export → wait for the package → save → cleanup.
 
     KSeF TEST builds export packages on its own schedule, so a scheduled export
     can legitimately stay unready. This is the one skip the release gate
@@ -169,7 +169,7 @@ def test_example_send_batch(
 ) -> None:
     """Prepare, upload, and process a two-invoice batch session end to end.
 
-    Covers: prepare batch → open session → upload parts → close → poll →
+    Covers: prepare batch → open session → upload parts → close → wait →
     list invoices → download collective UPO.
 
     Each invoice carries its own number; reusing one number makes KSeF
@@ -187,9 +187,9 @@ def test_example_send_batch(
 def test_example_submit_batch(
     example_seller: None, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Prepare and submit a two-invoice batch in one high-level call.
+    """Submit a two-invoice batch in one high-level call.
 
-    Covers: submit_batch → poll → list invoices → download collective UPO.
+    Covers: submit → wait → list invoices → download collective UPO.
 
     Covers the same duplicate-number rule as the manual batch example: two invoices
     with one number come back as ok=1, failed=1.
