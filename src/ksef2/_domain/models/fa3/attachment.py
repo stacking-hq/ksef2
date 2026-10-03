@@ -29,18 +29,32 @@ class AttachmentTable(KSeFBaseModel):
     """
 
     meta_data: list[dict[str, str]] = Field(default_factory=list)
+    """Key/value metadata entries describing the table."""
     description: str | None = None
+    """Description of the table."""
     columns_names: list[str] | None = None
+    """Column header labels."""
     columns_format: list[ValueType] = Field(default_factory=list)
+    """Value type of each column."""
     rows: list[list[str]] = Field(
         min_length=1,
         max_length=1000,
         description="Maps to FakturaZalacznikBlokDanychTabelaWiersz",
     )
+    """Table rows (1–1000), each a list of cell values."""
     summary: list[str] | None = Field(default=None, description="Maps to")
+    """Summary row values, if any."""
 
     @model_validator(mode="after")
     def validate_rows_and_columns(self) -> Self:
+        """Check that rows and column definitions agree.
+
+        Returns:
+            The validated table.
+
+        Raises:
+            ValueError: If a row has more cells than columns, the column name count differs from the column format count, or a cell does not match its column type.
+        """
         if any(len(row) > len(self.columns_format) for row in self.rows):
             raise ValueError("Row has more cells than declared columns")
 
@@ -96,6 +110,13 @@ class AttachmentTable(KSeFBaseModel):
 
     @model_validator(mode="after")
     def populate_summary(self) -> Self:
+        """Fill in a summary row when none is given.
+
+        Numeric columns are summed and other columns are marked with ``-``.
+
+        Returns:
+            The validated table.
+        """
         if self.summary is not None:
             return self
 
@@ -140,20 +161,35 @@ class DataBlock(KSeFBaseModel):
     """
 
     header: str | None = None
+    """Heading of the block."""
     meta_data: Sequence[dict[str, str]] | None = Field(
         default=None, description="Maps to FakturaZalacznikBlokDanychMetaDane"
     )
+    """Key/value metadata entries describing the block."""
     paragraphs: Sequence[str] | None = Field(
         default=None,
         description="Maps to FakturaZalacznikBlokDanychTekst",
         min_length=1,
         max_length=10,
     )
+    """Text paragraphs of the block."""
     tables: list[AttachmentTable] | None = None
+    """Tables of the block."""
 
     @field_validator("paragraphs")
     @classmethod
     def validate_paragraphs(cls, value: list[str] | None) -> list[str] | None:
+        """Check paragraph lengths.
+
+        Args:
+            value: Paragraphs to validate.
+
+        Returns:
+            The unchanged paragraphs.
+
+        Raises:
+            ValueError: If a paragraph is empty or longer than 512 characters.
+        """
         if value is None:
             return value
 
@@ -174,3 +210,4 @@ class Attachment(KSeFBaseModel):
     """
 
     data_blocks: list[DataBlock]
+    """Data blocks of the attachment."""

@@ -47,14 +47,18 @@ class BatchInvoice(KSeFBaseModel):
     """Single invoice payload to include in a batch ZIP."""
 
     file_name: str
+    """Name of the ZIP entry, for example ``invoice-1.xml``."""
     content: bytes
+    """Invoice XML bytes."""
 
 
 class BatchInvoiceHash(KSeFBaseModel):
     """Correlation data between a ZIP entry and the original XML hash."""
 
     file_name: str
+    """Name of the ZIP entry the hash belongs to."""
     invoice_hash: str
+    """SHA-256 hash of the original invoice XML, Base64-encoded."""
 
 
 class BatchFilePart(KSeFBaseModel):
@@ -99,9 +103,13 @@ class BatchEncryptionData(KSeFBaseModel):
     """Encryption material used for the prepared batch payload."""
 
     aes_key: str = Field(exclude=True, repr=False)
+    """AES-256 session key, Base64-encoded. Excluded from serialization and ``repr``."""
     iv: str = Field(exclude=True, repr=False)
+    """AES initialization vector, Base64-encoded. Excluded from serialization and ``repr``."""
     encrypted_key: str = Field(exclude=True, repr=False)
+    """Session key encrypted with the KSeF public key, Base64-encoded. Excluded from serialization and ``repr``."""
     public_key_id: str | None = None
+    """Identifier of the KSeF public key used for encryption; ``None`` for the default."""
 
     @field_validator("aes_key")
     @classmethod
@@ -131,7 +139,17 @@ class BatchEncryptionData(KSeFBaseModel):
         encrypted_key: bytes,
         public_key_id: str | None = None,
     ) -> Self:
-        """Create encoded batch encryption data from raw key bytes."""
+        """Create encoded batch encryption data from raw key bytes.
+
+        Args:
+            aes_key: Raw AES-256 key.
+            iv: Raw AES initialization vector.
+            encrypted_key: AES key encrypted with the KSeF public key.
+            public_key_id: Identifier of the KSeF public key used; ``None`` for the default.
+
+        Returns:
+            Encryption data with all byte values Base64-encoded.
+        """
         return cls(
             aes_key=base64.b64encode(aes_key).decode(),
             iv=base64.b64encode(iv).decode(),
@@ -140,19 +158,35 @@ class BatchEncryptionData(KSeFBaseModel):
         )
 
     def get_aes_key_bytes(self) -> bytes:
-        """Return the decoded AES key."""
+        """Return the decoded AES key.
+
+        Returns:
+            The raw AES key bytes.
+        """
         return base64.b64decode(self.aes_key, validate=True)
 
     def get_iv_bytes(self) -> bytes:
-        """Return the decoded initialization vector."""
+        """Return the decoded initialization vector.
+
+        Returns:
+            The raw initialization vector bytes.
+        """
         return base64.b64decode(self.iv, validate=True)
 
     def get_encrypted_key_bytes(self) -> bytes:
-        """Return the decoded encrypted symmetric key."""
+        """Return the decoded encrypted symmetric key.
+
+        Returns:
+            The raw encrypted key bytes.
+        """
         return base64.b64decode(self.encrypted_key, validate=True)
 
     def to_sensitive_dict(self) -> dict[str, str | None]:
-        """Export encryption material for deliberately protected persistence."""
+        """Export encryption material for deliberately protected persistence.
+
+        Returns:
+            A dictionary with the Base64 AES key, IV, encrypted key and public key identifier.
+        """
         return {
             "aes_key": self.aes_key,
             "iv": self.iv,
@@ -165,31 +199,47 @@ class BatchPreparedPart(KSeFBaseModel):
     """Prepared encrypted batch part ready for upload."""
 
     ordinal_number: int
+    """One-based position of the part in the package."""
     content: bytes
+    """Encrypted part bytes to upload."""
     file_size: int
+    """Size of the encrypted part in bytes."""
     file_hash: str
+    """SHA-256 hash of the encrypted part, Base64-encoded."""
 
 
 class PreparedBatch(KSeFBaseModel):
     """Prepared batch package with encrypted parts and upload metadata."""
 
     form_code: FormSchema = FormSchema.FA3
+    """Invoice schema of the batch. Defaults to FA(3)."""
     offline_mode: bool = False
+    """Whether the invoices were issued in offline mode."""
     batch_file: BatchFileInfo
+    """Size, hash and part metadata of the whole batch file."""
     parts: list[BatchPreparedPart]
+    """Encrypted parts to upload."""
     encryption: BatchEncryptionData
+    """Encryption material used for the parts."""
     invoices: list[BatchInvoiceHash]
+    """Hash of each invoice in the package, keyed by ZIP entry name."""
 
 
 class OpenBatchSessionRequest(KSeFBaseModel):
     """Request to open a batch session."""
 
     encrypted_key: bytes
+    """Session AES key encrypted with the KSeF public key."""
     iv: bytes
+    """AES initialization vector used for the session."""
     public_key_id: str | None = None
+    """Identifier of the KSeF public key used for encryption; ``None`` for the default."""
     batch_file: BatchFileInfo
+    """Size, hash and part metadata of the batch file."""
     form_code: FormSchema = FormSchema.FA3
+    """Invoice schema of the batch. Defaults to FA(3)."""
     offline_mode: bool = False
+    """Whether the invoices were issued in offline mode."""
 
 
 class PartUploadRequest(KSeFBaseModel):
@@ -210,7 +260,14 @@ class PartUploadRequest(KSeFBaseModel):
     def to_sensitive_dict(
         self, *, mode: Literal["json", "python"] | str = "json"
     ) -> dict[str, object]:
-        """Export upload instructions with the presigned capability URL."""
+        """Export upload instructions with the presigned capability URL.
+
+        Args:
+            mode: Pydantic dump mode, ``"json"`` for JSON-safe values or ``"python"`` for native types.
+
+        Returns:
+            A dictionary including the plain upload URL.
+        """
         data: dict[str, object] = self.model_dump(mode=mode)
         data["url"] = self.url
         return data
@@ -252,6 +309,12 @@ class BatchSessionResumeState(BaseSessionResumeState):
 
         The returned data contains the AES key, IV, and presigned upload URLs.
         Store and log it only as protected credential material.
+
+        Args:
+            mode: Pydantic dump mode, ``"json"`` for JSON-safe values or ``"python"`` for native types.
+
+        Returns:
+            A dictionary with the full resume state, including secrets.
         """
         data = super().to_dict(mode=mode)
         data["part_upload_requests"] = [

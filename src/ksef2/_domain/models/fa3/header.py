@@ -33,9 +33,11 @@ class InvoiceHeader(KSeFBaseModel):
     generation_timestamp: datetime = Field(
         default_factory=datetime.now, description="Maps to Tnaglowek.DataWytworzeniaFA"
     )
+    """When the invoice was generated (``DataWytworzeniaFa``). Defaults to the current time."""
 
     system_info: str | None = Field(
         default=None,
         max_length=256,
         description="Maps to Tnaglowek.SystemInfo",
     )
+    """Name of the system that generated the invoice (``SystemInfo``, up to 256 characters)."""
