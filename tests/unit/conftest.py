@@ -1,5 +1,6 @@
 import pytest
 from tests.unit.fakes import transport
+from tests.unit.flavors import Flavor
 
 from tests.unit.factories.certificates import *  # noqa
 from tests.unit.factories.collective_identifiers import *  # noqa
@@ -32,3 +33,8 @@ def fake_transport() -> transport.FakeTransport:
 @pytest.fixture
 def async_fake_transport() -> transport.AsyncFakeTransport:
     return transport.AsyncFakeTransport()
+
+
+@pytest.fixture(params=["sync", "async"])
+def flavor(request: pytest.FixtureRequest) -> Flavor:
+    return Flavor(request.param)
