@@ -105,6 +105,7 @@ class TestAuthenticatedClientFacade:
         assert client.invoices is client.invoices
         assert client.batch is client.batch
 
+    @legacy_api
     def test_tokens_accessor_uses_bearer_transport(
         self,
         fake_transport: FakeTransport,
@@ -121,6 +122,7 @@ class TestAuthenticatedClientFacade:
         assert call.path == TokenRoutes.LIST_TOKENS
         assert call.headers == {"Authorization": f"Bearer {_TOKEN}"}
 
+    @legacy_api
     def test_sessions_accessor_uses_bearer_transport(
         self,
         fake_transport: FakeTransport,

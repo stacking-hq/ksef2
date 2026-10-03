@@ -49,14 +49,26 @@ enrollment = auth.certificates.enroll(
     csr=csr,
 )
 
-# CertificateEnrollmentResponse
+# CertificateEnrollment: udostępnia każde pole odpowiedzi rejestracji
 # {
 #   "reference_number": "20260625-CERT-...",
 #   "timestamp": "2026-06-25T10:00:00Z"
 # }
 ```
 
-Następnie sprawdź status rejestracji:
+`enroll()` zwraca uchwyt `CertificateEnrollment`. Poczekaj, aż KSeF wyda
+certyfikat:
+
+```python
+status = enrollment.wait(timeout=60.0, poll_interval=2.0)
+```
+
+`wait()` zgłasza `KSeFCertificateEnrollmentFailedError`, gdy KSeF odrzuci albo
+anuluje wniosek, oraz `KSeFCertificateEnrollmentTimeoutError`, gdy nie zakończy
+się na czas. Aby sprawdzić status jednorazowo bez czekania, wywołaj
+`enrollment.get_status()` albo
+`auth.certificates.get_enrollment_status(reference_number=...)`, gdy
+zapisałeś tylko numer referencyjny:
 
 ```python
 status = auth.certificates.get_enrollment_status(
@@ -82,7 +94,7 @@ a wydany certyfikat zapisz razem z pasującym kluczem.
 ### Wyszukaj
 
 ```python
-for certificate in auth.certificates.all(status="active"):
+for certificate in auth.certificates.list(status="active"):
     print(certificate.serial_number, certificate.name, certificate.valid_to)
 ```
 
@@ -116,7 +128,7 @@ auth.certificates.revoke(
 
 4. Wyślij rejestrację i zapisz numer referencyjny.
 
-5. Odpytuj status, pobierz certyfikat i zapisz go z kluczem prywatnym.
+5. Poczekaj na wydanie, pobierz certyfikat i zapisz go z kluczem prywatnym.
 
 6. Cofnij certyfikaty, które nie są już ważne albo których klucz prywatny mógł
    zostać naruszony.

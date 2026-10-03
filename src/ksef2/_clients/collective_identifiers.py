@@ -3,17 +3,24 @@
 
 """Client for collective invoice identifiers."""
 
-from collections.abc import Iterator
+import builtins
+from collections.abc import Generator, Iterator
 from typing import final
 
+from typing_extensions import deprecated
+
+from ksef2._clients._pager import Pager
 from ksef2._core.protocols import Middleware
 from ksef2._domain.models.collective_identifiers import (
     CollectiveIdentifierInvoice,
+    CollectiveIdentifierInvoiceDetails,
     CollectiveIdentifierInvoicesPage,
     CollectiveIdentifierInvoicesQuery,
+    CollectiveIdentifierReference,
     CollectiveIdentifierReferencesPage,
     CollectiveIdentifiersPage,
     CollectiveIdentifiersQuery,
+    CollectiveIdentifierSummary,
     GenerateCollectiveIdentifierResponse,
 )
 from ksef2._domain.models.pagination import CollectiveIdentifierParams
@@ -38,7 +45,7 @@ class CollectiveIdentifiersClient:
     def generate(
         self,
         *,
-        invoices: list[CollectiveIdentifierInvoice],
+        invoices: builtins.list[CollectiveIdentifierInvoice],
     ) -> GenerateCollectiveIdentifierResponse:
         """Generate a collective identifier for the supplied invoices.
 
@@ -50,23 +57,13 @@ class CollectiveIdentifiersClient:
         """
         return from_spec(self._endpoints.generate(body=to_spec(invoices)))
 
-    def query(
+    def _query(
         self,
         *,
         filters: CollectiveIdentifiersQuery,
         continuation_token: str | None = None,
         params: CollectiveIdentifierParams | None = None,
     ) -> CollectiveIdentifiersPage:
-        """Fetch one page of collective identifiers visible in the context.
-
-        Args:
-            filters: Criteria selecting collective identifiers.
-            continuation_token: Token from the previous page's response; ``None`` requests the first page.
-            params: Page size; defaults are used when ``None``.
-
-        Returns:
-            One page of matching collective identifiers.
-        """
         parameters = params or CollectiveIdentifierParams()
         return from_spec(
             self._endpoints.query(
@@ -76,50 +73,30 @@ class CollectiveIdentifiersClient:
             )
         )
 
-    def query_all(
+    def _query_pages(
         self,
-        *,
         filters: CollectiveIdentifiersQuery,
-        params: CollectiveIdentifierParams | None = None,
-    ) -> Iterator[CollectiveIdentifiersPage]:
-        """Iterate through every page matching a collective identifier query.
-
-        Args:
-            filters: Criteria selecting collective identifiers.
-            params: Page size; defaults are used when ``None``.
-
-        Yields:
-            Each page of matching collective identifiers, following continuation tokens.
-        """
+        params: CollectiveIdentifierParams | None,
+    ) -> Generator[CollectiveIdentifiersPage, None]:
         parameters = params or CollectiveIdentifierParams()
-        response = self.query(filters=filters, params=parameters)
+        response = self._query(filters=filters, params=parameters)
         yield response
 
         while continuation_token := response.continuation_token:
-            response = self.query(
+            response = self._query(
                 filters=filters,
                 continuation_token=continuation_token,
                 params=parameters,
             )
             yield response
 
-    def query_by_ksef_number(
+    def _query_by_ksef_number(
         self,
         *,
         ksef_number: str,
         continuation_token: str | None = None,
         params: CollectiveIdentifierParams | None = None,
     ) -> CollectiveIdentifierReferencesPage:
-        """Fetch one page of identifiers associated with a KSeF invoice.
-
-        Args:
-            ksef_number: KSeF number of the invoice.
-            continuation_token: Token from the previous page's response; ``None`` requests the first page.
-            params: Page size; defaults are used when ``None``.
-
-        Returns:
-            One page of collective identifiers that reference the invoice.
-        """
         parameters = params or CollectiveIdentifierParams()
         return from_spec(
             self._endpoints.query_by_ksef_number(
@@ -129,53 +106,33 @@ class CollectiveIdentifiersClient:
             )
         )
 
-    def query_all_by_ksef_number(
+    def _query_by_ksef_number_pages(
         self,
-        *,
         ksef_number: str,
-        params: CollectiveIdentifierParams | None = None,
-    ) -> Iterator[CollectiveIdentifierReferencesPage]:
-        """Iterate through identifiers associated with one KSeF invoice.
-
-        Args:
-            ksef_number: KSeF number of the invoice.
-            params: Page size; defaults are used when ``None``.
-
-        Yields:
-            Each page of identifiers that reference the invoice, following continuation tokens.
-        """
+        params: CollectiveIdentifierParams | None,
+    ) -> Generator[CollectiveIdentifierReferencesPage, None]:
         parameters = params or CollectiveIdentifierParams()
-        response = self.query_by_ksef_number(
+        response = self._query_by_ksef_number(
             ksef_number=ksef_number,
             params=parameters,
         )
         yield response
 
         while continuation_token := response.continuation_token:
-            response = self.query_by_ksef_number(
+            response = self._query_by_ksef_number(
                 ksef_number=ksef_number,
                 continuation_token=continuation_token,
                 params=parameters,
             )
             yield response
 
-    def list_invoices(
+    def _list_invoices(
         self,
         *,
-        collective_identifier_numbers: list[str],
+        collective_identifier_numbers: builtins.list[str],
         continuation_token: str | None = None,
         params: CollectiveIdentifierParams | None = None,
     ) -> CollectiveIdentifierInvoicesPage:
-        """Fetch one page of invoices inside the supplied collective identifiers.
-
-        Args:
-            collective_identifier_numbers: Collective identifier numbers to expand (1–10).
-            continuation_token: Token from the previous page's response; ``None`` requests the first page.
-            params: Page size; defaults are used when ``None``.
-
-        Returns:
-            One page of invoices belonging to the identifiers.
-        """
         parameters = params or CollectiveIdentifierParams()
         query = CollectiveIdentifierInvoicesQuery(
             collective_identifier_numbers=collective_identifier_numbers
@@ -188,13 +145,150 @@ class CollectiveIdentifiersClient:
             )
         )
 
+    def _list_invoices_pages(
+        self,
+        collective_identifier_numbers: builtins.list[str],
+        params: CollectiveIdentifierParams | None,
+    ) -> Generator[CollectiveIdentifierInvoicesPage, None]:
+        parameters = params or CollectiveIdentifierParams()
+        response = self._list_invoices(
+            collective_identifier_numbers=collective_identifier_numbers,
+            params=parameters,
+        )
+        yield response
+
+        while continuation_token := response.continuation_token:
+            response = self._list_invoices(
+                collective_identifier_numbers=collective_identifier_numbers,
+                continuation_token=continuation_token,
+                params=parameters,
+            )
+            yield response
+
+    @deprecated(
+        "`query()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list()` instead."
+    )
+    def query(
+        self,
+        *,
+        filters: CollectiveIdentifiersQuery,
+        continuation_token: str | None = None,
+        params: CollectiveIdentifierParams | None = None,
+    ) -> CollectiveIdentifiersPage:
+        """Deprecated: fetch one page of collective identifiers visible in the context.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list()`` instead; ``first_page()`` fetches one page.
+
+        Args:
+            filters: Criteria selecting collective identifiers.
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+            params: Page size; defaults are used when ``None``.
+
+        Returns:
+            One page of matching collective identifiers.
+        """
+        return self._query(
+            filters=filters,
+            continuation_token=continuation_token,
+            params=params,
+        )
+
+    @deprecated(
+        "`query_all()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list()` instead."
+    )
+    def query_all(
+        self,
+        *,
+        filters: CollectiveIdentifiersQuery,
+        params: CollectiveIdentifierParams | None = None,
+    ) -> Iterator[CollectiveIdentifiersPage]:
+        """Deprecated: iterate through every page matching a collective identifier query.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list().pages()`` instead.
+
+        Args:
+            filters: Criteria selecting collective identifiers.
+            params: Page size; defaults are used when ``None``.
+
+        Yields:
+            Each page of matching collective identifiers, following continuation tokens.
+        """
+        for page in self._query_pages(filters, params):
+            yield page
+
+    @deprecated(
+        "`query_by_ksef_number()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list_for_invoice()` instead."
+    )
+    def query_by_ksef_number(
+        self,
+        *,
+        ksef_number: str,
+        continuation_token: str | None = None,
+        params: CollectiveIdentifierParams | None = None,
+    ) -> CollectiveIdentifierReferencesPage:
+        """Deprecated: fetch one page of identifiers associated with a KSeF invoice.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list_for_invoice()`` instead; ``first_page()`` fetches one page.
+
+        Args:
+            ksef_number: KSeF number of the invoice.
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+            params: Page size; defaults are used when ``None``.
+
+        Returns:
+            One page of collective identifiers that reference the invoice.
+        """
+        return self._query_by_ksef_number(
+            ksef_number=ksef_number,
+            continuation_token=continuation_token,
+            params=params,
+        )
+
+    @deprecated(
+        "`query_all_by_ksef_number()` is deprecated and will be removed in "
+        "ksef2 1.10.0; use `list_for_invoice()` instead."
+    )
+    def query_all_by_ksef_number(
+        self,
+        *,
+        ksef_number: str,
+        params: CollectiveIdentifierParams | None = None,
+    ) -> Iterator[CollectiveIdentifierReferencesPage]:
+        """Deprecated: iterate through identifiers associated with one KSeF invoice.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list_for_invoice().pages()`` instead.
+
+        Args:
+            ksef_number: KSeF number of the invoice.
+            params: Page size; defaults are used when ``None``.
+
+        Yields:
+            Each page of identifiers that reference the invoice, following continuation tokens.
+        """
+        for page in self._query_by_ksef_number_pages(ksef_number, params):
+            yield page
+
+    @deprecated(
+        "`list_all_invoices()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list_invoices()` instead."
+    )
     def list_all_invoices(
         self,
         *,
-        collective_identifier_numbers: list[str],
+        collective_identifier_numbers: builtins.list[str],
         params: CollectiveIdentifierParams | None = None,
     ) -> Iterator[CollectiveIdentifierInvoicesPage]:
-        """Iterate through every invoice page for the supplied collective identifiers.
+        """Deprecated: iterate through every invoice page for the supplied collective identifiers.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list_invoices().pages()`` instead.
 
         Args:
             collective_identifier_numbers: Collective identifier numbers to expand (1–10).
@@ -203,17 +297,102 @@ class CollectiveIdentifiersClient:
         Yields:
             Each page of invoices, following continuation tokens.
         """
-        parameters = params or CollectiveIdentifierParams()
-        response = self.list_invoices(
-            collective_identifier_numbers=collective_identifier_numbers,
-            params=parameters,
-        )
-        yield response
+        for page in self._list_invoices_pages(collective_identifier_numbers, params):
+            yield page
 
-        while continuation_token := response.continuation_token:
-            response = self.list_invoices(
-                collective_identifier_numbers=collective_identifier_numbers,
-                continuation_token=continuation_token,
-                params=parameters,
-            )
-            yield response
+    def list_for_invoice(
+        self,
+        ksef_number: str,
+        *,
+        params: CollectiveIdentifierParams | None = None,
+    ) -> Pager[CollectiveIdentifierReference]:
+        """List the collective identifiers that reference one KSeF invoice.
+
+        Nothing is requested until the result is consumed.
+
+        Args:
+            ksef_number: KSeF number of the invoice.
+            params: Page size; defaults are used when ``None``.
+
+        Returns:
+            A paging object over the collective identifiers referencing the invoice.
+
+        Example:
+            ```python
+            for reference in auth.collective_identifiers.list_for_invoice(ksef_number):
+                print(reference.collective_identifier_number)
+            ```
+        """
+
+        def _reference_pages() -> Generator[list[CollectiveIdentifierReference], None]:
+            for page in self._query_by_ksef_number_pages(ksef_number, params):
+                yield page.collective_identifiers
+
+        return Pager(_reference_pages)
+
+    def list_invoices(
+        self,
+        collective_identifier_numbers: builtins.list[str],
+        *,
+        params: CollectiveIdentifierParams | None = None,
+    ) -> Pager[CollectiveIdentifierInvoiceDetails]:
+        """List the invoices inside the supplied collective identifiers.
+
+        Nothing is requested until the result is consumed. Unlike the former
+        ``list_invoices()``, which fetched one page, this returns a paging object.
+
+        Args:
+            collective_identifier_numbers: Collective identifier numbers to expand (1–10).
+            params: Page size; defaults are used when ``None``.
+
+        Returns:
+            A paging object over the invoices belonging to the identifiers.
+
+        Example:
+            ```python
+            for invoice in auth.collective_identifiers.list_invoices([number]):
+                print(invoice.ksef_number)
+            ```
+        """
+
+        def _invoice_pages() -> Generator[
+            list[CollectiveIdentifierInvoiceDetails], None
+        ]:
+            for page in self._list_invoices_pages(
+                collective_identifier_numbers, params
+            ):
+                yield page.invoices
+
+        return Pager(_invoice_pages)
+
+    def list(
+        self,
+        filters: CollectiveIdentifiersQuery,
+        *,
+        params: CollectiveIdentifierParams | None = None,
+    ) -> Pager[CollectiveIdentifierSummary]:
+        """List the collective identifiers visible in the context.
+
+        Nothing is requested until the result is consumed. Iterate it for every
+        identifier, call ``pages()`` for page-sized lists or ``first_page()`` for
+        one request only.
+
+        Args:
+            filters: Criteria selecting collective identifiers.
+            params: Page size; defaults are used when ``None``.
+
+        Returns:
+            A paging object over the matching collective identifiers.
+
+        Example:
+            ```python
+            for identifier in auth.collective_identifiers.list(filters):
+                print(identifier.collective_identifier_number)
+            ```
+        """
+
+        def _identifier_pages() -> Generator[list[CollectiveIdentifierSummary], None]:
+            for page in self._query_pages(filters, params):
+                yield page.collective_identifiers
+
+        return Pager(_identifier_pages)

@@ -8,8 +8,10 @@ What it demonstrates:
 - querying people, authorizations, entities, and subunits
 """
 
-import time
+from collections.abc import Sequence
 from dataclasses import dataclass
+
+from pydantic import BaseModel
 
 from ksef2 import Client, Environment
 from ksef2.models import (
@@ -30,6 +32,11 @@ from ksef2.testdata import generate_nip, generate_pesel
 @dataclass
 class ExampleConfig:
     environment: Environment = Environment.TEST
+
+
+def print_items(items: Sequence[BaseModel]) -> None:
+    for item in items:
+        print(item.model_dump_json(indent=2))
 
 
 def run(config: ExampleConfig) -> None:
@@ -79,14 +86,14 @@ def run(config: ExampleConfig) -> None:
             ],
             description="Partner invoice read access",
             entity_name="Test Partner Entity",
-        )
+        ).wait()
         _ = auth.permissions.grant_authorization(
             subject_type="nip",
             subject_value=partner_nip,
             permission="self_invoicing",
             description="Self-invoicing authorization",
             entity_name="Test Partner Entity",
-        )
+        ).wait()
         _ = auth.permissions.grant_person(
             subject_type="pesel",
             subject_value=person_pesel,
@@ -94,75 +101,73 @@ def run(config: ExampleConfig) -> None:
             description="Person invoice access",
             first_name="John",
             last_name="Doe",
-        )
-
-        time.sleep(5)
+        ).wait()
 
         print("Get all persons permissions...")
-        resp = auth.permissions.query_persons(
-            query=PersonPermissionsQuery(
+        resp = auth.permissions.list_persons(
+            PersonPermissionsQuery(
                 query_type="in_context",
             ),
-        )
-        print(resp.model_dump_json(indent=2))
+        ).first_page()
+        print_items(resp)
 
         print("Get persons permissions with credentials manage permission...")
-        resp = auth.permissions.query_persons(
-            query=PersonPermissionsQuery(
+        resp = auth.permissions.list_persons(
+            PersonPermissionsQuery(
                 query_type="in_context",
                 permission_types=["credentials_manage"],
             ),
-        )
-        print(resp.model_dump_json(indent=2))
+        ).first_page()
+        print_items(resp)
 
         print("Query granted authorizations...")
-        resp = auth.permissions.query_authorizations(
-            query=AuthorizationPermissionsQuery(
+        resp = auth.permissions.list_authorizations(
+            AuthorizationPermissionsQuery(
                 query_type="granted",
             ),
-        )
-        print(resp.model_dump_json(indent=2))
+        ).first_page()
+        print_items(resp)
 
         print("Query received authorizations...")
-        resp = auth.permissions.query_personal(
-            query=PersonalPermissionsQuery(),
-        )
-        print(resp.model_dump_json(indent=2))
+        resp = auth.permissions.list_personal(
+            PersonalPermissionsQuery(),
+        ).first_page()
+        print_items(resp)
 
         print("Query active personal permissions...")
-        resp = auth.permissions.query_personal(
-            query=PersonalPermissionsQuery(
+        resp = auth.permissions.list_personal(
+            PersonalPermissionsQuery(
                 permission_state="active",
             ),
-        )
-        print(resp.model_dump_json(indent=2))
+        ).first_page()
+        print_items(resp)
 
         print("Query EU entities...")
-        resp = auth.permissions.query_eu_entities(
-            query=EuEntityPermissionsQuery(),
-        )
-        print(resp.model_dump_json(indent=2))
+        resp = auth.permissions.list_eu_entities(
+            EuEntityPermissionsQuery(),
+        ).first_page()
+        print_items(resp)
 
         print("Query subordinate entities...")
-        resp = auth.permissions.query_subordinate_entities(
-            query=SubordinateEntityRolesQuery(),
-        )
-        print(resp.model_dump_json(indent=2))
+        resp = auth.permissions.list_subordinate_entities(
+            SubordinateEntityRolesQuery(),
+        ).first_page()
+        print_items(resp)
 
         print("Query subunits...")
-        resp = auth.permissions.query_subunits(
-            query=SubunitPermissionsQuery(),
-        )
-        print(resp.model_dump_json(indent=2))
+        resp = auth.permissions.list_subunits(
+            SubunitPermissionsQuery(),
+        ).first_page()
+        print_items(resp)
 
         print("Query authorizations (received, page_size=20)...")
-        resp = auth.permissions.query_authorizations(
-            query=AuthorizationPermissionsQuery(
+        resp = auth.permissions.list_authorizations(
+            AuthorizationPermissionsQuery(
                 query_type="received",
             ),
             params=OffsetPaginationParams(page_offset=0, page_size=20),
-        )
-        print(resp.model_dump_json(indent=2))
+        ).first_page()
+        print_items(resp)
 
 
 def main() -> int:

@@ -5,12 +5,14 @@ from tests.unit.factories.peppol import (
     QueryPeppolProvidersResponseFactory,
 )
 from tests.unit.fakes.transport import FakeTransport
+from tests.unit.helpers import legacy_api
 
 
 class TestPeppolClient:
     def test_initialization(self, peppol_client: PeppolClient):
         assert peppol_client is not None
 
+    @legacy_api
     def test_query(
         self,
         peppol_client: PeppolClient,
@@ -32,6 +34,7 @@ class TestPeppolClient:
         assert call.method == "GET"
         assert str(call.path) == PeppolRoutes.QUERY_PROVIDERS
 
+    @legacy_api
     def test_query_with_pagination(
         self,
         peppol_client: PeppolClient,
@@ -46,6 +49,7 @@ class TestPeppolClient:
 
         assert response is not None
 
+    @legacy_api
     def test_all_single_page(
         self,
         peppol_client: PeppolClient,
@@ -60,6 +64,7 @@ class TestPeppolClient:
 
         assert len(providers) == 0
 
+    @legacy_api
     def test_all_multiple_pages(
         self,
         peppol_client: PeppolClient,

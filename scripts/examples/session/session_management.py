@@ -28,9 +28,9 @@ def run(config: ExampleConfig) -> None:
     auth = client.authentication.with_test_certificate(nip=nip)
 
     print("Listing active authentication sessions...")
-    sessions = auth.sessions.query()
-    print(f"  Found {len(sessions.items)} session(s)")
-    for item in sessions.items:
+    sessions = auth.sessions.list().first_page()
+    print(f"  Found {len(sessions)} session(s)")
+    for item in sessions:
         print(f"  {item.reference_number} current={item.is_current}")
 
     print("Terminating current session...")

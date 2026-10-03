@@ -11,6 +11,7 @@ from tests.unit.factories.permissions import (
     DomainPersonPermissionsQueryFactory,
 )
 from tests.unit.fakes.transport import AsyncFakeTransport
+from tests.unit.helpers import legacy_api
 
 
 class TestAsyncPermissionsClient:
@@ -35,9 +36,10 @@ class TestAsyncPermissionsClient:
             )
         )
 
-        assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         assert async_fake_transport.calls[0].method == "POST"
 
+    @legacy_api
     def test_query_persons(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -53,6 +55,7 @@ class TestAsyncPermissionsClient:
         assert isinstance(result, domain_permissions.PersonPermissionsQueryResponse)
         assert async_fake_transport.calls[0].method == "POST"
 
+    @legacy_api
     def test_query_authorizations(
         self,
         async_fake_transport: AsyncFakeTransport,

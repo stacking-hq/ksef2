@@ -451,6 +451,147 @@ class KSeFExportFailedError(KSeFException):
         )
 
 
+class KSeFPermissionOperationFailedError(KSeFException):
+    """Raised when KSeF finishes a permission grant or revoke without applying it.
+
+    Raised by ``PermissionOperation.wait()``. ``operation_status_code`` is a KSeF
+    operation status, such as 400 or 420, and is not an HTTP status.
+
+    Args:
+        reference_number: Reference number of the permission operation.
+        status_code: KSeF operation status code.
+        description: Description of the status.
+
+    Attributes:
+        reference_number: Reference number of the permission operation.
+        operation_status_code: KSeF operation status code.
+        description: Description of the status.
+    """
+
+    code: str = "PERMISSION_OPERATION_FAILED"
+
+    def __init__(
+        self,
+        reference_number: str,
+        status_code: int,
+        description: str,
+    ) -> None:
+        self.reference_number = reference_number
+        self.operation_status_code = status_code
+        self.description = description
+        super().__init__(
+            f"Permission operation {reference_number} failed "
+            f"({status_code}: {description})",
+            reference_number=reference_number,
+            operation_status_code=status_code,
+            description=description,
+        )
+
+
+class KSeFPermissionOperationTimeoutError(KSeFException):
+    """Raised when polling for a permission operation to finish exceeds the timeout.
+
+    Args:
+        reference_number: Reference number of the permission operation.
+        timeout: Number of seconds waited.
+
+    Attributes:
+        reference_number: Reference number of the permission operation.
+        timeout: Number of seconds waited.
+    """
+
+    code: str = "PERMISSION_OPERATION_TIMEOUT"
+
+    def __init__(
+        self,
+        reference_number: str,
+        timeout: float,
+    ) -> None:
+        self.reference_number = reference_number
+        self.timeout = timeout
+        super().__init__(
+            f"Permission operation {reference_number} not finished after {timeout}s",
+            reference_number=reference_number,
+            timeout=timeout,
+        )
+
+
+class KSeFCertificateEnrollmentFailedError(KSeFException):
+    """Raised when KSeF finishes a certificate enrollment without issuing a certificate.
+
+    Raised by ``CertificateEnrollment.wait()`` when the request was rejected, hit
+    an unknown error or was cancelled by the system. ``enrollment_status_code`` is
+    a KSeF enrollment status, such as 400 or 550, and is not an HTTP status.
+
+    Args:
+        reference_number: Reference number of the enrollment.
+        status_code: KSeF enrollment status code.
+        description: Description of the status.
+        details: Explanations of the failure, if KSeF gave any.
+
+    Attributes:
+        reference_number: Reference number of the enrollment.
+        enrollment_status_code: KSeF enrollment status code.
+        description: Description of the status.
+        details: Explanations of the failure; empty when none were given.
+    """
+
+    code: str = "CERTIFICATE_ENROLLMENT_FAILED"
+
+    def __init__(
+        self,
+        reference_number: str,
+        status_code: int,
+        description: str,
+        details: list[str] | None = None,
+    ) -> None:
+        self.reference_number = reference_number
+        self.enrollment_status_code = status_code
+        self.description = description
+        self.details = details or []
+        message = (
+            f"Certificate enrollment {reference_number} failed "
+            f"({status_code}: {description})"
+        )
+        if self.details:
+            message += f" - {'; '.join(self.details)}"
+        super().__init__(
+            message,
+            reference_number=reference_number,
+            enrollment_status_code=status_code,
+            description=description,
+            details=self.details,
+        )
+
+
+class KSeFCertificateEnrollmentTimeoutError(KSeFException):
+    """Raised when polling for a certificate to be issued exceeds the timeout.
+
+    Args:
+        reference_number: Reference number of the enrollment.
+        timeout: Number of seconds waited.
+
+    Attributes:
+        reference_number: Reference number of the enrollment.
+        timeout: Number of seconds waited.
+    """
+
+    code: str = "CERTIFICATE_ENROLLMENT_TIMEOUT"
+
+    def __init__(
+        self,
+        reference_number: str,
+        timeout: float,
+    ) -> None:
+        self.reference_number = reference_number
+        self.timeout = timeout
+        super().__init__(
+            f"Certificate enrollment {reference_number} not issued after {timeout}s",
+            reference_number=reference_number,
+            timeout=timeout,
+        )
+
+
 class KSeFAuthPollingTimeoutError(KSeFException):
     """Raised when polling for authentication completion exceeds the timeout.
 

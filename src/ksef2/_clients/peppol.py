@@ -3,9 +3,12 @@
 
 """Async PEPPOL branch client."""
 
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
 from typing import final
 
+from typing_extensions import deprecated
+
+from ksef2._clients._pager import Pager
 from ksef2._core.protocols import Middleware
 from ksef2._domain.models.pagination import OffsetPaginationParams
 from ksef2._domain.models.peppol import ListPeppolProvidersResponse, PeppolProvider
@@ -37,45 +40,97 @@ class PeppolClient:
         self._transport = transport
         self._endpoints = PeppolEndpoints(transport)
 
-    def query(
+    def _query(
         self,
         *,
         params: OffsetPaginationParams | None = None,
     ) -> ListPeppolProvidersResponse:
-        """Query Peppol service providers.
-
-        Args:
-            params: Pagination parameters.
-
-        Returns:
-            QueryPeppolProvidersResponse containing the list of providers
-            and pagination info.
-        """
         current_params = params or OffsetPaginationParams()
         response = self._endpoints.query_providers(**current_params.to_query_params())
         return from_spec(response)
 
-    def all(
-        self, *, params: OffsetPaginationParams | None = None
-    ) -> Iterator[PeppolProvider]:
-        """Iterate over all Peppol service providers.
-
-        This method handles pagination internally.
-
-        Args:
-            params: Pagination parameters.
-
-        Returns:
-            Iterator over PeppolProvider objects.
-        """
+    def _pages(
+        self, params: OffsetPaginationParams | None
+    ) -> Generator[ListPeppolProvidersResponse, None]:
         current_params = params or OffsetPaginationParams()
 
         while True:
-            response = self.query(params=current_params)
-            for provider in response.providers:
-                yield provider
+            response = self._query(params=current_params)
+            yield response
 
             if not response.has_more:
                 break
 
             current_params = current_params.next_page()
+
+    @deprecated(
+        "`query()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list()` instead."
+    )
+    def query(
+        self,
+        *,
+        params: OffsetPaginationParams | None = None,
+    ) -> ListPeppolProvidersResponse:
+        """Deprecated: query one page of Peppol service providers.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list()`` instead; ``first_page()`` fetches one page.
+
+        Args:
+            params: Pagination parameters.
+
+        Returns:
+            One page of providers with pagination info.
+        """
+        return self._query(params=params)
+
+    @deprecated(
+        "`all()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list()` instead."
+    )
+    def all(
+        self, *, params: OffsetPaginationParams | None = None
+    ) -> Iterator[PeppolProvider]:
+        """Deprecated: iterate over all Peppol service providers.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list()`` instead.
+
+        Args:
+            params: Pagination parameters.
+
+        Yields:
+            Each Peppol service provider, across all pages.
+        """
+        for page in self._pages(params):
+            for provider in page.providers:
+                yield provider
+
+    def list(
+        self, *, params: OffsetPaginationParams | None = None
+    ) -> Pager[PeppolProvider]:
+        """List the registered Peppol service providers.
+
+        Nothing is requested until the result is consumed. Iterate it for every
+        provider, call ``pages()`` for page-sized lists or ``first_page()`` for one
+        request only.
+
+        Args:
+            params: Page size and offset of the first page; defaults are used when ``None``.
+
+        Returns:
+            A paging object over the Peppol service providers.
+
+        Example:
+            ```python
+            for provider in auth.peppol.list():
+                print(provider.id, provider.name)
+            ```
+        """
+
+        def _provider_pages() -> Generator[list[PeppolProvider], None]:
+            for page in self._pages(params):
+                yield page.providers
+
+        return Pager(_provider_pages)

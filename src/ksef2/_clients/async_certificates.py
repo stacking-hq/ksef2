@@ -1,9 +1,15 @@
 """Async certificate branch client."""
 
-from collections.abc import AsyncIterator
+import builtins
+from collections.abc import AsyncGenerator, AsyncIterator, Coroutine
 from datetime import datetime
-from typing import final
+from typing import cast, final, override
 
+from typing_extensions import deprecated
+
+from ksef2._clients._async_handles import AsyncOperationHandle
+from ksef2._clients._async_pager import AsyncPager
+from ksef2._core import exceptions
 from ksef2._core.async_protocols import AsyncMiddleware
 from ksef2._domain.models.certificates import (
     CertificateEnrollmentData,
@@ -26,6 +32,126 @@ from ksef2._domain.models.certificates import (
 from ksef2._domain.models.pagination import OffsetPaginationParams
 from ksef2._endpoints.async_certificates import AsyncCertificatesEndpoints
 from ksef2._infra.mappers.certificates import from_spec, to_spec
+
+
+@final
+class AsyncCertificateEnrollment(
+    AsyncOperationHandle[
+        CertificateEnrollmentStatusResponse, CertificateEnrollmentStatusResponse
+    ]
+):
+    """Handle to a certificate enrollment that KSeF issues asynchronously.
+
+    Returned by ``auth.certificates.enroll()``. It exposes every field of the
+    enrollment response, for example ``reference_number`` and ``timestamp``, and
+    ``wait()`` polls until KSeF has issued the certificate.
+    ``get_enrollment_status()`` on the certificates client reads the same status
+    for a reference number you stored earlier.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
+    """
+
+    def __init__(
+        self,
+        client: "AsyncCertificatesClient",
+        response: CertificateEnrollmentResponse,
+    ) -> None:
+        """Create the handle.
+
+        Args:
+            client: Certificates client used to poll the enrollment's status.
+            response: Response returned by KSeF when it accepted the enrollment.
+        """
+        super().__init__(response.reference_number)
+        self._client = client
+        self._response = response
+
+    def __getattr__(self, name: str) -> object:
+        if name in CertificateEnrollmentResponse.model_fields:
+            return cast(object, getattr(self._response, name))
+        raise AttributeError(
+            f"{type(self).__name__!r} object has no attribute {name!r}"
+        )
+
+    @property
+    def timestamp(self) -> datetime:
+        """Get when KSeF accepted the enrollment request.
+
+        Returns:
+            The acceptance time reported by KSeF.
+        """
+        return self._response.timestamp
+
+    @property
+    def response(self) -> CertificateEnrollmentResponse:
+        """Get the plain enrollment response.
+
+        Returns:
+            The data model KSeF returned when it accepted the enrollment.
+        """
+        return self._response
+
+    @override
+    async def get_status(self) -> CertificateEnrollmentStatusResponse:
+        """Fetch the enrollment's current status without waiting.
+
+        Returns:
+            The enrollment status, including the certificate serial number once issued.
+        """
+        return await self._client.get_enrollment_status(
+            reference_number=self.reference_number
+        )
+
+    @override
+    def _is_pending(self, status: CertificateEnrollmentStatusResponse) -> bool:
+        return status.status_code == 100
+
+    @override
+    def _check_status(self, status: CertificateEnrollmentStatusResponse) -> None:
+        if status.status_code not in (100, 200):
+            raise exceptions.KSeFCertificateEnrollmentFailedError(
+                reference_number=self.reference_number,
+                status_code=status.status_code,
+                description=status.status_description,
+                details=status.status_details,
+            )
+
+    @override
+    def _timeout_error(self, timeout: float) -> BaseException:
+        return exceptions.KSeFCertificateEnrollmentTimeoutError(
+            reference_number=self.reference_number,
+            timeout=timeout,
+        )
+
+    @override
+    async def _finish(
+        self, status: CertificateEnrollmentStatusResponse
+    ) -> CertificateEnrollmentStatusResponse:
+        return status
+
+    async def wait(
+        self,
+        *,
+        timeout: float = 60.0,
+        poll_interval: float = 2.0,
+    ) -> CertificateEnrollmentStatusResponse:
+        """Poll until KSeF has issued the certificate.
+
+        Args:
+            timeout: Maximum number of seconds to wait before giving up.
+            poll_interval: Delay in seconds between status checks.
+
+        Returns:
+            The final status, with the issued certificate's serial number.
+
+        Raises:
+            KSeFCertificateEnrollmentFailedError: If KSeF rejects, cancels or fails the enrollment.
+            KSeFCertificateEnrollmentTimeoutError: If polling exceeds ``timeout``.
+        """
+        return await self._wait(timeout, poll_interval)
 
 
 @final
@@ -74,7 +200,7 @@ class AsyncCertificatesClient:
         certificate_type: CertificateTypeValue,
         csr: str,
         valid_from: datetime | str | None = None,
-    ) -> CertificateEnrollmentResponse:
+    ) -> AsyncCertificateEnrollment:
         """Request issuance of a certificate from a CSR.
 
         Args:
@@ -84,7 +210,16 @@ class AsyncCertificatesClient:
             valid_from: Requested start of validity as a datetime or ISO 8601 string; ``None`` for immediately.
 
         Returns:
-            The enrollment reference; poll ``get_enrollment_status()`` for the result.
+            A handle to the enrollment; call ``wait()`` to wait until KSeF has issued the certificate.
+
+        Example:
+            ```python
+            enrollment = await auth.certificates.enroll(
+                certificate_name="signing", certificate_type="offline", csr=csr
+            )
+            status = await enrollment.wait()
+            print(status.certificate_serial_number)
+            ```
         """
         request = EnrollCertificateRequest(
             certificate_name=certificate_name,
@@ -93,7 +228,9 @@ class AsyncCertificatesClient:
             valid_from=valid_from,
         )
         body = to_spec(request)
-        return from_spec(await self._endpoints.enroll(body=body))
+        return AsyncCertificateEnrollment(
+            self, from_spec(await self._endpoints.enroll(body=body))
+        )
 
     async def get_enrollment_status(
         self,
@@ -117,7 +254,7 @@ class AsyncCertificatesClient:
     async def retrieve(
         self,
         *,
-        certificate_serial_numbers: list[CertificateSerialNumber],
+        certificate_serial_numbers: builtins.list[CertificateSerialNumber],
     ) -> RetrievedCertificatesList:
         """Download issued certificates by serial number.
 
@@ -155,7 +292,7 @@ class AsyncCertificatesClient:
             body=body,
         )
 
-    async def query(
+    async def _query(
         self,
         *,
         name: str | None = None,
@@ -165,19 +302,6 @@ class AsyncCertificatesClient:
         expires_after: datetime | str | None = None,
         params: OffsetPaginationParams | None = None,
     ) -> CertificatesInfoList:
-        """Fetch one page of certificate search results.
-
-        Args:
-            name: Match this certificate name.
-            certificate_serial_number: Match this certificate serial number.
-            certificate_type: Match this certificate type.
-            status: Match this lifecycle status.
-            expires_after: Match certificates that expire after this datetime or ISO 8601 string.
-            params: Page size and offset; defaults are used when ``None``.
-
-        Returns:
-            One page of certificate metadata.
-        """
         parameters = params or OffsetPaginationParams()
         request = QueryCertificatesRequest(
             certificate_serial_number=certificate_serial_number,
@@ -192,6 +316,77 @@ class AsyncCertificatesClient:
         )
         return from_spec(spec_resp)
 
+    async def _pages(
+        self,
+        *,
+        name: str | None,
+        certificate_serial_number: CertificateSerialNumber | None,
+        certificate_type: CertificateTypeValue | None,
+        status: CertificateStatusValue | None,
+        expires_after: datetime | str | None,
+        params: OffsetPaginationParams | None,
+    ) -> AsyncGenerator[CertificatesInfoList, None]:
+        current_params = params or OffsetPaginationParams()
+
+        while True:
+            response = await self._query(
+                name=name,
+                certificate_serial_number=certificate_serial_number,
+                certificate_type=certificate_type,
+                status=status,
+                expires_after=expires_after,
+                params=current_params,
+            )
+            yield response
+
+            if not response.has_more:
+                break
+
+            current_params = current_params.next_page()
+
+    @deprecated(
+        "`query()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list()` instead."
+    )
+    def query(
+        self,
+        *,
+        name: str | None = None,
+        certificate_serial_number: CertificateSerialNumber | None = None,
+        certificate_type: CertificateTypeValue | None = None,
+        status: CertificateStatusValue | None = None,
+        expires_after: datetime | str | None = None,
+        params: OffsetPaginationParams | None = None,
+    ) -> Coroutine[None, None, CertificatesInfoList]:
+        """Deprecated: fetch one page of certificate search results.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list()`` instead; ``first_page()`` fetches one page.
+
+        Args:
+            name: Match this certificate name.
+            certificate_serial_number: Match this certificate serial number.
+            certificate_type: Match this certificate type.
+            status: Match this lifecycle status.
+            expires_after: Match certificates that expire after this datetime or ISO 8601 string.
+            params: Page size and offset; defaults are used when ``None``.
+
+        Returns:
+            One page of certificate metadata.
+        """
+        return self._query(
+            name=name,
+            certificate_serial_number=certificate_serial_number,
+            certificate_type=certificate_type,
+            status=status,
+            expires_after=expires_after,
+            params=params,
+        )
+
+    @deprecated(
+        "`all()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list()` instead."
+    )
     async def all(
         self,
         *,
@@ -202,7 +397,10 @@ class AsyncCertificatesClient:
         expires_after: datetime | str | None = None,
         params: OffsetPaginationParams | None = None,
     ) -> AsyncIterator[CertificateInfo]:
-        """Iterate over all certificates matching the provided filters.
+        """Deprecated: iterate over all certificates matching the provided filters.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list()`` instead.
 
         Args:
             certificate_serial_number: Match this certificate serial number.
@@ -215,21 +413,60 @@ class AsyncCertificatesClient:
         Yields:
             Each matching certificate, across all pages.
         """
-        current_params = params or OffsetPaginationParams()
+        async for page in self._pages(
+            name=name,
+            certificate_serial_number=certificate_serial_number,
+            certificate_type=certificate_type,
+            status=status,
+            expires_after=expires_after,
+            params=params,
+        ):
+            for certificate in page.certificates:
+                yield certificate
 
-        while True:
-            response = await self.query(
+    def list(
+        self,
+        *,
+        name: str | None = None,
+        certificate_serial_number: CertificateSerialNumber | None = None,
+        certificate_type: CertificateTypeValue | None = None,
+        status: CertificateStatusValue | None = None,
+        expires_after: datetime | str | None = None,
+        params: OffsetPaginationParams | None = None,
+    ) -> AsyncPager[CertificateInfo]:
+        """List the certificates of the authenticated context.
+
+        Nothing is requested until the result is consumed. Iterate it for every
+        matching certificate, call ``pages()`` for page-sized lists or
+        ``first_page()`` for one request only.
+
+        Args:
+            name: Match this certificate name.
+            certificate_serial_number: Match this certificate serial number.
+            certificate_type: Match this certificate type.
+            status: Match this lifecycle status.
+            expires_after: Match certificates that expire after this datetime or ISO 8601 string.
+            params: Page size and offset of the first page; defaults are used when ``None``.
+
+        Returns:
+            A paging object over the matching certificates.
+
+        Example:
+            ```python
+            async for certificate in auth.certificates.list(status="active"):
+                print(certificate.certificate_serial_number)
+            ```
+        """
+
+        async def _certificate_pages() -> AsyncGenerator[list[CertificateInfo], None]:
+            async for page in self._pages(
                 name=name,
                 certificate_serial_number=certificate_serial_number,
                 certificate_type=certificate_type,
                 status=status,
                 expires_after=expires_after,
-                params=current_params,
-            )
-            for certificate in response.certificates:
-                yield certificate
+                params=params,
+            ):
+                yield page.certificates
 
-            if not response.has_more:
-                break
-
-            current_params = current_params.next_page()
+        return AsyncPager(_certificate_pages)

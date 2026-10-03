@@ -11,7 +11,7 @@ They are the paths intended to remain stable through the 1.x line.
 | Import path | Use it for |
 | --- | --- |
 | `ksef2` | Root clients, environment and transport config, `FormSchema`, `__version__`, and public exceptions. |
-| `ksef2.clients` | Concrete sync/async clients, the stable `InvoicesService` / `BatchService` workflow types, and the handle, paging and export result types (`InvoiceSubmission`, `ExportJob`, `ExportedInvoices`, `Pager`, `OperationHandle`), plus async twins, for type annotations. |
+| `ksef2.clients` | Concrete sync/async clients, the stable `InvoicesService` / `BatchService` workflow types, and the handle, paging and export result types (`InvoiceSubmission`, `ExportJob`, `GeneratedToken`, `PermissionOperation`, `CertificateEnrollment`, `ExportedInvoices`, `Pager`, `OperationHandle`), plus async twins, for type annotations. |
 | `ksef2.models` | SDK request, response, filter, pagination, token, permission, session, and batch models. |
 | `ksef2.fa3` | FA(3) invoice builder, draft snapshots, and public FA(3) domain models used by builder workflows. |
 | `ksef2.xades` | Certificate loading, TEST certificate generation, local XAdES signing helpers, and `LocalSigner`. |
@@ -157,11 +157,39 @@ outside `__main__` and test runners, so run your tests with
 | `auth.invoices.query_metadata()`, `query_metadata_pages()`, `all_metadata()` and `wait_for_invoices()` | `auth.invoices.search(...)` with `.pages()`, `.first_page()` and `.wait()` | 1.10.0 |
 | `auth.invoices.download_invoice()` and `wait_for_invoice_download()` | `auth.invoices.download(...)` | 1.10.0 |
 | `auth.invoices.schedule_export()`, `get_export_status()`, `wait_for_export_package()`, `fetch_package()`, `fetch_package_bytes()` and `export_and_download()` | `auth.invoices.export(...)`, then `ExportJob.wait()` | 1.10.0 |
+| `auth.tokens.wait_for_activation(reference_number=...)` | `auth.tokens.generate(...).wait()` | 1.10.0 |
+| `auth.tokens.status()` | `auth.tokens.get_status()` | 1.10.0 |
+| `auth.tokens.list_page()` and `list_all()` | `auth.tokens.list(...)` with `.pages()` and `.first_page()` | 1.10.0 |
+| `auth.certificates.query()` and `all()` | `auth.certificates.list(...)` | 1.10.0 |
+| `client.peppol.query()` and `all()` | `client.peppol.list(...)` | 1.10.0 |
+| `auth.sessions.query()` and `all()` | `auth.sessions.list(...)` | 1.10.0 |
+| `auth.sessions.close(reference_number=...)` | `auth.sessions.terminate(reference_number)` | 1.10.0 |
+| `auth.invoice_sessions.query()` and `all()` | `auth.invoice_sessions.list(session_type, ...)` | 1.10.0 |
+| `auth.collective_identifiers.query()` and `query_all()` | `auth.collective_identifiers.list(filters)` | 1.10.0 |
+| `auth.collective_identifiers.query_by_ksef_number()` and `query_all_by_ksef_number()` | `auth.collective_identifiers.list_for_invoice(ksef_number)` | 1.10.0 |
+| `auth.collective_identifiers.list_all_invoices()` | `auth.collective_identifiers.list_invoices(numbers)` | 1.10.0 |
+| `auth.permissions.query_persons()`, `query_entities()`, `query_authorizations()`, `query_eu_entities()`, `query_personal()`, `query_subunits()` and `query_subordinate_entities()` | `auth.permissions.list_persons(query)`, `list_entities(query)`, `list_authorizations(query)`, `list_eu_entities(query)`, `list_personal(query)`, `list_subunits(query)` and `list_subordinate_entities(query)` | 1.10.0 |
+| `auth.permissions.get_entity_roles()` | `auth.permissions.list_entity_roles()` | 1.10.0 |
+| `auth.permissions.revoke_common()` | `auth.permissions.revoke()` | 1.10.0 |
+| `InvoicesClient` and `AsyncInvoicesClient` imported from `ksef2.clients` | `auth.invoices` (`InvoicesService`) | 1.10.0 |
 
 `session.send_invoice()` keeps its name and accepts the XML positionally as
 `bytes` or `str`. It now returns an `InvoiceSubmission` handle that exposes every
 field of the old `SendInvoiceResponse`, so code that reads `.reference_number`
 keeps working.
+
+The same holds for the other operations KSeF finishes asynchronously:
+`tokens.generate()` returns a `GeneratedToken` (read `.token` at once, `.wait()`
+for activation), `permissions.grant_*()` and `revoke*()` return a
+`PermissionOperation`, and `certificates.enroll()` returns a
+`CertificateEnrollment`. Each exposes every field of the response it replaces,
+and `get_operation_status()` and `get_enrollment_status()` stay as the data
+getters.
+
+`auth.collective_identifiers.list_invoices()` keeps its name but now returns a
+`Pager` over the invoices instead of one page, so it is the one name in the table
+above whose return type changes. Iterate it, or call `.first_page()` for the old
+single request; `list_all_invoices()` still returns pages.
 
 `FA3InvoiceBuilder.dump_state()` and `from_state()` are a separate builder
 draft API and are not deprecated.

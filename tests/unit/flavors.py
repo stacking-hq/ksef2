@@ -49,6 +49,11 @@ class Flavor:
             return asyncio.run(_collect(iterable))
         return list(iterable)
 
+    def client(self, sync_cls: type[Any], async_cls: type[Any]) -> Any:
+        """Build a branch client of this flavour over the fake transport."""
+        cls = async_cls if self.is_async else sync_cls
+        return cls(self.transport)  # pyright: ignore[reportArgumentType]
+
     def close(self, session: Any) -> None:
         """Close a session client."""
         self.run(session.aclose() if self.is_async else session.close())

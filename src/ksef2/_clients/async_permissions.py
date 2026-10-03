@@ -1,21 +1,31 @@
 """Async permissions branch client."""
 
-from typing import final
+from collections.abc import AsyncGenerator, Awaitable, Callable, Coroutine, Sequence
+from typing import cast, final, override
 
+from typing_extensions import deprecated
+
+from ksef2._clients._async_handles import AsyncOperationHandle
+from ksef2._clients._async_pager import AsyncPager
+from ksef2._core import exceptions
 from ksef2._core.async_protocols import AsyncMiddleware
 from ksef2._domain.models.pagination import OffsetPaginationParams
 from ksef2._domain.models.permissions import (
     AttachmentPermissionStatus,
+    AuthorizationGrantDetail,
     AuthorizationPermissionsQuery,
     AuthorizationPermissionsQueryResponse,
     AuthorizationPermissionType,
     AuthorizationSubjectIdentifierType,
     CertificateSubjectIdentifierType,
     EntityPermission,
+    EntityPermissionDetail,
     EntityPermissionsQuery,
     EntityPermissionsQueryResponse,
+    EntityRole,
     EntityRolesResponse,
     EuEntityAdminContextIdentifierType,
+    EuEntityPermission,
     EuEntityPermissionsQuery,
     EuEntityPermissionsQueryResponse,
     EuEntityPermissionType,
@@ -30,14 +40,18 @@ from ksef2._domain.models.permissions import (
     IndirectPermissionType,
     IndirectTargetIdentifierType,
     PermissionOperationStatusResponse,
+    PersonalPermissionDetail,
     PersonalPermissionsQuery,
     PersonalPermissionsQueryResponse,
+    PersonPermissionDetail,
     PersonPermissionsQuery,
     PersonPermissionsQueryResponse,
     PersonPermissionScope,
+    SubordinateEntityRoleDetail,
     SubordinateEntityRolesQuery,
     SubordinateEntityRolesQueryResponse,
     SubunitIdentifierType,
+    SubunitPermission,
     SubunitPermissionsQuery,
     SubunitPermissionsQueryResponse,
 )
@@ -58,6 +72,136 @@ from ksef2._infra.mappers.permissions import (
     subordinate_roles_from_spec,
     subunit_from_spec,
 )
+
+
+def _offset_pager[PageT, ItemT](
+    fetch: Callable[[OffsetPaginationParams], Awaitable[PageT]],
+    items: Callable[[PageT], Sequence[ItemT]],
+    has_more: Callable[[PageT], bool],
+    params: OffsetPaginationParams | None,
+) -> AsyncPager[ItemT]:
+    """Build a pager over an offset-paged permissions query."""
+
+    async def _pages() -> AsyncGenerator[list[ItemT], None]:
+        current_params = params or OffsetPaginationParams()
+        while True:
+            page = await fetch(current_params)
+            yield list(items(page))
+            if not has_more(page):
+                break
+            current_params = current_params.next_page()
+
+    return AsyncPager(_pages)
+
+
+@final
+class AsyncPermissionOperation(
+    AsyncOperationHandle[
+        PermissionOperationStatusResponse, PermissionOperationStatusResponse
+    ]
+):
+    """Handle to a permission grant or revoke that KSeF applies asynchronously.
+
+    Returned by every ``grant_*()`` and ``revoke*()`` call of
+    ``auth.permissions``. It exposes every field of the response, for example
+    ``reference_number``, and ``wait()`` polls the operation until KSeF has
+    finished it. ``get_operation_status()`` on the permissions client reads the
+    same status for a reference number you stored earlier.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
+    """
+
+    def __init__(
+        self,
+        client: "AsyncPermissionsClient",
+        response: GrantPermissionsResponse,
+    ) -> None:
+        """Create the handle.
+
+        Args:
+            client: Permissions client used to poll the operation's status.
+            response: Response returned by KSeF when it accepted the operation.
+        """
+        super().__init__(response.reference_number)
+        self._client = client
+        self._response = response
+
+    def __getattr__(self, name: str) -> object:
+        if name in GrantPermissionsResponse.model_fields:
+            return cast(object, getattr(self._response, name))
+        raise AttributeError(
+            f"{type(self).__name__!r} object has no attribute {name!r}"
+        )
+
+    @property
+    def response(self) -> GrantPermissionsResponse:
+        """Get the plain operation response.
+
+        Returns:
+            The data model KSeF returned when it accepted the operation.
+        """
+        return self._response
+
+    @override
+    async def get_status(self) -> PermissionOperationStatusResponse:
+        """Fetch the operation's current status without waiting.
+
+        Returns:
+            The operation status; ``status.code`` is ``200`` once it has completed successfully.
+        """
+        return await self._client.get_operation_status(
+            reference_number=self.reference_number
+        )
+
+    @override
+    def _is_pending(self, status: PermissionOperationStatusResponse) -> bool:
+        return status.status.code == 100
+
+    @override
+    def _check_status(self, status: PermissionOperationStatusResponse) -> None:
+        if status.status.code not in (100, 200):
+            raise exceptions.KSeFPermissionOperationFailedError(
+                reference_number=self.reference_number,
+                status_code=status.status.code,
+                description=status.status.description,
+            )
+
+    @override
+    def _timeout_error(self, timeout: float) -> BaseException:
+        return exceptions.KSeFPermissionOperationTimeoutError(
+            reference_number=self.reference_number,
+            timeout=timeout,
+        )
+
+    @override
+    async def _finish(
+        self, status: PermissionOperationStatusResponse
+    ) -> PermissionOperationStatusResponse:
+        return status
+
+    async def wait(
+        self,
+        *,
+        timeout: float = 60.0,
+        poll_interval: float = 1.0,
+    ) -> PermissionOperationStatusResponse:
+        """Poll until KSeF has finished the operation.
+
+        Args:
+            timeout: Maximum number of seconds to wait before giving up.
+            poll_interval: Delay in seconds between status checks.
+
+        Returns:
+            The final status, with ``status.code`` ``200``.
+
+        Raises:
+            KSeFPermissionOperationFailedError: If KSeF finishes the operation without applying it.
+            KSeFPermissionOperationTimeoutError: If polling exceeds ``timeout``.
+        """
+        return await self._wait(timeout, poll_interval)
 
 
 @final
@@ -86,6 +230,11 @@ class AsyncPermissionsClient:
         self._query_eps = AsyncQueryPermissionsEndpoints(transport)
         self._get_eps = AsyncGetPermissionsEndpoints(transport)
 
+    def _operation(
+        self, response: GrantPermissionsResponse
+    ) -> AsyncPermissionOperation:
+        return AsyncPermissionOperation(self, response)
+
     async def grant_person(
         self,
         *,
@@ -95,7 +244,7 @@ class AsyncPermissionsClient:
         description: str,
         first_name: str,
         last_name: str,
-    ) -> GrantPermissionsResponse:
+    ) -> AsyncPermissionOperation:
         """Grant person-scoped permissions to a subject identifier.
 
         Args:
@@ -107,7 +256,7 @@ class AsyncPermissionsClient:
             last_name: Last name of the person receiving the permissions.
 
         Returns:
-            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+            A handle to the asynchronous grant operation; call ``wait()`` to wait until KSeF has applied it.
         """
         body = grant_to_spec(
             GrantPersonPermissionsRequest(
@@ -119,7 +268,9 @@ class AsyncPermissionsClient:
                 last_name=last_name,
             )
         )
-        return grant_from_spec(await self._grant_eps.grant_person(request=body))
+        return self._operation(
+            grant_from_spec(await self._grant_eps.grant_person(request=body))
+        )
 
     async def grant_entity(
         self,
@@ -128,7 +279,7 @@ class AsyncPermissionsClient:
         permissions: list[EntityPermission],
         description: str,
         entity_name: str,
-    ) -> GrantPermissionsResponse:
+    ) -> AsyncPermissionOperation:
         """Grant entity permissions to a NIP-identified entity.
 
         Args:
@@ -138,7 +289,7 @@ class AsyncPermissionsClient:
             entity_name: Full name of the entity receiving the permissions.
 
         Returns:
-            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+            A handle to the asynchronous grant operation; call ``wait()`` to wait until KSeF has applied it.
         """
         body = grant_to_spec(
             GrantEntityPermissionsRequest(
@@ -148,7 +299,9 @@ class AsyncPermissionsClient:
                 entity_name=entity_name,
             )
         )
-        return grant_from_spec(await self._grant_eps.grant_entity(request=body))
+        return self._operation(
+            grant_from_spec(await self._grant_eps.grant_entity(request=body))
+        )
 
     async def grant_authorization(
         self,
@@ -158,7 +311,7 @@ class AsyncPermissionsClient:
         permission: AuthorizationPermissionType,
         description: str,
         entity_name: str,
-    ) -> GrantPermissionsResponse:
+    ) -> AsyncPermissionOperation:
         """Grant an authorization permission such as self-invoicing.
 
         Args:
@@ -169,7 +322,7 @@ class AsyncPermissionsClient:
             entity_name: Full name of the entity being authorized.
 
         Returns:
-            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+            A handle to the asynchronous grant operation; call ``wait()`` to wait until KSeF has applied it.
         """
         body = grant_to_spec(
             GrantAuthorizationPermissionsRequest(
@@ -180,7 +333,9 @@ class AsyncPermissionsClient:
                 entity_name=entity_name,
             )
         )
-        return grant_from_spec(await self._grant_eps.grant_authorization(request=body))
+        return self._operation(
+            grant_from_spec(await self._grant_eps.grant_authorization(request=body))
+        )
 
     async def grant_indirect(
         self,
@@ -193,7 +348,7 @@ class AsyncPermissionsClient:
         last_name: str,
         target_type: IndirectTargetIdentifierType | None = None,
         target_value: str | None = None,
-    ) -> GrantPermissionsResponse:
+    ) -> AsyncPermissionOperation:
         """Grant indirect permissions, optionally limited to a target entity.
 
         Args:
@@ -207,7 +362,7 @@ class AsyncPermissionsClient:
             target_value: Identifier of the partner context the grant is limited to; ``None`` when the target is all partners.
 
         Returns:
-            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+            A handle to the asynchronous grant operation; call ``wait()`` to wait until KSeF has applied it.
         """
         body = grant_to_spec(
             GrantIndirectPermissionsRequest(
@@ -221,7 +376,9 @@ class AsyncPermissionsClient:
                 target_value=target_value,
             )
         )
-        return grant_from_spec(await self._grant_eps.grant_indirect(request=body))
+        return self._operation(
+            grant_from_spec(await self._grant_eps.grant_indirect(request=body))
+        )
 
     async def grant_subunit(
         self,
@@ -234,7 +391,7 @@ class AsyncPermissionsClient:
         first_name: str,
         last_name: str,
         subunit_name: str | None = None,
-    ) -> GrantPermissionsResponse:
+    ) -> AsyncPermissionOperation:
         """Grant permissions within a subunit context.
 
         Args:
@@ -248,7 +405,7 @@ class AsyncPermissionsClient:
             subunit_name: Display name of the subunit; optional.
 
         Returns:
-            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+            A handle to the asynchronous grant operation; call ``wait()`` to wait until KSeF has applied it.
         """
         body = grant_to_spec(
             GrantSubunitPermissionsRequest(
@@ -262,7 +419,9 @@ class AsyncPermissionsClient:
                 subunit_name=subunit_name,
             )
         )
-        return grant_from_spec(await self._grant_eps.grant_subunit(request=body))
+        return self._operation(
+            grant_from_spec(await self._grant_eps.grant_subunit(request=body))
+        )
 
     async def grant_eu_entity(
         self,
@@ -270,7 +429,7 @@ class AsyncPermissionsClient:
         subject_value: str,
         permissions: list[EuEntityPermissionType],
         description: str,
-    ) -> GrantPermissionsResponse:
+    ) -> AsyncPermissionOperation:
         """Grant permissions to an EU entity identified by fingerprint data.
 
         Args:
@@ -279,7 +438,7 @@ class AsyncPermissionsClient:
             description: Free-text reason for the grant.
 
         Returns:
-            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+            A handle to the asynchronous grant operation; call ``wait()`` to wait until KSeF has applied it.
         """
         body = grant_to_spec(
             GrantEuEntityPermissionsRequest(
@@ -288,7 +447,9 @@ class AsyncPermissionsClient:
                 description=description,
             )
         )
-        return grant_from_spec(await self._grant_eps.grant_eu_entity(request=body))
+        return self._operation(
+            grant_from_spec(await self._grant_eps.grant_eu_entity(request=body))
+        )
 
     async def grant_eu_entity_administration(
         self,
@@ -298,7 +459,7 @@ class AsyncPermissionsClient:
         context_value: str,
         description: str,
         eu_entity_name: str,
-    ) -> GrantPermissionsResponse:
+    ) -> AsyncPermissionOperation:
         """Grant administration rights for an EU entity in a VAT UE context.
 
         Args:
@@ -309,7 +470,7 @@ class AsyncPermissionsClient:
             eu_entity_name: Full name of the EU entity.
 
         Returns:
-            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+            A handle to the asynchronous grant operation; call ``wait()`` to wait until KSeF has applied it.
         """
         body = grant_to_spec(
             GrantEuEntityAdministrationRequest(
@@ -320,35 +481,76 @@ class AsyncPermissionsClient:
                 eu_entity_name=eu_entity_name,
             )
         )
-        return grant_from_spec(
-            await self._grant_eps.grant_administered_eu_entity(request=body)
+        return self._operation(
+            grant_from_spec(
+                await self._grant_eps.grant_administered_eu_entity(request=body)
+            )
         )
 
     async def revoke_authorization(
         self,
         *,
         permission_id: str,
-    ) -> GrantPermissionsResponse:
+    ) -> AsyncPermissionOperation:
         """Revoke an authorization permission by permission id.
 
         Args:
             permission_id: Identifier of the authorization permission, from a query result.
 
         Returns:
-            The reference of the asynchronous revoke operation; poll ``get_operation_status()`` for the result.
+            A handle to the asynchronous revoke operation; call ``wait()`` to wait until KSeF has applied it.
         """
+        return self._operation(
+            grant_from_spec(
+                await self._revoke_eps.revoke_authorization(
+                    permission_id=permission_id,
+                )
+            )
+        )
+
+    async def _revoke(self, permission_id: str) -> GrantPermissionsResponse:
         return grant_from_spec(
-            await self._revoke_eps.revoke_authorization(
+            await self._revoke_eps.revoke_person(
                 permission_id=permission_id,
             )
         )
 
-    async def revoke_common(
+    async def revoke(
         self,
         *,
         permission_id: str,
-    ) -> GrantPermissionsResponse:
+    ) -> AsyncPermissionOperation:
         """Revoke a non-authorization permission by permission id.
+
+        Use ``revoke_authorization()`` for authorization permissions such as self-invoicing.
+
+        Args:
+            permission_id: Identifier of the permission, from a query result.
+
+        Returns:
+            A handle to the asynchronous revoke operation; call ``wait()`` to wait until KSeF has applied it.
+
+        Example:
+            ```python
+            operation = await auth.permissions.revoke(permission_id=permission.id)
+            await operation.wait()
+            ```
+        """
+        return self._operation(await self._revoke(permission_id))
+
+    @deprecated(
+        "`revoke_common()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `revoke()` instead."
+    )
+    def revoke_common(
+        self,
+        *,
+        permission_id: str,
+    ) -> Coroutine[None, None, GrantPermissionsResponse]:
+        """Deprecated: revoke a non-authorization permission by permission id.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``revoke()`` instead.
 
         Args:
             permission_id: Identifier of the permission, from a query result.
@@ -356,11 +558,7 @@ class AsyncPermissionsClient:
         Returns:
             The reference of the asynchronous revoke operation; poll ``get_operation_status()`` for the result.
         """
-        return grant_from_spec(
-            await self._revoke_eps.revoke_person(
-                permission_id=permission_id,
-            )
-        )
+        return self._revoke(permission_id)
 
     async def get_attachment_permission_status(self) -> AttachmentPermissionStatus:
         """Return whether attachments are currently allowed for the subject.
@@ -389,12 +587,89 @@ class AsyncPermissionsClient:
             )
         )
 
-    async def get_entity_roles(
+    async def _entity_roles(
+        self, params: OffsetPaginationParams
+    ) -> EntityRolesResponse:
+        return entity_from_spec(
+            await self._get_eps.query_entity_roles(**params.to_query_params())
+        )
+
+    async def _authorizations(
+        self, query: AuthorizationPermissionsQuery, params: OffsetPaginationParams
+    ) -> AuthorizationPermissionsQueryResponse:
+        return entity_from_spec(
+            await self._query_eps.query_authorizations_grants(
+                request=query_to_spec(query), **params.to_query_params()
+            )
+        )
+
+    async def _entities(
+        self, query: EntityPermissionsQuery, params: OffsetPaginationParams
+    ) -> EntityPermissionsQueryResponse:
+        return entity_from_spec(
+            await self._query_eps.query_entities_grants(
+                request=query_to_spec(query), **params.to_query_params()
+            )
+        )
+
+    async def _eu_entities(
+        self, query: EuEntityPermissionsQuery, params: OffsetPaginationParams
+    ) -> EuEntityPermissionsQueryResponse:
+        return eu_entity_from_spec(
+            await self._query_eps.query_eu_entities_grants(
+                request=query_to_spec(query), **params.to_query_params()
+            )
+        )
+
+    async def _personal(
+        self, query: PersonalPermissionsQuery, params: OffsetPaginationParams
+    ) -> PersonalPermissionsQueryResponse:
+        return personal_from_spec(
+            await self._query_eps.query_personal_grants(
+                request=query_to_spec(query), **params.to_query_params()
+            )
+        )
+
+    async def _persons(
+        self, query: PersonPermissionsQuery, params: OffsetPaginationParams
+    ) -> PersonPermissionsQueryResponse:
+        return person_from_spec(
+            await self._query_eps.query_persons_grants(
+                request=query_to_spec(query), **params.to_query_params()
+            )
+        )
+
+    async def _subordinate_entities(
+        self, query: SubordinateEntityRolesQuery, params: OffsetPaginationParams
+    ) -> SubordinateEntityRolesQueryResponse:
+        return subordinate_roles_from_spec(
+            await self._query_eps.query_subordinate_entities_roles(
+                request=query_to_spec(query), **params.to_query_params()
+            )
+        )
+
+    async def _subunits(
+        self, query: SubunitPermissionsQuery, params: OffsetPaginationParams
+    ) -> SubunitPermissionsQueryResponse:
+        return subunit_from_spec(
+            await self._query_eps.query_subunits_grants(
+                request=query_to_spec(query), **params.to_query_params()
+            )
+        )
+
+    @deprecated(
+        "`get_entity_roles()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list_entity_roles()` instead."
+    )
+    def get_entity_roles(
         self,
         *,
         params: OffsetPaginationParams | None = None,
-    ) -> EntityRolesResponse:
-        """Fetch one page of roles assigned to the authenticated entity.
+    ) -> Coroutine[None, None, EntityRolesResponse]:
+        """Deprecated: fetch one page of roles assigned to the authenticated entity.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list_entity_roles()`` instead; ``first_page()`` fetches one page.
 
         Args:
             params: Page size and offset; defaults are used when ``None``.
@@ -402,20 +677,22 @@ class AsyncPermissionsClient:
         Returns:
             One page of roles assigned to the authenticated entity.
         """
-        spec_resp = await self._get_eps.query_entity_roles(
-            **params.to_query_params()
-            if params
-            else OffsetPaginationParams().to_query_params(),
-        )
-        return entity_from_spec(spec_resp)
+        return self._entity_roles(params or OffsetPaginationParams())
 
-    async def query_authorizations(
+    @deprecated(
+        "`query_authorizations()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list_authorizations()` instead."
+    )
+    def query_authorizations(
         self,
         *,
         query: AuthorizationPermissionsQuery,
         params: OffsetPaginationParams | None = None,
-    ) -> AuthorizationPermissionsQueryResponse:
-        """Fetch one page of authorization grants matching the provided filters.
+    ) -> Coroutine[None, None, AuthorizationPermissionsQueryResponse]:
+        """Deprecated: fetch one page of authorization grants matching the provided filters.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list_authorizations()`` instead; ``first_page()`` fetches one page.
 
         Args:
             query: Filters for the authorization grants.
@@ -424,21 +701,22 @@ class AsyncPermissionsClient:
         Returns:
             One page of authorization grants.
         """
-        spec_resp = await self._query_eps.query_authorizations_grants(
-            request=query_to_spec(query),
-            **params.to_query_params()
-            if params
-            else OffsetPaginationParams().to_query_params(),
-        )
-        return entity_from_spec(spec_resp)
+        return self._authorizations(query, params or OffsetPaginationParams())
 
-    async def query_entities(
+    @deprecated(
+        "`query_entities()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list_entities()` instead."
+    )
+    def query_entities(
         self,
         *,
         query: EntityPermissionsQuery,
         params: OffsetPaginationParams | None = None,
-    ) -> EntityPermissionsQueryResponse:
-        """Fetch one page of entity permission grants matching the provided filters.
+    ) -> Coroutine[None, None, EntityPermissionsQueryResponse]:
+        """Deprecated: fetch one page of entity permission grants matching the provided filters.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list_entities()`` instead; ``first_page()`` fetches one page.
 
         Args:
             query: Filters for the entity permissions.
@@ -447,21 +725,22 @@ class AsyncPermissionsClient:
         Returns:
             One page of entity permissions.
         """
-        spec_resp = await self._query_eps.query_entities_grants(
-            request=query_to_spec(query),
-            **params.to_query_params()
-            if params
-            else OffsetPaginationParams().to_query_params(),
-        )
-        return entity_from_spec(spec_resp)
+        return self._entities(query, params or OffsetPaginationParams())
 
-    async def query_eu_entities(
+    @deprecated(
+        "`query_eu_entities()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list_eu_entities()` instead."
+    )
+    def query_eu_entities(
         self,
         *,
         query: EuEntityPermissionsQuery,
         params: OffsetPaginationParams | None = None,
-    ) -> EuEntityPermissionsQueryResponse:
-        """Fetch one page of EU-entity permissions matching the provided filters.
+    ) -> Coroutine[None, None, EuEntityPermissionsQueryResponse]:
+        """Deprecated: fetch one page of EU-entity permissions matching the provided filters.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list_eu_entities()`` instead; ``first_page()`` fetches one page.
 
         Args:
             query: Filters for the EU-entity permissions.
@@ -470,21 +749,22 @@ class AsyncPermissionsClient:
         Returns:
             One page of EU-entity permissions.
         """
-        spec_resp = await self._query_eps.query_eu_entities_grants(
-            request=query_to_spec(query),
-            **params.to_query_params()
-            if params
-            else OffsetPaginationParams().to_query_params(),
-        )
-        return eu_entity_from_spec(spec_resp)
+        return self._eu_entities(query, params or OffsetPaginationParams())
 
-    async def query_personal(
+    @deprecated(
+        "`query_personal()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list_personal()` instead."
+    )
+    def query_personal(
         self,
         *,
         query: PersonalPermissionsQuery,
         params: OffsetPaginationParams | None = None,
-    ) -> PersonalPermissionsQueryResponse:
-        """Fetch one page of permissions held by the authenticated subject.
+    ) -> Coroutine[None, None, PersonalPermissionsQueryResponse]:
+        """Deprecated: fetch one page of permissions held by the authenticated subject.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list_personal()`` instead; ``first_page()`` fetches one page.
 
         Args:
             query: Filters for the permissions.
@@ -493,21 +773,22 @@ class AsyncPermissionsClient:
         Returns:
             One page of permissions held by the authenticated subject.
         """
-        spec_resp = await self._query_eps.query_personal_grants(
-            request=query_to_spec(query),
-            **params.to_query_params()
-            if params
-            else OffsetPaginationParams().to_query_params(),
-        )
-        return personal_from_spec(spec_resp)
+        return self._personal(query, params or OffsetPaginationParams())
 
-    async def query_persons(
+    @deprecated(
+        "`query_persons()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list_persons()` instead."
+    )
+    def query_persons(
         self,
         *,
         query: PersonPermissionsQuery,
         params: OffsetPaginationParams | None = None,
-    ) -> PersonPermissionsQueryResponse:
-        """Fetch one page of person permission grants matching the provided filters.
+    ) -> Coroutine[None, None, PersonPermissionsQueryResponse]:
+        """Deprecated: fetch one page of person permission grants matching the provided filters.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list_persons()`` instead; ``first_page()`` fetches one page.
 
         Args:
             query: Filters for the person permissions.
@@ -516,21 +797,22 @@ class AsyncPermissionsClient:
         Returns:
             One page of person permissions.
         """
-        spec_resp = await self._query_eps.query_persons_grants(
-            request=query_to_spec(query),
-            **params.to_query_params()
-            if params
-            else OffsetPaginationParams().to_query_params(),
-        )
-        return person_from_spec(spec_resp)
+        return self._persons(query, params or OffsetPaginationParams())
 
-    async def query_subordinate_entities(
+    @deprecated(
+        "`query_subordinate_entities()` is deprecated and will be removed in "
+        "ksef2 1.10.0; use `list_subordinate_entities()` instead."
+    )
+    def query_subordinate_entities(
         self,
         *,
         query: SubordinateEntityRolesQuery,
         params: OffsetPaginationParams | None = None,
-    ) -> SubordinateEntityRolesQueryResponse:
-        """Fetch one page of subordinate entity roles.
+    ) -> Coroutine[None, None, SubordinateEntityRolesQueryResponse]:
+        """Deprecated: fetch one page of subordinate entity roles.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list_subordinate_entities()`` instead; ``first_page()`` fetches one page.
 
         Args:
             query: Filters for the subordinate entity roles.
@@ -539,21 +821,22 @@ class AsyncPermissionsClient:
         Returns:
             One page of subordinate entity roles.
         """
-        spec_resp = await self._query_eps.query_subordinate_entities_roles(
-            request=query_to_spec(query),
-            **params.to_query_params()
-            if params
-            else OffsetPaginationParams().to_query_params(),
-        )
-        return subordinate_roles_from_spec(spec_resp)
+        return self._subordinate_entities(query, params or OffsetPaginationParams())
 
-    async def query_subunits(
+    @deprecated(
+        "`query_subunits()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list_subunits()` instead."
+    )
+    def query_subunits(
         self,
         *,
         query: SubunitPermissionsQuery,
         params: OffsetPaginationParams | None = None,
-    ) -> SubunitPermissionsQueryResponse:
-        """Fetch one page of subunit permission grants.
+    ) -> Coroutine[None, None, SubunitPermissionsQueryResponse]:
+        """Deprecated: fetch one page of subunit permission grants.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list_subunits()`` instead; ``first_page()`` fetches one page.
 
         Args:
             query: Filters for the subunit permissions.
@@ -562,10 +845,256 @@ class AsyncPermissionsClient:
         Returns:
             One page of subunit permissions.
         """
-        spec_resp = await self._query_eps.query_subunits_grants(
-            request=query_to_spec(query),
-            **params.to_query_params()
-            if params
-            else OffsetPaginationParams().to_query_params(),
+        return self._subunits(query, params or OffsetPaginationParams())
+
+    def list_entity_roles(
+        self, *, params: OffsetPaginationParams | None = None
+    ) -> AsyncPager[EntityRole]:
+        """List the roles assigned to the authenticated entity.
+
+        Nothing is requested until the result is consumed. Iterate it for every
+        role, call ``pages()`` for page-sized lists or ``first_page()`` for one
+        request only.
+
+        Args:
+            params: Page size and offset of the first page; defaults are used when ``None``.
+
+        Returns:
+            A paging object over the roles assigned to the authenticated entity.
+
+        Example:
+            ```python
+            async for role in auth.permissions.list_entity_roles():
+                print(role.role)
+            ```
+        """
+        return _offset_pager(
+            self._entity_roles,
+            lambda page: page.roles,
+            lambda page: page.has_more,
+            params,
         )
-        return subunit_from_spec(spec_resp)
+
+    def list_authorizations(
+        self,
+        query: AuthorizationPermissionsQuery,
+        *,
+        params: OffsetPaginationParams | None = None,
+    ) -> AsyncPager[AuthorizationGrantDetail]:
+        """List the authorization grants matching the provided filters.
+
+        Nothing is requested until the result is consumed. Iterate it for every
+        grant, call ``pages()`` for page-sized lists or ``first_page()`` for one
+        request only.
+
+        Args:
+            query: Filters for the authorization grants.
+            params: Page size and offset of the first page; defaults are used when ``None``.
+
+        Returns:
+            A paging object over the authorization grants.
+
+        Example:
+            ```python
+            async for grant in auth.permissions.list_authorizations(query):
+                print(grant.id)
+            ```
+        """
+        return _offset_pager(
+            lambda page_params: self._authorizations(query, page_params),
+            lambda page: page.authorization_grants,
+            lambda page: page.has_more,
+            params,
+        )
+
+    def list_entities(
+        self,
+        query: EntityPermissionsQuery,
+        *,
+        params: OffsetPaginationParams | None = None,
+    ) -> AsyncPager[EntityPermissionDetail]:
+        """List the entity permission grants matching the provided filters.
+
+        Nothing is requested until the result is consumed. Iterate it for every
+        grant, call ``pages()`` for page-sized lists or ``first_page()`` for one
+        request only.
+
+        Args:
+            query: Filters for the entity permissions.
+            params: Page size and offset of the first page; defaults are used when ``None``.
+
+        Returns:
+            A paging object over the entity permissions.
+
+        Example:
+            ```python
+            async for permission in auth.permissions.list_entities(query):
+                print(permission.id)
+            ```
+        """
+        return _offset_pager(
+            lambda page_params: self._entities(query, page_params),
+            lambda page: page.permissions,
+            lambda page: page.has_more,
+            params,
+        )
+
+    def list_eu_entities(
+        self,
+        query: EuEntityPermissionsQuery,
+        *,
+        params: OffsetPaginationParams | None = None,
+    ) -> AsyncPager[EuEntityPermission]:
+        """List the EU-entity permissions matching the provided filters.
+
+        Nothing is requested until the result is consumed. Iterate it for every
+        permission, call ``pages()`` for page-sized lists or ``first_page()`` for
+        one request only.
+
+        Args:
+            query: Filters for the EU-entity permissions.
+            params: Page size and offset of the first page; defaults are used when ``None``.
+
+        Returns:
+            A paging object over the EU-entity permissions.
+
+        Example:
+            ```python
+            async for permission in auth.permissions.list_eu_entities(query):
+                print(permission.id)
+            ```
+        """
+        return _offset_pager(
+            lambda page_params: self._eu_entities(query, page_params),
+            lambda page: page.permissions,
+            lambda page: page.has_more,
+            params,
+        )
+
+    def list_personal(
+        self,
+        query: PersonalPermissionsQuery,
+        *,
+        params: OffsetPaginationParams | None = None,
+    ) -> AsyncPager[PersonalPermissionDetail]:
+        """List the permissions held by the authenticated subject.
+
+        Nothing is requested until the result is consumed. Iterate it for every
+        permission, call ``pages()`` for page-sized lists or ``first_page()`` for
+        one request only.
+
+        Args:
+            query: Filters for the permissions.
+            params: Page size and offset of the first page; defaults are used when ``None``.
+
+        Returns:
+            A paging object over the permissions held by the authenticated subject.
+
+        Example:
+            ```python
+            async for permission in auth.permissions.list_personal(query):
+                print(permission.id)
+            ```
+        """
+        return _offset_pager(
+            lambda page_params: self._personal(query, page_params),
+            lambda page: page.permissions,
+            lambda page: page.has_more,
+            params,
+        )
+
+    def list_persons(
+        self,
+        query: PersonPermissionsQuery,
+        *,
+        params: OffsetPaginationParams | None = None,
+    ) -> AsyncPager[PersonPermissionDetail]:
+        """List the person permission grants matching the provided filters.
+
+        Nothing is requested until the result is consumed. Iterate it for every
+        grant, call ``pages()`` for page-sized lists or ``first_page()`` for one
+        request only.
+
+        Args:
+            query: Filters for the person permissions.
+            params: Page size and offset of the first page; defaults are used when ``None``.
+
+        Returns:
+            A paging object over the person permissions.
+
+        Example:
+            ```python
+            async for permission in auth.permissions.list_persons(query):
+                print(permission.id)
+            ```
+        """
+        return _offset_pager(
+            lambda page_params: self._persons(query, page_params),
+            lambda page: page.permissions,
+            lambda page: page.has_more,
+            params,
+        )
+
+    def list_subordinate_entities(
+        self,
+        query: SubordinateEntityRolesQuery,
+        *,
+        params: OffsetPaginationParams | None = None,
+    ) -> AsyncPager[SubordinateEntityRoleDetail]:
+        """List the subordinate entity roles matching the provided filters.
+
+        Nothing is requested until the result is consumed. Iterate it for every
+        role, call ``pages()`` for page-sized lists or ``first_page()`` for one
+        request only.
+
+        Args:
+            query: Filters for the subordinate entity roles.
+            params: Page size and offset of the first page; defaults are used when ``None``.
+
+        Returns:
+            A paging object over the subordinate entity roles.
+
+        Example:
+            ```python
+            async for role in auth.permissions.list_subordinate_entities(query):
+                print(role.role)
+            ```
+        """
+        return _offset_pager(
+            lambda page_params: self._subordinate_entities(query, page_params),
+            lambda page: page.roles,
+            lambda page: page.has_more,
+            params,
+        )
+
+    def list_subunits(
+        self,
+        query: SubunitPermissionsQuery,
+        *,
+        params: OffsetPaginationParams | None = None,
+    ) -> AsyncPager[SubunitPermission]:
+        """List the subunit permission grants matching the provided filters.
+
+        Nothing is requested until the result is consumed. Iterate it for every
+        grant, call ``pages()`` for page-sized lists or ``first_page()`` for one
+        request only.
+
+        Args:
+            query: Filters for the subunit permissions.
+            params: Page size and offset of the first page; defaults are used when ``None``.
+
+        Returns:
+            A paging object over the subunit permissions.
+
+        Example:
+            ```python
+            async for permission in auth.permissions.list_subunits(query):
+                print(permission.id)
+            ```
+        """
+        return _offset_pager(
+            lambda page_params: self._subunits(query, page_params),
+            lambda page: page.permissions,
+            lambda page: page.has_more,
+            params,
+        )
