@@ -6,6 +6,7 @@ import pytest
 
 import ksef2.clients as public_clients
 import ksef2.models as public_models
+import ksef2.testdata as public_testdata
 
 
 PUBLIC_DOMAIN_ALIAS_NAMES = (
@@ -13,6 +14,7 @@ PUBLIC_DOMAIN_ALIAS_NAMES = (
     "CertificateStatusValue",
     "CertificateTypeValue",
     "CertUsage",
+    "CertUsageEnum",
     "RevocationReason",
     "SessionStatus",
     "TokenPermission",
@@ -149,3 +151,9 @@ def test_public_client_annotations_resolve_through_stable_facades() -> None:
         "Public domain annotation types missing from ksef2.models: "
         f"{', '.join(sorted(missing_models))}"
     )
+
+
+def test_testdata_facade_exports_identifier_generators() -> None:
+    assert public_testdata.__all__ == ["generate_nip", "generate_pesel"]
+    assert len(public_testdata.generate_nip()) == 10
+    assert len(public_testdata.generate_pesel()) == 11

@@ -8,6 +8,7 @@ from ksef2.clients.profiles import (
     PROFILE_ENV_VAR,
     CliProfileConfig,
     Profile,
+    ProfileAuthConfig,
     ProfileAuthType,
     ProfileStore,
     TestCertificateProfileAuth as CertificateProfileAuth,
@@ -245,3 +246,132 @@ def test_profile_store_selects_and_deletes_profiles(tmp_path) -> None:
     assert deleted.nip == "2222222222"
     assert store.current() is None
     assert list(store.list()) == ["first"]
+
+
+_LEGACY_PROFILE = """
+[profiles.legacy]
+environment = "test"
+nip = "1111111111"
+{extra}
+
+[profiles.legacy.auth]
+type = "test_certificate"
+"""
+
+
+def _load_legacy(tmp_path: Path, extra: str) -> Profile:
+    config_path = tmp_path / "config.toml"
+    config_path.write_text(_LEGACY_PROFILE.format(extra=extra))
+    return load_profile_config(config_path).profiles["legacy"]
+
+
+@pytest.mark.parametrize(
+    ("extra", "attempts", "interval"),
+    [
+        ("auth_timeout = 180.0", 180, None),
+        ("auth_timeout = 12", 12, None),
+        ("auth_timeout = 0.5", 1, None),
+        ("auth_timeout = 10.0\npoll_interval = 4.0", 3, 4.0),
+    ],
+)
+def test_legacy_auth_timeout_maps_to_poll_settings_with_warning(
+    tmp_path: Path, extra: str, attempts: int, interval: float | None
+) -> None:
+    with pytest.deprecated_call(match="`auth_timeout` profile key is deprecated"):
+        profile = _load_legacy(tmp_path, extra)
+
+    assert profile.max_poll_attempts == attempts
+    assert profile.poll_interval == interval
+    # Same formula with_profile() uses to derive its timeout.
+    assert attempts * (interval or 1.0) >= float(extra.split()[2].split("\n")[0])
+
+
+def test_legacy_auth_timeout_does_not_override_explicit_max_poll_attempts(
+    tmp_path: Path,
+) -> None:
+    with pytest.deprecated_call(match="auth_timeout"):
+        profile = _load_legacy(tmp_path, "auth_timeout = 180.0\nmax_poll_attempts = 7")
+
+    assert profile.max_poll_attempts == 7
+
+
+def test_other_unknown_profile_keys_stay_ignored_without_warning(
+    tmp_path: Path,
+) -> None:
+    profile = _load_legacy(tmp_path, 'output = "json"\nverbose = true')
+
+    assert profile.max_poll_attempts is None
+    assert not hasattr(profile, "output")
+
+
+def _profile(
+    *,
+    cert: str | None = None,
+    key: str | None = None,
+    p12: str | None = None,
+    context_type: str | None = None,
+) -> Profile:
+    # model_construct skips the auth validators so the loaders' own guards run.
+    return Profile.model_construct(
+        environment=Environment.TEST,
+        nip="1111111111",
+        auth=ProfileAuthConfig.model_construct(
+            type=ProfileAuthType.XADES_PEM,
+            cert=cert,
+            key=key,
+            p12=p12,
+            context_type=context_type,
+        ),
+    )
+
+
+def test_resolve_profile_secret_reads_the_named_variable() -> None:
+    from ksef2.clients.profiles import resolve_profile_secret
+
+    assert resolve_profile_secret(None, label="x", profile_name="p", environ={}) is None
+    assert (
+        resolve_profile_secret(
+            "PW", label="x", profile_name="p", environ={"PW": "secret"}
+        )
+        == "secret"
+    )
+    with pytest.raises(KSeFValidationError, match="PW is not set"):
+        resolve_profile_secret("PW", label="Password", profile_name="p", environ={})
+
+
+def test_pem_credentials_require_cert_and_key_and_wrap_load_errors(tmp_path) -> None:
+    from ksef2.clients.profiles import load_profile_pem_credentials
+
+    with pytest.raises(KSeFValidationError, match="requires auth.cert and auth.key"):
+        load_profile_pem_credentials(_profile(), profile_name="p")
+
+    bad = tmp_path / "not-a-pem.pem"
+    bad.write_text("garbage")
+    with pytest.raises(KSeFValidationError, match="Failed to load PEM credentials"):
+        load_profile_pem_credentials(
+            _profile(cert=str(bad), key=str(bad)), profile_name="p"
+        )
+    with pytest.raises(KSeFValidationError, match="Failed to load PEM credentials"):
+        load_profile_pem_credentials(
+            _profile(cert=str(tmp_path / "missing.pem"), key=str(bad)),
+            profile_name="p",
+        )
+
+
+def test_p12_credentials_require_a_path_and_wrap_load_errors(tmp_path) -> None:
+    from ksef2.clients.profiles import load_profile_p12_credentials
+
+    with pytest.raises(KSeFValidationError, match="requires auth.p12"):
+        load_profile_p12_credentials(_profile(), profile_name="p")
+
+    bad = tmp_path / "bad.p12"
+    bad.write_bytes(b"not a pkcs12 archive")
+    with pytest.raises(KSeFValidationError, match="Failed to load PKCS#12/PFX"):
+        load_profile_p12_credentials(_profile(p12=str(bad)), profile_name="p")
+
+
+def test_profile_context_type_defaults_to_nip() -> None:
+    from ksef2.clients.profiles import profile_context_type
+
+    assert profile_context_type(_profile().auth) == "nip"
+    assert profile_context_type(_profile(context_type="nip").auth) == "nip"

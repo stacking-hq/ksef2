@@ -78,11 +78,7 @@ from collections.abc import Iterable
 from datetime import datetime
 
 from ksef2 import CertificateStoreProtocol, Client, Environment
-from ksef2.domain.models.encryption import (
-    CertUsage,
-    CertUsageEnum,
-    PublicKeyCertificate,
-)
+from ksef2.models import CertUsage, CertUsageEnum, PublicKeyCertificate
 
 
 class DatabaseCertificateStore:

@@ -12,7 +12,11 @@ from ksef2.domain.models.compression import (
     CompressionType,
     normalize_compression_type,
 )
-from ksef2.domain.models.session import BaseSessionResumeState, FormSchema
+from ksef2.domain.models.session import (
+    BaseSessionResumeState,
+    FormSchema,
+    deprecation_message,
+)
 
 
 MAX_BATCH_FILE_SIZE_BYTES = 5_000_000_000
@@ -283,8 +287,10 @@ class BatchSessionResumeState(BaseSessionResumeState):
         """
         if access_token is not None:
             warnings.warn(
-                "BatchSessionResumeState.from_encoded(access_token=...) is "
-                "deprecated and ignored; persist AuthenticationResumeState separately.",
+                "The `access_token` argument of "
+                "`BatchSessionResumeState.from_encoded()` is deprecated and will "
+                "be removed in ksef2 2.0; it is ignored, persist "
+                "`AuthenticationResumeState` separately instead.",
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -304,8 +310,9 @@ if TYPE_CHECKING:
 _DEPRECATED_BATCH_EXPORTS = {
     "BatchSessionState": (
         BatchSessionResumeState,
-        "BatchSessionState is deprecated and will be removed in a future release; "
-        "use BatchSessionResumeState instead.",
+        deprecation_message(
+            "ksef2.domain.models.batch.BatchSessionState", "BatchSessionResumeState"
+        ),
     ),
 }
 

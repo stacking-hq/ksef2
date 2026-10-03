@@ -26,8 +26,11 @@ Confirm these settings with a repository administrator:
   `publish.yml`, and environment `pypi`. The upload uses OIDC, so no `PYPI_TOKEN`
   or personal access token is involved.
 - Retain the integration credentials `KSEF_TEST_SUBJECT_NIP`,
-  `KSEF_TEST_PERSON_NIP`, and `KSEF_TEST_PERSON_PESEL`. Keep
-  `DOCS_DISPATCH_TOKEN` configured if releases should deploy documentation.
+  `KSEF_TEST_PERSON_NIP`, and `KSEF_TEST_PERSON_PESEL`. Configure
+  `DOCS_DISPATCH_TOKEN`, a fine-grained token for `stacking-hq/ksef2-docs` with
+  Contents read and write. A release without it fails in the `release-ref` job,
+  before the integration tests and the upload, so a missing token never leaves a
+  published version without a docs deployment.
 
 ## Bump and document
 
@@ -66,7 +69,7 @@ flowchart LR
   M --> T["just tag: admin pushes vX.Y.Z"]
   T --> I[KSeF TEST integration]
   I --> A[pypi approval]
-  A --> U[release-check, artifact verify, smoke test, upload]
+  A --> U[release-check, artifact verify, smoke test on 3.12-3.14, upload]
 ```
 
 Approve the `pypi` deployment when prompted, then confirm the upload before
@@ -111,7 +114,8 @@ rejects a second upload of the same version.
   retry. Code changes after a successful upload need a new release with a higher
   version.
 - If only the documentation dispatch failed, rerun that job. Do not repeat the
-  upload.
+  upload. The job fails, not skips, when `DOCS_DISPATCH_TOKEN` is missing, so add
+  the secret first.
 
 Concurrent publish runs for the same ref are serialized, but a duplicate run can
 still attempt an upload. Check existing runs before retrying.

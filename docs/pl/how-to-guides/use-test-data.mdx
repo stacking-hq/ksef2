@@ -113,6 +113,18 @@ with client.testdata.temporal() as data:
   przepływów produktu zależnych od niej w DEMO albo PRODUCTION.
 </Aside>
 
+## Generowanie identyfikatorów
+
+`ksef2.testdata` generuje numery NIP i PESEL z poprawną sumą kontrolną, dzięki
+czemu każde uruchomienie testów może użyć nowych podmiotów w sandboxie:
+
+```python
+from ksef2.testdata import generate_nip, generate_pesel
+
+nip = generate_nip()
+pesel = generate_pesel()
+```
+
 ## Zalecany przepływ
 
 <Steps>

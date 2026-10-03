@@ -194,7 +194,11 @@ from ksef2.domain.models.certificates import (
     RevocationReason,
     SubjectIdentifier,
 )
-from ksef2.domain.models.encryption import CertUsage, PublicKeyCertificate
+from ksef2.domain.models.encryption import (
+    CertUsage,
+    CertUsageEnum,
+    PublicKeyCertificate,
+)
 from ksef2.domain.models.limits import (
     RateLimitValues,
     SubjectCertificateLimits,
@@ -205,7 +209,12 @@ from ksef2.domain.models.pagination import (
     OffsetPaginationParams,
     TokenListParams,
 )
-from ksef2.domain.models.session import SessionStatus, SessionStatusEnum, StatusInfo
+from ksef2.domain.models.session import (
+    SessionStatus,
+    SessionStatusEnum,
+    StatusInfo,
+    deprecation_message,
+)
 from ksef2.domain.models.tokens import GenerateTokenResponse, TokenStatusResponse
 
 if TYPE_CHECKING:
@@ -217,18 +226,19 @@ if TYPE_CHECKING:
 _DEPRECATED_EXPORTS = {
     "BaseSessionState": (
         BaseSessionResumeState,
-        "ksef2.models.BaseSessionState is deprecated and will be removed in a "
-        "future release; use BaseSessionResumeState instead.",
+        deprecation_message("ksef2.models.BaseSessionState", "BaseSessionResumeState"),
     ),
     "OnlineSessionState": (
         OnlineSessionResumeState,
-        "ksef2.models.OnlineSessionState is deprecated and will be removed in a "
-        "future release; use OnlineSessionResumeState instead.",
+        deprecation_message(
+            "ksef2.models.OnlineSessionState", "OnlineSessionResumeState"
+        ),
     ),
     "BatchSessionState": (
         BatchSessionResumeState,
-        "ksef2.models.BatchSessionState is deprecated and will be removed in a "
-        "future release; use BatchSessionResumeState instead.",
+        deprecation_message(
+            "ksef2.models.BatchSessionState", "BatchSessionResumeState"
+        ),
     ),
 }
 
@@ -437,6 +447,7 @@ __all__ = [
     "SubjectEnrollmentLimits",
     "SubjectLimits",
     "CertUsage",
+    "CertUsageEnum",
     "PublicKeyCertificate",
     "ListSessionsQuery",
     "OffsetPaginationParams",

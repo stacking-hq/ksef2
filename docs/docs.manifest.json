@@ -201,13 +201,6 @@
             "path": "how-to-guides/overview.mdx"
           },
           {
-            "label": "Migrate to 1.0.0",
-            "translations": {
-              "pl": "Migracja do 1.0.0"
-            },
-            "path": "how-to-guides/migrate-to-1-0-0.mdx"
-          },
-          {
             "label": "Setup",
             "translations": {
               "pl": "Konfiguracja"

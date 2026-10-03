@@ -10,10 +10,9 @@ What it demonstrates:
 
 from dataclasses import dataclass
 
-from ksef2 import Client, Environment
-from ksef2.core import exceptions
-from ksef2.core.tools import generate_nip, generate_pesel
-from ksef2.domain.models.testdata import Identifier, Permission
+from ksef2 import Client, Environment, KSeFApiError
+from ksef2.models import Identifier, Permission
+from ksef2.testdata import generate_nip, generate_pesel
 
 
 def with_automatic_cleanup(client: Client) -> None:
@@ -45,7 +44,7 @@ def with_automatic_cleanup(client: Client) -> None:
                 pesel=person_pesel,
                 description="Example person",
             )
-        except exceptions.KSeFApiError:
+        except KSeFApiError:
             print("Person already exists: cleanup will still run on exit.")
 
         print("Granting permissions...")
@@ -90,7 +89,7 @@ def manual_cleanup(client: Client) -> None:
             pesel=person_pesel,
             description="Example person",
         )
-    except exceptions.KSeFApiError:
+    except KSeFApiError:
         print("Person already exists: ...")
 
     print("Granting permissions...")

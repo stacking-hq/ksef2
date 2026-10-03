@@ -20,6 +20,7 @@ from ksef2.domain.models.session import (
     SessionSummary,
     Upo,
     UpoPage,
+    deprecation_message,
 )
 from ksef2.domain.models.batch import (
     BatchEncryptionData,
@@ -214,18 +215,21 @@ if TYPE_CHECKING:
 _DEPRECATED_EXPORTS = {
     "BaseSessionState": (
         BaseSessionResumeState,
-        "ksef2.domain.models.BaseSessionState is deprecated and will be "
-        "removed in a future release; use BaseSessionResumeState instead.",
+        deprecation_message(
+            "ksef2.domain.models.BaseSessionState", "BaseSessionResumeState"
+        ),
     ),
     "OnlineSessionState": (
         OnlineSessionResumeState,
-        "ksef2.domain.models.OnlineSessionState is deprecated and will be "
-        "removed in a future release; use OnlineSessionResumeState instead.",
+        deprecation_message(
+            "ksef2.domain.models.OnlineSessionState", "OnlineSessionResumeState"
+        ),
     ),
     "BatchSessionState": (
         BatchSessionResumeState,
-        "ksef2.domain.models.BatchSessionState is deprecated and will be "
-        "removed in a future release; use BatchSessionResumeState instead.",
+        deprecation_message(
+            "ksef2.domain.models.BatchSessionState", "BatchSessionResumeState"
+        ),
     ),
 }
 

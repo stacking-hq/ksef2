@@ -4,8 +4,8 @@ from decimal import Decimal
 from pathlib import Path
 from uuid import uuid4
 
-from ksef2.domain.models import BatchInvoice
 from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+from ksef2.models import BatchInvoice
 
 _MARKER = "pyproject.toml"
 EXAMPLE_SELLER_NIP_ENV = "KSEF2_EXAMPLE_SELLER_NIP"

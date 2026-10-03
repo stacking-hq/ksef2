@@ -1,11 +1,11 @@
 """Async root client for authenticated and unauthenticated SDK entry points."""
 
-import warnings
 from functools import cached_property
 from types import TracebackType
 from typing import Self, final
 
 import httpx
+from typing_extensions import deprecated
 
 from ksef2.clients.async_auth import AsyncAuthClient
 from ksef2.clients.async_authenticated import AsyncAuthenticatedClient
@@ -147,17 +147,14 @@ class AsyncClient:
         self._ensure_open()
         return AsyncRawClient(self._transport, self._environment)
 
+    @deprecated(
+        "`AsyncClient.authenticated()` is deprecated and will be removed in ksef2 2.0; "
+        "use `AsyncClient.authentication.resume()` with "
+        "`AuthenticationResumeState.from_tokens()` instead."
+    )
     def authenticated(self, auth_tokens: AuthTokens) -> AsyncAuthenticatedClient:
         """Deprecated compatibility wrapper for ``authentication.resume()``."""
         self._ensure_open()
-        warnings.warn(
-            "AsyncClient.authenticated(auth_tokens) is deprecated and will be "
-            "removed in a future release; use "
-            "client.authentication.resume(AuthenticationResumeState.from_tokens(auth_tokens)) "
-            "instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
         return self.authentication.resume(
             AuthenticationResumeState.from_tokens(auth_tokens)
         )

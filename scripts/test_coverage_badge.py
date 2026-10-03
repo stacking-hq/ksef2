@@ -1,6 +1,7 @@
 import argparse
 import difflib
 import json
+import sys
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 from typing import TypedDict
@@ -20,6 +21,7 @@ class CoverageBadge(TypedDict):
 
 class Arguments(argparse.Namespace):
     write: bool = False
+    reference_python: str = ""
 
 
 def badge_color(pct: int) -> str:
@@ -84,8 +86,24 @@ def main() -> int:
         action="store_true",
         help="write test-coverage.json instead of checking it",
     )
+    _ = parser.add_argument(
+        "--reference-python",
+        default="",
+        metavar="X.Y",
+        help=(
+            "only check the badge on this Python minor version; coverage differs "
+            "slightly between interpreters, so one version owns the badge"
+        ),
+    )
     args = Arguments()
     _ = parser.parse_args(namespace=args)
+    running = f"{sys.version_info.major}.{sys.version_info.minor}"
+    if args.reference_python and not args.write and running != args.reference_python:
+        print(
+            f"Skipping badge check on Python {running}; "
+            f"the badge is owned by Python {args.reference_python}."
+        )
+        return 0
     badge = build_badge(COVERAGE_XML_PATH)
 
     if args.write:
