@@ -20,7 +20,14 @@ class AsyncCollectiveIdentifiersEndpoints(AsyncBaseEndpoints):
         self,
         body: spec.GenerateCollectiveIdentifierRequest,
     ) -> spec.GenerateCollectiveIdentifierResponse:
-        """Generate a collective identifier for a list of invoices."""
+        """Generate a collective identifier for a list of invoices.
+
+        Args:
+            body: Request payload (``spec.GenerateCollectiveIdentifierRequest``).
+
+        Returns:
+            The parsed KSeF response (``spec.GenerateCollectiveIdentifierResponse``).
+        """
         return self._parse(
             await self._transport.post(
                 path=routes.CollectiveIdentifierRoutes.GENERATE,
@@ -35,7 +42,16 @@ class AsyncCollectiveIdentifiersEndpoints(AsyncBaseEndpoints):
         continuation_token: str | None = None,
         **params: Unpack[CollectiveIdentifierQueryParams],
     ) -> spec.CollectiveIdentifiersQueryResponse:
-        """Fetch one page of collective identifiers visible in the context."""
+        """Fetch one page of collective identifiers visible in the context.
+
+        Args:
+            body: Request payload (``spec.CollectiveIdentifiersQueryRequest``).
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+            **params: Optional query parameters (``CollectiveIdentifierQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.CollectiveIdentifiersQueryResponse``).
+        """
         headers = (
             {"x-continuation-token": continuation_token} if continuation_token else None
         )
@@ -55,7 +71,16 @@ class AsyncCollectiveIdentifiersEndpoints(AsyncBaseEndpoints):
         continuation_token: str | None = None,
         **params: Unpack[CollectiveIdentifierQueryParams],
     ) -> spec.CollectiveIdentifiersByKsefNumberQueryResponse:
-        """Fetch identifiers associated with one KSeF invoice number."""
+        """Fetch identifiers associated with one KSeF invoice number.
+
+        Args:
+            ksef_number: KSeF number of the invoice.
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+            **params: Optional query parameters (``CollectiveIdentifierQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.CollectiveIdentifiersByKsefNumberQueryResponse``).
+        """
         headers = (
             {"x-continuation-token": continuation_token} if continuation_token else None
         )
@@ -76,7 +101,16 @@ class AsyncCollectiveIdentifiersEndpoints(AsyncBaseEndpoints):
         continuation_token: str | None = None,
         **params: Unpack[CollectiveIdentifierQueryParams],
     ) -> spec.CollectiveIdentifierInvoicesQueryResponse:
-        """Fetch one page of invoices inside the supplied collective identifiers."""
+        """Fetch one page of invoices inside the supplied collective identifiers.
+
+        Args:
+            body: Request payload (``spec.CollectiveIdentifierInvoicesQueryRequest``).
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+            **params: Optional query parameters (``CollectiveIdentifierQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.CollectiveIdentifierInvoicesQueryResponse``).
+        """
         headers = (
             {"x-continuation-token": continuation_token} if continuation_token else None
         )

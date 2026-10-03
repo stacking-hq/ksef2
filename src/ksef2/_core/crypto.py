@@ -37,7 +37,19 @@ def select_certificate(
 
 
 def encrypt_token(token: str, timestamp: str, cert_b64: str) -> str:
-    """RSA-OAEP encrypt ``token|timestamp`` and return Base64."""
+    """RSA-OAEP encrypt ``token|timestamp`` and return Base64.
+
+    Args:
+        token: KSeF token.
+        timestamp: Challenge timestamp in Unix milliseconds, as a string.
+        cert_b64: Base64-encoded DER certificate containing the RSA public key.
+
+    Returns:
+        The Base64-encoded ciphertext.
+
+    Raises:
+        KSeFEncryptionError: If the certificate cannot be loaded or encryption fails.
+    """
     plaintext = f"{token}|{timestamp}".encode()
     public_key = _load_public_key(cert_b64)
     assert isinstance(public_key, rsa.RSAPublicKey), "Expected RSA public key"
@@ -56,12 +68,27 @@ def encrypt_token(token: str, timestamp: str, cert_b64: str) -> str:
 
 
 def generate_session_key() -> tuple[bytes, bytes]:
-    """Generate a random AES-256 key (32 bytes) and IV (16 bytes)."""
+    """Generate a random AES-256 key (32 bytes) and IV (16 bytes).
+
+    Returns:
+        A tuple of the AES key and the initialization vector.
+    """
     return os.urandom(32), os.urandom(16)
 
 
 def encrypt_symmetric_key(key: bytes, cert_b64: str) -> bytes:
-    """RSA-OAEP encrypt the AES key and return Base64."""
+    """RSA-OAEP encrypt an AES key with a KSeF public-key certificate.
+
+    Args:
+        key: AES key to encrypt.
+        cert_b64: Base64-encoded DER certificate containing the RSA public key.
+
+    Returns:
+        The raw ciphertext bytes. The caller is responsible for Base64 encoding.
+
+    Raises:
+        KSeFEncryptionError: If the certificate cannot be loaded or encryption fails.
+    """
     public_key = _load_public_key(cert_b64)
     assert isinstance(public_key, rsa.RSAPublicKey), "Expected RSA public key"
     try:
@@ -81,7 +108,16 @@ def encrypt_symmetric_key(key: bytes, cert_b64: str) -> bytes:
 def encrypt_invoice(xml_bytes: bytes, key: bytes, iv: bytes) -> bytes:
     """AES-256-CBC encrypt *xml_bytes* with PKCS#7 padding.
 
-    Returns raw ciphertext bytes (caller is responsible for Base64 encoding).
+    Args:
+        xml_bytes: Plain invoice XML bytes.
+        key: 32-byte AES-256 key.
+        iv: 16-byte initialization vector.
+
+    Returns:
+        The raw ciphertext bytes. The caller is responsible for Base64 encoding.
+
+    Raises:
+        KSeFEncryptionError: If encryption fails, for example because of an invalid key length.
     """
     try:
         # PKCS#7 padding
@@ -120,5 +156,12 @@ def decrypt_aes_cbc(ciphertext: bytes, key: bytes, iv: bytes) -> bytes:
 
 
 def sha256_b64(data: bytes) -> str:
-    """Return the SHA-256 digest of *data* as a Base64-encoded string."""
+    """Return the SHA-256 digest of *data* as a Base64-encoded string.
+
+    Args:
+        data: Bytes to hash.
+
+    Returns:
+        The Base64-encoded digest.
+    """
     return base64.b64encode(hashlib.sha256(data).digest()).decode()

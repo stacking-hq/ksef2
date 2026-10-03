@@ -21,73 +21,115 @@ from ksef2._infra.schema.api.supp.testdata import (
 
 @final
 class AsyncTestDataEndpoints(AsyncBaseEndpoints):
+    """Raw endpoints for creating and removing data in the TEST environment."""
+
     __test__ = False
 
     async def create_subject(self, body: CreateSubjectRequest) -> None:
-        """Create a test subject."""
+        """Create a test subject.
+
+        Args:
+            body: Request payload (``CreateSubjectRequest``).
+        """
         _ = await self._transport.post(
             path=routes.TestDataRoutes.CREATE_SUBJECT,
             json=body.model_dump(mode="json", by_alias=True),
         )
 
     async def delete_subject(self, body: DeleteSubjectRequest) -> None:
-        """Delete a test subject."""
+        """Delete a test subject.
+
+        Args:
+            body: Request payload (``DeleteSubjectRequest``).
+        """
         _ = await self._transport.post(
             path=routes.TestDataRoutes.DELETE_SUBJECT,
             json=body.model_dump(mode="json", by_alias=True),
         )
 
     async def create_person(self, body: CreatePersonRequest) -> None:
-        """Create a test person."""
+        """Create a test person.
+
+        Args:
+            body: Request payload (``CreatePersonRequest``).
+        """
         _ = await self._transport.post(
             path=routes.TestDataRoutes.CREATE_PERSON,
             json=body.model_dump(mode="json", by_alias=True),
         )
 
     async def delete_person(self, body: DeletePersonRequest) -> None:
-        """Delete a test person."""
+        """Delete a test person.
+
+        Args:
+            body: Request payload (``DeletePersonRequest``).
+        """
         _ = await self._transport.post(
             path=routes.TestDataRoutes.DELETE_PERSON,
             json=body.model_dump(mode="json", by_alias=True),
         )
 
     async def grant_permissions(self, body: GrantPermissionsRequest) -> None:
-        """Grant test permissions."""
+        """Grant test permissions.
+
+        Args:
+            body: Request payload (``GrantPermissionsRequest``).
+        """
         _ = await self._transport.post(
             path=routes.TestDataRoutes.GRANT_PERMISSIONS,
             json=body.model_dump(mode="json", by_alias=True),
         )
 
     async def revoke_permissions(self, body: RevokePermissionsRequest) -> None:
-        """Revoke test permissions."""
+        """Revoke test permissions.
+
+        Args:
+            body: Request payload (``RevokePermissionsRequest``).
+        """
         _ = await self._transport.post(
             path=routes.TestDataRoutes.REVOKE_PERMISSIONS,
             json=body.model_dump(mode="json", by_alias=True),
         )
 
     async def enable_attachments(self, body: EnableAttachmentsRequest) -> None:
-        """Enable attachments for a test subject."""
+        """Enable attachments for a test subject.
+
+        Args:
+            body: Request payload (``EnableAttachmentsRequest``).
+        """
         _ = await self._transport.post(
             path=routes.TestDataRoutes.ENABLE_ATTACHMENTS,
             json=body.model_dump(mode="json", by_alias=True),
         )
 
     async def revoke_attachments(self, body: RevokeAttachmentsRequest) -> None:
-        """Revoke attachments for a test subject."""
+        """Revoke attachments for a test subject.
+
+        Args:
+            body: Request payload (``RevokeAttachmentsRequest``).
+        """
         _ = await self._transport.post(
             path=routes.TestDataRoutes.REVOKE_ATTACHMENTS,
             json=body.model_dump(mode="json", by_alias=True),
         )
 
     async def block_context(self, body: BlockContextRequest) -> None:
-        """Block authentication in a test context."""
+        """Block authentication in a test context.
+
+        Args:
+            body: Request payload (``BlockContextRequest``).
+        """
         _ = await self._transport.post(
             path=routes.TestDataRoutes.BLOCK_CONTEXT,
             json=body.model_dump(mode="json", by_alias=True),
         )
 
     async def unblock_context(self, body: UnblockContextRequest) -> None:
-        """Unblock authentication in a test context."""
+        """Unblock authentication in a test context.
+
+        Args:
+            body: Request payload (``UnblockContextRequest``).
+        """
         _ = await self._transport.post(
             path=routes.TestDataRoutes.UNBLOCK_CONTEXT,
             json=body.model_dump(mode="json", by_alias=True),
@@ -98,7 +140,12 @@ class AsyncTestDataEndpoints(AsyncBaseEndpoints):
         serial_number: str,
         body: spec.TestDataUpdateCertificateRequest,
     ) -> None:
-        """Shorten the validity of a TEST certificate."""
+        """Shorten the validity of a TEST certificate.
+
+        Args:
+            serial_number: Serial number of the certificate.
+            body: Request payload (``spec.TestDataUpdateCertificateRequest``).
+        """
         _ = await self._transport.put(
             path=routes.TestDataRoutes.UPDATE_CERTIFICATE.format(
                 serialNumber=serial_number

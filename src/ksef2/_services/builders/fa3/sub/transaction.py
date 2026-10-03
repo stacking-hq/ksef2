@@ -59,6 +59,13 @@ class TransactionBuilder[TParent]:
         on_done: Callable[[TransactionConditions], None],
         existing_state: TransactionConditions | None = None,
     ) -> None:
+        """Create the builder.
+
+        Args:
+            parent: Parent builder that ``done()`` returns to.
+            on_done: Callback that receives the built model when ``done()`` is called.
+            existing_state: Existing model to start from; ``None`` starts empty.
+        """
         self._parent = parent
         self._on_done = on_done
         self._state: TransactionState = adapter.validate_python(
@@ -66,7 +73,14 @@ class TransactionBuilder[TParent]:
         )
 
     def from_model(self, transaction: TransactionConditions) -> Self:
-        """Replace the builder state from an existing domain model."""
+        """Replace the builder state from an existing domain model.
+
+        Args:
+            transaction: Model to load into the builder.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state = adapter.validate_python(transaction.model_dump())
         return self
 
@@ -81,7 +95,14 @@ class TransactionBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Set the delivery terms value."""
+        """Set the delivery terms value.
+
+        Args:
+            value: Delivery terms agreed for the transaction.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["delivery_terms"] = value
         return self
 
@@ -106,7 +127,15 @@ class TransactionBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
-        """Set the contract exchange value."""
+        """Set the contract exchange value.
+
+        Args:
+            rate: Contract exchange rate used in the transaction section.
+            currency: Contract currency used in the transaction section.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["contract_exchange_rate"] = rate
         self._state["contract_currency"] = currency
         return self
@@ -122,7 +151,14 @@ class TransactionBuilder[TParent]:
             ),
         ] = True,
     ) -> Self:
-        """Set the intermediary entity value."""
+        """Set the intermediary entity value.
+
+        Args:
+            enabled: Marks the transaction as involving an intermediary entity.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["intermediary_entity"] = enabled
         return self
 
@@ -147,7 +183,15 @@ class TransactionBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
-        """Add a contract entry."""
+        """Add a contract entry.
+
+        Args:
+            contract_date: Date of the related contract.
+            contract_number: Number of the related contract.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["contracts"].append(
             TransactionContract(
                 contract_date=contract_date,
@@ -157,12 +201,23 @@ class TransactionBuilder[TParent]:
         return self
 
     def add_contract_model(self, contract: TransactionContract) -> Self:
-        """Add an existing transaction contract model."""
+        """Add an existing transaction contract model.
+
+        Args:
+            contract: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["contracts"].append(contract)
         return self
 
     def clear_contracts(self) -> Self:
-        """Remove all transaction contracts."""
+        """Remove all transaction contracts.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["contracts"].clear()
         return self
 
@@ -187,7 +242,15 @@ class TransactionBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
-        """Add an order reference entry."""
+        """Add an order reference entry.
+
+        Args:
+            order_date: Date of the related order.
+            order_number: Number of the related order.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["orders"].append(
             TransactionOrder(
                 order_date=order_date,
@@ -197,12 +260,23 @@ class TransactionBuilder[TParent]:
         return self
 
     def add_order_model(self, order: TransactionOrder) -> Self:
-        """Add an existing transaction order model."""
+        """Add an existing transaction order model.
+
+        Args:
+            order: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["orders"].append(order)
         return self
 
     def clear_orders(self) -> Self:
-        """Remove all transaction orders."""
+        """Remove all transaction orders.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["orders"].clear()
         return self
 
@@ -217,12 +291,23 @@ class TransactionBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Add a lot number entry."""
+        """Add a lot number entry.
+
+        Args:
+            value: Lot or batch number linked to the transaction.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["lot_numbers"].append(value)
         return self
 
     def clear_lot_numbers(self) -> Self:
-        """Remove all lot numbers."""
+        """Remove all lot numbers.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["lot_numbers"].clear()
         return self
 
@@ -364,7 +449,28 @@ class TransactionBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
-        """Add a transport entry."""
+        """Add a transport entry.
+
+        Args:
+            transport_type: Transport type used for the shipment.
+            other_transport: Set to true when the shipment uses a transport type outside the predefined enum.
+            other_transport_description: Free-text description of the transport type when other_transport is enabled.
+            carrier_identity: Carrier identity information stored in the transaction section.
+            carrier_address: Carrier address stored in the transaction section.
+            transport_order_number: Transport order number linked to the shipment.
+            cargo_type: Cargo type used for the shipment.
+            other_cargo: Set to true when the cargo type is described manually instead of using the predefined enum.
+            other_cargo_description: Free-text description of the cargo type when other_cargo is enabled.
+            packaging_unit: Packaging unit used for the shipment.
+            transport_start: Start timestamp of the transport.
+            transport_end: End timestamp of the transport.
+            shipping_from: Shipping origin address.
+            shipping_via: Intermediate shipping locations.
+            shipping_to: Final shipping destination address.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["transports"].append(
             TransactionTransport(
                 transport_type=transport_type,
@@ -387,17 +493,32 @@ class TransactionBuilder[TParent]:
         return self
 
     def add_transport_model(self, transport: TransactionTransport) -> Self:
-        """Add an existing transport detail model."""
+        """Add an existing transport detail model.
+
+        Args:
+            transport: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["transports"].append(transport)
         return self
 
     def clear_transports(self) -> Self:
-        """Remove all transport details."""
+        """Remove all transport details.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["transports"].clear()
         return self
 
     def build(self) -> TransactionConditions:
-        """Build the corresponding FA(3) domain model."""
+        """Build the corresponding FA(3) domain model.
+
+        Returns:
+            The built ``TransactionConditions``.
+        """
         return TransactionConditions(**self._state)
 
     def _is_empty(self) -> bool:
@@ -405,6 +526,9 @@ class TransactionBuilder[TParent]:
 
     def done(self) -> TParent:
         """Attach the built transaction details to the parent builder and return it.
+
+        Returns:
+            The parent builder.
 
         Raises:
             ValueError: If transaction details are empty.
@@ -423,7 +547,11 @@ class TransactionBuilderMixin:
     _transaction_conditions: TransactionConditions | None = None
 
     def transaction(self) -> TransactionBuilder[Self]:
-        """Start a transaction-conditions sub-builder."""
+        """Start a transaction-conditions sub-builder.
+
+        Returns:
+            A ``TransactionBuilder`` for this part of the invoice; call ``done()`` on it to attach the result and return to this builder.
+        """
         return TransactionBuilder(
             self, self._set_transaction, self._transaction_conditions
         )

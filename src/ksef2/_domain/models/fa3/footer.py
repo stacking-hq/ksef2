@@ -24,22 +24,26 @@ class FooterRegistry(KSeFBaseModel):
         min_length=1,
         max_length=256,
     )
+    """Full name of the registered entity."""
     krs: str | None = Field(
         default=None,
         description="Maps to FakturaStopka.FakturaStopkaRejestry.KRS",
         pattern=r"\d{10}",
     )
+    """KRS (National Court Register) number."""
     regon: str | None = Field(
         default=None,
         description="Maps to FakturaStopka.FakturaStopkaRejestry.REGON",
         pattern=r"\d{9}|\d{14}",
     )
+    """REGON number."""
     bdo: str | None = Field(
         default=None,
         description="Maps to FakturaStopka.FakturaStopkaRejestry.BDO",
         min_length=1,
         max_length=9,
     )
+    """BDO (waste database) number."""
 
 
 class InvoiceFooter(KSeFBaseModel):
@@ -58,12 +62,14 @@ class InvoiceFooter(KSeFBaseModel):
         description="Maps to List[FakturaStopka.FakturaStopkaInformacje",
         max_length=3,
     )
+    """Free-text lines of additional information."""
 
     registries: list[FooterRegistry] = Field(
         default_factory=list,
         description="Maps to List[FakturaStopka.FakturaStopkaRejestry",
         max_length=100,
     )
+    """Registry entries (KRS, REGON, BDO) of the seller."""
 
     @field_validator("additional_informations")
     @classmethod

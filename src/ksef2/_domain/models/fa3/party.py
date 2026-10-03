@@ -12,23 +12,31 @@ class ContactInfoTuple(NamedTuple):
     """Tuple representation of party contact email and phone."""
 
     email: str
+    """Email address."""
     phone: str
+    """Phone number."""
 
 
 class ContactInfo(KSeFBaseModel):
     """Optional contact channels exposed on invoice parties."""
 
     email: str | None = None
+    """Email address."""
     phone: str | None = None
+    """Phone number."""
 
 
 class InvoiceAddress(KSeFBaseModel):
     """Address shape aligned with FA(3) ``schemat.Tadres``."""
 
     country_code: str
+    """Two-letter ISO 3166 country code."""
     address_line_1: str
+    """First address line, usually street and building number."""
     address_line_2: str | None = None
+    """Second address line, usually postal code and city."""
     gln: str | None = None
+    """Global Location Number of the address."""
 
     @field_validator("country_code")
     @classmethod
@@ -43,17 +51,29 @@ class InvoiceEntity(KSeFBaseModel):
     """Seller or buyer domain entity used by the public FA(3) invoice API."""
 
     tax_id: str | None = None
+    """Polish NIP of the entity."""
     eu_vat_id: str | None = None
+    """EU VAT identifier of the entity, including the country prefix."""
     other_id: str | None = None
+    """Identifier of another kind, for entities without a NIP or EU VAT number."""
     eori_number: str | None = None
+    """EORI number of the entity."""
     customer_number: str | None = None
+    """Customer number assigned by the seller."""
     buyer_id: str | None = None
+    """Unique identifier of the buyer assigned by the seller."""
     jst_subordinate_unit: bool = False
+    """Whether the invoice is issued for a subordinate unit of a local government (JST)."""
     vat_group_member: bool = False
+    """Whether the invoice is issued for a member of a VAT group."""
     vat_prefix: str | None = None
+    """Country prefix of the EU VAT identifier."""
     name: str | None = None
+    """Full name of the entity."""
     address: InvoiceAddress | None = None
+    """Address of the entity."""
     contact: ContactInfo | None = None
+    """Contact details of the entity."""
 
     @field_validator("eu_vat_id")
     @classmethod

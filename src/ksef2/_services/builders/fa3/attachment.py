@@ -20,6 +20,12 @@ class AttachmentTableBuilder:
         parent: "DataBlockBuilder | None" = None,
         existing_state: AttachmentTable | None = None,
     ) -> None:
+        """Create the builder.
+
+        Args:
+            parent: Parent builder that ``done()`` returns to.
+            existing_state: Existing model to start from; ``None`` starts empty.
+        """
         self._parent = parent
         self._meta_data: list[dict[str, str]] = (
             list(existing_state.meta_data) if existing_state else []
@@ -45,7 +51,14 @@ class AttachmentTableBuilder:
         )
 
     def from_model(self, table: AttachmentTable | None) -> Self:
-        """Replace the builder state from an existing domain model."""
+        """Replace the builder state from an existing domain model.
+
+        Args:
+            table: Model to load into the builder.
+
+        Returns:
+            The builder, for chaining.
+        """
         table = table.model_copy(deep=True) if table is not None else None
         self._meta_data = list(table.meta_data) if table else []
         self._description = table.description if table else None
@@ -68,7 +81,14 @@ class AttachmentTableBuilder:
             ),
         ],
     ) -> Self:
-        """Set the attachment table description."""
+        """Set the attachment table description.
+
+        Args:
+            description: Description of the attachment table.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._description = description
         return self
 
@@ -91,12 +111,24 @@ class AttachmentTableBuilder:
             ),
         ],
     ) -> Self:
-        """Add a meta data entry."""
+        """Add a meta data entry.
+
+        Args:
+            key: Metadata key stored next to the attachment table.
+            value: Metadata value stored next to the attachment table.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._meta_data.append({key: value})
         return self
 
     def clear_meta_data(self) -> Self:
-        """Remove all metadata entries."""
+        """Remove all metadata entries.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._meta_data = []
         return self
 
@@ -121,7 +153,15 @@ class AttachmentTableBuilder:
             ),
         ] = None,
     ) -> Self:
-        """Set attachment table column formats and optional names."""
+        """Set attachment table column formats and optional names.
+
+        Args:
+            formats: Column value types for the attachment table.
+            names: Column names shown in the attachment table.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._columns_format = list(formats)
         self._columns_names = list(names) if names is not None else None
         return self
@@ -137,7 +177,14 @@ class AttachmentTableBuilder:
             ),
         ],
     ) -> Self:
-        """Add a row entry."""
+        """Add a row entry.
+
+        Args:
+            row: Single row added to the attachment table.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._rows.append([str(value) for value in row])
         return self
 
@@ -152,12 +199,23 @@ class AttachmentTableBuilder:
             ),
         ],
     ) -> Self:
-        """Add multiple row entries to the attachment table."""
+        """Add multiple row entries to the attachment table.
+
+        Args:
+            rows: Multiple rows added to the attachment table.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._rows.extend([[str(value) for value in row] for row in rows])
         return self
 
     def clear_rows(self) -> Self:
-        """Remove all rows."""
+        """Remove all rows.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._rows = []
         return self
 
@@ -172,12 +230,23 @@ class AttachmentTableBuilder:
             ),
         ],
     ) -> Self:
-        """Set the summary value."""
+        """Set the summary value.
+
+        Args:
+            summary: Summary lines shown below the attachment table.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._summary = list(summary) if summary is not None else None
         return self
 
     def build(self) -> AttachmentTable:
-        """Build the corresponding FA(3) domain model."""
+        """Build the corresponding FA(3) domain model.
+
+        Returns:
+            The built ``AttachmentTable``.
+        """
         return AttachmentTable(
             meta_data=self._meta_data,
             description=self._description,
@@ -199,6 +268,9 @@ class AttachmentTableBuilder:
 
     def done(self) -> "DataBlockBuilder":
         """Attach the built table to the parent data-block builder.
+
+        Returns:
+            The parent builder.
 
         Raises:
             ValueError: If the table is empty or the builder has no parent.
@@ -223,6 +295,12 @@ class DataBlockBuilder:
         parent: "AttachmentBuilder[object] | None" = None,
         existing_state: DataBlock | None = None,
     ) -> None:
+        """Create the builder.
+
+        Args:
+            parent: Parent builder that ``done()`` returns to.
+            existing_state: Existing model to start from; ``None`` starts empty.
+        """
         self._parent = parent
         self._header: str | None = existing_state.header if existing_state else None
         self._meta_data: list[dict[str, str]] = (
@@ -242,7 +320,14 @@ class DataBlockBuilder:
         )
 
     def from_model(self, block: DataBlock | None) -> Self:
-        """Replace the builder state from an existing domain model."""
+        """Replace the builder state from an existing domain model.
+
+        Args:
+            block: Model to load into the builder.
+
+        Returns:
+            The builder, for chaining.
+        """
         block = block.model_copy(deep=True) if block is not None else None
         self._header = block.header if block else None
         self._meta_data = list(block.meta_data) if block and block.meta_data else []
@@ -261,7 +346,14 @@ class DataBlockBuilder:
             ),
         ],
     ) -> Self:
-        """Set the attachment data-block header."""
+        """Set the attachment data-block header.
+
+        Args:
+            header: Header shown above the attachment data block.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._header = header
         return self
 
@@ -284,12 +376,24 @@ class DataBlockBuilder:
             ),
         ],
     ) -> Self:
-        """Add a meta data entry."""
+        """Add a meta data entry.
+
+        Args:
+            key: Metadata key stored next to the data block.
+            value: Metadata value stored next to the data block.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._meta_data.append({key: value})
         return self
 
     def clear_meta_data(self) -> Self:
-        """Remove all metadata entries."""
+        """Remove all metadata entries.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._meta_data = []
         return self
 
@@ -304,31 +408,61 @@ class DataBlockBuilder:
             ),
         ],
     ) -> Self:
-        """Add a paragraph entry."""
+        """Add a paragraph entry.
+
+        Args:
+            text: Paragraph text added to the attachment data block.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._paragraphs.append(text)
         return self
 
     def clear_paragraphs(self) -> Self:
-        """Remove all paragraphs."""
+        """Remove all paragraphs.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._paragraphs = []
         return self
 
     def build_table(self) -> AttachmentTableBuilder:
-        """Start a table builder."""
+        """Start a table builder.
+
+        Returns:
+            A table builder; call ``done()`` on it to attach the table and return to this block builder.
+        """
         return AttachmentTableBuilder(self, None)
 
     def add_table_model(self, table: AttachmentTable) -> Self:
-        """Add an existing attachment table model."""
+        """Add an existing attachment table model.
+
+        Args:
+            table: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._tables.append(table)
         return self
 
     def clear_tables(self) -> Self:
-        """Remove all attachment tables."""
+        """Remove all attachment tables.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._tables = []
         return self
 
     def build(self) -> DataBlock:
-        """Build the corresponding FA(3) domain model."""
+        """Build the corresponding FA(3) domain model.
+
+        Returns:
+            The built ``DataBlock``.
+        """
         return DataBlock(
             header=self._header,
             meta_data=self._meta_data if self._meta_data else None,
@@ -346,6 +480,9 @@ class DataBlockBuilder:
 
     def done(self) -> "AttachmentBuilder[object]":
         """Attach the built data block to the parent attachment builder.
+
+        Returns:
+            The parent builder.
 
         Raises:
             ValueError: If the data block is empty or the builder has no parent.
@@ -371,6 +508,13 @@ class AttachmentBuilder[TParent]:
         on_done: Callable[[Attachment], None] | None = None,
         existing_state: Attachment | None = None,
     ) -> None:
+        """Create the builder.
+
+        Args:
+            parent: Parent builder that ``done()`` returns to.
+            on_done: Callback that receives the built model when ``done()`` is called.
+            existing_state: Existing model to start from; ``None`` starts empty.
+        """
         self._parent = parent
         self._on_done = on_done
         self._data_blocks: list[DataBlock] = (
@@ -380,7 +524,14 @@ class AttachmentBuilder[TParent]:
         )
 
     def from_model(self, attachment: Attachment | None) -> Self:
-        """Replace the builder state from an existing domain model."""
+        """Replace the builder state from an existing domain model.
+
+        Args:
+            attachment: Model to load into the builder.
+
+        Returns:
+            The builder, for chaining.
+        """
         attachment = (
             attachment.model_copy(deep=True) if attachment is not None else None
         )
@@ -388,21 +539,40 @@ class AttachmentBuilder[TParent]:
         return self
 
     def build_data_block(self) -> DataBlockBuilder:
-        """Start a data block builder."""
+        """Start a data block builder.
+
+        Returns:
+            A data-block builder; call ``done()`` on it to attach the block and return to this attachment builder.
+        """
         return DataBlockBuilder(self, None)
 
     def add_data_block_model(self, block: DataBlock) -> Self:
-        """Add an existing attachment data-block model."""
+        """Add an existing attachment data-block model.
+
+        Args:
+            block: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._data_blocks.append(block)
         return self
 
     def clear_data_blocks(self) -> Self:
-        """Remove all attachment data blocks."""
+        """Remove all attachment data blocks.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._data_blocks = []
         return self
 
     def build(self) -> Attachment:
-        """Build the corresponding FA(3) domain model."""
+        """Build the corresponding FA(3) domain model.
+
+        Returns:
+            The built ``Attachment``.
+        """
         return Attachment(data_blocks=self._data_blocks)
 
     def _is_empty(self) -> bool:
@@ -410,6 +580,9 @@ class AttachmentBuilder[TParent]:
 
     def done(self) -> TParent:
         """Attach the built attachment to the parent invoice builder.
+
+        Returns:
+            The parent builder.
 
         Raises:
             ValueError: If the attachment is empty or the builder has no parent.
@@ -432,7 +605,11 @@ class AttachmentBuilderMixin:
     _attachment: Attachment | None = None
 
     def attachment(self) -> AttachmentBuilder[Self]:
-        """Start an attachment sub-builder."""
+        """Start an attachment sub-builder.
+
+        Returns:
+            An ``AttachmentBuilder`` for this part of the invoice; call ``done()`` on it to attach the result and return to this builder.
+        """
         return AttachmentBuilder(self, self._set_attachment, self._attachment)
 
     def _set_attachment(self, attachment: Attachment) -> None:

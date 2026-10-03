@@ -33,11 +33,15 @@ class CorrectedSellerEntity(KSeFBaseModel):
         default=None,
         description="prefiks_podatnika: EU VAT prefix used in special correction cases.",
     )
+    """Country prefix of the seller's VAT identifier (``PrefiksPodatnika``)."""
     tax_id: str = Field(description="dane_identyfikacyjne/nip: Seller NIP.")
+    """NIP of the corrected seller."""
     name: str = Field(
         description="dane_identyfikacyjne/nazwa: Seller name from the corrected invoice."
     )
+    """Name of the corrected seller."""
     address: InvoiceAddress = Field(description="adres: Seller address.")
+    """Address of the corrected seller."""
 
     @field_validator("vat_prefix")
     @classmethod
@@ -76,18 +80,26 @@ class CorrectedBuyerEntity(KSeFBaseModel):
     """
 
     tax_id: str | None = None
+    """Polish NIP of the corrected buyer."""
     eu_vat_id: str | None = None
+    """EU VAT identifier of the corrected buyer."""
     country_code: str | None = None
+    """Two-letter country code accompanying ``eu_vat_id`` or ``other_id``."""
     other_id: str | None = None
+    """Identifier of another kind."""
     no_id: bool = False
+    """Marks a buyer that has no identifier."""
     name: str
+    """Name of the corrected buyer."""
     address: InvoiceAddress | None = None
+    """Address of the corrected buyer."""
     buyer_id: str | None = Field(
         default=None,
         min_length=1,
         max_length=32,
         description="idnabywcy: Buyer linkage key used on corrections.",
     )
+    """Unique identifier of the buyer assigned by the seller."""
 
     @field_validator("eu_vat_id")
     @classmethod
@@ -144,31 +156,38 @@ class CorrectionInvoiceContext(KSeFBaseModel):
         default=None,
         description="przyczyna_korekty: Optional correction reason.",
     )
+    """Reason for the correction (``PrzyczynaKorekty``)."""
     correction_effect_type: CorrectionEffectType | None = Field(
         default=None,
         description="typ_korekty: VAT register impact timing for the correction.",
     )
+    """How the correction affects VAT settlement (``TypKorekty``)."""
     corrected_invoices: list[CorrectedInvoiceReference] = Field(
         default_factory=list,
         description="dane_fa_korygowanej: References to corrected invoices.",
     )
+    """Invoices being corrected (``DaneFaKorygowanej``)."""
     corrected_invoice_period: str | None = Field(
         default=None,
         min_length=1,
         max_length=256,
         description="okres_fa_korygowanej: Period to which the discount/reduction applies.",
     )
+    """Settlement period of the corrected invoices (``OkresFaKorygowanej``)."""
     corrected_invoice_number_override: str | None = Field(
         default=None,
         min_length=1,
         max_length=256,
         description="nr_fa_korygowany: Correct invoice number replacing an incorrect one.",
     )
+    """Number of the corrected invoice when it differs from the original (``NrFaKorygowany``)."""
     corrected_seller: CorrectedSellerEntity | None = Field(
         default=None,
         description="podmiot1_k: Seller data from the corrected invoice.",
     )
+    """Corrected seller data (``Podmiot1K``)."""
     corrected_buyers: list[CorrectedBuyerEntity] = Field(
         default_factory=list,
         description="podmiot2_k: Buyer data from the corrected invoice.",
     )
+    """Corrected buyer data (``Podmiot2K``)."""

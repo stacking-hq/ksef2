@@ -73,6 +73,14 @@ class BatchService:
         get_encryption_key: Callable[[], SessionEncryptionMaterial],
         open_batch_session: BatchSessionOpener,
     ) -> None:
+        """Create the service.
+
+        Args:
+            authed_transport: Middleware chain used for authenticated API requests.
+            upload_transport: Middleware used to upload batch parts to external storage.
+            get_encryption_key: Coroutine function returning fresh session encryption material.
+            open_batch_session: Callable that opens a batch session from a prepared batch.
+        """
         self._invoice_eps = InvoicesEndpoints(authed_transport)
         self._session_eps = SessionEndpoints(authed_transport)
         self._external_transfers = ExternalTransferClient(upload_transport)
@@ -296,6 +304,16 @@ class BatchService:
             KSeFBatchUploadError: If external storage rejects an upload or its
                 outcome cannot be determined. Call ``recovery_state()`` on the error
                 to deliberately recover the sensitive batch state.
+
+        Example:
+            ```python
+            from ksef2.models import BatchInvoice
+
+            state = auth.batch.submit_batch(
+                invoices=[BatchInvoice(file_name="invoice-1.xml", content=xml_bytes)],
+            )
+            print(state.reference_number)
+            ```
         """
         prepared_batch = self.prepare_batch(
             invoices=invoices,
@@ -331,7 +349,16 @@ class BatchService:
         page_size: int = 10,
         continuation_token: str | None = None,
     ) -> SessionInvoicesResponse:
-        """Fetch one page of accepted invoices from a batch session."""
+        """Fetch one page of accepted invoices from a batch session.
+
+        Args:
+            session: Session reference number, persisted state, or open session client.
+            page_size: Number of invoices per page (10–1000).
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+
+        Returns:
+            One page of invoices accepted in the session, with a continuation token when more exist.
+        """
         return session_from_spec(
             self._invoice_eps.list_session_invoices(
                 reference_number=self._resolve_reference_number(session),
@@ -347,7 +374,16 @@ class BatchService:
         page_size: int = 10,
         continuation_token: str | None = None,
     ) -> SessionInvoicesResponse:
-        """Fetch one page of failed invoices from a batch session."""
+        """Fetch one page of failed invoices from a batch session.
+
+        Args:
+            session: Session reference number, persisted state, or open session client.
+            page_size: Number of invoices per page (10–1000).
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+
+        Returns:
+            One page of invoices that failed processing, with a continuation token when more exist.
+        """
         return session_from_spec(
             self._invoice_eps.list_failed_session_invoices(
                 reference_number=self._resolve_reference_number(session),

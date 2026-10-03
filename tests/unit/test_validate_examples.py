@@ -125,7 +125,7 @@ def make_repo(root: Path, *, example: str, page: str) -> None:
     (root / "scripts" / "examples" / "demo.py").write_text(example)
     for locale in ("en", "pl"):
         (root / "docs" / locale).mkdir(parents=True)
-        (root / "docs" / locale / "page.mdx").write_text(page)
+        (root / "docs" / locale / "page.md").write_text(page)
     (root / "README.md").write_text("```python\nfrom ksef2 import Client\n```\n")
 
 
@@ -152,8 +152,8 @@ def test_validate_reports_failures_per_file(tmp_path: Path) -> None:
     failures, _, _ = validate(tmp_path)
 
     assert any(f.startswith("scripts/examples/demo.py: line 1:") for f in failures)
-    assert any(f.startswith("docs/en/page.mdx: line 2:") for f in failures)
-    assert any(f.startswith("docs/pl/page.mdx: line 2:") for f in failures)
+    assert any(f.startswith("docs/en/page.md: line 2:") for f in failures)
+    assert any(f.startswith("docs/pl/page.md: line 2:") for f in failures)
 
 
 def test_validate_fails_when_nothing_matches(tmp_path: Path) -> None:

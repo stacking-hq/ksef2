@@ -99,5 +99,5 @@ For sync generation specifically, that means:
 
 ## Reference
 
-- [Client setup](../how-to-guides/client-setup.mdx)
-- [Low-level API](../reference/low-level/overview.mdx)
+- [Client setup](../how-to-guides/client-setup.md)
+- [Low-level API](../reference/low-level/overview.md)

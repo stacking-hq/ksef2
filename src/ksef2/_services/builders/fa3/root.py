@@ -92,7 +92,15 @@ class StandardInvoiceBuilder(
             ),
         ] = None,
     ) -> Self:
-        """Set the header value."""
+        """Set the header value.
+
+        Args:
+            generation_timestamp: Invoice generation timestamp written to the FA(3) header. Leave it empty to use the current time.
+            system_info: Name of the application or service that generated the invoice.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._header = InvoiceHeader(
             generation_timestamp=to_aware_datetime(
                 generation_timestamp or datetime.now()
@@ -103,7 +111,14 @@ class StandardInvoiceBuilder(
 
     @override
     def header_model(self, header: InvoiceHeader) -> Self:
-        """Set the invoice header from an existing domain model."""
+        """Set the invoice header from an existing domain model.
+
+        Args:
+            header: Model to use.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._header = header
         return self
 
@@ -211,7 +226,26 @@ class StandardInvoiceBuilder(
             ),
         ] = None,
     ) -> Self:
-        """Set the seller party from address and identifier fields."""
+        """Set the seller party from address and identifier fields.
+
+        Args:
+            name: Seller name shown on the invoice.
+            country_code: Two-letter country code for the seller address.
+            address_line_1: First seller address line, typically street and building number.
+            tax_id: Seller tax identifier, usually the NIP for Polish entities.
+            address_line_2: Second seller address line, typically postal code and city.
+            gln: Seller GLN identifier when the seller is identified in logistics systems.
+            vat_prefix: Seller VAT prefix used together with domestic tax identifiers.
+            eu_vat_id: Seller EU VAT identifier used for intra-EU transactions.
+            other_id: Alternative seller identifier when tax_id or eu_vat_id is not used.
+            eori_number: Seller EORI number for customs-related invoice scenarios.
+            customer_number: Seller customer number used by the trading parties.
+            email: Seller contact email included in invoice party details.
+            phone: Seller contact phone number included in invoice party details.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._seller = self._build_entity(
             name=name,
             country_code=country_code,
@@ -231,7 +265,14 @@ class StandardInvoiceBuilder(
 
     @override
     def seller_model(self, seller: InvoiceEntity) -> Self:
-        """Set the seller from an existing domain model."""
+        """Set the seller from an existing domain model.
+
+        Args:
+            seller: Model to use.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._seller = seller
         return self
 
@@ -365,6 +406,27 @@ class StandardInvoiceBuilder(
     ) -> Self:
         """Set the buyer party from address and identifier fields.
 
+        Args:
+            name: Buyer name shown on the invoice. Leave empty only when the invoice scenario allows it.
+            country_code: Two-letter country code for the buyer address.
+            address_line_1: First buyer address line, typically street and building number.
+            tax_id: Buyer tax identifier, usually the NIP for domestic invoices.
+            address_line_2: Second buyer address line, typically postal code and city.
+            gln: Buyer GLN identifier used in logistics or EDI processes.
+            vat_prefix: Buyer VAT prefix used together with domestic identifiers.
+            eu_vat_id: Buyer EU VAT identifier for intra-EU transactions.
+            other_id: Alternative buyer identifier used when tax_id or eu_vat_id is not available.
+            eori_number: Buyer EORI number for customs-related invoice scenarios.
+            customer_number: Buyer customer number used by the trading parties.
+            buyer_id: Internal buyer identifier used in some FA(3) scenarios.
+            jst_subordinate_unit: Set to true when the buyer is a subordinate unit of a Polish local government entity.
+            vat_group_member: Set to true when the buyer belongs to a VAT group.
+            email: Buyer contact email included in invoice party details.
+            phone: Buyer contact phone number included in invoice party details.
+
+        Returns:
+            The builder, for chaining.
+
         Raises:
             ValueError: If an address line is provided without a country code.
         """
@@ -390,7 +452,14 @@ class StandardInvoiceBuilder(
 
     @override
     def buyer_model(self, buyer: InvoiceEntity) -> Self:
-        """Set the buyer from an existing domain model."""
+        """Set the buyer from an existing domain model.
+
+        Args:
+            buyer: Model to use.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._buyer = buyer
         return self
 
@@ -588,6 +657,34 @@ class StandardInvoiceBuilder(
     ) -> Self:
         """Add a third-party subject from address, identity, and role fields.
 
+        Args:
+            name: Third-party name shown in the FA(3) party section.
+            tax_id: Third-party tax identifier.
+            internal_id: Internal identifier assigned to the third party.
+            eu_vat_id: EU VAT identifier for the third party.
+            identity_country_code: Country code attached to the third-party identity data.
+            other_id: Alternative third-party identifier.
+            no_id: Set to true when the third party is intentionally recorded without an identifier.
+            address_country_code: Country code for the third-party address.
+            address_line_1: First line of the third-party address.
+            address_line_2: Second line of the third-party address.
+            gln: GLN assigned to the third-party address.
+            correspondence_country_code: Country code for the correspondence address.
+            correspondence_address_line_1: First line of the third-party correspondence address.
+            correspondence_address_line_2: Second line of the third-party correspondence address.
+            correspondence_gln: GLN assigned to the correspondence address.
+            contacts: Contact entries for the third party, such as email and phone.
+            role: Role of the third party in the invoice context.
+            other_role: Set to true when the role is described manually instead of using the predefined role enum.
+            role_description: Free-text description of the third-party role.
+            share_percentage: Share percentage assigned to the third party when the invoice scenario requires it.
+            customer_number: Customer number assigned to the third party.
+            eori_number: Third-party EORI number.
+            buyer_id: Buyer identifier linked to the third party when required.
+
+        Returns:
+            The builder, for chaining.
+
         Raises:
             ValueError: If address or correspondence-address fields are incomplete.
         """
@@ -657,67 +754,131 @@ class StandardInvoiceBuilder(
         return self.add_third_party_model(third_party)
 
     def add_third_party_model(self, third_party: InvoiceThirdParty) -> Self:
-        """Add an existing third-party domain model."""
+        """Add an existing third-party domain model.
+
+        Args:
+            third_party: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         if self._third_parties is None:
             self._third_parties = []
         self._third_parties.append(third_party)
         return self
 
     def replace_third_parties(self, third_parties: Sequence[InvoiceThirdParty]) -> Self:
-        """Replace all third-party subjects."""
+        """Replace all third-party subjects.
+
+        Args:
+            third_parties: Replacement third parties.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._third_parties = list(third_parties)
         return self
 
     def clear_third_parties(self) -> Self:
-        """Remove all third-party subjects."""
+        """Remove all third-party subjects.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._third_parties = []
         return self
 
     @override
     def footer_model(self, footer: InvoiceFooter) -> Self:
-        """Set the footer from an existing domain model."""
+        """Set the footer from an existing domain model.
+
+        Args:
+            footer: Model to use.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._footer = footer
         return self
 
     @override
     def attachment_model(self, attachment: Attachment) -> Self:
-        """Set the attachment from an existing domain model."""
+        """Set the attachment from an existing domain model.
+
+        Args:
+            attachment: Model to use.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._attachment = attachment
         return self
 
     def standard(self) -> StandardBodyBuilder[Self]:
-        """Start a standard invoice body builder."""
+        """Start a standard invoice body builder.
+
+        Returns:
+            A ``StandardBodyBuilder`` for this part of the invoice; call ``done()`` on it to attach the result and return to this builder.
+        """
         return StandardBodyBuilder(self, self._set_body, self._body)
 
     def simplified(self) -> SimplifiedBodyBuilder[Self]:
-        """Start a simplified invoice body builder."""
+        """Start a simplified invoice body builder.
+
+        Returns:
+            A ``SimplifiedBodyBuilder`` for this part of the invoice; call ``done()`` on it to attach the result and return to this builder.
+        """
         return SimplifiedBodyBuilder(self, self._set_body, self._body)
 
     def correction(self) -> CorrectionBodyBuilder[Self]:
-        """Start a correction invoice body builder."""
+        """Start a correction invoice body builder.
+
+        Returns:
+            A ``CorrectionBodyBuilder`` for this part of the invoice; call ``done()`` on it to attach the result and return to this builder.
+        """
         return CorrectionBodyBuilder(self, self._set_body, self._body)
 
     def advance(self) -> AdvanceBodyBuilder[Self]:
-        """Start an advance invoice body builder or sub-builder."""
+        """Start an advance invoice body builder or sub-builder.
+
+        Returns:
+            An ``AdvanceBodyBuilder`` for this part of the invoice; call ``done()`` on it to attach the result and return to this builder.
+        """
         return AdvanceBodyBuilder(self, self._set_body, self._body)
 
     def settlement(self) -> SettlementBodyBuilder[Self]:
-        """Start a settlement invoice body builder or sub-builder."""
+        """Start a settlement invoice body builder or sub-builder.
+
+        Returns:
+            A ``SettlementBodyBuilder`` for this part of the invoice; call ``done()`` on it to attach the result and return to this builder.
+        """
         return SettlementBodyBuilder(self, self._set_body, self._body)
 
     def correction_advance(self) -> CorrectionAdvanceBodyBuilder[Self]:
-        """Start a correction advance invoice body builder."""
+        """Start a correction advance invoice body builder.
+
+        Returns:
+            A ``CorrectionAdvanceBodyBuilder`` for this part of the invoice; call ``done()`` on it to attach the result and return to this builder.
+        """
         return CorrectionAdvanceBodyBuilder(self, self._set_body, self._body)
 
     def correction_settlement(self) -> CorrectionSettlementBodyBuilder[Self]:
-        """Start a correction settlement invoice body builder."""
+        """Start a correction settlement invoice body builder.
+
+        Returns:
+            A ``CorrectionSettlementBodyBuilder`` for this part of the invoice; call ``done()`` on it to attach the result and return to this builder.
+        """
         return CorrectionSettlementBodyBuilder(self, self._set_body, self._body)
 
     def _set_body(self, body: KsefInvoiceBody) -> None:
         self._body = body
 
     def dump_state(self) -> KsefInvoiceDraft:
-        """Return a serializable draft snapshot of the current builder state."""
+        """Return a serializable draft snapshot of the current builder state.
+
+        Returns:
+            A deep copy of the current builder state as a draft snapshot.
+        """
         return KsefInvoiceDraft(
             header=self._header.model_copy(deep=True) if self._header else None,
             seller=self._seller.model_copy(deep=True) if self._seller else None,
@@ -734,11 +895,25 @@ class StandardInvoiceBuilder(
         )
 
     def dump_state_json(self, *, indent: int | None = None) -> str:
-        """Return the current builder state as JSON."""
+        """Return the current builder state as JSON.
+
+        Args:
+            indent: Number of spaces to indent nested values; ``None`` for compact output.
+
+        Returns:
+            The draft snapshot serialized as JSON.
+        """
         return self.dump_state().model_dump_json(indent=indent)
 
     def load_state(self, state: KsefInvoiceDraft) -> Self:
-        """Load builder state from a serializable draft snapshot."""
+        """Load builder state from a serializable draft snapshot.
+
+        Args:
+            state: Draft snapshot to load.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._header = state.header.model_copy(deep=True) if state.header else None
         self._seller = state.seller.model_copy(deep=True) if state.seller else None
         self._buyer = state.buyer.model_copy(deep=True) if state.buyer else None
@@ -754,21 +929,45 @@ class StandardInvoiceBuilder(
 
     @classmethod
     def from_state(cls, state: KsefInvoiceDraft) -> Self:
-        """Create a builder from a serializable draft snapshot."""
+        """Create a builder from a serializable draft snapshot.
+
+        Args:
+            state: Draft snapshot to load.
+
+        Returns:
+            The builder, for chaining.
+        """
         return cls().load_state(state)
 
     @classmethod
     def from_state_json(cls, data: str | bytes | bytearray) -> Self:
-        """Create a builder from serialized JSON state."""
+        """Create a builder from serialized JSON state.
+
+        Args:
+            data: Serialized draft snapshot as JSON.
+
+        Returns:
+            The builder, for chaining.
+        """
         return cls.from_state(KsefInvoiceDraft.model_validate_json(data))
 
     @classmethod
     def from_invoice(cls, invoice: KsefInvoice) -> Self:
-        """Create a builder initialized from an existing invoice."""
+        """Create a builder initialized from an existing invoice.
+
+        Args:
+            invoice: Invoice to start from.
+
+        Returns:
+            The builder, for chaining.
+        """
         return cls.from_state(KsefInvoiceDraft.from_invoice(invoice))
 
     def build(self) -> KsefInvoice:
         """Build the corresponding FA(3) domain model.
+
+        Returns:
+            The built ``KsefInvoice``.
 
         Raises:
             ValueError: If the required header, seller, buyer, or body is missing.
@@ -798,6 +997,9 @@ class StandardInvoiceBuilder(
     def to_spec(self) -> Faktura:
         """Convert the built invoice to the generated FA(3) schema model.
 
+        Returns:
+            The generated FA(3) schema model.
+
         Raises:
             ValueError: If the current builder state cannot build a complete invoice.
         """
@@ -812,6 +1014,15 @@ class StandardInvoiceBuilder(
         validate: bool = True,
     ) -> str:
         """Serialize the built invoice and validate it against the FA(3) XSD.
+
+        Args:
+            pretty_print: Indent the XML for readability.
+            xml_declaration: Include the ``<?xml ...?>`` declaration.
+            encoding: Text encoding of the document and its XML declaration.
+            validate: Validate the document against the FA(3) XSD and raise if it does not conform.
+
+        Returns:
+            The FA(3) XML document.
 
         Raises:
             ValueError: If the current builder state cannot build a complete invoice.

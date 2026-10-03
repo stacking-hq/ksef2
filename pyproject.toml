@@ -88,3 +88,14 @@ baselineFile = ".basedpyright/baseline.json"
 
 [tool.ruff.lint]
 ignore = ["E731", "E402"]
+# Docstring formatting (D2xx whitespace, D4xx content) for the public API reference.
+extend-select = ["D2", "D4"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D"]
+"scripts/**" = ["D"]
+# Generated code is documented by its generator.
+"src/ksef2/_infra/schema/**" = ["D"]

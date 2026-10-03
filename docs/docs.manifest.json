@@ -12,7 +12,7 @@
   ],
   "min_pages": 60,
   "sidebar": {
-    "link": "getting-started/overview.mdx",
+    "link": "getting-started/overview.md",
     "categories": [
       {
         "id": "getting-started",
@@ -27,14 +27,14 @@
             "translations": {
               "pl": "Wprowadzenie"
             },
-            "path": "getting-started/overview.mdx"
+            "path": "getting-started/overview.md"
           },
           {
             "label": "Quickstart",
             "translations": {
               "pl": "Szybki start"
             },
-            "path": "getting-started/quickstart.mdx"
+            "path": "getting-started/quickstart.md"
           }
         ]
       },
@@ -51,7 +51,7 @@
             "translations": {
               "pl": "Jak działa SDK"
             },
-            "path": "concepts/overview.mdx"
+            "path": "concepts/overview.md"
           },
           {
             "label": "Foundations",
@@ -64,21 +64,21 @@
                 "translations": {
                   "pl": "Środowiska"
                 },
-                "path": "concepts/environments.mdx"
+                "path": "concepts/environments.md"
               },
               {
                 "label": "Clients and lifecycle",
                 "translations": {
                   "pl": "Klient "
                 },
-                "path": "concepts/clients-and-lifecycle.mdx"
+                "path": "concepts/clients-and-lifecycle.md"
               },
               {
                 "label": "Glossary",
                 "translations": {
                   "pl": "Słownik"
                 },
-                "path": "concepts/glossary.mdx"
+                "path": "concepts/glossary.md"
               }
             ]
           },
@@ -93,28 +93,28 @@
                 "translations": {
                   "pl": "Metody uwierzytelniania"
                 },
-                "path": "concepts/authentication-methods.mdx"
+                "path": "concepts/authentication-methods.md"
               },
               {
                 "label": "Certificates",
                 "translations": {
                   "pl": "Certyfikaty"
                 },
-                "path": "concepts/certificates.mdx"
+                "path": "concepts/certificates.md"
               },
               {
                 "label": "Encryption",
                 "translations": {
                   "pl": "Szyfrowanie"
                 },
-                "path": "concepts/encryption.mdx"
+                "path": "concepts/encryption.md"
               },
               {
                 "label": "XAdES",
                 "translations": {
                   "pl": "XAdES"
                 },
-                "path": "concepts/xades.mdx"
+                "path": "concepts/xades.md"
               }
             ]
           },
@@ -129,28 +129,28 @@
                 "translations": {
                   "pl": "Sesje"
                 },
-                "path": "concepts/sessions.mdx"
+                "path": "concepts/sessions.md"
               },
               {
                 "label": "Invoice lifecycle",
                 "translations": {
                   "pl": "Faktura w KSeF"
                 },
-                "path": "concepts/invoice-lifecycle.mdx"
+                "path": "concepts/invoice-lifecycle.md"
               },
               {
                 "label": "Querying and exports",
                 "translations": {
                   "pl": "Wyszukiwanie i eksport paczek"
                 },
-                "path": "concepts/querying-and-exports.mdx"
+                "path": "concepts/querying-and-exports.md"
               },
               {
                 "label": "Status and UPO",
                 "translations": {
                   "pl": "Status i UPO"
                 },
-                "path": "concepts/status-and-upo.mdx"
+                "path": "concepts/status-and-upo.md"
               }
             ]
           },
@@ -165,21 +165,21 @@
                 "translations": {
                   "pl": "Tokeny i uprawnienia"
                 },
-                "path": "concepts/permissions.mdx"
+                "path": "concepts/permissions.md"
               },
               {
                 "label": "Limits, polling, and retries",
                 "translations": {
                   "pl": "Limity i ponawianie żądań"
                 },
-                "path": "concepts/limits.mdx"
+                "path": "concepts/limits.md"
               },
               {
                 "label": "PEPPOL",
                 "translations": {
                   "pl": "PEPPOL"
                 },
-                "path": "concepts/peppol.mdx"
+                "path": "concepts/peppol.md"
               }
             ]
           }
@@ -198,7 +198,7 @@
             "translations": {
               "pl": "Spis poradników"
             },
-            "path": "how-to-guides/overview.mdx"
+            "path": "how-to-guides/overview.md"
           },
           {
             "label": "Setup",
@@ -211,28 +211,28 @@
                 "translations": {
                   "pl": "Konfiguracja klienta"
                 },
-                "path": "how-to-guides/client-setup.mdx"
+                "path": "how-to-guides/client-setup.md"
               },
               {
                 "label": "Configure a certificate store",
                 "translations": {
                   "pl": "Skonfiguruj magazyn certyfikatów"
                 },
-                "path": "how-to-guides/configure-certificate-store.mdx"
+                "path": "how-to-guides/configure-certificate-store.md"
               },
               {
                 "label": "Authenticate",
                 "translations": {
                   "pl": "Uwierzytelnij się"
                 },
-                "path": "how-to-guides/authenticate.mdx"
+                "path": "how-to-guides/authenticate.md"
               },
               {
                 "label": "Use profiles",
                 "translations": {
                   "pl": "Użyj profili"
                 },
-                "path": "how-to-guides/profiles.mdx"
+                "path": "how-to-guides/profiles.md"
               }
             ]
           },
@@ -247,35 +247,35 @@
                 "translations": {
                   "pl": "Zbuduj faktury FA(3)"
                 },
-                "path": "how-to-guides/build-fa3-invoices.mdx"
+                "path": "how-to-guides/build-fa3-invoices.md"
               },
               {
                 "label": "Send invoices",
                 "translations": {
                   "pl": "Wyślij faktury"
                 },
-                "path": "how-to-guides/send-invoices.mdx"
+                "path": "how-to-guides/send-invoices.md"
               },
               {
                 "label": "Get status and UPO",
                 "translations": {
                   "pl": "Sprawdź status i UPO"
                 },
-                "path": "how-to-guides/get-status-and-upo.mdx"
+                "path": "how-to-guides/get-status-and-upo.md"
               },
               {
                 "label": "Query invoices",
                 "translations": {
                   "pl": "Wyszukaj faktury"
                 },
-                "path": "how-to-guides/query-invoices.mdx"
+                "path": "how-to-guides/query-invoices.md"
               },
               {
                 "label": "Download invoices",
                 "translations": {
                   "pl": "Pobierz faktury"
                 },
-                "path": "how-to-guides/download-invoices.mdx"
+                "path": "how-to-guides/download-invoices.md"
               }
             ]
           },
@@ -290,28 +290,28 @@
                 "translations": {
                   "pl": "Zarządzaj tokenami"
                 },
-                "path": "how-to-guides/manage-tokens.mdx"
+                "path": "how-to-guides/manage-tokens.md"
               },
               {
                 "label": "Configure permissions",
                 "translations": {
                   "pl": "Skonfiguruj uprawnienia"
                 },
-                "path": "how-to-guides/configure-permissions.mdx"
+                "path": "how-to-guides/configure-permissions.md"
               },
               {
                 "label": "Manage certificates",
                 "translations": {
                   "pl": "Zarządzaj certyfikatami"
                 },
-                "path": "how-to-guides/manage-certificates.mdx"
+                "path": "how-to-guides/manage-certificates.md"
               },
               {
                 "label": "Manage limits",
                 "translations": {
                   "pl": "Zarządzaj limitami"
                 },
-                "path": "how-to-guides/manage-limits.mdx"
+                "path": "how-to-guides/manage-limits.md"
               }
             ]
           },
@@ -326,28 +326,28 @@
                 "translations": {
                   "pl": "Sprawdź certyfikaty szyfrowania"
                 },
-                "path": "how-to-guides/inspect-encryption-certificates.mdx"
+                "path": "how-to-guides/inspect-encryption-certificates.md"
               },
               {
                 "label": "Query PEPPOL providers",
                 "translations": {
                   "pl": "Wyszukaj dostawców PEPPOL"
                 },
-                "path": "how-to-guides/query-peppol-providers.mdx"
+                "path": "how-to-guides/query-peppol-providers.md"
               },
               {
                 "label": "Use TEST data",
                 "translations": {
                   "pl": "Użyj danych TEST"
                 },
-                "path": "how-to-guides/use-test-data.mdx"
+                "path": "how-to-guides/use-test-data.md"
               },
               {
                 "label": "Use XAdES helpers",
                 "translations": {
                   "pl": "Podpisy XAdES"
                 },
-                "path": "how-to-guides/use-xades-helpers.mdx"
+                "path": "how-to-guides/use-xades-helpers.md"
               }
             ]
           }
@@ -366,35 +366,35 @@
             "translations": {
               "pl": "Notatki wydania 1.0.0"
             },
-            "path": "reference/release-notes-1-0-0.mdx"
+            "path": "reference/release-notes-1-0-0.md"
           },
           {
             "label": "Public API contract",
             "translations": {
               "pl": "Interfejs publiczny"
             },
-            "path": "reference/public-api.mdx"
+            "path": "reference/public-api.md"
           },
           {
             "label": "Client lifecycle",
             "translations": {
               "pl": "Tworzenie i zamykanie klientów"
             },
-            "path": "reference/client-lifecycle.mdx"
+            "path": "reference/client-lifecycle.md"
           },
           {
             "label": "Error handling",
             "translations": {
               "pl": "Obsługa błędów"
             },
-            "path": "reference/errors.mdx"
+            "path": "reference/errors.md"
           },
           {
             "label": "Operations",
             "translations": {
               "pl": "Operacje"
             },
-            "path": "reference/operations.mdx"
+            "path": "reference/operations.md"
           },
           {
             "label": "Low-level API",
@@ -407,28 +407,28 @@
                 "translations": {
                   "pl": "Wprowadzenie"
                 },
-                "path": "reference/low-level/overview.mdx"
+                "path": "reference/low-level/overview.md"
               },
               {
                 "label": "Authentication",
                 "translations": {
                   "pl": "Uwierzytelnianie"
                 },
-                "path": "reference/low-level/authentication.mdx"
+                "path": "reference/low-level/authentication.md"
               },
               {
                 "label": "Sessions and invoices",
                 "translations": {
                   "pl": "Sesje i faktury"
                 },
-                "path": "reference/low-level/sessions-invoices.mdx"
+                "path": "reference/low-level/sessions-invoices.md"
               },
               {
                 "label": "Endpoint map",
                 "translations": {
                   "pl": "Mapa endpointów"
                 },
-                "path": "reference/low-level/endpoint-map.mdx"
+                "path": "reference/low-level/endpoint-map.md"
               }
             ]
           }

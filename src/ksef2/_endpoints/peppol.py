@@ -13,10 +13,20 @@ from ksef2._infra.schema.api import spec
 
 @final
 class PeppolEndpoints(BaseEndpoints):
+    """Raw endpoints for Peppol provider lookups."""
+
     def query_providers(
         self,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QueryPeppolProvidersResponse:
+        """Fetch one page of registered Peppol providers.
+
+        Args:
+            **params: Optional query parameters (``OffsetPaginationQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.QueryPeppolProvidersResponse``).
+        """
         return self._parse(
             self._transport.get(
                 path=routes.PeppolRoutes.QUERY_PROVIDERS,

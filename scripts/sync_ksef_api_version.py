@@ -24,11 +24,11 @@ README_LINES: dict[Path, tuple[str, str]] = {
         "SDK obecnie celuje w wersję OpenAPI KSeF ",
         "SDK obecnie celuje w wersję OpenAPI KSeF `{version}`.",
     ),
-    ROOT / "docs/en/reference/release-notes-1-0-0.mdx": (
+    ROOT / "docs/en/reference/release-notes-1-0-0.md": (
         "The SDK currently targets KSeF OpenAPI version ",
         "The SDK currently targets KSeF OpenAPI version `{version}`.",
     ),
-    ROOT / "docs/pl/reference/release-notes-1-0-0.mdx": (
+    ROOT / "docs/pl/reference/release-notes-1-0-0.md": (
         "SDK obecnie celuje w wersję OpenAPI KSeF ",
         "SDK obecnie celuje w wersję OpenAPI KSeF `{version}`.",
     ),

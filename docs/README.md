@@ -13,7 +13,7 @@ Keep the source tree aligned with the published sidebar groups:
 
 `docs.manifest.json` is the index for authored SDK documentation. Add each
 published page there under the right category, using a locale-relative path such
-as `how-to-guides/send-invoices.mdx`. The `en/` and `pl/` trees must stay
+as `how-to-guides/send-invoices.md`. The `en/` and `pl/` trees must stay
 mirrored for every path listed in the manifest.
 
 For manifest-backed docs, the published site copies only Markdown pages indexed

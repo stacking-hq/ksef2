@@ -25,11 +25,21 @@ class SettlementCharge(KSeFBaseModel):
     """
 
     amount: Decimal
+    """Amount of the charge."""
     reason: str
+    """Reason for the charge."""
 
     @field_validator("amount")
     @classmethod
     def validate_amount(cls, value: Decimal) -> Decimal:
+        """Round the charge amount to PLN precision.
+
+        Args:
+            value: Amount to round.
+
+        Returns:
+            The rounded amount.
+        """
         if value < Decimal("0.00"):
             raise ValueError("amount must be non-negative")
         return round_pln(value)
@@ -47,11 +57,21 @@ class SettlementDeduction(KSeFBaseModel):
     """
 
     amount: Decimal
+    """Amount of the deduction."""
     reason: str
+    """Reason for the deduction."""
 
     @field_validator("amount")
     @classmethod
     def validate_amount(cls, value: Decimal) -> Decimal:
+        """Round the deduction amount to PLN precision.
+
+        Args:
+            value: Amount to round.
+
+        Returns:
+            The rounded amount.
+        """
         if value < Decimal("0.00"):
             raise ValueError("amount must be non-negative")
         return round_pln(value)
@@ -73,23 +93,45 @@ class InvoiceSettlement(KSeFBaseModel):
     """
 
     charges: list[SettlementCharge] = Field(default_factory=list)
+    """Additional charges (``Obciazenia``)."""
     charges_total: Decimal | None = None
+    """Total of all charges (``SumaObciazen``)."""
     deductions: list[SettlementDeduction] = Field(default_factory=list)
+    """Deductions (``Odliczenia``)."""
     deductions_total: Decimal | None = None
+    """Total of all deductions (``SumaOdliczen``)."""
     amount_due: Decimal | None = None
+    """Amount due (``DoZaplaty``)."""
     amount_to_settle: Decimal | None = None
+    """Amount to be settled (``DoRozliczenia``)."""
 
     @field_validator(
         "charges_total", "deductions_total", "amount_due", "amount_to_settle"
     )
     @classmethod
     def round_optional_amounts(cls, value: Decimal | None) -> Decimal | None:
+        """Round settlement totals and balances to PLN precision.
+
+        Args:
+            value: Amount to round, or ``None``.
+
+        Returns:
+            The rounded amount, or ``None``.
+        """
         if value is None:
             return None
         return round_pln(value)
 
     @model_validator(mode="after")
     def validate_and_populate_totals(self) -> Self:
+        """Fill in charge and deduction totals from their entries and check them.
+
+        Returns:
+            The validated settlement.
+
+        Raises:
+            ValueError: If a given total disagrees with the sum of its entries, or both ``amount_due`` and ``amount_to_settle`` are set.
+        """
         computed_charges_total = sum(
             (charge.amount for charge in self.charges),
             start=Decimal("0.00"),

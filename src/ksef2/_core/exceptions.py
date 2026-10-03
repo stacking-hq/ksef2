@@ -8,7 +8,15 @@ from ksef2._domain.models.session import SessionInvoiceStatusResponse
 
 
 class ExceptionCode(IntEnum):
-    """Enumeration of all possible exception codes."""
+    """Enumeration of all possible exception codes.
+
+    Attributes:
+        UNKNOWN_ERROR: Code used when KSeF returns no code or an unrecognized one.
+        OBJECT_ALREADY_EXISTS: The object being created already exists.
+        VALIDATION_ERROR: KSeF rejected the request as invalid.
+        UPO_NOT_FOUND: The requested UPO does not exist.
+        NOT_PROCESSED_YET: The resource is not processed yet; retry later.
+    """
 
     UNKNOWN_ERROR = 10000
     OBJECT_ALREADY_EXISTS = 30001
@@ -18,7 +26,14 @@ class ExceptionCode(IntEnum):
 
     @staticmethod
     def from_code(code: int | None) -> "ExceptionCode":
-        """Return a known exception code or ``UNKNOWN_ERROR`` for unknown values."""
+        """Return a known exception code or ``UNKNOWN_ERROR`` for unknown values.
+
+        Args:
+            code: Numeric code from a KSeF error response, or ``None``.
+
+        Returns:
+            The matching ``ExceptionCode``, or ``UNKNOWN_ERROR`` when ``code`` is ``None`` or not recognized.
+        """
         try:
             return ExceptionCode(code)
         except ValueError:
@@ -26,7 +41,16 @@ class ExceptionCode(IntEnum):
 
 
 class KSeFException(Exception):
-    """Base exception for all KSeF SDK errors."""
+    """Base exception for all KSeF SDK errors.
+
+    Args:
+        message: Human-readable error message.
+        **context: Additional structured details, stored in ``context``.
+
+    Attributes:
+        code: Stable machine-readable error code of the exception class.
+        context: Structured details about the failure; always contains ``code``.
+    """
 
     code: str = "SDK_ERROR"
 
@@ -49,7 +73,12 @@ class KSeFUnsupportedEnvironmentError(KSeFException):
 
 
 class KSeFValidationError(KSeFException):
-    """Raised when validation fails."""
+    """Raised when validation fails.
+
+    Args:
+        message: Human-readable error message.
+        **context: Additional structured details, stored in ``context``.
+    """
 
     code: str = "VALIDATION_ERROR"
 
@@ -65,7 +94,19 @@ class KSeFInvoiceRenderingError(KSeFException):
 
 
 class KSeFApiError(KSeFException):
-    """Raised on 4xx/5xx responses from the KSeF API."""
+    """Raised on 4xx/5xx responses from the KSeF API.
+
+    Args:
+        status_code: HTTP status code of the response.
+        exception_code: KSeF exception code parsed from the response.
+        message: Human-readable error message.
+        response: Parsed error response body, if available.
+
+    Attributes:
+        status_code: HTTP status code of the response.
+        exception_code: KSeF exception code parsed from the response.
+        response: Parsed error response body, or ``None``.
+    """
 
     code: str = "API_ERROR"
 
@@ -89,7 +130,13 @@ class KSeFApiError(KSeFException):
 
 
 class KSeFAuthError(KSeFApiError):
-    """Raised on 401/403 responses."""
+    """Raised on 401/403 responses.
+
+    Args:
+        status_code: HTTP status code of the response, ``401`` or ``403``.
+        message: Human-readable error message.
+        response: Parsed error response body, if available.
+    """
 
     code: str = "AUTH_ERROR"
 
@@ -103,7 +150,16 @@ class KSeFAuthError(KSeFApiError):
 
 
 class KSeFRateLimitError(KSeFApiError):
-    """Raised on 429 responses. Check ``retry_after`` for seconds to wait."""
+    """Raised on 429 responses. Check ``retry_after`` for seconds to wait.
+
+    Args:
+        retry_after: Seconds to wait before retrying, from the ``Retry-After`` header; ``None`` if absent.
+        message: Human-readable error message.
+        response: Parsed error response body, if available.
+
+    Attributes:
+        retry_after: Seconds to wait before retrying, or ``None``.
+    """
 
     code: str = "RATE_LIMIT_ERROR"
 
@@ -119,7 +175,24 @@ class KSeFRateLimitError(KSeFApiError):
 
 
 class KSeFExternalTransferError(KSeFException):
-    """Raised when a presigned external-storage transfer fails."""
+    """Raised when a presigned external-storage transfer fails.
+
+    Args:
+        operation: Direction of the failed transfer, ``upload`` or ``download``.
+        host: Host of the presigned URL.
+        reference_number: KSeF reference number the transfer belongs to.
+        part_ordinal: One-based number of the part being transferred.
+        status_code: HTTP status code returned by external storage; ``None`` if no response was received.
+        outcome_ambiguous: Whether the transfer may have succeeded despite the failure.
+
+    Attributes:
+        operation: Direction of the failed transfer.
+        host: Host of the presigned URL.
+        reference_number: KSeF reference number the transfer belongs to.
+        part_ordinal: One-based number of the part being transferred.
+        status_code: HTTP status code returned by external storage, or ``None``.
+        outcome_ambiguous: Whether the transfer may have succeeded despite the failure.
+    """
 
     code: str = "EXTERNAL_TRANSFER_ERROR"
 
@@ -158,7 +231,12 @@ class KSeFExternalTransferError(KSeFException):
 
 
 class KSeFBatchUploadError[RecoveryStateT](KSeFExternalTransferError):
-    """External batch upload failure with explicitly accessible recovery state."""
+    """External batch upload failure with explicitly accessible recovery state.
+
+    Args:
+        transfer_error: The underlying external transfer failure.
+        recovery_state: Sensitive batch state kept for deliberate recovery; read it with ``recovery_state()``.
+    """
 
     code: str = "BATCH_UPLOAD_ERROR"
 
@@ -183,12 +261,19 @@ class KSeFBatchUploadError[RecoveryStateT](KSeFExternalTransferError):
 
         The state contains encryption material and presigned upload URLs. Protect it
         as credential material and do not include it in logs or generic error dumps.
+
+        Returns:
+            The batch state captured when the upload failed.
         """
         return self._recovery_state
 
 
 class KSeFEncryptionError(KSeFException):
-    """Raised when encryption or decryption operations fail."""
+    """Raised when encryption or decryption operations fail.
+
+    Args:
+        message: Description of the encryption failure.
+    """
 
     code: str = "ENCRYPTION_ERROR"
 
@@ -206,6 +291,9 @@ class KSeFSessionError(KSeFException):
     keep working, which means handling ``KSeFSessionError`` also catches
     invoices that KSeF rejected. Handle the subclass first when only a
     session-state violation needs recovery.
+
+    Args:
+        message: Description of the session-state violation.
     """
 
     code: str = "SESSION_ERROR"
@@ -228,6 +316,18 @@ class KSeFInvoiceRejectedError(KSeFSessionError):
     ``details`` explains a semantic rejection (for example 450), and
     ``extensions`` carries structured data such as ``originalKsefNumber`` for a
     duplicate (440).
+
+    Args:
+        invoice_reference_number: Reference number of the rejected invoice within the session.
+        status: Full processing status returned by KSeF.
+
+    Attributes:
+        invoice_reference_number: Reference number of the rejected invoice within the session.
+        status: Full processing status returned by KSeF.
+        invoice_status_code: KSeF invoice status code, for example 440 or 450.
+        description: Description of the status.
+        details: Explanations of the rejection; empty when none were given.
+        extensions: Structured status data; empty when none were given.
     """
 
     code: str = "INVOICE_REJECTED"
@@ -262,7 +362,11 @@ class KSeFInvoiceRejectedError(KSeFSessionError):
 
 
 class NoCertificateAvailableError(KSeFException):
-    """Raised when no certificate is available for signing."""
+    """Raised when no certificate is available for signing.
+
+    Args:
+        message: Description of what is missing.
+    """
 
     code: str = "NO_CERTIFICATE_AVAILABLE"
 
@@ -274,7 +378,16 @@ class NoCertificateAvailableError(KSeFException):
 
 
 class KSeFExportTimeoutError(KSeFException):
-    """Raised when polling for an export package exceeds the timeout."""
+    """Raised when polling for an export package exceeds the timeout.
+
+    Args:
+        reference_number: Reference number of the export.
+        timeout: Number of seconds waited.
+
+    Attributes:
+        reference_number: Reference number of the export.
+        timeout: Number of seconds waited.
+    """
 
     code: str = "EXPORT_TIMEOUT"
 
@@ -293,7 +406,16 @@ class KSeFExportTimeoutError(KSeFException):
 
 
 class KSeFAuthPollingTimeoutError(KSeFException):
-    """Raised when polling for authentication completion exceeds the timeout."""
+    """Raised when polling for authentication completion exceeds the timeout.
+
+    Args:
+        reference_number: Reference number of the authentication operation.
+        timeout: Number of seconds waited.
+
+    Attributes:
+        reference_number: Reference number of the authentication operation.
+        timeout: Number of seconds waited.
+    """
 
     code: str = "AUTH_POLLING_TIMEOUT"
 
@@ -312,7 +434,11 @@ class KSeFAuthPollingTimeoutError(KSeFException):
 
 
 class KSeFAuthTokenRedemptionError(KSeFException):
-    """Raised when a one-shot authentication token redemption loses its response."""
+    """Raised when a one-shot authentication token redemption loses its response.
+
+    Attributes:
+        outcome_ambiguous: Always ``True``; the redemption may have succeeded.
+    """
 
     code: str = "AUTH_TOKEN_REDEMPTION_ERROR"
 
@@ -326,7 +452,16 @@ class KSeFAuthTokenRedemptionError(KSeFException):
 
 
 class KSeFTokenStatusTimeoutError(KSeFException):
-    """Raised when polling for a token status change exceeds the timeout."""
+    """Raised when polling for a token status change exceeds the timeout.
+
+    Args:
+        reference_number: Reference number of the token.
+        timeout: Number of seconds waited.
+
+    Attributes:
+        reference_number: Reference number of the token.
+        timeout: Number of seconds waited.
+    """
 
     code: str = "TOKEN_STATUS_TIMEOUT"
 
@@ -345,7 +480,14 @@ class KSeFTokenStatusTimeoutError(KSeFException):
 
 
 class KSeFInvoiceQueryTimeoutError(KSeFException):
-    """Raised when polling for invoices to appear exceeds the timeout."""
+    """Raised when polling for invoices to appear exceeds the timeout.
+
+    Args:
+        timeout: Number of seconds waited.
+
+    Attributes:
+        timeout: Number of seconds waited.
+    """
 
     code: str = "INVOICE_QUERY_TIMEOUT"
 
@@ -364,7 +506,16 @@ class KSeFMetadataPaginationError(KSeFException):
 
 
 class KSeFInvoiceDownloadTimeoutError(KSeFException):
-    """Raised when polling for an invoice download exceeds the timeout."""
+    """Raised when polling for an invoice download exceeds the timeout.
+
+    Args:
+        ksef_number: KSeF number of the invoice.
+        timeout: Number of seconds waited.
+
+    Attributes:
+        ksef_number: KSeF number of the invoice.
+        timeout: Number of seconds waited.
+    """
 
     code: str = "INVOICE_DOWNLOAD_TIMEOUT"
 
@@ -379,7 +530,16 @@ class KSeFInvoiceDownloadTimeoutError(KSeFException):
 
 
 class KSeFInvoiceProcessingTimeoutError(KSeFException):
-    """Raised when polling for a session invoice to finish processing exceeds the timeout."""
+    """Raised when polling for a session invoice to finish processing exceeds the timeout.
+
+    Args:
+        invoice_reference_number: Reference number of the invoice within the session.
+        timeout: Number of seconds waited.
+
+    Attributes:
+        invoice_reference_number: Reference number of the invoice within the session.
+        timeout: Number of seconds waited.
+    """
 
     code: str = "INVOICE_PROCESSING_TIMEOUT"
 
@@ -394,7 +554,16 @@ class KSeFInvoiceProcessingTimeoutError(KSeFException):
 
 
 class KSeFBatchSessionTimeoutError(KSeFException):
-    """Raised when polling for a batch session to finish processing exceeds the timeout."""
+    """Raised when polling for a batch session to finish processing exceeds the timeout.
+
+    Args:
+        reference_number: Reference number of the batch session.
+        timeout: Number of seconds waited.
+
+    Attributes:
+        reference_number: Reference number of the batch session.
+        timeout: Number of seconds waited.
+    """
 
     code: str = "BATCH_SESSION_TIMEOUT"
 

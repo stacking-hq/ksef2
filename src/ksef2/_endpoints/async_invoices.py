@@ -11,12 +11,12 @@ from ksef2._infra.schema.api.supp.invoices import (
     SendInvoiceRequest,
 )
 
-SessionInvoiceListQueryParams = TypedDict(
-    "SessionInvoiceListQueryParams",
-    {
-        "pageSize": int,
-    },
-)
+
+class SessionInvoiceListQueryParams(TypedDict):
+    """Wire-format query parameters for listing invoices of a session."""
+
+    pageSize: int
+    """Number of results per page."""
 
 
 @final
@@ -31,7 +31,15 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         body: spec.InvoiceQueryFilters,
         **params: Unpack[InvoiceMetadataQueryParams],
     ) -> spec.QueryInvoicesMetadataResponse:
-        """Fetch one page of invoice metadata."""
+        """Fetch one page of invoice metadata.
+
+        Args:
+            body: Request payload (``spec.InvoiceQueryFilters``).
+            **params: Optional query parameters (``InvoiceMetadataQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.QueryInvoicesMetadataResponse``).
+        """
         return self._parse(
             await self._transport.post(
                 path=routes.InvoiceRoutes.QUERY_METADATA,
@@ -42,7 +50,14 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         )
 
     async def export(self, body: InvoiceExportRequest) -> spec.ExportInvoicesResponse:
-        """Start an invoice export operation."""
+        """Start an invoice export operation.
+
+        Args:
+            body: Request payload (``InvoiceExportRequest``).
+
+        Returns:
+            The parsed KSeF response (``spec.ExportInvoicesResponse``).
+        """
         return self._parse(
             await self._transport.post(
                 path=routes.InvoiceRoutes.EXPORT,
@@ -55,7 +70,14 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         self,
         reference_number: str,
     ) -> spec.InvoiceExportStatusResponse:
-        """Fetch status for a scheduled invoice export."""
+        """Fetch status for a scheduled invoice export.
+
+        Args:
+            reference_number: Reference number of the export operation.
+
+        Returns:
+            The parsed KSeF response (``spec.InvoiceExportStatusResponse``).
+        """
         return self._parse(
             await self._transport.get(
                 path=routes.InvoiceRoutes.EXPORT_STATUS.format(
@@ -66,7 +88,14 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         )
 
     async def download(self, ksef_number: str) -> bytes:
-        """Download raw invoice bytes by KSeF number."""
+        """Download raw invoice bytes by KSeF number.
+
+        Args:
+            ksef_number: KSeF number of the invoice.
+
+        Returns:
+            The raw response body.
+        """
         return (
             await self._transport.get(
                 path=routes.InvoiceRoutes.DOWNLOAD.format(ksefNumber=ksef_number),
@@ -78,7 +107,15 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         reference_number: str,
         body: SendInvoiceRequest,
     ) -> spec.SendInvoiceResponse:
-        """Send one encrypted invoice into an open session."""
+        """Send one encrypted invoice into an open session.
+
+        Args:
+            reference_number: KSeF reference number.
+            body: Request payload (``SendInvoiceRequest``).
+
+        Returns:
+            The parsed KSeF response (``spec.SendInvoiceResponse``).
+        """
         return self._parse(
             await self._transport.post(
                 path=routes.InvoiceRoutes.SEND.format(referenceNumber=reference_number),
@@ -91,7 +128,14 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         self,
         reference_number: str,
     ) -> spec.SessionStatusResponse:
-        """Fetch status for an online or batch session."""
+        """Fetch status for an online or batch session.
+
+        Args:
+            reference_number: Reference number of the session.
+
+        Returns:
+            The parsed KSeF response (``spec.SessionStatusResponse``).
+        """
         return self._parse(
             await self._transport.get(
                 path=routes.InvoiceRoutes.SESSION_STATUS.format(
@@ -107,7 +151,16 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         continuation_token: str | None = None,
         **params: Unpack[SessionInvoiceListQueryParams],
     ) -> spec.SessionInvoicesResponse:
-        """Fetch one page of invoices submitted in a session."""
+        """Fetch one page of invoices submitted in a session.
+
+        Args:
+            reference_number: Reference number of the session.
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+            **params: Optional query parameters (``SessionInvoiceListQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.SessionInvoicesResponse``).
+        """
         headers = (
             {"x-continuation-token": continuation_token} if continuation_token else None
         )
@@ -129,7 +182,16 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         continuation_token: str | None = None,
         **params: Unpack[SessionInvoiceListQueryParams],
     ) -> spec.SessionInvoicesResponse:
-        """Fetch one page of failed invoices from a session."""
+        """Fetch one page of failed invoices from a session.
+
+        Args:
+            reference_number: Reference number of the session.
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+            **params: Optional query parameters (``SessionInvoiceListQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.SessionInvoicesResponse``).
+        """
         headers = (
             {"x-continuation-token": continuation_token} if continuation_token else None
         )
@@ -150,7 +212,15 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         reference_number: str,
         invoice_reference_number: str,
     ) -> spec.SessionInvoiceStatusResponse:
-        """Fetch status for a single invoice inside a session."""
+        """Fetch status for a single invoice inside a session.
+
+        Args:
+            reference_number: Reference number of the session.
+            invoice_reference_number: Reference number of the invoice within the session.
+
+        Returns:
+            The parsed KSeF response (``spec.SessionInvoiceStatusResponse``).
+        """
         return self._parse(
             await self._transport.get(
                 path=routes.InvoiceRoutes.SESSION_INVOICE_STATUS.format(
@@ -166,7 +236,15 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         reference_number: str,
         ksef_number: str,
     ) -> bytes:
-        """Download a UPO document by KSeF number."""
+        """Download a UPO document by KSeF number.
+
+        Args:
+            reference_number: Reference number of the session.
+            ksef_number: KSeF number of the invoice.
+
+        Returns:
+            The raw response body.
+        """
         return (
             await self._transport.get(
                 path=routes.InvoiceRoutes.INVOICE_UPO_BY_KSEF.format(
@@ -181,7 +259,15 @@ class AsyncInvoicesEndpoints(AsyncBaseEndpoints):
         reference_number: str,
         invoice_reference_number: str,
     ) -> bytes:
-        """Download a UPO document by session invoice reference number."""
+        """Download a UPO document by session invoice reference number.
+
+        Args:
+            reference_number: Reference number of the session.
+            invoice_reference_number: Reference number of the invoice within the session.
+
+        Returns:
+            The raw response body.
+        """
         return (
             await self._transport.get(
                 path=routes.InvoiceRoutes.INVOICE_UPO_BY_REFERENCE.format(

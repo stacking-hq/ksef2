@@ -28,6 +28,11 @@ class SessionManagementClient:
     """
 
     def __init__(self, transport: Middleware) -> None:
+        """Create the client.
+
+        Args:
+            transport: Middleware chain used for requests to KSeF.
+        """
         self._auth_ep = AuthEndpoints(transport)
 
     def query(
@@ -78,5 +83,9 @@ class SessionManagementClient:
         self._auth_ep.terminate_current_session()
 
     def close(self, *, reference_number: str) -> None:
-        """Terminate an authentication session by reference number."""
+        """Terminate an authentication session by reference number.
+
+        Args:
+            reference_number: Reference number of the authentication session to terminate.
+        """
         self._auth_ep.terminate_auth_session(reference_number=reference_number)

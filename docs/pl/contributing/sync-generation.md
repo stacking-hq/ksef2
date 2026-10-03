@@ -98,5 +98,5 @@ Dla generacji sync oznacza to, że:
 
 ## Referencja
 
-- [Konfiguracja klienta](../how-to-guides/client-setup.mdx)
-- [API niskiego poziomu](../reference/low-level/overview.mdx)
+- [Konfiguracja klienta](../how-to-guides/client-setup.md)
+- [API niskiego poziomu](../reference/low-level/overview.md)

@@ -33,8 +33,11 @@ class PaymentTermDescription(KSeFBaseModel):
     """
 
     quantity: int
+    """Length of the term, in ``unit``s."""
     unit: str
+    """Unit of the term, such as days or months."""
     starting_event: str
+    """Event the term counts from, for example the date of delivery."""
 
 
 class PaymentTerm(KSeFBaseModel):
@@ -49,10 +52,20 @@ class PaymentTerm(KSeFBaseModel):
     """
 
     due_date: date | None = None
+    """Due date of the payment."""
     due_date_description: PaymentTermDescription | None = None
+    """Descriptive payment term, as an alternative to ``due_date``."""
 
     @model_validator(mode="after")
     def validate_term(self) -> Self:
+        """Require a due date or a descriptive term.
+
+        Returns:
+            The validated payment term.
+
+        Raises:
+            ValueError: If neither ``due_date`` nor ``due_date_description`` is set.
+        """
         if self.due_date is None and self.due_date_description is None:
             raise ValueError(
                 "At least one of due_date or due_date_description must be provided"
@@ -75,10 +88,15 @@ class BankAccount(KSeFBaseModel):
     """
 
     account_number: str
+    """Bank account number (``NrRB``)."""
     swift: str | None = None
+    """SWIFT/BIC code of the bank (``SWIFT``)."""
     own_bank_account_type: BankOwnAccountType | None = None
+    """Kind of own bank account (``RachunekWlasnyBanku``)."""
     bank_name: str | None = None
+    """Name of the bank (``NazwaBanku``)."""
     account_description: str | None = None
+    """Free-text description of the account (``OpisRachunku``)."""
 
 
 class PartialPayment(KSeFBaseModel):
@@ -96,10 +114,15 @@ class PartialPayment(KSeFBaseModel):
     """
 
     amount: Decimal
+    """Amount paid."""
     payment_date: date
+    """Date of the payment."""
     payment_form: PaymentForm | None = None
+    """Form of payment, such as cash or transfer."""
     other_payment_form: bool = False
+    """Marks a payment form not in ``payment_form``; describe it in ``payment_description``."""
     payment_description: str | None = None
+    """Description of the other payment form."""
 
 
 class InvoicePayment(KSeFBaseModel):
@@ -127,16 +150,30 @@ class InvoicePayment(KSeFBaseModel):
     """
 
     paid: bool = False
+    """Whether the invoice has been paid in full (``Zaplacono``)."""
     payment_date: date | None = None
+    """Date the invoice was paid (``DataZaplaty``)."""
     partial_payment_status: PartialPaymentStatus | None = None
+    """Whether the invoice was partially paid (``ZnacznikZaplatyCzesciowej``)."""
     partial_payments: list[PartialPayment] = Field(default_factory=list)
+    """Partial payments received."""
     payment_terms: list[PaymentTerm] = Field(default_factory=list)
+    """Payment terms (``TerminPlatnosci``)."""
     payment_form: PaymentForm | None = None
+    """Form of payment (``FormaPlatnosci``), such as cash or transfer."""
     other_payment_form: bool = False
+    """Marks a payment form not in ``payment_form``; describe it in ``payment_description``."""
     payment_description: str | None = None
+    """Description of the other payment form (``OpisPlatnosci``)."""
     bank_accounts: list[BankAccount] = Field(default_factory=list)
+    """Bank accounts the payment should be made to."""
     factor_bank_accounts: list[BankAccount] = Field(default_factory=list)
+    """Bank accounts of the factor, when the receivable is assigned."""
     discount_terms: str | None = None
+    """Conditions the buyer must meet to receive the early-payment discount (``Skonto/WarunkiSkonta``)."""
     discount_amount: str | None = None
+    """Amount of the early-payment discount (``Skonto/WysokoscSkonta``)."""
     payment_link: str | None = None
+    """Link for paying the invoice online (``LinkDoPlatnosci``)."""
     ipksef: str | None = None
+    """Identifier of a payment in KSeF (``IPKSeF``)."""

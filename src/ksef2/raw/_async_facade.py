@@ -31,26 +31,47 @@ class AsyncRawPermissionsEndpoints:
     """Raw permission endpoint groups bound to one async transport."""
 
     def __init__(self, transport: AsyncMiddleware) -> None:
+        """Create the permission endpoint groups.
+
+        Args:
+            transport: Middleware chain used for requests to KSeF.
+        """
         self._transport = transport
 
     @cached_property
     def grant(self) -> AsyncPermissionsGrantEndpoints:
-        """Return permission grant endpoints."""
+        """Return permission grant endpoints.
+
+        Returns:
+            Permission grant endpoints.
+        """
         return AsyncPermissionsGrantEndpoints(self._transport)
 
     @cached_property
     def revoke(self) -> AsyncRevokePermissionsEndpoints:
-        """Return permission revocation endpoints."""
+        """Return permission revocation endpoints.
+
+        Returns:
+            Permission revocation endpoints.
+        """
         return AsyncRevokePermissionsEndpoints(self._transport)
 
     @cached_property
     def query(self) -> AsyncQueryPermissionsEndpoints:
-        """Return permission query endpoints."""
+        """Return permission query endpoints.
+
+        Returns:
+            Permission query endpoints.
+        """
         return AsyncQueryPermissionsEndpoints(self._transport)
 
     @cached_property
     def status(self) -> AsyncGetPermissionsEndpoints:
-        """Return permission operation status and role endpoints."""
+        """Return permission operation status and role endpoints.
+
+        Returns:
+            Permission operation status and role endpoints.
+        """
         return AsyncGetPermissionsEndpoints(self._transport)
 
 
@@ -59,27 +80,49 @@ class AsyncRawClient:
     """Raw unauthenticated endpoint facade for advanced async integrations."""
 
     def __init__(self, transport: AsyncMiddleware, environment: Environment) -> None:
+        """Create the raw client.
+
+        Args:
+            transport: Middleware chain used for requests to KSeF.
+            environment: KSeF environment the client talks to.
+        """
         self._transport = transport
         self._environment = environment
 
     @cached_property
     def auth(self) -> AsyncAuthEndpoints:
-        """Return raw authentication endpoints."""
+        """Return raw authentication endpoints.
+
+        Returns:
+            Raw authentication endpoints.
+        """
         return AsyncAuthEndpoints(self._transport)
 
     @cached_property
     def encryption(self) -> AsyncEncryptionEndpoints:
-        """Return raw public encryption-certificate endpoints."""
+        """Return raw public encryption-certificate endpoints.
+
+        Returns:
+            Raw public encryption-certificate endpoints.
+        """
         return AsyncEncryptionEndpoints(self._transport)
 
     @cached_property
     def peppol(self) -> AsyncPeppolEndpoints:
-        """Return raw Peppol provider endpoints."""
+        """Return raw Peppol provider endpoints.
+
+        Returns:
+            Raw Peppol provider endpoints.
+        """
         return AsyncPeppolEndpoints(self._transport)
 
     @cached_property
     def testdata(self) -> AsyncTestDataEndpoints:
-        """Return raw TEST-only data seeding endpoints."""
+        """Return raw TEST-only data seeding endpoints.
+
+        Returns:
+            Raw TEST-only data seeding endpoints.
+        """
         if self._environment is not Environment.TEST:
             raise exceptions.KSeFUnsupportedEnvironmentError(
                 "testdata is only available for Environment.TEST"
@@ -98,58 +141,105 @@ class AsyncRawAuthenticatedClient:
         authed_transport: AsyncMiddleware,
         environment: Environment,
     ) -> None:
+        """Create the raw client.
+
+        Args:
+            transport: Middleware chain used for unauthenticated requests.
+            authed_transport: Middleware chain that adds the bearer access token to requests.
+            environment: KSeF environment the client talks to.
+        """
         self._transport = transport
         self._authed_transport = authed_transport
         self._environment = environment
 
     @cached_property
     def auth(self) -> AsyncAuthEndpoints:
-        """Return raw authenticated authentication-session endpoints."""
+        """Return raw authenticated authentication-session endpoints.
+
+        Returns:
+            Raw authenticated authentication-session endpoints.
+        """
         return AsyncAuthEndpoints(self._authed_transport)
 
     @cached_property
     def certificates(self) -> AsyncCertificatesEndpoints:
-        """Return raw certificate lifecycle endpoints."""
+        """Return raw certificate lifecycle endpoints.
+
+        Returns:
+            Raw certificate lifecycle endpoints.
+        """
         return AsyncCertificatesEndpoints(self._authed_transport)
 
     @cached_property
     def encryption(self) -> AsyncEncryptionEndpoints:
-        """Return raw public encryption-certificate endpoints."""
+        """Return raw public encryption-certificate endpoints.
+
+        Returns:
+            Raw public encryption-certificate endpoints.
+        """
         return AsyncEncryptionEndpoints(self._transport)
 
     @cached_property
     def invoices(self) -> AsyncInvoicesEndpoints:
-        """Return raw invoice and invoice-session endpoints."""
+        """Return raw invoice and invoice-session endpoints.
+
+        Returns:
+            Raw invoice and invoice-session endpoints.
+        """
         return AsyncInvoicesEndpoints(self._authed_transport)
 
     @cached_property
     def limits(self) -> AsyncLimitEndpoints:
-        """Return raw limit endpoints."""
+        """Return raw limit endpoints.
+
+        Returns:
+            Raw limit endpoints.
+        """
         return AsyncLimitEndpoints(self._authed_transport)
 
     @cached_property
     def collective_identifiers(self) -> AsyncCollectiveIdentifiersEndpoints:
-        """Return raw collective invoice identifier endpoints."""
+        """Return raw collective invoice identifier endpoints.
+
+        Returns:
+            Raw collective invoice identifier endpoints.
+        """
         return AsyncCollectiveIdentifiersEndpoints(self._authed_transport)
 
     @cached_property
     def peppol(self) -> AsyncPeppolEndpoints:
-        """Return raw Peppol provider endpoints."""
+        """Return raw Peppol provider endpoints.
+
+        Returns:
+            Raw Peppol provider endpoints.
+        """
         return AsyncPeppolEndpoints(self._transport)
 
     @cached_property
     def permissions(self) -> AsyncRawPermissionsEndpoints:
-        """Return raw permission endpoint groups."""
+        """Return raw permission endpoint groups.
+
+        Returns:
+            Raw permission endpoint groups.
+        """
         return AsyncRawPermissionsEndpoints(self._authed_transport)
 
     @cached_property
     def session(self) -> AsyncSessionEndpoints:
-        """Return raw online and batch session endpoints."""
+        """Return raw online and batch session endpoints.
+
+        Returns:
+            Raw online and batch session endpoints.
+        """
         return AsyncSessionEndpoints(self._authed_transport)
 
     @cached_property
     def testdata(self) -> AsyncTestDataEndpoints:
-        """Return raw TEST-only data seeding endpoints."""
+        """Return raw TEST-only data seeding endpoints.
+
+        Returns:
+            Raw TEST-only data seeding endpoints.
+        """
         if self._environment is not Environment.TEST:
             raise exceptions.KSeFUnsupportedEnvironmentError(
                 "testdata is only available for Environment.TEST"
@@ -158,5 +248,9 @@ class AsyncRawAuthenticatedClient:
 
     @cached_property
     def tokens(self) -> AsyncTokenEndpoints:
-        """Return raw token lifecycle endpoints."""
+        """Return raw token lifecycle endpoints.
+
+        Returns:
+            Raw token lifecycle endpoints.
+        """
         return AsyncTokenEndpoints(self._authed_transport)

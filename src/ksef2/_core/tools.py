@@ -7,7 +7,14 @@ PESEL_WEIGHTS = (1, 3, 7, 9, 1, 3, 7, 9, 1, 3)
 
 
 def generate_nip(rng: random.Random | None = None) -> str:
-    """Return a random but valid 10-digit NIP."""
+    """Return a random but valid 10-digit NIP.
+
+    Args:
+        rng: Random generator to draw from; a new one is created when ``None``. Pass a seeded generator for reproducible values.
+
+    Returns:
+        A NIP with a valid checksum, as a string.
+    """
     r = rng or random.Random()
     while True:
         # First digit must be 1-9, digits 2-3 can'request both be 0 (tax office prefix).
@@ -32,6 +39,15 @@ def generate_pesel(
     """Return a random but valid 11-digit PESEL.
 
     Optionally pin the birth date components; unspecified parts are randomised.
+
+    Args:
+        year: Birth year (1800–2299); random when ``None``.
+        month: Birth month (1–12); random when ``None``.
+        day: Birth day of month; random in 1–28 when ``None``.
+        rng: Random generator to draw from; a new one is created when ``None``. Pass a seeded generator for reproducible values.
+
+    Returns:
+        A PESEL with a valid checksum, as a string.
     """
     r = rng or random.Random()
     y = year if year is not None else r.randint(1900, 2099)

@@ -113,7 +113,11 @@ class KSeFBaseParams[ParamsT](KSeFBaseModel):
     )
 
     def to_query_params(self) -> ParamsT:
-        """Serialize the model into a JSON-safe query-parameter mapping."""
+        """Serialize the model into a JSON-safe query-parameter mapping.
+
+        Returns:
+            Query parameters keyed by their API names, with unset values omitted.
+        """
         return cast(
             ParamsT, self.model_dump(by_alias=True, exclude_none=True, mode="json")
         )

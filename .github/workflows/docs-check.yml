@@ -12,3 +12,4 @@ jobs:
         with:
           python-version: "3.12"
       - run: python scripts/validate_docs_frontmatter.py docs/
+      - run: python scripts/validate_docs_markdown.py docs/

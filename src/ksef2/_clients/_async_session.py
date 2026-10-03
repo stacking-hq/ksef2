@@ -21,6 +21,11 @@ _TSession = TypeVar("_TSession", bound=_AsyncSessionClient)
 
 
 class _AwaitableSession(Generic[_TSession]):
+    """Awaitable and async-context-manager wrapper around a session being opened.
+
+    Await it to get the session client, or use it directly with ``async with`` to open the session and close it on exit.
+    """
+
     def __init__(self, coro: Coroutine[Any, Any, _TSession]) -> None:
         self._coro = coro
         self._session: _TSession | None = None

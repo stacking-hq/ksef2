@@ -45,6 +45,13 @@ class AdvanceBuilder[TParent]:
         on_done: Callable[[AdvancePaymentInvoiceContext], None],
         existing_state: AdvancePaymentInvoiceContext | None = None,
     ) -> None:
+        """Create the builder.
+
+        Args:
+            parent: Parent builder that ``done()`` returns to.
+            on_done: Callback that receives the built model when ``done()`` is called.
+            existing_state: Existing model to start from; ``None`` starts empty.
+        """
         self._parent = parent
         self._on_done = on_done
         self._state: AdvanceState = adapter.validate_python(
@@ -52,7 +59,14 @@ class AdvanceBuilder[TParent]:
         )
 
     def from_model(self, advance: AdvancePaymentInvoiceContext) -> Self:
-        """Replace the builder state from an existing domain model."""
+        """Replace the builder state from an existing domain model.
+
+        Args:
+            advance: Model to load into the builder.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state = adapter.validate_python(advance.model_dump())
         return self
 
@@ -68,7 +82,14 @@ class AdvanceBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Set the amount before correction value."""
+        """Set the amount before correction value.
+
+        Args:
+            amount: Advance amount before the correction was applied.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["amount_before_correction"] = amount
         return self
 
@@ -84,7 +105,14 @@ class AdvanceBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Set the currency exchange rate before correction value."""
+        """Set the currency exchange rate before correction value.
+
+        Args:
+            exchange_rate: Currency exchange rate used before the correction was applied.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["currency_exchange_rate_before_correction"] = exchange_rate
         return self
 
@@ -117,7 +145,16 @@ class AdvanceBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
-        """Add a partial payment entry."""
+        """Add a partial payment entry.
+
+        Args:
+            payment_date: Date of the partial advance payment.
+            amount: Amount of the partial advance payment.
+            currency_exchange_rate: Currency exchange rate used for the partial advance payment.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["advance_partial_payments"].append(
             PartialAdvancePayment(
                 payment_date=payment_date,
@@ -128,12 +165,23 @@ class AdvanceBuilder[TParent]:
         return self
 
     def add_partial_payment_model(self, partial_payment: PartialAdvancePayment) -> Self:
-        """Add an existing partial-payment domain model."""
+        """Add an existing partial-payment domain model.
+
+        Args:
+            partial_payment: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["advance_partial_payments"].append(partial_payment)
         return self
 
     def clear_partial_payments(self) -> Self:
-        """Remove all partial-payment entries."""
+        """Remove all partial-payment entries.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["advance_partial_payments"].clear()
         return self
 
@@ -181,7 +229,18 @@ class AdvanceBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
-        """Add an invoice reference entry."""
+        """Add an invoice reference entry.
+
+        Args:
+            ksef_id: KSeF identifier of the referenced advance invoice.
+            invoice_number: Invoice number of the referenced advance invoice.
+            outside_ksef: Set to true when the referenced advance invoice was issued outside KSeF.
+            deduction_amount: Amount deducted from the final settlement based on this advance invoice.
+            deduction_reason: Reason for the deduction linked to the advance invoice reference.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["advance_invoice_references"].append(
             AdvanceInvoiceReference(
                 ksef_id=ksef_id,
@@ -196,17 +255,32 @@ class AdvanceBuilder[TParent]:
     def add_invoice_reference_model(
         self, invoice_reference: AdvanceInvoiceReference
     ) -> Self:
-        """Add an existing invoice-reference domain model."""
+        """Add an existing invoice-reference domain model.
+
+        Args:
+            invoice_reference: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["advance_invoice_references"].append(invoice_reference)
         return self
 
     def clear_invoice_references(self) -> Self:
-        """Remove all invoice-reference entries."""
+        """Remove all invoice-reference entries.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["advance_invoice_references"].clear()
         return self
 
     def build(self) -> AdvancePaymentInvoiceContext:
-        """Build the corresponding FA(3) domain model."""
+        """Build the corresponding FA(3) domain model.
+
+        Returns:
+            The built ``AdvancePaymentInvoiceContext``.
+        """
         return AdvancePaymentInvoiceContext(**self._state)
 
     def _is_empty(self) -> bool:
@@ -214,6 +288,9 @@ class AdvanceBuilder[TParent]:
 
     def done(self) -> TParent:
         """Attach the built advance details to the parent builder and return it.
+
+        Returns:
+            The parent builder.
 
         Raises:
             ValueError: If advance details are empty.
@@ -232,7 +309,11 @@ class AdvanceBuilderMixin:
     _advance: AdvancePaymentInvoiceContext | None = None
 
     def advance(self) -> AdvanceBuilder[Self]:
-        """Start an advance invoice body builder or sub-builder."""
+        """Start an advance invoice body builder or sub-builder.
+
+        Returns:
+            An ``AdvanceBuilder`` for this part of the invoice; call ``done()`` on it to attach the result and return to this builder.
+        """
         return AdvanceBuilder(self, self._set_advance, self._advance)
 
     def _set_advance(self, value: AdvancePaymentInvoiceContext) -> None:

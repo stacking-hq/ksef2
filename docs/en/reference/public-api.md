@@ -1,0 +1,154 @@
+---
+title: Public API Contract
+description: Stable import paths and internal boundaries for ksef2 1.0.
+---
+
+Use the documented import paths on this page when building application code.
+They are the paths intended to remain stable through the 1.x line.
+
+## Stable application imports
+
+| Import path | Use it for |
+| --- | --- |
+| `ksef2` | Root clients, environment and transport config, `FormSchema`, `__version__`, and public exceptions. |
+| `ksef2.clients` | Concrete sync/async clients and the stable `InvoicesService` / `BatchService` workflow types (plus async twins) for type annotations. |
+| `ksef2.models` | SDK request, response, filter, pagination, token, permission, session, and batch models. |
+| `ksef2.fa3` | FA(3) invoice builder, draft snapshots, and public FA(3) domain models used by builder workflows. |
+| `ksef2.xades` | Certificate loading, TEST certificate generation, local XAdES signing helpers, and `LocalSigner`. |
+| `ksef2.testdata` | TEST-only helpers that generate valid NIP and PESEL numbers (`generate_nip`, `generate_pesel`). |
+| `ksef2.profiles` | Local `ksef2-cli` compatible profile config helpers. |
+| `ksef2.renderers` | Optional local XSLT/PDF invoice rendering helpers. |
+| `ksef2.raw` | Low-level endpoint clients, schema-native `spec` and `supp` models, and low-level crypto helpers. |
+| `ksef2.raw.mappers` | Public mappers for crossing between raw schema models and SDK models. |
+
+Prefer the highest-level import that fits the workflow:
+
+```python
+from ksef2 import Client, Environment, FormSchema, KSeFApiError
+from ksef2.fa3 import FA3InvoiceBuilder, KsefInvoiceDraft, VatRate
+from ksef2.models import InvoicesFilter, InvoiceMetadataParams
+from ksef2.renderers import InvoicePDFExporter, InvoiceXSLTRenderer
+from ksef2.xades import load_certificate_from_pem, load_private_key_from_pem
+```
+
+## Root package exports
+
+The root `ksef2` package is the public facade for common application code:
+
+- `Client`, `AsyncClient`;
+- `Environment`, `TransportConfig`, `TimeoutConfig`, `RetryConfig`,
+  `TlsConfig`, `ConnectionPoolConfig`;
+- `FormSchema`;
+- `ExceptionCode` and all public `KSeF*` exception classes;
+- `__version__`.
+
+Use root imports for these names instead of reaching into implementation
+modules.
+
+## Low-level API stability
+
+`ksef2.raw` is public, but intentionally lower level. Its import path is stable;
+its schema-native model shapes follow the checked KSeF OpenAPI version.
+
+```python
+from ksef2.raw import spec
+from ksef2.raw.mappers import auth as auth_mapper
+```
+
+Do not import generated OpenAPI models from the SDK's private schema package.
+Use `ksef2.raw.spec` and `ksef2.raw.supp` so application code stays on the
+supported surface.
+
+## Private paths
+
+The rule is simple: **a module path with no underscore is public; anything with
+an underscore is private.** `ksef2._core`, `ksef2._clients.base` and
+`ksef2.raw._facade` are private, and so is every module below them.
+
+Private modules can change or disappear in any release, including patch
+releases, and are not part of the compatibility contract. The packages that
+earlier pre-release versions exposed without an underscore (`core`, `domain`,
+`infra`, `endpoints`, `services`, plus the client implementation modules,
+`config` and `logging`) no longer exist under those names; importing them raises
+`ImportError`. Import the same names from the public paths above instead, for
+example models from `ksef2.models`, clients and workflow service types from
+`ksef2.clients`, and configuration and exceptions from `ksef2`.
+
+`scripts/*` is repository tooling, not package API.
+
+## Secrets and serialization
+
+Models that carry secrets or signed URLs (access and refresh tokens, AES keys
+and IVs, presigned download and upload URLs, one-time tokens) redact them in
+`model_dump()`, `model_dump_json()` and `repr()`. These methods are for
+logging and display. They are **not a persistence format**: the redacted output
+cannot be loaded back, and validating it can fail. For example,
+`UpoPage.model_validate(page.model_dump())` raises because `download_url` is
+excluded from the dump but required by the model.
+
+Persist and restore state with the explicit methods instead:
+
+- `to_dict()` and `to_json()` on the resume-state models
+  (`AuthenticationResumeState`, `OnlineSessionResumeState`,
+  `BatchSessionResumeState`) export credentials in full; restore them with
+  `from_dict()` or `from_json()`.
+- `to_sensitive_dict()` on secret-bearing response models such as `UpoPage`,
+  `GenerateTokenResponse` and `ExportHandle` exports the secret fields for
+  deliberate, protected handling.
+
+Treat anything produced by these methods as a credential: store it encrypted,
+never log it, and never commit it.
+
+## Compatibility rule
+
+After 1.0, changes that remove or rename stable import paths require a major
+version bump. Additive APIs can ship in minor releases. Patch releases should
+preserve documented imports and behavior except for bug fixes. Two cases are
+spelled out below: changes KSeF forces on the SDK, and SDK-initiated
+deprecations.
+
+### KSeF-driven changes
+
+When KSeF removes or changes an endpoint in a way the SDK cannot absorb, the
+resulting change may ship in a minor release. It is listed in the changelog
+under a "KSeF API changes" heading so it is not mistaken for an SDK decision.
+Breaking changes the SDK initiates itself still require a major version bump.
+
+### Deprecation policy
+
+Within 1.x, anything the SDK itself wants to retire is deprecated first, in a
+minor release: it gets `@deprecated` (or a module-level warning for aliases), a
+message of the form "`X` is deprecated and will be removed in ksef2 2.0; use `Y`
+instead.", and a changelog entry. It is removed only in the next major release.
+The [deprecated APIs](#deprecated-apis) below are the current list.
+
+## Deprecated APIs
+
+These APIs still work throughout 1.x. Each one emits a `DeprecationWarning`
+once per call, is marked with PEP 702 `@deprecated` so type checkers and IDEs
+flag call sites, and is removed in ksef2 2.0. Python hides `DeprecationWarning`
+outside `__main__` and test runners, so run your tests with
+`python -W error::DeprecationWarning` to find them.
+
+| Deprecated | Use instead | Removed in |
+| --- | --- | --- |
+| `Client.authenticated(tokens)` and `AsyncClient.authenticated(tokens)` | `client.authentication.resume(AuthenticationResumeState.from_tokens(tokens))` | 2.0 |
+| `get_state()` on online and batch session clients | `resume_state()` | 2.0 |
+| `BatchSessionClient.access_token` | `AuthenticatedClient.access_token` of the parent client | 2.0 |
+| `dump_state()` on session resume state | `to_dict()` | 2.0 |
+| `model_dump_sensitive()` on session resume state | `to_dict()` | 2.0 |
+| `model_dump_sensitive_json()` on session resume state | `to_json()` | 2.0 |
+| `from_state()` on session resume state | `from_dict()` | 2.0 |
+| `BaseSessionState`, `OnlineSessionState`, `BatchSessionState` | `BaseSessionResumeState`, `OnlineSessionResumeState`, `BatchSessionResumeState` | 2.0 |
+| `access_token=` argument of `from_encoded()` on session resume state (ignored) | Persist `AuthenticationResumeState` separately | 2.0 |
+| `access_token` key in stored session resume state (ignored; old files still load) | Persist `AuthenticationResumeState` separately | 2.0 |
+| `auth_timeout` key in a profile written by ksef2-cli 0.0.2 | `max_poll_attempts` (and optionally `poll_interval`) | 2.0 |
+
+`FA3InvoiceBuilder.dump_state()` and `from_state()` are a separate builder
+draft API and are not deprecated.
+
+## Reference
+
+- [Client lifecycle](client-lifecycle.md): Review root clients, authenticated clients, and lifecycle ownership.
+- [Low-level API](low-level/overview.md): Use schema-native endpoint wrappers through the supported raw surface.
+- [Sync code generation](../contributing/sync-generation.md): Understand how sync clients are generated from async implementations.

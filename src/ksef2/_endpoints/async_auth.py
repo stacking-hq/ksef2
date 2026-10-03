@@ -9,12 +9,13 @@ from ksef2._endpoints.async_base import AsyncBaseEndpoints
 from ksef2._infra.schema.api import spec
 from ksef2._infra.schema.api.supp.auth import InitTokenAuthenticationRequest
 
-AuthSessionsQueryParams = TypedDict(
-    "AuthSessionsQueryParams",
-    {
-        "pageSize": NotRequired[int | None],
-    },
-)
+
+class AuthSessionsQueryParams(TypedDict):
+    """Wire-format query parameters for listing authentication sessions."""
+
+    pageSize: NotRequired[int | None]
+    """Number of results per page."""
+
 
 XadesAuthParams = TypedDict(
     "XadesAuthParams",
@@ -36,7 +37,15 @@ class AsyncAuthEndpoints(AsyncBaseEndpoints):
         continuation_token: str | None = None,
         **params: Unpack[AuthSessionsQueryParams],
     ) -> spec.AuthenticationListResponse:
-        """Fetch one page of authentication sessions."""
+        """Fetch one page of authentication sessions.
+
+        Args:
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+            **params: Optional query parameters (``AuthSessionsQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.AuthenticationListResponse``).
+        """
         req_headers = (
             {"x-continuation-token": continuation_token} if continuation_token else None
         )
@@ -55,7 +64,15 @@ class AsyncAuthEndpoints(AsyncBaseEndpoints):
         signed_xml: bytes,
         verify_chain: bool = False,
     ) -> spec.AuthenticationInitResponse:
-        """Start authentication from an XAdES-signed XML payload."""
+        """Start authentication from an XAdES-signed XML payload.
+
+        Args:
+            signed_xml: XAdES-signed authentication request XML.
+            verify_chain: Whether KSeF should verify the certificate chain.
+
+        Returns:
+            The parsed KSeF response (``spec.AuthenticationInitResponse``).
+        """
         query_params: XadesAuthParams = {
             "verifyCertificateChain": str(verify_chain).lower(),
         }
@@ -71,7 +88,11 @@ class AsyncAuthEndpoints(AsyncBaseEndpoints):
         )
 
     async def challenge(self) -> spec.AuthenticationChallengeResponse:
-        """Create an authentication challenge."""
+        """Create an authentication challenge.
+
+        Returns:
+            The parsed KSeF response (``spec.AuthenticationChallengeResponse``).
+        """
         return self._parse(
             await self._transport.post(
                 path=routes.AuthRoutes.CHALLENGE,
@@ -82,7 +103,14 @@ class AsyncAuthEndpoints(AsyncBaseEndpoints):
     async def token_auth(
         self, body: InitTokenAuthenticationRequest
     ) -> spec.AuthenticationInitResponse:
-        """Start token-based authentication."""
+        """Start token-based authentication.
+
+        Args:
+            body: Request payload (``InitTokenAuthenticationRequest``).
+
+        Returns:
+            The parsed KSeF response (``spec.AuthenticationInitResponse``).
+        """
         return self._parse(
             await self._transport.post(
                 path=routes.AuthRoutes.TOKEN_AUTH,
@@ -96,7 +124,15 @@ class AsyncAuthEndpoints(AsyncBaseEndpoints):
         bearer_token: str,
         reference_number: str,
     ) -> spec.AuthenticationOperationStatusResponse:
-        """Fetch the status of an in-progress authentication operation."""
+        """Fetch the status of an in-progress authentication operation.
+
+        Args:
+            bearer_token: Bearer token to authenticate the request with.
+            reference_number: Reference number of the authentication operation or session.
+
+        Returns:
+            The parsed KSeF response (``spec.AuthenticationOperationStatusResponse``).
+        """
         return self._parse(
             await self._transport.get(
                 path=routes.AuthRoutes.AUTH_STATUS.format(
@@ -111,7 +147,14 @@ class AsyncAuthEndpoints(AsyncBaseEndpoints):
         self,
         bearer_token: str,
     ) -> spec.AuthenticationTokensResponse:
-        """Redeem a temporary authentication token for access and refresh tokens."""
+        """Redeem a temporary authentication token for access and refresh tokens.
+
+        Args:
+            bearer_token: Bearer token to authenticate the request with.
+
+        Returns:
+            The parsed KSeF response (``spec.AuthenticationTokensResponse``).
+        """
         return self._parse(
             await self._transport.post(
                 path=routes.AuthRoutes.REDEEM_TOKEN,
@@ -123,7 +166,14 @@ class AsyncAuthEndpoints(AsyncBaseEndpoints):
     async def refresh_token(
         self, bearer_token: str
     ) -> spec.AuthenticationTokenRefreshResponse:
-        """Refresh an access token using a refresh token bearer header."""
+        """Refresh an access token using a refresh token bearer header.
+
+        Args:
+            bearer_token: Bearer token to authenticate the request with.
+
+        Returns:
+            The parsed KSeF response (``spec.AuthenticationTokenRefreshResponse``).
+        """
         return self._parse(
             await self._transport.post(
                 path=routes.AuthRoutes.REFRESH_TOKEN,
@@ -139,7 +189,11 @@ class AsyncAuthEndpoints(AsyncBaseEndpoints):
         )
 
     async def terminate_auth_session(self, reference_number: str) -> None:
-        """Terminate an authentication session by reference number."""
+        """Terminate an authentication session by reference number.
+
+        Args:
+            reference_number: Reference number of the authentication operation or session.
+        """
         _ = await self._transport.delete(
             path=routes.AuthRoutes.TERMINATE_AUTH_SESSION.format(
                 referenceNumber=reference_number

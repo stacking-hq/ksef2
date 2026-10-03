@@ -64,7 +64,14 @@ class AsyncTokenEndpoints(AsyncBaseEndpoints):
         )
 
     async def token_status(self, reference_number: str) -> spec.TokenStatusResponse:
-        """Fetch the current activation status for a token reference."""
+        """Fetch the current activation status for a token reference.
+
+        Args:
+            reference_number: Reference number of the token.
+
+        Returns:
+            The parsed KSeF response (``spec.TokenStatusResponse``).
+        """
         return self._parse(
             await self._transport.get(
                 path=routes.TokenRoutes.TOKEN_STATUS.format(
@@ -75,7 +82,11 @@ class AsyncTokenEndpoints(AsyncBaseEndpoints):
         )
 
     async def revoke_token(self, reference_number: str) -> None:
-        """Revoke a token by its reference number."""
+        """Revoke a token by its reference number.
+
+        Args:
+            reference_number: Reference number of the token.
+        """
         _ = await self._transport.delete(
             path=routes.TokenRoutes.REVOKE_TOKEN.format(
                 referenceNumber=reference_number

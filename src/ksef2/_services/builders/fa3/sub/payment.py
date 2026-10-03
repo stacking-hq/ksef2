@@ -119,6 +119,13 @@ class PaymentBuilder[TParent]:
         on_done: Callable[[InvoicePayment], None],
         existing_state: InvoicePayment | None = None,
     ) -> None:
+        """Create the builder.
+
+        Args:
+            parent: Parent builder that ``done()`` returns to.
+            on_done: Callback that receives the built model when ``done()`` is called.
+            existing_state: Existing model to start from; ``None`` starts empty.
+        """
         self._parent = parent
         self._on_done = on_done
         self._state: InvoicePaymentState = adapter.validate_python(
@@ -126,34 +133,73 @@ class PaymentBuilder[TParent]:
         )
 
     def from_model(self, payment: InvoicePayment) -> Self:
-        """Replace the builder state from an existing domain model."""
+        """Replace the builder state from an existing domain model.
+
+        Args:
+            payment: Model to load into the builder.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state = adapter.validate_python(payment.model_dump())
         return self
 
     def via(self, payment_form: PaymentFormParam) -> Self:
-        """Set the invoice payment form."""
+        """Set the invoice payment form.
+
+        Args:
+            payment_form: Payment form used for the invoice or the partial payment entry.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["payment_form"] = payment_form
         return self
 
     def already_paid(self, payment_date: PaymentDateParam = None) -> Self:
-        """Mark the invoice as paid, optionally with a payment date."""
+        """Mark the invoice as paid, optionally with a payment date.
+
+        Args:
+            payment_date: Payment date linked to the invoice or a partial payment entry.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["paid"] = True
         self._state["payment_date"] = payment_date
         return self
 
     def unpaid(self) -> Self:
-        """Mark the invoice as unpaid and clear the payment date."""
+        """Mark the invoice as unpaid and clear the payment date.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["paid"] = False
         self._state["payment_date"] = None
         return self
 
     def payment_date(self, payment_date: PaymentDateParam) -> Self:
-        """Set the payment date value."""
+        """Set the payment date value.
+
+        Args:
+            payment_date: Payment date linked to the invoice or a partial payment entry.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["payment_date"] = payment_date
         return self
 
     def partial_payment_status(self, status: PartialPaymentStatusParam) -> Self:
-        """Set the partial payment status value."""
+        """Set the partial payment status value.
+
+        Args:
+            status: Partial payment status recorded on the invoice.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["partial_payment_status"] = status
         return self
 
@@ -168,12 +214,26 @@ class PaymentBuilder[TParent]:
             ),
         ] = True,
     ) -> Self:
-        """Mark the payment form as a custom non-enum value."""
+        """Mark the payment form as a custom non-enum value.
+
+        Args:
+            enabled: Marks the payment form as a custom form outside the standard enum.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["other_payment_form"] = enabled
         return self
 
     def description(self, description: PaymentDescriptionParam) -> Self:
-        """Set the description value."""
+        """Set the description value.
+
+        Args:
+            description: Free-text payment description shown with the payment details.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["payment_description"] = description
         return self
 
@@ -199,7 +259,14 @@ class PaymentBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Add a payment term with a concrete due date."""
+        """Add a payment term with a concrete due date.
+
+        Args:
+            due_date: Invoice payment due date.
+
+        Returns:
+            The builder, for chaining.
+        """
         return self._add_term(due_on=due_date)
 
     def due_with_description(
@@ -231,7 +298,17 @@ class PaymentBuilder[TParent]:
         ],
         due_date: PaymentDateParam = None,
     ) -> Self:
-        """Add a payment term described by duration and starting event."""
+        """Add a payment term described by duration and starting event.
+
+        Args:
+            quantity: Quantity used in the textual payment deadline description.
+            unit: Unit used in the textual payment deadline description.
+            starting_event: Event from which the payment deadline is counted.
+            due_date: Payment date linked to the invoice or a partial payment entry.
+
+        Returns:
+            The builder, for chaining.
+        """
         return self._add_term(
             due_on=due_date,
             description=PaymentTermDescription(
@@ -242,12 +319,23 @@ class PaymentBuilder[TParent]:
         )
 
     def add_term_model(self, term: PaymentTerm) -> Self:
-        """Add an existing payment-term domain model."""
+        """Add an existing payment-term domain model.
+
+        Args:
+            term: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["payment_terms"].append(term)
         return self
 
     def clear_terms(self) -> Self:
-        """Remove all payment terms."""
+        """Remove all payment terms.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["payment_terms"].clear()
         return self
 
@@ -274,7 +362,18 @@ class PaymentBuilder[TParent]:
         ] = False,
         payment_description: PaymentDescriptionParam = None,
     ) -> Self:
-        """Add a partial payment entry."""
+        """Add a partial payment entry.
+
+        Args:
+            amount: Monetary amount used for payment entries.
+            payment_date: Date of the partial payment.
+            payment_form: Payment form used for the invoice or the partial payment entry.
+            other_payment_form: Set to true when the partial payment uses a non-standard payment form.
+            payment_description: Free-text payment description shown with the payment details.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["partial_payments"].append(
             PartialPayment(
                 amount=amount,
@@ -287,12 +386,23 @@ class PaymentBuilder[TParent]:
         return self
 
     def add_partial_payment_model(self, partial_payment: PartialPayment) -> Self:
-        """Add an existing partial-payment domain model."""
+        """Add an existing partial-payment domain model.
+
+        Args:
+            partial_payment: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["partial_payments"].append(partial_payment)
         return self
 
     def clear_partial_payments(self) -> Self:
-        """Remove all partial-payment entries."""
+        """Remove all partial-payment entries.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["partial_payments"].clear()
         return self
 
@@ -383,7 +493,18 @@ class PaymentBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
-        """Add a bank account for invoice payment."""
+        """Add a bank account for invoice payment.
+
+        Args:
+            account_number: Bank account number used for invoice payment.
+            swift: SWIFT or BIC code for the factor bank account.
+            bank_name: Name of the bank operating the factor account.
+            account_description: Description shown next to the factor bank account.
+            own_bank_account_type: Own-account marker used by FA(3) for the factor bank account entry.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._append_bank_account(
             self._state["bank_accounts"],
             account_number,
@@ -395,12 +516,23 @@ class PaymentBuilder[TParent]:
         return self
 
     def add_bank_account_model(self, account: BankAccount) -> Self:
-        """Add an existing bank-account domain model."""
+        """Add an existing bank-account domain model.
+
+        Args:
+            account: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["bank_accounts"].append(account)
         return self
 
     def clear_bank_accounts(self) -> Self:
-        """Remove all bank accounts."""
+        """Remove all bank accounts.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["bank_accounts"].clear()
         return self
 
@@ -413,7 +545,18 @@ class PaymentBuilder[TParent]:
         account_description: str | None = None,
         own_bank_account_type: BankOwnAccountType | None = None,
     ) -> Self:
-        """Add a factoring bank account for invoice payment."""
+        """Add a factoring bank account for invoice payment.
+
+        Args:
+            account_number: Bank account number.
+            swift: SWIFT/BIC code of the bank.
+            bank_name: Name of the bank.
+            account_description: Free-text description of the account.
+            own_bank_account_type: Kind of own bank account of the bank.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._append_bank_account(
             self._state["factor_bank_accounts"],
             account_number,
@@ -425,12 +568,23 @@ class PaymentBuilder[TParent]:
         return self
 
     def add_factor_bank_account_model(self, account: BankAccount) -> Self:
-        """Add an existing factoring bank-account domain model."""
+        """Add an existing factoring bank-account domain model.
+
+        Args:
+            account: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["factor_bank_accounts"].append(account)
         return self
 
     def clear_factor_bank_accounts(self) -> Self:
-        """Remove all factoring bank accounts."""
+        """Remove all factoring bank accounts.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["factor_bank_accounts"].clear()
         return self
 
@@ -454,7 +608,15 @@ class PaymentBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
-        """Set discount terms and amount for payment details."""
+        """Set discount terms and amount for payment details.
+
+        Args:
+            terms: Description of discount terms attached to the payment.
+            amount: Discount amount or value description stored with the payment terms.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["discount_terms"] = terms
         self._state["discount_amount"] = amount
         return self
@@ -479,7 +641,15 @@ class PaymentBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
-        """Set skonto terms and amount for payment details."""
+        """Set skonto terms and amount for payment details.
+
+        Args:
+            terms: Description of skonto terms attached to the payment.
+            amount: Skonto amount or value description stored with the payment terms.
+
+        Returns:
+            The builder, for chaining.
+        """
         return self.discount(terms=terms, amount=amount)
 
     def payment_link(
@@ -493,7 +663,14 @@ class PaymentBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Set the payment link value."""
+        """Set the payment link value.
+
+        Args:
+            link: Link leading to an online payment page for the invoice.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["payment_link"] = link
         return self
 
@@ -508,12 +685,22 @@ class PaymentBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Set the IP KSeF payment marker value."""
+        """Set the IP KSeF payment marker value.
+
+        Args:
+            value: IPKSeF payment identifier linked to the invoice.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["ipksef"] = value
         return self
 
     def build(self) -> InvoicePayment:
         """Build the corresponding FA(3) domain model.
+
+        Returns:
+            The built ``InvoicePayment``.
 
         Raises:
             ValueError: If a custom payment form is enabled without a description.
@@ -526,6 +713,9 @@ class PaymentBuilder[TParent]:
 
     def done(self) -> TParent:
         """Attach the built payment details to the parent builder and return it.
+
+        Returns:
+            The parent builder.
 
         Raises:
             ValueError: If payment details are empty, or a custom payment form has
@@ -556,7 +746,11 @@ class PaymentBuilderMixin:
     _payment: InvoicePayment | None = None
 
     def payment(self) -> PaymentBuilder[Self]:
-        """Start a payment sub-builder."""
+        """Start a payment sub-builder.
+
+        Returns:
+            A ``PaymentBuilder`` for this part of the invoice; call ``done()`` on it to attach the result and return to this builder.
+        """
         return PaymentBuilder(self, self._set_payment, self._payment)
 
     def _set_payment(self, value: InvoicePayment) -> None:
