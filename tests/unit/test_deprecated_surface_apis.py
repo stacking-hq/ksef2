@@ -10,6 +10,11 @@ from typing import Any
 import pytest
 from pydantic import BaseModel
 
+from ksef2._clients.async_tokens import AsyncTokensClient
+from ksef2._clients.tokens import TokensClient
+from ksef2._infra.schema.api import spec
+from tests.unit.factories.tokens import TokenStatusResponseFactory
+
 from tests.unit.clients.test_paging import (
     COLLECTIONS,
     COLLECTIVE_NUMBER,
@@ -165,3 +170,47 @@ class TestDeprecatedPagingAliases:
         else:
             assert len(result) == item_count
         assert len(flavor.transport.calls) == 1
+
+
+def _token_status(flavor: Flavor, status: spec.AuthenticationTokenStatus) -> None:
+    flavor.transport.enqueue(
+        TokenStatusResponseFactory.build(status=status).model_dump(mode="json")
+    )
+
+
+class TestDeprecatedTokenAliases:
+    def _tokens(self, flavor: Flavor) -> Any:
+        cls = AsyncTokensClient if flavor.is_async else TokensClient
+        return cls(flavor.transport)
+
+    def test_wait_for_activation_warns_once_and_polls_until_active(
+        self, flavor: Flavor
+    ) -> None:
+        _token_status(flavor, spec.AuthenticationTokenStatus.Pending)
+        _token_status(flavor, spec.AuthenticationTokenStatus.Active)
+        tokens = self._tokens(flavor)
+
+        status = once(
+            flavor,
+            lambda: tokens.wait_for_activation(
+                reference_number="ref", timeout=1.0, poll_interval=0.0
+            ),
+            "wait_for_activation()",
+            "generate(...).wait()",
+        )
+
+        assert status.status == "active"
+        assert len(flavor.transport.calls) == 2
+
+    def test_status_warns_once_and_returns_the_status(self, flavor: Flavor) -> None:
+        _token_status(flavor, spec.AuthenticationTokenStatus.Pending)
+        tokens = self._tokens(flavor)
+
+        status = once(
+            flavor,
+            lambda: tokens.status(reference_number="ref"),
+            "status()",
+            "get_status()",
+        )
+
+        assert status.status == "pending"
