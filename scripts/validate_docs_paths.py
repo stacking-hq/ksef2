@@ -11,7 +11,7 @@ OBSOLETE_PROFILE_PATH = "~/.config/ksef/config.toml"
 CANONICAL_PROFILE_PATH = "~/.config/ksef2/config.toml"
 LEGACY_FALLBACK_PROFILE_PATH = "~/.config/ksef2-cli/config.toml"
 
-DOC_SUFFIXES = {".md", ".mdx"}
+DOC_SUFFIXES = {".md"}
 MANIFEST_NAME = "docs.manifest.json"
 
 

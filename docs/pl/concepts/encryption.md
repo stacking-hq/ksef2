@@ -1,0 +1,79 @@
+---
+title: Szyfrowanie
+description: Zrozum, jak ksef2 używa publicznych certyfikatów KSeF do szyfrowania tokenów, sesji i eksportów.
+---
+
+KSeF wymaga, aby część materiału payloadów była zaszyfrowana zanim trafi do API.
+SDK ukrywa tę mechanikę w zwykłych przepływach, ale warto wiedzieć, który klucz
+jest chroniony i co trzeba zachować, aby kontynuować przepływ.
+
+Publiczne certyfikaty używane do tego szyfrowania są publikowane przez KSeF.
+Aplikacja pobiera publiczny materiał certyfikatu, szyfruje lokalne sekrety dla
+KSeF i wysyła `public_key_id`, który wskazuje użyty klucz publiczny KSeF.
+
+## Gdzie pojawia się szyfrowanie
+
+| Przepływ | Lokalny sekret | Co otrzymuje KSeF |
+| --- | --- | --- |
+| Uwierzytelnianie tokenem | Token KSeF razem ze znacznikiem czasu challenge. | Zaszyfrowany payload uwierzytelniania tokenem i odpowiadający `public_key_id`. |
+| Sesja online | Klucz AES i IV wygenerowane dla XML faktury. | Zaszyfrowany klucz sesji, IV i zaszyfrowane payloady faktur. |
+| Sesja batch | Klucz AES i IV dla paczki batch. | Zaszyfrowany materiał klucza batch i deklaracje uploadu. |
+| Eksport faktur | Klucz AES i IV dla paczki eksportu. | Zaszyfrowany materiał klucza eksportu; SDK później używa lokalnego materiału do odszyfrowania pobranych części. |
+
+:::tip[Preferuj ścieżkę wysokiego poziomu]
+Sesje online, sesje batch, eksporty i uwierzytelnianie tokenem pobierają i
+używają publicznych certyfikatów za Ciebie. `client.encryption` służy do
+diagnostyki, kontroli startowej albo własnego cache certyfikatów.
+:::
+
+## Model publicznego certyfikatu
+
+KSeF publikuje publiczne certyfikaty klucza z metadanymi, które mówią klientom,
+do czego służy klucz i kiedy jest ważny.
+
+| Pole SDK | Znaczenie |
+| --- | --- |
+| `certificate` | Materiał certyfikatu Base64 używany przez warstwę kryptograficzną SDK. |
+| `certificate_id` | Identyfikator obiektu certyfikatu. |
+| `public_key_id` | Identyfikator klucza publicznego; odsyłany do KSeF po szyfrowaniu. |
+| `valid_from` / `valid_to` | Okno ważności używane przy decyzjach cache i odświeżania. |
+| `usage` | `ksef_token_encryption` albo `symmetric_key_encryption`. |
+
+```python
+certificates = client.encryption.get_certificates(
+    usage=["symmetric_key_encryption"],
+)
+
+for certificate in certificates:
+    print(certificate.public_key_id, certificate.valid_to, certificate.usage)
+```
+
+## Rotacja i cache
+
+Traktuj publiczne certyfikaty szyfrowania jak rotującą infrastrukturę. KSeF może
+opublikować nowy certyfikat dla tego samego klucza albo obrócić na nowy klucz.
+Nowy certyfikat może zmienić `certificate_id`; nowy klucz zmienia
+`public_key_id`.
+
+Cache certyfikatów jest przydatny, jeśli poprawia czas startu, ale odświeżaj go
+zanim długotrwałe workery otworzą sesje, zaplanują eksporty albo rozpoczną
+uwierzytelnianie tokenem. Nie zapisuj treści certyfikatów na stałe w kodzie
+aplikacji.
+
+## Co zapisywać
+
+Dla zwykłej wysyłki faktur zapisuj identyfikatory biznesowe, referencje KSeF,
+dane UPO i finalne artefakty. Nie zapisuj niskopoziomowych szczegółów
+szyfrowania, chyba że inny proces musi wznowić sesję.
+
+Dla eksportów przechowuj `ExportHandle`, aż paczka zostanie pobrana. Zawiera
+lokalny materiał deszyfrujący potrzebny do części eksportu. Dla wznawianych
+sesji online albo batch zapisuj serializowany stan sesji zwrócony przez SDK
+zamiast ręcznie rekonstruować klucze.
+
+## Powiązane strony
+
+- [Sprawdź certyfikaty szyfrowania](../how-to-guides/inspect-encryption-certificates.md): Pobierz i obejrzyj publiczne certyfikaty KSeF z klienta głównego.
+- [Wyślij faktury](../how-to-guides/send-invoices.md): Używaj szyfrowanych sesji online i batch bez ręcznego zarządzania kluczami.
+- [Pobierz faktury](../how-to-guides/download-invoices.md): Pobierz pojedyncze faktury i szyfrowane paczki eksportu.
+- [Certyfikaty](certificates.md): Oddziel publiczne certyfikaty szyfrowania od certyfikatów uwierzytelniania i certyfikatów wydanych przez KSeF.

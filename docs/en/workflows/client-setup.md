@@ -1,0 +1,127 @@
+---
+title: Client Setup
+description: Create ksef2 sync and async clients, configure transport behavior, and choose authenticated branches.
+---
+
+The root `Client` owns HTTP transport configuration and exposes unauthenticated
+public branches. Authenticate once for a KSeF context, then pass the
+authenticated client into workflow code.
+
+## Choose sync or async
+
+`Client` is the synchronous root client and `AsyncClient` is its async twin.
+They expose the same API; with `AsyncClient` you use `async with` and `await`
+the calls.
+
+### Sync
+
+```python
+from ksef2 import Client, Environment
+
+with Client(Environment.TEST) as client:
+    auth = client.authentication.with_test_certificate(nip="5261040828")
+```
+
+### Async
+
+```python
+from ksef2 import AsyncClient, Environment
+
+async with AsyncClient(Environment.TEST) as client:
+    auth = await client.authentication.with_test_certificate(nip="5261040828")
+```
+
+Use `Environment.DEMO` or `Environment.PRODUCTION` outside local TEST
+workflows.
+
+## Certificate cache
+
+Root clients use an in-memory certificate store by default. The store refreshes
+public encryption certificates after 24 hours, and high-level authentication,
+session, and export workflows load certificates lazily when they need them.
+
+Use a custom refresh interval when your application has a stricter startup or
+rotation policy:
+
+```python
+from datetime import timedelta
+
+from ksef2 import CertificateStore, Client, Environment
+
+store = CertificateStore(refresh_after=timedelta(hours=6))
+client = Client(Environment.PRODUCTION, certificate_store=store)
+```
+
+Pass any object implementing `CertificateStoreProtocol` when certificates should
+be shared through application storage such as a database or cache.
+
+When credentials live in a CLI-compatible profile, create the root client for
+the profile environment and authenticate through `with_profile()`:
+
+```python
+from ksef2 import Client, Environment
+
+client = Client(Environment.PRODUCTION)
+auth = client.authentication.with_profile("prod-token")
+```
+
+## Public root branches
+
+The root client is useful before authentication:
+
+```python
+certificates = client.encryption.get_certificates()
+providers = client.peppol.query()
+```
+
+The TEST-only branch is also on the root client:
+
+```python
+client.testdata.create_subject(
+    nip="5261040828",
+    subject_type="vat_group",
+    description="Sandbox company",
+)
+```
+
+## Authenticated branches
+
+After authentication, use the branch that matches the task:
+
+```python
+invoices = auth.invoices
+batch = auth.batch
+tokens = auth.tokens
+permissions = auth.permissions
+certificates = auth.certificates
+limits = auth.limits
+sessions = auth.sessions
+invoice_sessions = auth.invoice_sessions
+```
+
+:::note[Keep root and authenticated clients separate]
+The root client chooses environment and transport. The authenticated client
+owns bearer tokens and context-specific branches. Passing the authenticated
+client into workflow code keeps auth state out of unrelated setup code.
+:::
+
+## Recommended flow
+
+1. Read environment and transport settings in your application boundary.
+
+2. Create one root client for the selected KSeF environment.
+
+3. Use root branches only for public lookup or TEST data setup.
+
+4. Authenticate once for the context that owns the operation.
+
+5. Pass the authenticated client to invoice, token, permission, certificate,
+   limits, and session workflows.
+
+## Reference
+
+- [Authentication workflow](authentication.md)
+- [Encryption certificates](encryption-certificates.md)
+- [PEPPOL providers](peppol.md)
+- [TEST data](test-data.md)
+- [Client lifecycle API](../reference/api/client-lifecycle.md)

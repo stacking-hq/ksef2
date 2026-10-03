@@ -21,7 +21,7 @@ def test_validate_docs_paths_accepts_the_canonical_profile_path(
 ) -> None:
     write_page(
         tmp_path,
-        "en/how-to-guides/profiles.mdx",
+        "en/how-to-guides/profiles.md",
         f"Profiles are stored in `{CANONICAL_PROFILE_PATH}`.\n",
     )
 
@@ -31,20 +31,20 @@ def test_validate_docs_paths_accepts_the_canonical_profile_path(
 def test_validate_docs_paths_reports_the_retired_profile_path(tmp_path: Path) -> None:
     write_page(
         tmp_path,
-        "en/how-to-guides/legacy-profiles.mdx",
+        "en/how-to-guides/legacy-profiles.md",
         f"New profiles are stored in `{OBSOLETE_PROFILE_PATH}`.\n"
         f"Legacy `{LEGACY_FALLBACK_PROFILE_PATH}` files are still readable.\n",
     )
     write_page(
         tmp_path,
-        "pl/how-to-guides/profiles.mdx",
+        "pl/how-to-guides/profiles.md",
         f"Profil zapisujemy w `{CANONICAL_PROFILE_PATH}`.\n",
     )
 
     errors = validate_docs_paths(tmp_path)
 
     assert (
-        f"en/how-to-guides/legacy-profiles.mdx: uses retired {OBSOLETE_PROFILE_PATH}"
+        f"en/how-to-guides/legacy-profiles.md: uses retired {OBSOLETE_PROFILE_PATH}"
         in errors
     )
 
@@ -54,14 +54,14 @@ def test_validate_docs_paths_reports_a_fallback_without_the_canonical_path(
 ) -> None:
     write_page(
         tmp_path,
-        "pl/how-to-guides/profiles.mdx",
+        "pl/how-to-guides/profiles.md",
         f"Starsze pliki `{LEGACY_FALLBACK_PROFILE_PATH}` nadal są odczytywane.\n",
     )
 
     errors = validate_docs_paths(tmp_path)
 
     assert (
-        f"pl/how-to-guides/profiles.mdx: documents {LEGACY_FALLBACK_PROFILE_PATH} "
+        f"pl/how-to-guides/profiles.md: documents {LEGACY_FALLBACK_PROFILE_PATH} "
         f"without {CANONICAL_PROFILE_PATH}"
     ) in errors
     assert f"{tmp_path}: no page documents {CANONICAL_PROFILE_PATH}" in errors
@@ -92,8 +92,8 @@ def test_validate_manifest_pages_accepts_pages_present_in_both_locales(
     tmp_path: Path,
 ) -> None:
     for locale in ("en", "pl"):
-        write_page(tmp_path, f"{locale}/a.mdx", "a\n")
-    write_manifest(tmp_path, "a.mdx")
+        write_page(tmp_path, f"{locale}/a.md", "a\n")
+    write_manifest(tmp_path, "a.md")
 
     assert validate_manifest_pages(tmp_path) == []
 
@@ -101,24 +101,24 @@ def test_validate_manifest_pages_accepts_pages_present_in_both_locales(
 def test_validate_manifest_pages_reports_an_entry_missing_from_one_locale(
     tmp_path: Path,
 ) -> None:
-    write_page(tmp_path, "en/a.mdx", "a\n")
-    write_page(tmp_path, "en/b.mdx", "b\n")
-    write_page(tmp_path, "pl/a.mdx", "a\n")
-    write_manifest(tmp_path, "a.mdx", "b.mdx")
+    write_page(tmp_path, "en/a.md", "a\n")
+    write_page(tmp_path, "en/b.md", "b\n")
+    write_page(tmp_path, "pl/a.md", "a\n")
+    write_manifest(tmp_path, "a.md", "b.md")
 
     assert validate_manifest_pages(tmp_path) == [
-        "docs.manifest.json: b.mdx has no page in pl/"
+        "docs.manifest.json: b.md has no page in pl/"
     ]
 
 
 def test_validate_manifest_pages_reports_an_entry_missing_from_every_locale(
     tmp_path: Path,
 ) -> None:
-    write_manifest(tmp_path, "does-not-exist.mdx")
+    write_manifest(tmp_path, "does-not-exist.md")
 
     assert validate_manifest_pages(tmp_path) == [
-        "docs.manifest.json: does-not-exist.mdx has no page in en/",
-        "docs.manifest.json: does-not-exist.mdx has no page in pl/",
+        "docs.manifest.json: does-not-exist.md has no page in en/",
+        "docs.manifest.json: does-not-exist.md has no page in pl/",
     ]
 
 

@@ -1,0 +1,83 @@
+---
+title: Certyfikaty szyfrowania
+description: Odczytuj publiczne certyfikaty szyfrowania KSeF używane przez zaszyfrowane przepływy faktur i eksportów.
+---
+
+KSeF publikuje certyfikaty publiczne używane do szyfrowania kluczy sesji i
+materiału eksportów. Wysokopoziomowe pomocniki faktur i batch ładują te
+certyfikaty automatycznie. Użyj `client.encryption` bezpośrednio, gdy chcesz
+sprawdzić, cache'ować albo wstępnie załadować materiał certyfikatu.
+
+Domyślnie klienci główni używają `CertificateStore`, czyli pamięciowego cache
+odświeżanego po 24 godzinach. Przekaż `refresh_after=None`, aby zachować
+zachowanie "pobierz raz" dla krótkotrwałego klienta, albo przekaż własny obiekt
+implementujący `CertificateStoreProtocol`, aby zintegrować magazyn aplikacji.
+
+## Pobierz certyfikaty
+
+```python
+certificates = client.encryption.get_certificates()
+
+for certificate in certificates:
+    print(certificate.public_key_id, certificate.usage)
+```
+
+Filtruj po zastosowaniu, gdy potrzebujesz tylko jednej rodziny certyfikatów:
+
+```python
+certificates = client.encryption.get_certificates(
+    usage=["symmetric_key_encryption"],
+)
+```
+
+Skonfiguruj domyślny magazyn podczas tworzenia klienta głównego:
+
+```python
+from datetime import timedelta
+
+from ksef2 import CertificateStore, Client, Environment
+
+client = Client(
+    Environment.PRODUCTION,
+    certificate_store=CertificateStore(refresh_after=timedelta(hours=6)),
+)
+```
+
+Własne magazyny implementują `load()`, `get_valid()` i `needs_refresh()`. SDK
+nadal odpowiada za pobieranie zdalne; magazyn odpowiada za trwałość cache i
+decyzje o świeżości.
+
+## Jak SDK ich używa
+
+Uwierzytelnione sesje faktur i eksporty wywołują gałąź certyfikatów szyfrowania
+przed zaszyfrowaniem kluczy payloadu:
+
+```python
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    ...
+
+zip_parts = auth.invoices.export_and_download(filters=filters)
+```
+
+:::tip[Preferuj przepływy wysokiego poziomu]
+Większość aplikacji nie musi wywoływać `client.encryption` bezpośrednio.
+Użyj go do kontroli startowej, własnego cache albo diagnostyki dostępności
+certyfikatów szyfrowania.
+:::
+
+## Zalecany przepływ
+
+1. Domyślnie pozwól przepływom faktur ładować certyfikaty leniwie.
+
+2. Opcjonalnie wstępnie załaduj certyfikaty publiczne przy starcie aplikacji.
+
+3. Alarmuj, gdy żaden certyfikat nie obsługuje zastosowania wymaganego przez
+   przepływ.
+
+4. Ponów później zamiast hardcodować dane certyfikatów w aplikacji.
+
+## Referencja
+
+- [Wysyłanie faktur](sending-invoices.md)
+- [Pobieranie faktur](downloading-invoices.md)
+- [API certyfikatów klucza publicznego](../reference/api/public-key-certificates.md)

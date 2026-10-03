@@ -1,0 +1,167 @@
+---
+title: Error Reference
+description: SDK exception hierarchy, attributes, KSeF exception codes, and polling timeout classes.
+---
+
+ksef2 raises SDK exceptions for failures it can classify. Transport failures
+raised before KSeF returns a parsed API response remain `httpx.HTTPError`
+exceptions. Presigned external-storage transfers use the dedicated exceptions
+described below instead of KSeF API/authentication classification.
+
+## Base classes
+
+| Class | Base | `code` | Main attributes |
+| --- | --- | --- | --- |
+| `KSeFException` | `Exception` | `SDK_ERROR` | `context` |
+| `KSeFApiError` | `KSeFException` | `API_ERROR` | `status_code`, `exception_code`, `response` |
+| `KSeFAuthError` | `KSeFApiError` | `AUTH_ERROR` | `status_code`, `exception_code`, `response` |
+| `KSeFRateLimitError` | `KSeFApiError` | `RATE_LIMIT_ERROR` | `retry_after`, `status_code`, `response` |
+| `KSeFExternalTransferError` | `KSeFException` | `EXTERNAL_TRANSFER_ERROR` | `operation`, `host`, `reference_number`, `part_ordinal`, `status_code`, `outcome_ambiguous` |
+| `KSeFBatchUploadError` | `KSeFExternalTransferError` | `BATCH_UPLOAD_ERROR` | External-transfer attributes plus `recovery_state()` |
+| `KSeFInvoiceRejectedError` | `KSeFSessionError` | `INVOICE_REJECTED` | `invoice_reference_number`, `invoice_status_code`, `description`, `details`, `extensions`, `status` |
+
+Catch narrower subclasses before `KSeFException` when the workflow has a
+specific recovery action.
+
+```python
+try:
+    result = auth.invoices.query_metadata(filters=filters)
+except KSeFRateLimitError as exc:
+    retry_after = exc.retry_after
+except KSeFApiError as exc:
+    status_code = exc.status_code
+    exception_code = exc.exception_code
+except KSeFException as exc:
+    context = exc.context
+except httpx.HTTPError as exc:
+    transport_error = exc
+```
+
+## SDK exception classes
+
+| Class | `code` | Raised for |
+| --- | --- | --- |
+| `KSeFClientClosedError` | `CLIENT_CLOSED` | Root client or session client used after close. |
+| `KSeFUnsupportedEnvironmentError` | `UNSUPPORTED_ENVIRONMENT` | TEST-only branch or flow used outside `Environment.TEST`. |
+| `KSeFValidationError` | `VALIDATION_ERROR` | Invalid SDK input, invalid response payload, invalid profile config, or invalid session/batch arguments. |
+| `KSeFInvoiceRenderingError` | `INVOICE_RENDERING_ERROR` | Optional XSLT/PDF rendering failures. |
+| `KSeFEncryptionError` | `ENCRYPTION_ERROR` | Token, symmetric-key, invoice encryption, or decryption failure. |
+| `KSeFSessionError` | `SESSION_ERROR` | Session-state violation, such as using a closed session. Base class of `KSeFInvoiceRejectedError`. |
+| `KSeFInvoiceRejectedError` | `INVOICE_REJECTED` | KSeF finished processing an online-session invoice and rejected it (`wait_for_invoice_ready()`, `send_invoice_and_wait()`). |
+| `KSeFAuthTokenRedemptionError` | `AUTH_TOKEN_REDEMPTION_ERROR` | A one-shot authentication redemption lost its response and may have succeeded. |
+| `KSeFExternalTransferError` | `EXTERNAL_TRANSFER_ERROR` | A presigned external-storage upload or download was rejected or lost its response. |
+| `KSeFBatchUploadError` | `BATCH_UPLOAD_ERROR` | A batch-part upload failed while protected recovery state remains available. |
+| `NoCertificateAvailableError` | `NO_CERTIFICATE_AVAILABLE` | No valid certificate exists for signing or encryption usage. |
+| `KSeFMetadataPaginationError` | `METADATA_PAGINATION_ERROR` | Metadata pagination cannot continue safely. |
+
+`KSeFAuthTokenRedemptionError.outcome_ambiguous` is always `True`. Do not retry
+the redemption: KSeF may already have consumed the temporary authentication
+token even though the response did not reach the caller.
+
+## External transfer attributes and batch recovery
+
+Presigned storage responses are not KSeF API responses. A storage `403`, for
+example, raises `KSeFExternalTransferError`, not `KSeFAuthError`. Its message and
+`context` contain only the sanitized host, operation, workflow reference, part
+ordinal, status code, and ambiguity flag; the signed URL is not included.
+
+| Attribute | Type | Meaning |
+| --- | --- | --- |
+| `operation` | `Literal["upload", "download"]` | External transfer that failed. |
+| `host` | `str` | Storage hostname without path, query, or signature. |
+| `reference_number` | `str` | Export or batch workflow reference. |
+| `part_ordinal` | `int` | One-based package part ordinal. |
+| `status_code` | `int | None` | Storage response status, or `None` when no response arrived. |
+| `outcome_ambiguous` | `bool` | `True` when an upload may have reached storage despite a lost response. |
+
+`KSeFBatchUploadError.recovery_state()` deliberately reveals the sensitive
+`BatchSessionResumeState` required for recovery. It is excluded from the error
+message and `context` because it contains encryption material and presigned
+URLs. Store it only in protected credential storage, and do not blindly retry
+an upload when `outcome_ambiguous` is `True`.
+
+The original `httpx` failure remains available through `__cause__`. Avoid
+logging the cause indiscriminately because raw HTTP diagnostics can include the
+signed URL.
+
+## API error attributes
+
+`KSeFApiError` is raised for parsed KSeF 4xx and 5xx responses. Specialized
+subclasses are used for authentication/authorization failures and rate limits.
+
+| Attribute | Type | Meaning |
+| --- | --- | --- |
+| `status_code` | `int` | HTTP status returned by KSeF. |
+| `exception_code` | `ExceptionCode` | Normalized KSeF exception code when one is recognized. |
+| `response` | `BaseModel | None` | Parsed KSeF error payload when parsing succeeded. |
+
+Use `response.model_dump()` or `response.model_dump_json()` for structured
+diagnostics when `response` is not `None`.
+
+## ExceptionCode values
+
+| Name | Value |
+| --- | --- |
+| `UNKNOWN_ERROR` | `10000` |
+| `OBJECT_ALREADY_EXISTS` | `30001` |
+| `VALIDATION_ERROR` | `21405` |
+| `UPO_NOT_FOUND` | `21178` |
+| `NOT_PROCESSED_YET` | `21165` |
+
+Unknown numeric KSeF codes map to `ExceptionCode.UNKNOWN_ERROR`.
+
+## Polling timeout classes
+
+Polling timeout exceptions mean the local wait deadline expired. They do not by
+themselves prove the remote KSeF workflow failed.
+
+| Class | `code` | Identifier attributes |
+| --- | --- | --- |
+| `KSeFAuthPollingTimeoutError` | `AUTH_POLLING_TIMEOUT` | `reference_number`, `timeout` |
+| `KSeFTokenStatusTimeoutError` | `TOKEN_STATUS_TIMEOUT` | `reference_number`, `timeout` |
+| `KSeFInvoiceQueryTimeoutError` | `INVOICE_QUERY_TIMEOUT` | `timeout` |
+| `KSeFInvoiceDownloadTimeoutError` | `INVOICE_DOWNLOAD_TIMEOUT` | `ksef_number`, `timeout` |
+| `KSeFInvoiceProcessingTimeoutError` | `INVOICE_PROCESSING_TIMEOUT` | `invoice_reference_number`, `timeout` |
+| `KSeFExportTimeoutError` | `EXPORT_TIMEOUT` | `reference_number`, `timeout` |
+| `KSeFBatchSessionTimeoutError` | `BATCH_SESSION_TIMEOUT` | `reference_number`, `timeout` |
+
+Store the relevant reference before polling so another process can resume the
+status check.
+
+## Rate limit attributes
+
+| Attribute | Type | Meaning |
+| --- | --- | --- |
+| `retry_after` | `int | None` | Seconds from KSeF `Retry-After`; `None` when absent. |
+| `status_code` | `int` | Always `429`. |
+| `response` | `BaseModel | None` | Parsed KSeF error payload when available. |
+
+## Invoice rejection attributes
+
+`KSeFInvoiceRejectedError` subclasses `KSeFSessionError`, so existing handlers
+still catch it. Catch `KSeFInvoiceRejectedError` before `KSeFSessionError` when
+only a session-state violation should reopen or re-authenticate a session.
+
+| Attribute | Type | Meaning |
+| --- | --- | --- |
+| `invoice_reference_number` | `str` | Reference number of the rejected invoice. |
+| `invoice_status_code` | `int` | KSeF invoice status, for example `440` or `450`. Not an HTTP status. |
+| `description` | `str` | KSeF status description. |
+| `details` | `list[str]` | KSeF status details; empty when absent. |
+| `extensions` | `dict[str, str | None]` | KSeF status extensions; empty when absent. |
+| `status` | `SessionInvoiceStatusResponse` | The full status response. |
+
+Unlike `KSeFApiError.status_code`, which is always an HTTP status,
+`invoice_status_code` comes from the KSeF invoice status object.
+
+For a duplicate (`440`), `extensions` carries `originalKsefNumber` and
+`originalSessionReferenceNumber`. A caller recovering from a send whose
+response was lost can pass `originalKsefNumber` to `download_invoice()` and
+compare it against the submitted invoice. If it is the same invoice, treat the
+rejection as already accepted.
+
+## Related reference
+
+- [Operations reference](operations.md): Review retry behavior, rate limits, workflow timeouts, and resumable state.
+- [Client lifecycle](client-lifecycle.md): Review lifecycle errors and client close behavior.
+- [Status and UPO](../concepts/status-and-upo.md): Understand status surfaces, UPO documents, and polling deadlines.
