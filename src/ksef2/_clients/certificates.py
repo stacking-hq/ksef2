@@ -5,11 +5,13 @@
 
 from collections.abc import Generator, Iterator
 from datetime import datetime
-from typing import final
+from typing import cast, final, override
 
 from typing_extensions import deprecated
 
+from ksef2._clients._handles import OperationHandle
 from ksef2._clients._pager import Pager
+from ksef2._core import exceptions
 from ksef2._core.protocols import Middleware
 from ksef2._domain.models.certificates import (
     CertificateEnrollmentData,
@@ -32,6 +34,126 @@ from ksef2._domain.models.certificates import (
 from ksef2._domain.models.pagination import OffsetPaginationParams
 from ksef2._endpoints.certificates import CertificatesEndpoints
 from ksef2._infra.mappers.certificates import from_spec, to_spec
+
+
+@final
+class CertificateEnrollment(
+    OperationHandle[
+        CertificateEnrollmentStatusResponse, CertificateEnrollmentStatusResponse
+    ]
+):
+    """Handle to a certificate enrollment that KSeF issues asynchronously.
+
+    Returned by ``auth.certificates.enroll()``. It exposes every field of the
+    enrollment response, for example ``reference_number`` and ``timestamp``, and
+    ``wait()`` polls until KSeF has issued the certificate.
+    ``get_enrollment_status()`` on the certificates client reads the same status
+    for a reference number you stored earlier.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
+    """
+
+    def __init__(
+        self,
+        client: "CertificatesClient",
+        response: CertificateEnrollmentResponse,
+    ) -> None:
+        """Create the handle.
+
+        Args:
+            client: Certificates client used to poll the enrollment's status.
+            response: Response returned by KSeF when it accepted the enrollment.
+        """
+        super().__init__(response.reference_number)
+        self._client = client
+        self._response = response
+
+    def __getattr__(self, name: str) -> object:
+        if name in CertificateEnrollmentResponse.model_fields:
+            return cast(object, getattr(self._response, name))
+        raise AttributeError(
+            f"{type(self).__name__!r} object has no attribute {name!r}"
+        )
+
+    @property
+    def timestamp(self) -> datetime:
+        """Get when KSeF accepted the enrollment request.
+
+        Returns:
+            The acceptance time reported by KSeF.
+        """
+        return self._response.timestamp
+
+    @property
+    def response(self) -> CertificateEnrollmentResponse:
+        """Get the plain enrollment response.
+
+        Returns:
+            The data model KSeF returned when it accepted the enrollment.
+        """
+        return self._response
+
+    @override
+    def get_status(self) -> CertificateEnrollmentStatusResponse:
+        """Fetch the enrollment's current status without waiting.
+
+        Returns:
+            The enrollment status, including the certificate serial number once issued.
+        """
+        return self._client.get_enrollment_status(
+            reference_number=self.reference_number
+        )
+
+    @override
+    def _is_pending(self, status: CertificateEnrollmentStatusResponse) -> bool:
+        return status.status_code == 100
+
+    @override
+    def _check_status(self, status: CertificateEnrollmentStatusResponse) -> None:
+        if status.status_code not in (100, 200):
+            raise exceptions.KSeFCertificateEnrollmentFailedError(
+                reference_number=self.reference_number,
+                status_code=status.status_code,
+                description=status.status_description,
+                details=status.status_details,
+            )
+
+    @override
+    def _timeout_error(self, timeout: float) -> BaseException:
+        return exceptions.KSeFCertificateEnrollmentTimeoutError(
+            reference_number=self.reference_number,
+            timeout=timeout,
+        )
+
+    @override
+    def _finish(
+        self, status: CertificateEnrollmentStatusResponse
+    ) -> CertificateEnrollmentStatusResponse:
+        return status
+
+    def wait(
+        self,
+        *,
+        timeout: float = 60.0,
+        poll_interval: float = 2.0,
+    ) -> CertificateEnrollmentStatusResponse:
+        """Poll until KSeF has issued the certificate.
+
+        Args:
+            timeout: Maximum number of seconds to wait before giving up.
+            poll_interval: Delay in seconds between status checks.
+
+        Returns:
+            The final status, with the issued certificate's serial number.
+
+        Raises:
+            KSeFCertificateEnrollmentFailedError: If KSeF rejects, cancels or fails the enrollment.
+            KSeFCertificateEnrollmentTimeoutError: If polling exceeds ``timeout``.
+        """
+        return self._wait(timeout, poll_interval)
 
 
 @final
@@ -80,7 +202,7 @@ class CertificatesClient:
         certificate_type: CertificateTypeValue,
         csr: str,
         valid_from: datetime | str | None = None,
-    ) -> CertificateEnrollmentResponse:
+    ) -> CertificateEnrollment:
         """Request issuance of a certificate from a CSR.
 
         Args:
@@ -90,7 +212,16 @@ class CertificatesClient:
             valid_from: Requested start of validity as a datetime or ISO 8601 string; ``None`` for immediately.
 
         Returns:
-            The enrollment reference; poll ``get_enrollment_status()`` for the result.
+            A handle to the enrollment; call ``wait()`` to wait until KSeF has issued the certificate.
+
+        Example:
+            ```python
+            enrollment = auth.certificates.enroll(
+                certificate_name="signing", certificate_type="offline", csr=csr
+            )
+            status = enrollment.wait()
+            print(status.certificate_serial_number)
+            ```
         """
         request = EnrollCertificateRequest(
             certificate_name=certificate_name,
@@ -99,7 +230,7 @@ class CertificatesClient:
             valid_from=valid_from,
         )
         body = to_spec(request)
-        return from_spec(self._endpoints.enroll(body=body))
+        return CertificateEnrollment(self, from_spec(self._endpoints.enroll(body=body)))
 
     def get_enrollment_status(
         self,

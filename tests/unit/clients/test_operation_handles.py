@@ -11,15 +11,21 @@ from polyfactory import BaseFactory
 
 from ksef2._clients._async_handles import AsyncOperationHandle
 from ksef2._clients._handles import OperationHandle
+from ksef2._clients.async_certificates import AsyncCertificatesClient
 from ksef2._clients.async_permissions import AsyncPermissionsClient
 from ksef2._clients.async_tokens import AsyncTokensClient
+from ksef2._clients.certificates import CertificatesClient
 from ksef2._clients.permissions import PermissionsClient
 from ksef2._clients.tokens import TokensClient
 from ksef2._core import exceptions
 from ksef2._core.routes import TokenRoutes
+from ksef2._domain.models.certificates import CertificateEnrollmentResponse
 from ksef2._domain.models.permissions import GrantPermissionsResponse
 from ksef2._domain.models.tokens import GenerateTokenResponse
 from ksef2._infra.schema.api import spec
+from tests.unit.factories.certificates import (
+    DomainEnrollCertificateRequestFactory,
+)
 from tests.unit.factories.permissions import (
     DomainGrantAuthorizationPermissionsRequestFactory,
     DomainGrantEntityPermissionsRequestFactory,
@@ -210,7 +216,13 @@ class TestPermissionOperation:
         )
         permissions = self._permissions(flavor)
         if method in GRANTS:
-            request = GRANTS[method].build()
+            # An indirect grant needs a valid target; the random one often is not.
+            overrides = (
+                {"target_type": None, "target_value": None}
+                if method == "grant_indirect"
+                else {}
+            )
+            request = GRANTS[method].build(**overrides)
             kwargs = {
                 name: getattr(request, name) for name in type(request).model_fields
             }
@@ -296,4 +308,114 @@ class TestPermissionOperation:
         status = flavor.run(operation.get_status())
 
         assert status.status.code == 100
+        assert len(flavor.transport.calls) == 2
+
+
+ENROLLMENT_REF = "20250625-EH-2F14610000-3AC9C8E13B-AB"
+SERIAL = "0123456789ABCDEF"
+
+
+def _enrollment_status(code: int, **extra: Any) -> dict[str, Any]:
+    return {
+        "requestDate": "2026-01-01T10:00:00+00:00",
+        "status": {"code": code, "description": "status", **extra},
+        **({"certificateSerialNumber": SERIAL} if code == 200 else {}),
+    }
+
+
+class TestCertificateEnrollment:
+    def _enroll(
+        self,
+        flavor: Flavor,
+        enroll_resp: BaseFactory[spec.EnrollCertificateResponse],
+    ) -> tuple[Any, spec.EnrollCertificateResponse]:
+        response = enroll_resp.build(referenceNumber=ENROLLMENT_REF)
+        flavor.transport.enqueue(response.model_dump(mode="json"))
+        cls = AsyncCertificatesClient if flavor.is_async else CertificatesClient
+        request = DomainEnrollCertificateRequestFactory.build()
+        enrollment = flavor.run(
+            cls(flavor.transport).enroll(
+                certificate_name=request.certificate_name,
+                certificate_type=request.certificate_type,
+                csr=request.csr,
+            )
+        )
+        return enrollment, response
+
+    def test_is_a_handle_exposing_every_enroll_response_field(
+        self,
+        flavor: Flavor,
+        cert_enroll_resp: BaseFactory[spec.EnrollCertificateResponse],
+    ) -> None:
+        enrollment, response = self._enroll(flavor, cert_enroll_resp)
+
+        assert _handle_base(flavor) in type(enrollment).__mro__
+        assert isinstance(enrollment.response, CertificateEnrollmentResponse)
+        assert enrollment.reference_number == ENROLLMENT_REF
+        assert enrollment.timestamp == response.timestamp
+        for field in CertificateEnrollmentResponse.model_fields:
+            assert getattr(enrollment, field) == getattr(enrollment.response, field)
+        with pytest.raises(AttributeError):
+            _ = enrollment.no_such_field
+
+    def test_wait_returns_the_status_with_the_serial_number(
+        self,
+        flavor: Flavor,
+        cert_enroll_resp: BaseFactory[spec.EnrollCertificateResponse],
+    ) -> None:
+        enrollment, _ = self._enroll(flavor, cert_enroll_resp)
+        flavor.transport.enqueue(_enrollment_status(100))
+        flavor.transport.enqueue(_enrollment_status(200))
+
+        status = flavor.run(enrollment.wait(timeout=1.0, poll_interval=0.0))
+
+        assert status.status_code == 200
+        assert status.certificate_serial_number == SERIAL
+        assert len(flavor.transport.calls) == 3
+        assert ENROLLMENT_REF in flavor.transport.calls[1].path
+
+    @pytest.mark.parametrize("code", [400, 500, 550])
+    def test_wait_raises_when_ksef_does_not_issue_the_certificate(
+        self,
+        flavor: Flavor,
+        cert_enroll_resp: BaseFactory[spec.EnrollCertificateResponse],
+        code: int,
+    ) -> None:
+        enrollment, _ = self._enroll(flavor, cert_enroll_resp)
+        flavor.transport.enqueue(_enrollment_status(code, details=["limit reached"]))
+
+        with pytest.raises(exceptions.KSeFCertificateEnrollmentFailedError) as raised:
+            _ = flavor.run(enrollment.wait(timeout=1.0, poll_interval=0.0))
+
+        assert raised.value.reference_number == ENROLLMENT_REF
+        assert raised.value.enrollment_status_code == code
+        assert raised.value.details == ["limit reached"]
+
+    def test_wait_times_out(
+        self,
+        flavor: Flavor,
+        cert_enroll_resp: BaseFactory[spec.EnrollCertificateResponse],
+    ) -> None:
+        enrollment, _ = self._enroll(flavor, cert_enroll_resp)
+        flavor.transport.enqueue(_enrollment_status(100))
+
+        with pytest.raises(
+            exceptions.KSeFCertificateEnrollmentTimeoutError, match="not issued"
+        ) as raised:
+            _ = flavor.run(enrollment.wait(timeout=0.0, poll_interval=0.0))
+
+        assert raised.value.reference_number == ENROLLMENT_REF
+        assert raised.value.timeout == 0.0
+
+    def test_get_status_does_not_wait(
+        self,
+        flavor: Flavor,
+        cert_enroll_resp: BaseFactory[spec.EnrollCertificateResponse],
+    ) -> None:
+        enrollment, _ = self._enroll(flavor, cert_enroll_resp)
+        flavor.transport.enqueue(_enrollment_status(100))
+
+        status = flavor.run(enrollment.get_status())
+
+        assert status.status_code == 100
         assert len(flavor.transport.calls) == 2
