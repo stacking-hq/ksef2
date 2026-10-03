@@ -45,6 +45,19 @@ def prepare_batch_package(
 ) -> PreparedBatch:
     """Build, split, and encrypt a batch package from invoice payloads.
 
+    Args:
+        invoices: Invoices to include; each becomes one ZIP entry.
+        aes_key: AES-256 key used to encrypt the parts.
+        iv: AES initialization vector.
+        encrypted_key: ``aes_key`` encrypted with the KSeF public key.
+        public_key_id: Identifier of the KSeF public key used for ``encrypted_key``; ``None`` for the default.
+        form_code: Invoice schema of the batch.
+        offline_mode: Whether the invoices were issued in offline mode.
+        max_part_size: Maximum size in bytes of one encrypted part.
+
+    Returns:
+        The prepared batch: package metadata, encrypted parts and encryption material.
+
     Raises:
         KSeFEncryptionError: If part encryption fails.
         KSeFValidationError: If the invoice list or part size is invalid.
