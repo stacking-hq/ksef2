@@ -194,7 +194,11 @@ from ksef2.domain.models.certificates import (
     RevocationReason,
     SubjectIdentifier,
 )
-from ksef2.domain.models.encryption import CertUsage, PublicKeyCertificate
+from ksef2.domain.models.encryption import (
+    CertUsage,
+    CertUsageEnum,
+    PublicKeyCertificate,
+)
 from ksef2.domain.models.limits import (
     RateLimitValues,
     SubjectCertificateLimits,
@@ -437,6 +441,7 @@ __all__ = [
     "SubjectEnrollmentLimits",
     "SubjectLimits",
     "CertUsage",
+    "CertUsageEnum",
     "PublicKeyCertificate",
     "ListSessionsQuery",
     "OffsetPaginationParams",
