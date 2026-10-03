@@ -6,7 +6,7 @@ SRC_ROOT = Path(__file__).resolve().parents[2] / "src"
 PACKAGE_ROOT = SRC_ROOT / "ksef2"
 
 # Every importable module whose path has no underscore-prefixed component.
-# Adding a name here is a public API decision; see docs/en/reference/public-api.mdx.
+# Adding a name here is a public API decision; see docs/en/reference/public-api.md.
 PUBLIC_MODULES = frozenset(
     {
         "ksef2",

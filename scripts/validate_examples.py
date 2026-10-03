@@ -3,7 +3,7 @@
 
 Checks ``import`` lines in the example scripts, in fenced Python blocks of the
 documentation pages and in the READMEs against the rule in
-``docs/en/reference/public-api.mdx``: a module path with an underscore-prefixed
+``docs/en/reference/public-api.md``: a module path with an underscore-prefixed
 component is private and must not appear in examples or documentation.
 """
 
@@ -22,7 +22,7 @@ DOC_IMPORT_RE = re.compile(
 )
 FENCE_OPEN_RE = re.compile(r"^\s*```\s*(?:python|py)\b")
 FENCE_CLOSE_RE = re.compile(r"^\s*```\s*$")
-DOC_SUFFIXES = {".md", ".mdx"}
+DOC_SUFFIXES = {".md"}
 
 
 def is_public_module(module: str) -> bool:
