@@ -56,7 +56,7 @@ class TestAsyncCertificatesClient:
             )
         )
 
-        assert isinstance(result, certificates.CertificateEnrollmentResponse)
+        assert isinstance(result.response, certificates.CertificateEnrollmentResponse)
         assert async_fake_transport.calls[0].method == "POST"
         assert str(async_fake_transport.calls[0].path) == CertificateRoutes.ENROLLMENT
 

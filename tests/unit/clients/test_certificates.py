@@ -77,7 +77,7 @@ class TestCertificatesClient:
             )
         )
 
-        assert isinstance(result, certificates.CertificateEnrollmentResponse)
+        assert isinstance(result.response, certificates.CertificateEnrollmentResponse)
         assert result.reference_number == expected.referenceNumber
         assert len(fake_transport.calls) == 1
         call = fake_transport.calls[0]
@@ -111,7 +111,7 @@ class TestCertificatesClient:
             )
         )
 
-        assert isinstance(result, certificates.CertificateEnrollmentResponse)
+        assert isinstance(result.response, certificates.CertificateEnrollmentResponse)
         call = fake_transport.calls[0]
         assert call.json is not None
         actual_request = type(expected_request).model_validate(call.json)

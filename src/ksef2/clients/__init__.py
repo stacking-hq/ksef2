@@ -9,6 +9,7 @@ from ksef2._clients.async_auth import AsyncAuthClient
 from ksef2._clients.async_authenticated import AsyncAuthenticatedClient
 from ksef2._clients.async_batch import AsyncBatchSessionClient
 from ksef2._clients.async_base import AsyncClient
+from ksef2._clients.async_certificates import AsyncCertificateEnrollment
 from ksef2._clients.async_certificates import AsyncCertificatesClient
 from ksef2._clients.async_collective_identifiers import (
     AsyncCollectiveIdentifiersClient,
@@ -30,6 +31,7 @@ from ksef2._clients.async_tokens import AsyncTokensClient
 from ksef2._clients.authenticated import AuthenticatedClient
 from ksef2._clients.base import Client
 from ksef2._clients.batch import BatchSessionClient
+from ksef2._clients.certificates import CertificateEnrollment
 from ksef2._clients.certificates import CertificatesClient
 from ksef2._clients.collective_identifiers import CollectiveIdentifiersClient
 from ksef2._clients.encryption import EncryptionClient
@@ -73,6 +75,7 @@ __all__ = [
     "AsyncAuthenticatedClient",
     "AsyncBatchService",
     "AsyncBatchSessionClient",
+    "AsyncCertificateEnrollment",
     "AsyncClient",
     "AsyncCertificatesClient",
     "AsyncCollectiveIdentifiersClient",
@@ -92,6 +95,7 @@ __all__ = [
     "AuthenticatedClient",
     "BatchService",
     "BatchSessionClient",
+    "CertificateEnrollment",
     "CertificatesClient",
     "CollectiveIdentifiersClient",
     "Client",
