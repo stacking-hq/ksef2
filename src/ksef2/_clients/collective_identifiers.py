@@ -3,6 +3,7 @@
 
 """Client for collective invoice identifiers."""
 
+import builtins
 from collections.abc import Generator, Iterator
 from typing import final
 
@@ -44,7 +45,7 @@ class CollectiveIdentifiersClient:
     def generate(
         self,
         *,
-        invoices: list[CollectiveIdentifierInvoice],
+        invoices: builtins.list[CollectiveIdentifierInvoice],
     ) -> GenerateCollectiveIdentifierResponse:
         """Generate a collective identifier for the supplied invoices.
 
@@ -128,7 +129,7 @@ class CollectiveIdentifiersClient:
     def _list_invoices(
         self,
         *,
-        collective_identifier_numbers: list[str],
+        collective_identifier_numbers: builtins.list[str],
         continuation_token: str | None = None,
         params: CollectiveIdentifierParams | None = None,
     ) -> CollectiveIdentifierInvoicesPage:
@@ -146,7 +147,7 @@ class CollectiveIdentifiersClient:
 
     def _list_invoices_pages(
         self,
-        collective_identifier_numbers: list[str],
+        collective_identifier_numbers: builtins.list[str],
         params: CollectiveIdentifierParams | None,
     ) -> Generator[CollectiveIdentifierInvoicesPage, None]:
         parameters = params or CollectiveIdentifierParams()
@@ -281,7 +282,7 @@ class CollectiveIdentifiersClient:
     def list_all_invoices(
         self,
         *,
-        collective_identifier_numbers: list[str],
+        collective_identifier_numbers: builtins.list[str],
         params: CollectiveIdentifierParams | None = None,
     ) -> Iterator[CollectiveIdentifierInvoicesPage]:
         """Deprecated: iterate through every invoice page for the supplied collective identifiers.
@@ -331,7 +332,7 @@ class CollectiveIdentifiersClient:
 
     def list_invoices(
         self,
-        collective_identifier_numbers: list[str],
+        collective_identifier_numbers: builtins.list[str],
         *,
         params: CollectiveIdentifierParams | None = None,
     ) -> Pager[CollectiveIdentifierInvoiceDetails]:

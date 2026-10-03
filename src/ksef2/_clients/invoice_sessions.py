@@ -3,6 +3,7 @@
 
 """Invoice-session branch client."""
 
+import builtins
 from collections.abc import Generator, Iterator
 from typing import final
 
@@ -52,7 +53,7 @@ class InvoiceSessionsClient:
         session_type: str,
         continuation_token: str | None = None,
         params: ListSessionsQuery | None = None,
-        statuses: list[SessionStatus | SessionStatusEnum] | None = None,
+        statuses: builtins.list[SessionStatus | SessionStatusEnum] | None = None,
     ) -> ListSessionsResponse:
         parameters = params or ListSessionsQuery(
             session_type=normalize_session_type(session_type),
@@ -77,7 +78,7 @@ class InvoiceSessionsClient:
         self,
         session_type: str,
         params: ListSessionsQuery | None,
-        statuses: list[SessionStatus | SessionStatusEnum] | None = None,
+        statuses: builtins.list[SessionStatus | SessionStatusEnum] | None = None,
     ) -> Generator[ListSessionsResponse, None]:
         parameters = params or ListSessionsQuery(
             session_type=normalize_session_type(session_type),
@@ -109,7 +110,7 @@ class InvoiceSessionsClient:
         session_type: str,
         continuation_token: str | None = None,
         params: ListSessionsQuery | None = None,
-        statuses: list[SessionStatus | SessionStatusEnum] | None = None,
+        statuses: builtins.list[SessionStatus | SessionStatusEnum] | None = None,
     ) -> ListSessionsResponse:
         """Deprecated: fetch one page of invoice session history for the chosen session type.
 
@@ -165,7 +166,7 @@ class InvoiceSessionsClient:
         session_type: str,
         *,
         params: ListSessionsQuery | None = None,
-        statuses: list[SessionStatus | SessionStatusEnum] | None = None,
+        statuses: builtins.list[SessionStatus | SessionStatusEnum] | None = None,
     ) -> Pager[SessionSummary]:
         """List the invoice sessions of the chosen type, newest history first as KSeF returns it.
 

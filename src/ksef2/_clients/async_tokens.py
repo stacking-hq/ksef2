@@ -1,5 +1,6 @@
 """Async KSeF token branch client."""
 
+import builtins
 from collections.abc import AsyncGenerator, AsyncIterator, Coroutine
 from typing import cast, final, override
 
@@ -209,7 +210,7 @@ class AsyncTokensClient:
     async def generate(
         self,
         *,
-        permissions: list[TokenPermission],
+        permissions: builtins.list[TokenPermission],
         description: str,
     ) -> AsyncGeneratedToken:
         """Create a token and return a handle exposing its one-time credential.
