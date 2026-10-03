@@ -1,0 +1,600 @@
+"""Domain models for invoice metadata, sending, downloading, and export."""
+
+from dataclasses import field
+from datetime import date, datetime, timezone
+from enum import StrEnum
+from typing import Literal, Self
+from zoneinfo import ZoneInfo
+
+from pydantic import ConfigDict, Field as PydanticField
+from pydantic import field_validator, model_validator
+
+from ksef2._domain.models.base import KSeFBaseModel
+from ksef2._domain.models.compression import (
+    CompressionType,
+    normalize_compression_type,
+)
+from ksef2._domain.models.session import FormSchema
+from ksef2._domain.types import CurrencyCodes, KsefInvoiceTypes
+
+
+type SortOrder = Literal["asc", "desc"]
+type BuyerIdentifierType = Literal["nip", "vat_ue", "other", "none"]
+type InvoiceType = KsefInvoiceTypes
+type InvoicingMode = Literal["online", "offline"]
+type ThirdSubjectIdentifierType = Literal[
+    "nip", "internal_id", "vat_ue", "other", "none"
+]
+
+type SortOrderSpecValue = Literal["Asc", "Desc"]
+type InvoicingModeSpecValue = Literal["Online", "Offline"]
+
+
+class SortOrderEnum(StrEnum):
+    """Runtime enum for invoice metadata sort order values."""
+
+    ASC = "Asc"
+    DESC = "Desc"
+
+
+class BuyerIdentifierTypeEnum(StrEnum):
+    """Runtime enum for buyer identifier types in invoice metadata."""
+
+    NIP = "Nip"
+    VAT_UE = "VatUe"
+    OTHER = "Other"
+    NONE = "None"
+
+
+class InvoiceTypeEnum(StrEnum):
+    """Runtime enum for KSeF invoice type values."""
+
+    VAT = "Vat"
+    ZAL = "Zal"
+    KOR = "Kor"
+    ROZ = "Roz"
+    UPR = "Upr"
+    KOR_ZAL = "KorZal"
+    KOR_ROZ = "KorRoz"
+    VAT_PEF = "VatPef"
+    VAT_PEF_SP = "VatPefSp"
+    KOR_PEF = "KorPef"
+    VAT_RR = "VatRr"
+    KOR_VAT_RR = "KorVatRr"
+
+
+class InvoicingModeEnum(StrEnum):
+    """Runtime enum for invoice submission modes."""
+
+    ONLINE = "Online"
+    OFFLINE = "Offline"
+
+
+class ThirdSubjectIdentifierTypeEnum(StrEnum):
+    """Runtime enum for third-subject identifier types."""
+
+    NIP = "Nip"
+    INTERNAL_ID = "InternalId"
+    VAT_UE = "VatUe"
+    OTHER = "Other"
+    NONE = "None"
+
+
+_SORT_ORDER_TO_SPEC: dict[SortOrder, SortOrderSpecValue] = {
+    "asc": "Asc",
+    "desc": "Desc",
+}
+_SORT_ORDER_FROM_SPEC: dict[SortOrderSpecValue, SortOrder] = {
+    value: key for key, value in _SORT_ORDER_TO_SPEC.items()
+}
+_INVOICING_MODE_TO_SPEC: dict[InvoicingMode, InvoicingModeSpecValue] = {
+    "online": "Online",
+    "offline": "Offline",
+}
+_INVOICING_MODE_FROM_SPEC: dict[InvoicingModeSpecValue, InvoicingMode] = {
+    value: key for key, value in _INVOICING_MODE_TO_SPEC.items()
+}
+_WARSAW_TIMEZONE = ZoneInfo("Europe/Warsaw")
+
+
+def normalize_sort_order(value: SortOrder | SortOrderEnum | str) -> SortOrder:
+    """Normalize SDK or OpenAPI sort order values to SDK literals.
+
+    Raises:
+        ValueError: If ``value`` is not a supported sort order.
+    """
+    if isinstance(value, SortOrderEnum):
+        return _SORT_ORDER_FROM_SPEC[value.value]
+
+    lowered_value = value.strip().lower()
+    if lowered_value in _SORT_ORDER_TO_SPEC:
+        return lowered_value  # pyright: ignore[reportReturnType]
+
+    if value in _SORT_ORDER_FROM_SPEC:
+        return _SORT_ORDER_FROM_SPEC[value]
+
+    raise ValueError(
+        f"Invalid sort order: {value}. Valid sort orders are: "
+        f"{', '.join(_SORT_ORDER_TO_SPEC)}"
+    )
+
+
+def sort_order_to_spec(value: SortOrder | SortOrderEnum | str) -> SortOrderSpecValue:
+    """Convert a sort order value to the OpenAPI representation."""
+    return _SORT_ORDER_TO_SPEC[normalize_sort_order(value)]
+
+
+def normalize_invoicing_mode(
+    value: InvoicingMode | InvoicingModeEnum | str,
+) -> InvoicingMode:
+    """Normalize SDK or OpenAPI invoicing mode values to SDK literals.
+
+    Raises:
+        ValueError: If ``value`` is not a supported invoicing mode.
+    """
+    if isinstance(value, InvoicingModeEnum):
+        return _INVOICING_MODE_FROM_SPEC[value.value]
+
+    lowered_value = value.strip().lower()
+    if lowered_value in _INVOICING_MODE_TO_SPEC:
+        return lowered_value  # pyright: ignore[reportReturnType]
+
+    if value in _INVOICING_MODE_FROM_SPEC:
+        return _INVOICING_MODE_FROM_SPEC[value]
+
+    raise ValueError(
+        f"Invalid invoicing mode: {value}. Valid invoicing modes are: "
+        f"{', '.join(_INVOICING_MODE_TO_SPEC)}"
+    )
+
+
+def invoicing_mode_to_spec(
+    value: InvoicingMode | InvoicingModeEnum | str,
+) -> InvoicingModeSpecValue:
+    """Convert an invoicing mode value to the OpenAPI representation."""
+    return _INVOICING_MODE_TO_SPEC[normalize_invoicing_mode(value)]
+
+
+# ---------------------------------------------------------------------------
+# Existing response request
+# ---------------------------------------------------------------------------
+
+
+class SendInvoiceResponse(KSeFBaseModel):
+    """Response from ``POST /sessions/online/{ref}/invoices``."""
+
+    reference_number: str
+
+
+class InvoicesMetadataFilter(KSeFBaseModel):
+    """Legacy invoice metadata filter model retained for compatibility."""
+
+    role: Literal["seller", "buyer", "third_subject", "authorized_subject"]
+    date_from: datetime | str
+    date_to: datetime | str
+    invoice_number: str | None = None
+    ksef_number: str | None = None
+    amount_min: float | None = None
+    amount_max: float | None = None
+
+
+class Identity(KSeFBaseModel):
+    """NIP identity used by invoice metadata filters."""
+
+    type: Literal["nip"]
+    value: str
+
+
+# ---------------------------------------------------------------------------
+# Response models — Invoice Metadata
+# ---------------------------------------------------------------------------
+
+
+class InvoiceMetadataSeller(KSeFBaseModel):
+    """Seller data returned with invoice metadata."""
+
+    nip: str
+    name: str | None = None
+
+
+class InvoiceMetadataBuyerIdentifier(KSeFBaseModel):
+    """Buyer identifier returned with invoice metadata."""
+
+    type: BuyerIdentifierType
+    value: str | None = None
+
+
+class InvoiceMetadataBuyer(KSeFBaseModel):
+    """Buyer data returned with invoice metadata."""
+
+    identifier: InvoiceMetadataBuyerIdentifier
+    name: str | None = None
+
+
+class InvoiceMetadataThirdSubjectIdentifier(KSeFBaseModel):
+    """Third-subject identifier returned with invoice metadata."""
+
+    type: ThirdSubjectIdentifierType
+    value: str | None = None
+
+
+class InvoiceMetadataThirdSubject(KSeFBaseModel):
+    """Third subject data returned with invoice metadata."""
+
+    identifier: InvoiceMetadataThirdSubjectIdentifier
+    name: str | None = None
+    role: int
+
+
+class InvoiceMetadataAuthorizedSubject(KSeFBaseModel):
+    """Authorized subject data returned with invoice metadata."""
+
+    nip: str
+    name: str | None = None
+    role: int
+
+
+class InvoiceMetadata(KSeFBaseModel):
+    """Metadata describing an invoice visible to the authenticated subject."""
+
+    ksef_number: str
+    invoice_number: str
+    issue_date: date
+    invoicing_date: datetime
+    acquisition_date: datetime
+    permanent_storage_date: datetime
+    seller: InvoiceMetadataSeller
+    buyer: InvoiceMetadataBuyer
+    net_amount: float
+    gross_amount: float
+    vat_amount: float
+    currency: str
+    invoicing_mode: InvoicingMode
+    invoice_type: InvoiceType
+    form_code_system: str
+    form_code_version: str
+    form_code_value: str
+    is_self_invoicing: bool
+    has_attachment: bool
+    invoice_hash: str
+    hash_of_corrected_invoice: str | None = None
+    third_subjects: list[InvoiceMetadataThirdSubject] | None = None
+    authorized_subject: InvoiceMetadataAuthorizedSubject | None = None
+
+
+class QueryInvoicesMetadataResponse(KSeFBaseModel):
+    """One page of invoice metadata query results."""
+
+    has_more: bool
+    is_truncated: bool
+    permanent_storage_hwm_date: datetime | None = None
+    invoices: list[InvoiceMetadata]
+
+
+# ---------------------------------------------------------------------------
+# Response models — Export
+# ---------------------------------------------------------------------------
+
+
+class ExportInvoicesResponse(KSeFBaseModel):
+    """Reference returned after scheduling an invoice export."""
+
+    reference_number: str
+
+
+class ExportStatusInfo(KSeFBaseModel):
+    """Status code and description for an invoice export operation."""
+
+    code: int
+    description: str
+    details: list[str] | None = None
+
+
+class PackagePart(KSeFBaseModel):
+    """Download metadata for one encrypted package part."""
+
+    ordinal_number: int
+    part_name: str
+    method: str
+    url: str = PydanticField(exclude=True, repr=False)
+    part_size: int
+    part_hash: str
+    encrypted_part_size: int
+    encrypted_part_hash: str
+    expiration_date: datetime
+
+    def to_sensitive_dict(
+        self, *, mode: Literal["json", "python"] | str = "json"
+    ) -> dict[str, object]:
+        """Export package metadata with its presigned capability URL."""
+        data: dict[str, object] = self.model_dump(mode=mode)
+        data["url"] = self.url
+        return data
+
+
+class InvoicePackage(KSeFBaseModel):
+    """Package metadata returned when an invoice export is ready."""
+
+    invoice_count: int
+    size: int
+    parts: list[PackagePart]
+    is_truncated: bool
+    last_issue_date: date | None = None
+    last_invoicing_date: datetime | None = None
+    last_permanent_storage_date: datetime | None = None
+    permanent_storage_hwm_date: datetime | None = None
+
+
+class InvoiceExportStatusResponse(KSeFBaseModel):
+    """Status response for a scheduled invoice export."""
+
+    status: ExportStatusInfo
+    completed_date: datetime | None = None
+    package_expiration_date: datetime | None = None
+    package: InvoicePackage | None = None
+
+
+class ExportHandle(KSeFBaseModel):
+    """Holds export reference + crypto keys needed to later fetch/decrypt the package."""
+
+    model_config = ConfigDict(extra="ignore", frozen=True)
+
+    reference_number: str
+    aes_key: bytes = PydanticField(exclude=True, repr=False)
+    iv: bytes = PydanticField(exclude=True, repr=False)
+
+    def to_sensitive_dict(self) -> dict[str, str | bytes]:
+        """Export the key material only for deliberate protected handling."""
+        return {
+            "reference_number": self.reference_number,
+            "aes_key": self.aes_key,
+            "iv": self.iv,
+        }
+
+
+### Public API ###
+
+
+class InvoicesFilter(KSeFBaseModel):
+    """Filters accepted by invoice metadata query and export operations.
+
+    Datetimes are stored as UTC-aware values. Inputs with an explicit offset keep
+    their instant. Naive inputs are interpreted as Europe/Warsaw local time;
+    ambiguous or nonexistent daylight-saving times require an explicit offset.
+    """
+
+    # role
+    role: Literal["buyer", "seller", "third_subject", "authorized_subject"]
+
+    # dates
+    date_type: Literal["issue_date", "invoicing_date", "permanent_storage"]
+    date_from: datetime
+    date_to: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    restrict_to_permanent_storage_hwm_date: bool | None = None
+
+    # currency and amounts
+    currency_codes: list[CurrencyCodes] | None = None
+    amount_type: Literal["brutto", "netto", "vat"] | None = None
+    amount_min: float | None = None
+    amount_max: float | None = None
+
+    # identification
+    seller_nip: str | None = None
+    buyer_nip: str | None = None
+    buyer_vat_ue: str | None = None
+    buyer_other_id: str | None = None
+    invoice_number: str | None = None
+    ksef_number: str | None = None
+
+    # data
+    invoice_schema: FormSchema | None = None
+    invoice_types: list[KsefInvoiceTypes] | None = None
+    has_attachment: bool | None = None
+
+    # others
+    invoicing_mode: InvoicingMode | None = None
+    is_self_invoicing: bool | None = None
+
+    @field_validator("invoicing_mode", mode="before")
+    @classmethod
+    def _normalize_invoicing_mode(cls, value: object) -> object:
+        if isinstance(value, str):
+            return normalize_invoicing_mode(value)
+        return value
+
+    @field_validator("date_from", "date_to", mode="after")
+    @classmethod
+    def _normalize_datetime(cls, value: datetime) -> datetime:
+        if value.tzinfo is not None and value.utcoffset() is not None:
+            return value.astimezone(timezone.utc)
+
+        normalized_candidates: list[datetime] = []
+        for fold in (0, 1):
+            local_candidate = value.replace(tzinfo=_WARSAW_TIMEZONE, fold=fold)
+            normalized = local_candidate.astimezone(timezone.utc)
+            round_trip = normalized.astimezone(_WARSAW_TIMEZONE).replace(tzinfo=None)
+            if round_trip == value and normalized not in normalized_candidates:
+                normalized_candidates.append(normalized)
+
+        if not normalized_candidates:
+            raise ValueError(
+                f"{value.isoformat()} does not exist in Europe/Warsaw local time; "
+                "provide an explicit UTC offset."
+            )
+        if len(normalized_candidates) > 1:
+            raise ValueError(
+                f"{value.isoformat()} is ambiguous in Europe/Warsaw local time; "
+                "provide an explicit UTC offset."
+            )
+        return normalized_candidates[0]
+
+    @classmethod
+    def for_buyer(
+        cls,
+        *,
+        date_from: datetime | str,
+        date_to: datetime | str | None = None,
+        date_type: Literal[
+            "issue_date", "invoicing_date", "permanent_storage"
+        ] = "issue_date",
+        restrict_to_permanent_storage_hwm_date: bool | None = None,
+        currency_codes: list[CurrencyCodes] | None = None,
+        amount_type: Literal["brutto", "netto", "vat"] | None = None,
+        amount_min: float | None = None,
+        amount_max: float | None = None,
+        seller_nip: str | None = None,
+        buyer_nip: str | None = None,
+        buyer_vat_ue: str | None = None,
+        buyer_other_id: str | None = None,
+        invoice_number: str | None = None,
+        ksef_number: str | None = None,
+        invoice_schema: FormSchema | None = None,
+        invoice_types: list[KsefInvoiceTypes] | None = None,
+        has_attachment: bool | None = None,
+        invoicing_mode: InvoicingMode | None = None,
+        is_self_invoicing: bool | None = None,
+    ) -> Self:
+        """Build a filter for invoices where the authenticated subject is buyer."""
+        effective_date_to = (
+            date_to if date_to is not None else datetime.now(timezone.utc)
+        )
+        return cls.model_validate(
+            {
+                "role": "buyer",
+                "date_type": date_type,
+                "date_from": date_from,
+                "date_to": effective_date_to,
+                "restrict_to_permanent_storage_hwm_date": (
+                    restrict_to_permanent_storage_hwm_date
+                ),
+                "currency_codes": currency_codes,
+                "amount_type": amount_type,
+                "amount_min": amount_min,
+                "amount_max": amount_max,
+                "seller_nip": seller_nip,
+                "buyer_nip": buyer_nip,
+                "buyer_vat_ue": buyer_vat_ue,
+                "buyer_other_id": buyer_other_id,
+                "invoice_number": invoice_number,
+                "ksef_number": ksef_number,
+                "invoice_schema": invoice_schema,
+                "invoice_types": invoice_types,
+                "has_attachment": has_attachment,
+                "invoicing_mode": invoicing_mode,
+                "is_self_invoicing": is_self_invoicing,
+            }
+        )
+
+    @classmethod
+    def for_seller(
+        cls,
+        *,
+        date_from: datetime | str,
+        date_to: datetime | str | None = None,
+        date_type: Literal[
+            "issue_date", "invoicing_date", "permanent_storage"
+        ] = "issue_date",
+        restrict_to_permanent_storage_hwm_date: bool | None = None,
+        currency_codes: list[CurrencyCodes] | None = None,
+        amount_type: Literal["brutto", "netto", "vat"] | None = None,
+        amount_min: float | None = None,
+        amount_max: float | None = None,
+        seller_nip: str | None = None,
+        buyer_nip: str | None = None,
+        buyer_vat_ue: str | None = None,
+        buyer_other_id: str | None = None,
+        invoice_number: str | None = None,
+        ksef_number: str | None = None,
+        invoice_schema: FormSchema | None = None,
+        invoice_types: list[KsefInvoiceTypes] | None = None,
+        has_attachment: bool | None = None,
+        invoicing_mode: InvoicingMode | None = None,
+        is_self_invoicing: bool | None = None,
+    ) -> Self:
+        """Build a filter for invoices where the authenticated subject is seller."""
+        effective_date_to = (
+            date_to if date_to is not None else datetime.now(timezone.utc)
+        )
+        return cls.model_validate(
+            {
+                "role": "seller",
+                "date_type": date_type,
+                "date_from": date_from,
+                "date_to": effective_date_to,
+                "restrict_to_permanent_storage_hwm_date": (
+                    restrict_to_permanent_storage_hwm_date
+                ),
+                "currency_codes": currency_codes,
+                "amount_type": amount_type,
+                "amount_min": amount_min,
+                "amount_max": amount_max,
+                "seller_nip": seller_nip,
+                "buyer_nip": buyer_nip,
+                "buyer_vat_ue": buyer_vat_ue,
+                "buyer_other_id": buyer_other_id,
+                "invoice_number": invoice_number,
+                "ksef_number": ksef_number,
+                "invoice_schema": invoice_schema,
+                "invoice_types": invoice_types,
+                "has_attachment": has_attachment,
+                "invoicing_mode": invoicing_mode,
+                "is_self_invoicing": is_self_invoicing,
+            }
+        )
+
+    @model_validator(mode="after")
+    def _validate_filter_shape(self) -> Self:
+        if (
+            self.amount_min is not None or self.amount_max is not None
+        ) and self.amount_type is None:
+            raise ValueError(
+                "amount_type must be specified when amount_min or amount_max is used."
+            )
+
+        if (
+            self.amount_min is not None
+            and self.amount_max is not None
+            and self.amount_min > self.amount_max
+        ):
+            raise ValueError("amount_min must be less than or equal to amount_max.")
+
+        buyer_identifiers = [
+            field_name
+            for field_name in ("buyer_nip", "buyer_vat_ue", "buyer_other_id")
+            if getattr(self, field_name)
+        ]
+        if len(buyer_identifiers) > 1:
+            joined = ", ".join(buyer_identifiers)
+            raise ValueError(f"Only one buyer identifier can be specified: {joined}.")
+
+        if self.date_from > self.date_to:
+            raise ValueError("date_from must be less than or equal to date_to.")
+
+        return self
+
+
+class ExportInvoicesPayload(KSeFBaseModel):
+    """Payload used to schedule an encrypted invoice export."""
+
+    filter: InvoicesFilter
+    encrypted_symmetric_key: str
+    initialization_vector: str
+    public_key_id: str | None = None
+    only_metadata: bool = False
+    compression_type: CompressionType | None = None
+
+    @field_validator("compression_type", mode="before")
+    @classmethod
+    def _normalize_compression_type(cls, value: object) -> object:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return normalize_compression_type(value)
+        return value
+
+
+class SendInvoicePayload(KSeFBaseModel):
+    """Plain and encrypted bytes for one invoice submitted to an online session."""
+
+    xml_bytes: bytes
+    encrypted_bytes: bytes

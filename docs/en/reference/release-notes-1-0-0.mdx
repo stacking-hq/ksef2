@@ -59,16 +59,17 @@ application code should use the high-level client branches.
 
 Do not build application code on these paths:
 
-- `ksef2.infra.*`;
-- `ksef2.core.*`;
-- `ksef2.endpoints.*`;
-- `ksef2.services.*`;
+- any module path with an underscore-prefixed component, such as
+  `ksef2._core` or `ksef2._clients.base` (a module path with no underscore is
+  public; anything with an underscore is private);
 - repository `scripts/*`;
-- underscored modules and deprecated compatibility modules;
 - generated schema internals outside `ksef2.raw.spec` and `ksef2.raw.supp`.
 
-These paths may remain importable for SDK implementation, tests, and tooling,
-but they can change without a 2.0 release.
+The former internal packages (`ksef2.core`, `ksef2.domain`, `ksef2.infra`,
+`ksef2.endpoints`, `ksef2.services`, the client implementation modules,
+`ksef2.config` and `ksef2.logging`) are now underscore-prefixed, with no
+compatibility aliases: importing the old paths raises `ImportError`. Private
+modules can change without a 2.0 release.
 
 ## Related pages
 

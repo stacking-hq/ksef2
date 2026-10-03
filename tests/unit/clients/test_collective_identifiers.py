@@ -4,13 +4,13 @@ import pytest
 from polyfactory.factories import BaseFactory
 from pydantic import ValidationError
 
-from ksef2.clients.collective_identifiers import CollectiveIdentifiersClient
-from ksef2.core.routes import CollectiveIdentifierRoutes
-from ksef2.domain.models.collective_identifiers import (
+from ksef2._clients.collective_identifiers import CollectiveIdentifiersClient
+from ksef2._core.routes import CollectiveIdentifierRoutes
+from ksef2._domain.models.collective_identifiers import (
     CollectiveIdentifierInvoice,
     CollectiveIdentifiersQuery,
 )
-from ksef2.infra.schema.api import spec
+from ksef2._infra.schema.api import spec
 from tests.unit.factories.collective_identifiers import (
     CollectiveIdentifierInvoicesResponseFactory,
     CollectiveIdentifiersQueryResponseFactory,

@@ -1,11 +1,11 @@
 import pytest
 
-from ksef2.core import exceptions
-from ksef2.core.routes import EncryptionRoutes
-from ksef2.endpoints.encryption import EncryptionEndpoints
+from ksef2._core import exceptions
+from ksef2._core.routes import EncryptionRoutes
+from ksef2._endpoints.encryption import EncryptionEndpoints
 from tests.unit.fakes import transport
 
-from ksef2.core.middlewares.exceptions import KSeFExceptionMiddleware
+from ksef2._core.middlewares.exceptions import KSeFExceptionMiddleware
 
 
 class TestEncryptionEndpoints:

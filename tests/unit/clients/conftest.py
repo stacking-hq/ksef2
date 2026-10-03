@@ -1,16 +1,16 @@
 import pytest
 
-from ksef2.clients.auth import AuthClient
-from ksef2.clients.certificates import CertificatesClient
-from ksef2.clients.invoice_sessions import InvoiceSessionsClient
-from ksef2.clients.invoices import InvoicesClient
-from ksef2.clients.limits import LimitsClient
-from ksef2.clients.peppol import PeppolClient
-from ksef2.clients.permissions import PermissionsClient
-from ksef2.clients.session_management import SessionManagementClient
-from ksef2.clients.testdata import TestDataClient
-from ksef2.clients.tokens import TokensClient
-from ksef2.core.stores import CertificateStore
+from ksef2._clients.auth import AuthClient
+from ksef2._clients.certificates import CertificatesClient
+from ksef2._clients.invoice_sessions import InvoiceSessionsClient
+from ksef2._clients.invoices import InvoicesClient
+from ksef2._clients.limits import LimitsClient
+from ksef2._clients.peppol import PeppolClient
+from ksef2._clients.permissions import PermissionsClient
+from ksef2._clients.session_management import SessionManagementClient
+from ksef2._clients.testdata import TestDataClient
+from ksef2._clients.tokens import TokensClient
+from ksef2._core.stores import CertificateStore
 from tests.unit.fakes.transport import FakeTransport
 
 

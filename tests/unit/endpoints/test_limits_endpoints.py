@@ -5,13 +5,13 @@ import pytest
 from polyfactory.factories import BaseFactory
 from pydantic import BaseModel
 
-from ksef2.core import exceptions
-from ksef2.core.routes import LimitRoutes
-from ksef2.endpoints.limits import LimitEndpoints
+from ksef2._core import exceptions
+from ksef2._core.routes import LimitRoutes
+from ksef2._endpoints.limits import LimitEndpoints
 from tests.unit.fakes import transport
 
-from ksef2.endpoints import limits
-from ksef2.core.middlewares.exceptions import KSeFExceptionMiddleware
+from ksef2._endpoints import limits
+from ksef2._core.middlewares.exceptions import KSeFExceptionMiddleware
 
 
 @pytest.fixture

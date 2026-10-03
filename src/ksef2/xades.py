@@ -1,6 +1,6 @@
 """Public XAdES helpers for certificate-based KSeF authentication."""
 
-from ksef2.core.xades import (
+from ksef2._core.xades import (
     LocalSigner,
     XAdESPrivateKey,
     build_auth_token_request_xml,

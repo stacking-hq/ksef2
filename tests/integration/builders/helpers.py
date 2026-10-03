@@ -4,8 +4,8 @@ from pathlib import Path
 from lxml import etree
 from xsdata.formats.dataclass.parsers import XmlParser
 
-from ksef2.infra.schema.fa3.models.schemat import Faktura
-from ksef2.services.builders.fa3.root import StandardInvoiceBuilder
+from ksef2._infra.schema.fa3.models.schemat import Faktura
+from ksef2._services.builders.fa3.root import StandardInvoiceBuilder
 
 
 SCHEMA_PATH = Path(__file__).parents[3] / "schemas" / "FA3" / "schemat.xsd"

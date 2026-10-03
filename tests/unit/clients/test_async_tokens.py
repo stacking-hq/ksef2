@@ -5,11 +5,11 @@ import httpx
 import pytest
 from polyfactory import BaseFactory
 
-from ksef2.clients.async_tokens import AsyncTokensClient
-from ksef2.core import exceptions
-from ksef2.core.routes import TokenRoutes
-from ksef2.domain.models import tokens
-from ksef2.infra.schema.api import spec
+from ksef2._clients.async_tokens import AsyncTokensClient
+from ksef2._core import exceptions
+from ksef2._core.routes import TokenRoutes
+from ksef2._domain.models import tokens
+from ksef2._infra.schema.api import spec
 from tests.unit.factories.tokens import (
     QueryTokensResponseItemFactory,
     TokenStatusResponseFactory,

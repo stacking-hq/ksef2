@@ -14,11 +14,11 @@ from typing import TYPE_CHECKING, Generator, TypedDict
 import pytest
 
 from ksef2 import Client, FormSchema
-from ksef2.clients.authenticated import AuthenticatedClient
-from ksef2.clients.online import OnlineSessionClient
-from ksef2.core.tools import generate_nip
+from ksef2._clients.authenticated import AuthenticatedClient
+from ksef2._clients.online import OnlineSessionClient
+from ksef2._core.tools import generate_nip
 from ksef2.xades import generate_test_certificate
-from ksef2.domain.models.permissions import (
+from ksef2._domain.models.permissions import (
     AuthorizationPermissionsQuery,
     AuthorizationPermissionsQueryResponse,
     EntityPermission,
@@ -368,7 +368,7 @@ def test_revoke_authorization_permission(permissions_context: PermissionContext)
     )
 
     # Query authorizations to find the one we just created
-    from ksef2.domain.models.pagination import OffsetPaginationParams
+    from ksef2._domain.models.pagination import OffsetPaginationParams
 
     deadline = time.monotonic() + 60.0
     permission_id = None
@@ -418,7 +418,7 @@ def test_revoke_common_permission(permissions_context: PermissionContext):
     )
 
     # Query personal permissions to find the one we just created
-    from ksef2.domain.models.pagination import OffsetPaginationParams
+    from ksef2._domain.models.pagination import OffsetPaginationParams
 
     deadline = time.monotonic() + 60.0
     permission_id = None

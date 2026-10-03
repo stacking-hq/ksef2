@@ -1,8 +1,8 @@
 from polyfactory import BaseFactory
 
-from ksef2.domain.models.limits import ApiRateLimits, ContextLimits, SubjectLimits
-from ksef2.infra.mappers.limits import from_spec, to_spec
-from ksef2.infra.schema.api import spec
+from ksef2._domain.models.limits import ApiRateLimits, ContextLimits, SubjectLimits
+from ksef2._infra.mappers.limits import from_spec, to_spec
+from ksef2._infra.schema.api import spec
 
 
 class TestLimitRequestMappers:

@@ -6,13 +6,13 @@ import pytest
 from polyfactory.factories import BaseFactory
 from pydantic import BaseModel
 
-from ksef2.core import exceptions
-from ksef2.core.routes import TestDataRoutes
-from ksef2.endpoints.testdata import TestDataEndpoints
-from ksef2.infra.schema.api import spec
+from ksef2._core import exceptions
+from ksef2._core.routes import TestDataRoutes
+from ksef2._endpoints.testdata import TestDataEndpoints
+from ksef2._infra.schema.api import spec
 from tests.unit.fakes import transport
 
-from ksef2.core.middlewares.exceptions import KSeFExceptionMiddleware
+from ksef2._core.middlewares.exceptions import KSeFExceptionMiddleware
 
 
 @pytest.fixture

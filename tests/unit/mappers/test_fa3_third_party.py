@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from ksef2.domain.models.fa3 import (
+from ksef2._domain.models.fa3 import (
     ContactInfo,
     InvoiceAddress,
     InvoiceEntity,
@@ -10,14 +10,14 @@ from ksef2.domain.models.fa3 import (
     KsefInvoice,
     KsefInvoiceBody,
 )
-from ksef2.domain.models.fa3.body import InvoiceRow
-from ksef2.infra.mappers.invoices.fa3.domain.invoice import to_spec as invoice_to_spec
-from ksef2.infra.mappers.invoices.fa3.domain.third_party import (
+from ksef2._domain.models.fa3.body import InvoiceRow
+from ksef2._infra.mappers.invoices.fa3.domain.invoice import to_spec as invoice_to_spec
+from ksef2._infra.mappers.invoices.fa3.domain.third_party import (
     to_spec as third_party_to_spec,
 )
-from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import Twybor1
-from ksef2.infra.schema.fa3.models.kody_krajow_v10_0_e import TkodKraju
-from ksef2.infra.schema.fa3.models.schemat import FakturaPodmiot3
+from ksef2._infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import Twybor1
+from ksef2._infra.schema.fa3.models.kody_krajow_v10_0_e import TkodKraju
+from ksef2._infra.schema.fa3.models.schemat import FakturaPodmiot3
 
 
 def make_polish_address() -> InvoiceAddress:

@@ -4,15 +4,15 @@ from datetime import UTC, datetime
 import pytest
 from pydantic import AnyUrl
 
-from ksef2.domain.models.batch import BatchEncryptionData, PartUploadRequest
-from ksef2.domain.models.invoices import ExportHandle, PackagePart
-from ksef2.domain.models.session import (
+from ksef2._domain.models.batch import BatchEncryptionData, PartUploadRequest
+from ksef2._domain.models.invoices import ExportHandle, PackagePart
+from ksef2._domain.models.session import (
     InvoiceStatusInfo,
     SessionEncryptionMaterial,
     SessionInvoiceStatusResponse,
     UpoPage,
 )
-from ksef2.domain.models.tokens import GenerateTokenResponse
+from ksef2._domain.models.tokens import GenerateTokenResponse
 
 
 SIGNED_URL = "https://storage.example.test/part?sig=secret-signature"

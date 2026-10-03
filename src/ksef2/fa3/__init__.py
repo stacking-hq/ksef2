@@ -1,6 +1,6 @@
 """Public FA(3) API facade."""
 
-from ksef2.domain.models.fa3 import (
+from ksef2._domain.models.fa3 import (
     ContactInfo,
     InvoiceAddress,
     InvoiceEntity,
@@ -9,7 +9,7 @@ from ksef2.domain.models.fa3 import (
     KsefInvoice,
     KsefInvoiceDraft,
 )
-from ksef2.domain.models.fa3.body import (
+from ksef2._domain.models.fa3.body import (
     InvoiceSummaryOverrides,
     SaleCategory,
     TaxRegime,
@@ -17,7 +17,7 @@ from ksef2.domain.models.fa3.body import (
     VatRate,
     VatTreatment,
 )
-from ksef2.services.builders.fa3.root import StandardInvoiceBuilder
+from ksef2._services.builders.fa3.root import StandardInvoiceBuilder
 
 
 class FA3InvoiceBuilder(StandardInvoiceBuilder):

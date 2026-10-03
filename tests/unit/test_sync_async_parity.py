@@ -10,31 +10,31 @@ from typing import Any
 
 import pytest
 
-PACKAGES = ("ksef2.clients", "ksef2.endpoints", "ksef2.services")
+PACKAGES = ("ksef2.clients", "ksef2._endpoints", "ksef2._services")
 
 SKIPPED_MODULES = {
-    "ksef2.clients._metadata_pagination": "shared pagination helpers, not a public sync facade",
-    "ksef2.clients.profiles": "shared profile configuration models, not a public sync facade",
-    "ksef2.endpoints.shared": "shared endpoint helper protocols, not a public sync facade",
-    "ksef2.services.auth": "sync-only authentication helper module with no async facade class",
-    "ksef2.services.batch_preparation": "shared batch preparation helpers, not a public sync facade",
+    "ksef2._clients._metadata_pagination": "shared pagination helpers, not a public sync facade",
+    "ksef2._clients.profiles": "shared profile configuration models, not a public sync facade",
+    "ksef2._endpoints.shared": "shared endpoint helper protocols, not a public sync facade",
+    "ksef2._services.auth": "sync-only authentication helper module with no async facade class",
+    "ksef2._services.batch_preparation": "shared batch preparation helpers, not a public sync facade",
 }
 
 SKIPPED_CLASSES = {
-    "ksef2.endpoints.auth.AuthSessionsQueryParams": "shared request parameter model",
-    "ksef2.endpoints.auth.XadesAuthParams": "shared request parameter model",
-    "ksef2.endpoints.async_auth.AuthSessionsQueryParams": "shared request parameter model",
-    "ksef2.endpoints.async_auth.XadesAuthParams": "shared request parameter model",
-    "ksef2.endpoints.base.OffsetPaginationQueryParams": "shared request parameter model",
-    "ksef2.endpoints.async_base.OffsetPaginationQueryParams": "shared request parameter model",
-    "ksef2.endpoints.invoices.InvoiceMetadataQueryParams": "shared request parameter model",
-    "ksef2.endpoints.invoices.SessionInvoiceListQueryParams": "shared request parameter model",
-    "ksef2.endpoints.async_invoices.InvoiceMetadataQueryParams": "shared request parameter model",
-    "ksef2.endpoints.async_invoices.SessionInvoiceListQueryParams": "shared request parameter model",
-    "ksef2.endpoints.session.ListSessionsQueryParams": "shared request parameter model",
-    "ksef2.endpoints.async_session.ListSessionsQueryParams": "shared request parameter model",
-    "ksef2.endpoints.tokens.ListTokensQueryParams": "shared request parameter model",
-    "ksef2.endpoints.async_tokens.ListTokensQueryParams": "shared request parameter model",
+    "ksef2._endpoints.auth.AuthSessionsQueryParams": "shared request parameter model",
+    "ksef2._endpoints.auth.XadesAuthParams": "shared request parameter model",
+    "ksef2._endpoints.async_auth.AuthSessionsQueryParams": "shared request parameter model",
+    "ksef2._endpoints.async_auth.XadesAuthParams": "shared request parameter model",
+    "ksef2._endpoints.base.OffsetPaginationQueryParams": "shared request parameter model",
+    "ksef2._endpoints.async_base.OffsetPaginationQueryParams": "shared request parameter model",
+    "ksef2._endpoints.invoices.InvoiceMetadataQueryParams": "shared request parameter model",
+    "ksef2._endpoints.invoices.SessionInvoiceListQueryParams": "shared request parameter model",
+    "ksef2._endpoints.async_invoices.InvoiceMetadataQueryParams": "shared request parameter model",
+    "ksef2._endpoints.async_invoices.SessionInvoiceListQueryParams": "shared request parameter model",
+    "ksef2._endpoints.session.ListSessionsQueryParams": "shared request parameter model",
+    "ksef2._endpoints.async_session.ListSessionsQueryParams": "shared request parameter model",
+    "ksef2._endpoints.tokens.ListTokensQueryParams": "shared request parameter model",
+    "ksef2._endpoints.async_tokens.ListTokensQueryParams": "shared request parameter model",
 }
 
 KNOWN_DIVERGENCES: dict[str, str] = {}

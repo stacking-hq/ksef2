@@ -2,10 +2,10 @@ from datetime import datetime, timezone
 
 from polyfactory import BaseFactory
 
-from ksef2.domain.models import testdata as domain_testdata
-from ksef2.infra.mappers.testdata import to_spec
-from ksef2.infra.schema.api import spec
-from ksef2.infra.schema.api.supp import testdata as supp
+from ksef2._domain.models import testdata as domain_testdata
+from ksef2._infra.mappers.testdata import to_spec
+from ksef2._infra.schema.api import spec
+from ksef2._infra.schema.api.supp import testdata as supp
 
 
 class TestTestDataMapper:

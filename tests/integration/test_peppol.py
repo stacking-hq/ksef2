@@ -3,7 +3,7 @@
 import pytest
 
 from ksef2 import Client
-from ksef2.domain.models.pagination import OffsetPaginationParams
+from ksef2._domain.models.pagination import OffsetPaginationParams
 
 
 @pytest.mark.integration

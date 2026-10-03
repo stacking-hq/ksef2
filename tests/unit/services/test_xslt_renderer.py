@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from ksef2.core.exceptions import KSeFInvoiceRenderingError
+from ksef2._core.exceptions import KSeFInvoiceRenderingError
 from ksef2.renderers import InvoiceXSLTRenderer
 
 

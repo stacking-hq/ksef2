@@ -2,8 +2,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from ksef2.core.stores import CertificateStore
-from ksef2.domain.models.encryption import CertUsage, PublicKeyCertificate
+from ksef2._core.stores import CertificateStore
+from ksef2._domain.models.encryption import CertUsage, PublicKeyCertificate
 
 
 def _certificate(

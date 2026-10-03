@@ -8,9 +8,9 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from cryptography.x509.oid import NameOID
 
-from ksef2.core import crypto
-from ksef2.core.exceptions import KSeFEncryptionError
-from ksef2.domain.models.encryption import PublicKeyCertificate
+from ksef2._core import crypto
+from ksef2._core.exceptions import KSeFEncryptionError
+from ksef2._domain.models.encryption import PublicKeyCertificate
 
 
 def _certificate(private_key: rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey) -> str:

@@ -1,0 +1,169 @@
+"""Async certificate branch client."""
+
+from collections.abc import AsyncIterator
+from datetime import datetime
+from typing import final
+
+from ksef2._core.async_protocols import AsyncMiddleware
+from ksef2._domain.models.certificates import (
+    CertificateEnrollmentData,
+    CertificateEnrollmentResponse,
+    CertificateEnrollmentStatusResponse,
+    CertificateInfo,
+    CertificateLimitsResponse,
+    CertificateSerialNumber,
+    CertificatesInfoList,
+    CertificateStatusValue,
+    CertificateTypeValue,
+    EnrollCertificateRequest,
+    QueryCertificatesRequest,
+    RetrieveCertificatesRequest,
+    RetrievedCertificatesList,
+    RevocationReason,
+    RevokeCertificateRequest,
+    validate_certificate_serial_number,
+)
+from ksef2._domain.models.pagination import OffsetPaginationParams
+from ksef2._endpoints.async_certificates import AsyncCertificatesEndpoints
+from ksef2._infra.mappers.certificates import from_spec, to_spec
+
+
+@final
+class AsyncCertificatesClient:
+    """Async high-level API for certificate enrollment, retrieval, and search.
+
+    Catch ``KSeFException`` for SDK-classified failures raised by this branch,
+    and ``httpx.HTTPError`` for transport failures.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response. Catch
+            ``KSeFAuthError`` for authentication or authorization failures and
+            ``KSeFRateLimitError`` for throttling.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
+    """
+
+    def __init__(self, transport: AsyncMiddleware) -> None:
+        self._endpoints = AsyncCertificatesEndpoints(transport)
+
+    async def get_limits(self) -> CertificateLimitsResponse:
+        """Return the effective certificate enrollment and issuance quotas."""
+        return from_spec(await self._endpoints.get_limits())
+
+    async def get_enrollment_data(self) -> CertificateEnrollmentData:
+        """Return subject data needed to prepare a CSR for enrollment."""
+        return from_spec(await self._endpoints.get_enrollment_data())
+
+    async def enroll(
+        self,
+        *,
+        certificate_name: str,
+        certificate_type: CertificateTypeValue,
+        csr: str,
+        valid_from: datetime | str | None = None,
+    ) -> CertificateEnrollmentResponse:
+        """Request issuance of a certificate from a CSR."""
+        request = EnrollCertificateRequest(
+            certificate_name=certificate_name,
+            certificate_type=certificate_type,
+            csr=csr,
+            valid_from=valid_from,
+        )
+        body = to_spec(request)
+        return from_spec(await self._endpoints.enroll(body=body))
+
+    async def get_enrollment_status(
+        self,
+        *,
+        reference_number: str,
+    ) -> CertificateEnrollmentStatusResponse:
+        """Fetch the current status of a certificate enrollment request."""
+        return from_spec(
+            await self._endpoints.get_enrollment_status(
+                reference_number=reference_number,
+            )
+        )
+
+    async def retrieve(
+        self,
+        *,
+        certificate_serial_numbers: list[CertificateSerialNumber],
+    ) -> RetrievedCertificatesList:
+        """Download issued certificates by serial number."""
+        request = RetrieveCertificatesRequest(
+            certificate_serial_numbers=certificate_serial_numbers,
+        )
+        body = to_spec(request)
+        return from_spec(await self._endpoints.retrieve(body=body))
+
+    async def revoke(
+        self,
+        *,
+        certificate_serial_number: CertificateSerialNumber,
+        reason: RevocationReason | None = None,
+    ) -> None:
+        """Revoke a certificate, optionally providing a revocation reason."""
+        validated_serial_number = validate_certificate_serial_number(
+            certificate_serial_number
+        )
+        request = RevokeCertificateRequest(revocation_reason=reason)
+        body = to_spec(request)
+        await self._endpoints.revoke(
+            certificate_serial_number=validated_serial_number,
+            body=body,
+        )
+
+    async def query(
+        self,
+        *,
+        name: str | None = None,
+        certificate_serial_number: CertificateSerialNumber | None = None,
+        certificate_type: CertificateTypeValue | None = None,
+        status: CertificateStatusValue | None = None,
+        expires_after: datetime | str | None = None,
+        params: OffsetPaginationParams | None = None,
+    ) -> CertificatesInfoList:
+        """Fetch one page of certificate search results."""
+        parameters = params or OffsetPaginationParams()
+        request = QueryCertificatesRequest(
+            certificate_serial_number=certificate_serial_number,
+            name=name,
+            certificate_type=certificate_type,
+            status=status,
+            expires_after=expires_after,
+        )
+        body = to_spec(request)
+        spec_resp = await self._endpoints.query(
+            body=body, **parameters.to_query_params()
+        )
+        return from_spec(spec_resp)
+
+    async def all(
+        self,
+        *,
+        certificate_serial_number: CertificateSerialNumber | None = None,
+        name: str | None = None,
+        certificate_type: CertificateTypeValue | None = None,
+        status: CertificateStatusValue | None = None,
+        expires_after: datetime | str | None = None,
+        params: OffsetPaginationParams | None = None,
+    ) -> AsyncIterator[CertificateInfo]:
+        """Iterate over all certificates matching the provided filters."""
+        current_params = params or OffsetPaginationParams()
+
+        while True:
+            response = await self.query(
+                name=name,
+                certificate_serial_number=certificate_serial_number,
+                certificate_type=certificate_type,
+                status=status,
+                expires_after=expires_after,
+                params=current_params,
+            )
+            for certificate in response.certificates:
+                yield certificate
+
+            if not response.has_more:
+                break
+
+            current_params = current_params.next_page()

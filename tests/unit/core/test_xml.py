@@ -2,7 +2,7 @@ from pathlib import Path
 
 from lxml import etree
 
-from ksef2.core.xml import parse_xml_bytes, parse_xml_file
+from ksef2._core.xml import parse_xml_bytes, parse_xml_file
 
 
 def test_parse_xml_bytes_does_not_expand_entities() -> None:

@@ -1,8 +1,8 @@
 import pytest
 
-from ksef2.clients.authenticated import AuthenticatedClient
-from ksef2.core.exceptions import KSeFApiError
-from ksef2.domain.models.tokens import GenerateTokenResponse
+from ksef2._clients.authenticated import AuthenticatedClient
+from ksef2._core.exceptions import KSeFApiError
+from ksef2._domain.models.tokens import GenerateTokenResponse
 
 
 @pytest.mark.integration

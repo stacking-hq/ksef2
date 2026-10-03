@@ -94,7 +94,7 @@ def test_runtime_checks_extra_is_required_when_enabled_without_beartype() -> Non
 
 
 def test_common_domain_models_import() -> None:
-    from ksef2.domain.models import InvoiceMetadataParams, InvoicesFilter
+    from ksef2._domain.models import InvoiceMetadataParams, InvoicesFilter
 
     assert InvoicesFilter.__name__ == "InvoicesFilter"
     assert InvoiceMetadataParams.__name__ == "InvoiceMetadataParams"
@@ -146,7 +146,7 @@ def test_public_renderers_import() -> None:
 
 
 def test_middlewares_import() -> None:
-    from ksef2.core import middlewares
+    from ksef2._core import middlewares
 
     assert middlewares.KSeFExceptionMiddleware.__name__ == "KSeFExceptionMiddleware"
     assert (
@@ -157,11 +157,11 @@ def test_middlewares_import() -> None:
 
 def test_root_clients_construct_and_close_with_mocked_http_clients() -> None:
     from ksef2 import AsyncClient, Client
-    from ksef2.config import Environment
+    from ksef2._config import Environment
 
     with (
-        patch("ksef2.clients.base.httpx.Client") as sync_client_cls,
-        patch("ksef2.clients.async_base.httpx.AsyncClient") as async_client_cls,
+        patch("ksef2._clients.base.httpx.Client") as sync_client_cls,
+        patch("ksef2._clients.async_base.httpx.AsyncClient") as async_client_cls,
     ):
         sync_http_client = MagicMock(spec=HTTPX_CLIENT_CLASS)
         async_http_client = AsyncMock(spec=HTTPX_ASYNC_CLIENT_CLASS)

@@ -2,7 +2,7 @@ import pytest
 
 import httpx
 
-from ksef2.core import exceptions, middlewares
+from ksef2._core import exceptions, middlewares
 from tests.unit.fakes.transport import FakeTransport
 
 

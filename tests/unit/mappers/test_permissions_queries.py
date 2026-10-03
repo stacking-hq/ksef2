@@ -4,8 +4,8 @@ from enum import StrEnum
 import pytest
 from polyfactory import BaseFactory
 
-from ksef2.domain.models import permissions as domain_permissions
-from ksef2.infra.mappers.permissions.requests import (
+from ksef2._domain.models import permissions as domain_permissions
+from ksef2._infra.mappers.permissions.requests import (
     author_identifier_from_literal,
     author_identifier_type_from_enum,
     authorizing_entity_identifier_from_literal,
@@ -24,7 +24,7 @@ from ksef2.infra.mappers.permissions.requests import (
     query_type_from_enum,
     query_type_from_literal,
 )
-from ksef2.infra.mappers.permissions.responses import (
+from ksef2._infra.mappers.permissions.responses import (
     entity_from_spec,
     eu_entity_from_spec,
     person_from_spec,
@@ -32,7 +32,7 @@ from ksef2.infra.mappers.permissions.responses import (
     subordinate_roles_from_spec,
     subunit_from_spec,
 )
-from ksef2.infra.schema.api import spec
+from ksef2._infra.schema.api import spec
 
 
 class TestPermissionsQueryRequestMapper:

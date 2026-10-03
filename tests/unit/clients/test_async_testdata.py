@@ -3,12 +3,12 @@ from datetime import date, datetime, timezone
 
 from polyfactory import BaseFactory
 
-from ksef2.clients.async_testdata import (
+from ksef2._clients.async_testdata import (
     AsyncTemporalTestData,
     AsyncTestDataClient,
 )
-from ksef2.core.routes import TestDataRoutes as ApiRoutes
-from ksef2.domain.models.testdata import (
+from ksef2._core.routes import TestDataRoutes as ApiRoutes
+from ksef2._domain.models.testdata import (
     AuthContextIdentifier,
     CreatePersonRequest,
     CreateSubjectRequest,
@@ -17,7 +17,7 @@ from ksef2.domain.models.testdata import (
     Permission,
     RevokePermissionsRequest,
 )
-from ksef2.infra.mappers.testdata import to_spec
+from ksef2._infra.mappers.testdata import to_spec
 from tests.unit.fakes.transport import AsyncFakeTransport
 
 

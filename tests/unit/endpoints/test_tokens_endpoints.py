@@ -5,10 +5,10 @@ import pytest
 from polyfactory.factories import BaseFactory
 from pydantic import BaseModel
 
-from ksef2.core import exceptions
-from ksef2.core.routes import TokenRoutes
-from ksef2.domain.types import ListTokensQueryParams
-from ksef2.endpoints.tokens import TokenEndpoints
+from ksef2._core import exceptions
+from ksef2._core.routes import TokenRoutes
+from ksef2._domain.types import ListTokensQueryParams
+from ksef2._endpoints.tokens import TokenEndpoints
 from tests.unit.fakes import transport
 from tests.unit.factories.tokens import (
     GenerateTokenRequestFactory,
@@ -17,7 +17,7 @@ from tests.unit.factories.tokens import (
     TokenStatusResponseFactory,
 )
 
-from ksef2.core.middlewares.exceptions import KSeFExceptionMiddleware
+from ksef2._core.middlewares.exceptions import KSeFExceptionMiddleware
 
 
 @pytest.fixture

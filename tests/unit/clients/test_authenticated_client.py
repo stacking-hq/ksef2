@@ -4,20 +4,20 @@ from unittest.mock import MagicMock, patch
 import pytest
 from polyfactory import BaseFactory
 
-from ksef2.clients.authenticated import AuthenticatedClient
-from ksef2.clients.batch import BatchSessionClient
-from ksef2.clients.certificates import CertificatesClient
-from ksef2.clients.invoice_sessions import InvoiceSessionsClient
-from ksef2.clients.limits import LimitsClient
-from ksef2.clients.online import OnlineSessionClient
-from ksef2.clients.permissions import PermissionsClient
-from ksef2.clients.session_management import SessionManagementClient
-from ksef2.clients.tokens import TokensClient
-from ksef2.core.exceptions import NoCertificateAvailableError
-from ksef2.core.routes import EncryptionRoutes, SessionRoutes, TokenRoutes
-from ksef2.core.stores import CertificateStore
-from ksef2.domain.models.auth import AuthenticationResumeState, AuthTokens
-from ksef2.domain.models.batch import (
+from ksef2._clients.authenticated import AuthenticatedClient
+from ksef2._clients.batch import BatchSessionClient
+from ksef2._clients.certificates import CertificatesClient
+from ksef2._clients.invoice_sessions import InvoiceSessionsClient
+from ksef2._clients.limits import LimitsClient
+from ksef2._clients.online import OnlineSessionClient
+from ksef2._clients.permissions import PermissionsClient
+from ksef2._clients.session_management import SessionManagementClient
+from ksef2._clients.tokens import TokensClient
+from ksef2._core.exceptions import NoCertificateAvailableError
+from ksef2._core.routes import EncryptionRoutes, SessionRoutes, TokenRoutes
+from ksef2._core.stores import CertificateStore
+from ksef2._domain.models.auth import AuthenticationResumeState, AuthTokens
+from ksef2._domain.models.batch import (
     BatchEncryptionData,
     BatchFileInfo,
     BatchFilePart,
@@ -25,15 +25,15 @@ from ksef2.domain.models.batch import (
     BatchSessionResumeState,
     PreparedBatch,
 )
-from ksef2.domain.models.encryption import PublicKeyCertificate
-from ksef2.domain.models.session import FormSchema, OnlineSessionResumeState
-from ksef2.infra.schema.api import spec
-from ksef2.services.batch import BatchService
-from ksef2.services.invoices import InvoicesService
+from ksef2._domain.models.encryption import PublicKeyCertificate
+from ksef2._domain.models.session import FormSchema, OnlineSessionResumeState
+from ksef2._infra.schema.api import spec
+from ksef2._services.batch import BatchService
+from ksef2._services.invoices import InvoicesService
 from tests.unit.conftest import _TOKEN
 from tests.unit.fakes.transport import FakeTransport
 from tests.unit.helpers import VALID_PUBLIC_KEY_ID
-from ksef2.core.crypto import sha256_b64
+from ksef2._core.crypto import sha256_b64
 
 
 def _build_client(  # [TODO] maybe we could just have client as a fixture, im not sure if rebuilding is necessary for every test
@@ -139,9 +139,11 @@ class TestAuthenticatedClientFacade:
 
 
 class TestEncryptionAndSessions:
-    @patch("ksef2.clients.authenticated.encrypt_symmetric_key", return_value=b"enc-key")
     @patch(
-        "ksef2.clients.authenticated.generate_session_key",
+        "ksef2._clients.authenticated.encrypt_symmetric_key", return_value=b"enc-key"
+    )
+    @patch(
+        "ksef2._clients.authenticated.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
     )
     def test_get_encryption_key_fetches_certificates_when_store_empty(
@@ -174,9 +176,11 @@ class TestEncryptionAndSessions:
         assert fake_transport.calls[0].method == "GET"
         assert fake_transport.calls[0].path == EncryptionRoutes.PUBLIC_KEY_CERTIFICATES
 
-    @patch("ksef2.clients.authenticated.encrypt_symmetric_key", return_value=b"enc-key")
     @patch(
-        "ksef2.clients.authenticated.generate_session_key",
+        "ksef2._clients.authenticated.encrypt_symmetric_key", return_value=b"enc-key"
+    )
+    @patch(
+        "ksef2._clients.authenticated.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
     )
     def test_get_encryption_key_uses_fresh_symmetric_key_certificate_without_refresh(
@@ -208,9 +212,11 @@ class TestEncryptionAndSessions:
         assert encrypted_key == b"enc-key"
         assert fake_transport.calls == []
 
-    @patch("ksef2.clients.authenticated.encrypt_symmetric_key", return_value=b"enc-key")
     @patch(
-        "ksef2.clients.authenticated.generate_session_key",
+        "ksef2._clients.authenticated.encrypt_symmetric_key", return_value=b"enc-key"
+    )
+    @patch(
+        "ksef2._clients.authenticated.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
     )
     def test_get_encryption_key_refreshes_stale_symmetric_key_certificate(
@@ -256,9 +262,11 @@ class TestEncryptionAndSessions:
             == refreshed_certificate.publicKeyId
         )
 
-    @patch("ksef2.clients.authenticated.encrypt_symmetric_key", return_value=b"enc-key")
     @patch(
-        "ksef2.clients.authenticated.generate_session_key",
+        "ksef2._clients.authenticated.encrypt_symmetric_key", return_value=b"enc-key"
+    )
+    @patch(
+        "ksef2._clients.authenticated.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
     )
     def test_get_encryption_key_fetches_certificates_when_store_lacks_symmetric_key_usage(
@@ -339,9 +347,11 @@ class TestEncryptionAndSessions:
         assert fake_transport.calls[0].method == "GET"
         assert fake_transport.calls[0].path == EncryptionRoutes.PUBLIC_KEY_CERTIFICATES
 
-    @patch("ksef2.clients.authenticated.encrypt_symmetric_key", return_value=b"enc-key")
     @patch(
-        "ksef2.clients.authenticated.generate_session_key",
+        "ksef2._clients.authenticated.encrypt_symmetric_key", return_value=b"enc-key"
+    )
+    @patch(
+        "ksef2._clients.authenticated.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
     )
     def test_online_session_uses_bearer_transport_and_returns_client(
@@ -379,9 +389,11 @@ class TestEncryptionAndSessions:
         assert call.json["encryption"]["publicKeyId"] == store.all()[0].public_key_id
         assert "access_token" not in session_client.resume_state().to_dict()
 
-    @patch("ksef2.clients.authenticated.encrypt_symmetric_key", return_value=b"enc-key")
     @patch(
-        "ksef2.clients.authenticated.generate_session_key",
+        "ksef2._clients.authenticated.encrypt_symmetric_key", return_value=b"enc-key"
+    )
+    @patch(
+        "ksef2._clients.authenticated.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
     )
     def test_batch_session_uses_bearer_transport_and_returns_client(

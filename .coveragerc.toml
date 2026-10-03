@@ -1,13 +1,13 @@
 [tool.coverage.run]
 omit = [
-    "src/ksef2/infra/schema/*",
-    "*/src/ksef2/infra/schema/*",
+    "src/ksef2/_infra/schema/*",
+    "*/src/ksef2/_infra/schema/*",
 ]
 
 [tool.coverage.report]
 omit = [
-    "src/ksef2/infra/schema/*",
-    "*/src/ksef2/infra/schema/*",
+    "src/ksef2/_infra/schema/*",
+    "*/src/ksef2/_infra/schema/*",
 ]
 # The initial 1.0 floor leaves one point of platform headroom below the
 # measured ~80% baseline. Raising it is intentional; regressions below it fail.

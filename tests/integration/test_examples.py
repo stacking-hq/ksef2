@@ -31,7 +31,7 @@ import scripts.examples.testdata.attachments as attachments_example
 import scripts.examples.testdata.block_context as block_context_example
 import scripts.examples.testdata.setup_test_data as setup_test_data_example
 from ksef2 import Client
-from ksef2.core.exceptions import KSeFExportTimeoutError
+from ksef2._core.exceptions import KSeFExportTimeoutError
 from tests.integration.conftest import KSeFCredentials
 
 EXPORT_TIMEOUT_SKIP_MARKER = "KSEF2_EXPORT_TIMEOUT"

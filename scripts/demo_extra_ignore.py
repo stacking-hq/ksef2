@@ -2,8 +2,8 @@
 
 from pydantic import Field
 
-from ksef2.domain.models.base import KSeFBaseModel, KSeFBaseParams
-from ksef2.logging import configure_logging
+from ksef2._domain.models.base import KSeFBaseModel, KSeFBaseParams
+from ksef2._logging import configure_logging
 
 # ---------------------------------------------------------------------------
 # 1. Enable structlog console output so we can see the warnings

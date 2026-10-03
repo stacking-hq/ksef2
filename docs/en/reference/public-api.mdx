@@ -57,25 +57,26 @@ from ksef2.raw import spec
 from ksef2.raw.mappers import auth as auth_mapper
 ```
 
-Do not import generated OpenAPI models from `ksef2.infra.schema.api`. Use
-`ksef2.raw.spec` and `ksef2.raw.supp` so application code stays on the supported
-surface.
+Do not import generated OpenAPI models from the SDK's private schema package.
+Use `ksef2.raw.spec` and `ksef2.raw.supp` so application code stays on the
+supported surface.
 
-## Internal paths
+## Private paths
 
-Avoid these paths in application code:
+The rule is simple: **a module path with no underscore is public; anything with
+an underscore is private.** `ksef2._core`, `ksef2._clients.base` and
+`ksef2.raw._facade` are private, and so is every module below them.
 
-- `ksef2.infra.*`: generated schemas and mapper internals;
-- `ksef2.endpoints.*`: endpoint transport implementation;
-- `ksef2.core.*`: internal protocol, transport, middleware, and helper modules;
-- `ksef2.domain.*`: internal model implementation modules; import the same
-  models from `ksef2.models` (or `ksef2.fa3` for FA(3) builder models);
-- `ksef2.services.*`: client-composed workflow implementation; import the four
-  documented workflow service types from `ksef2.clients`, or use client branches;
-- `scripts/*`: repository tooling, not package API.
+Private modules can change or disappear in any release, including patch
+releases, and are not part of the compatibility contract. The packages that
+earlier pre-release versions exposed without an underscore (`core`, `domain`,
+`infra`, `endpoints`, `services`, plus the client implementation modules,
+`config` and `logging`) no longer exist under those names; importing them raises
+`ImportError`. Import the same names from the public paths above instead, for
+example models from `ksef2.models`, clients and workflow service types from
+`ksef2.clients`, and configuration and exceptions from `ksef2`.
 
-Some internal paths may still be importable for SDK implementation or tests, but
-they are not the compatibility contract for application code.
+`scripts/*` is repository tooling, not package API.
 
 ## Secrets and serialization
 

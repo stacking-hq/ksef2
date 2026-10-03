@@ -51,7 +51,7 @@ jobs:
           if git diff --quiet \
             openapi.json \
             src/ksef2/__openapi_version__.py \
-            src/ksef2/infra/schema/api/spec/models.py; then
+            src/ksef2/_infra/schema/api/spec/models.py; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -65,7 +65,7 @@ jobs:
             uv.lock
             openapi.json
             src/ksef2/__openapi_version__.py
-            src/ksef2/infra/schema/api/spec/models.py
+            src/ksef2/_infra/schema/api/spec/models.py
           branch: feat/update-openapi-spec
           commit-message: "feat: update OpenAPI spec to KSeF API ${{ steps.version.outputs.ksef_api_version }} and regenerate models"
           title: "feat: update OpenAPI spec to KSeF API ${{ steps.version.outputs.ksef_api_version }} and regenerate models"

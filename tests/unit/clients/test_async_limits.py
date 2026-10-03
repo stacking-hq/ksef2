@@ -2,10 +2,10 @@ import asyncio
 
 from polyfactory import BaseFactory
 
-from ksef2.clients.async_limits import AsyncLimitsClient
-from ksef2.core.routes import LimitRoutes
-from ksef2.domain.models.limits import ApiRateLimits, ContextLimits, SubjectLimits
-from ksef2.infra.schema.api import spec
+from ksef2._clients.async_limits import AsyncLimitsClient
+from ksef2._core.routes import LimitRoutes
+from ksef2._domain.models.limits import ApiRateLimits, ContextLimits, SubjectLimits
+from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import AsyncFakeTransport
 
 

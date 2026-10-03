@@ -6,10 +6,10 @@ import pytest
 from cryptography.x509 import Certificate
 from polyfactory import BaseFactory
 
-from ksef2.clients.async_auth import AsyncAuthClient
-from ksef2.clients.async_authenticated import AsyncAuthenticatedClient
-from ksef2.config import Environment
-from ksef2.core.exceptions import (
+from ksef2._clients.async_auth import AsyncAuthClient
+from ksef2._clients.async_authenticated import AsyncAuthenticatedClient
+from ksef2._config import Environment
+from ksef2._core.exceptions import (
     KSeFAuthError,
     KSeFAuthPollingTimeoutError,
     KSeFAuthTokenRedemptionError,
@@ -17,13 +17,13 @@ from ksef2.core.exceptions import (
     KSeFValidationError,
     NoCertificateAvailableError,
 )
-from ksef2.core.routes import AuthRoutes
-from ksef2.core.stores import CertificateStore
+from ksef2._core.routes import AuthRoutes
+from ksef2._core.stores import CertificateStore
 from ksef2.xades import generate_test_certificate
-from ksef2.domain.models.auth import AuthenticationResumeState, AuthTokens
-from ksef2.domain.models.encryption import PublicKeyCertificate
-from ksef2.infra.schema.api.supp.auth import InitTokenAuthenticationRequest
-from ksef2.infra.schema.api import spec
+from ksef2._domain.models.auth import AuthenticationResumeState, AuthTokens
+from ksef2._domain.models.encryption import PublicKeyCertificate
+from ksef2._infra.schema.api.supp.auth import InitTokenAuthenticationRequest
+from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import AsyncFakeTransport
 from tests.unit.helpers import VALID_BASE64
 
@@ -61,7 +61,7 @@ class TestAsyncAuthClient:
         assert isinstance(result, AsyncAuthenticatedClient)
         assert result.auth_tokens == auth_tokens
 
-    @patch("ksef2.clients.async_auth.encrypt_token", return_value=VALID_BASE64)
+    @patch("ksef2._clients.async_auth.encrypt_token", return_value=VALID_BASE64)
     def test_with_token(
         self,
         _mock_encrypt_token: MagicMock,
@@ -118,7 +118,7 @@ class TestAsyncAuthClient:
             "Authorization": f"Bearer {init_response.authenticationToken.token}"
         }
 
-    @patch("ksef2.clients.async_auth.encrypt_token", return_value=VALID_BASE64)
+    @patch("ksef2._clients.async_auth.encrypt_token", return_value=VALID_BASE64)
     def test_with_token_reports_ambiguous_lost_redemption_response(
         self,
         _mock_encrypt_token: MagicMock,
@@ -156,7 +156,7 @@ class TestAsyncAuthClient:
         assert len(async_fake_transport.calls) == 4
         assert async_fake_transport.calls[-1].path == AuthRoutes.REDEEM_TOKEN
 
-    @patch("ksef2.clients.async_auth.encrypt_token", return_value=VALID_BASE64)
+    @patch("ksef2._clients.async_auth.encrypt_token", return_value=VALID_BASE64)
     def test_with_token_raises_without_ksef_token_encryption_certificate(
         self,
         _mock_encrypt_token: MagicMock,
@@ -175,7 +175,7 @@ class TestAsyncAuthClient:
         ):
             asyncio.run(client.with_token(ksef_token="ksef-token", nip="1234567890"))
 
-    @patch("ksef2.clients.async_auth.encrypt_token", return_value=VALID_BASE64)
+    @patch("ksef2._clients.async_auth.encrypt_token", return_value=VALID_BASE64)
     def test_with_token_raises_when_authentication_fails(
         self,
         _mock_encrypt_token: MagicMock,
@@ -202,7 +202,7 @@ class TestAsyncAuthClient:
         with pytest.raises(KSeFAuthError, match="Authentication failed"):
             asyncio.run(client.with_token(ksef_token="ksef-token", nip="1234567890"))
 
-    @patch("ksef2.clients.async_auth.encrypt_token", return_value=VALID_BASE64)
+    @patch("ksef2._clients.async_auth.encrypt_token", return_value=VALID_BASE64)
     def test_with_token_raises_on_timeout(
         self,
         _mock_encrypt_token: MagicMock,

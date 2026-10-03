@@ -18,14 +18,20 @@ ROOT = Path(__file__).resolve().parent.parent
 
 OPENAPI_SOURCE = ROOT / "openapi.json"
 OPENAPI_TARGET = (
-    ROOT / "src" / "ksef2" / "infra" / "schema" / "api" / "spec" / "models.py"
+    ROOT / "src" / "ksef2" / "_infra" / "schema" / "api" / "spec" / "models.py"
 )
 
 FA3_SOURCE = ROOT / "schemas" / "FA3"
-FA3_MODELS_TARGET = ROOT / "src" / "ksef2" / "infra" / "schema" / "fa3" / "models"
+FA3_MODELS_TARGET = ROOT / "src" / "ksef2" / "_infra" / "schema" / "fa3" / "models"
 FA3_DEFINITIONS_TARGET = (
-    ROOT / "src" / "ksef2" / "infra" / "schema" / "fa3" / "definitions"
+    ROOT / "src" / "ksef2" / "_infra" / "schema" / "fa3" / "definitions"
 )
+
+# xsdata snake-cases every package segment and drops the leading underscore of
+# ``_infra``. The generated modules use relative imports and carry no package
+# name, so they are generated under this neutral package and copied into
+# ``FA3_MODELS_TARGET``.
+FA3_GENERATION_PACKAGE = "ksef2.infra.schema.fa3.models"
 
 PYRIGHT_META_IGNORE = "  # pyright: ignore[reportIncompatibleVariableOverride]"
 
@@ -116,7 +122,7 @@ def generate_fa3_models(output_root: Path) -> Path:
             "--unnest-classes",
             "--relative-imports",
             "--package",
-            "ksef2.infra.schema.fa3.models",
+            FA3_GENERATION_PACKAGE,
             "--structure-style",
             "filenames",
             "--docstring-style",
@@ -124,7 +130,7 @@ def generate_fa3_models(output_root: Path) -> Path:
         ],
         cwd=output_root,
     )
-    generated_models = output_root / "ksef2" / "infra" / "schema" / "fa3" / "models"
+    generated_models = output_root.joinpath(*FA3_GENERATION_PACKAGE.split("."))
     _ = (generated_models / "__init__.py").write_text(
         '"""Generated FA(3) schema models package."""\n',
         encoding="utf-8",

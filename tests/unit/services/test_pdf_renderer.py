@@ -20,7 +20,7 @@ def test_pdf_exporter_reports_missing_optional_dependency() -> None:
     )
 
     with patch(
-        "ksef2.services.renderers.pdf.import_module",
+        "ksef2._services.renderers.pdf.import_module",
         side_effect=missing_weasyprint,
     ):
         with pytest.raises(ImportError, match=r"ksef2\[pdf\]"):

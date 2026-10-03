@@ -1,8 +1,8 @@
-from ksef2.domain.models import batch as domain_batch
-from ksef2.domain.models import session as domain_session
-from ksef2.domain.models.pagination import ListSessionsQuery
-from ksef2.infra.schema.api import spec
-from ksef2.infra.schema.api.supp.batch import OpenBatchSessionRequest
+from ksef2._domain.models import batch as domain_batch
+from ksef2._domain.models import session as domain_session
+from ksef2._domain.models.pagination import ListSessionsQuery
+from ksef2._infra.schema.api import spec
+from ksef2._infra.schema.api.supp.batch import OpenBatchSessionRequest
 from polyfactory.factories.pydantic_factory import ModelFactory
 from polyfactory.pytest_plugin import register_fixture
 
