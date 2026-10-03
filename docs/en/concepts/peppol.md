@@ -21,19 +21,18 @@ state. It only reads provider data registered in KSeF.
 PEPPOL is exposed on the root client next to other public branches:
 
 ```python
-page = client.peppol.query()
-
-for provider in page.providers:
+for provider in client.peppol.list():
     print(provider.id, provider.name)
 ```
 
-The response is paginated. Use `client.peppol.all()` when you want the SDK to
-iterate through pages:
+`list()` returns a `Pager` over the paginated response: iterating it follows the
+pages for you, `.pages()` yields one list per page and `.first_page()` makes a
+single request.
 
 ```python
 providers_by_id = {
     provider.id: provider.name
-    for provider in client.peppol.all()
+    for provider in client.peppol.list()
 }
 ```
 

@@ -128,6 +128,8 @@ the remote KSeF workflow may still finish later.
 | Direct invoice download readiness | `KSeFInvoiceDownloadTimeoutError` | `ksef_number` |
 | Online invoice processing | `KSeFInvoiceProcessingTimeoutError` | `invoice_reference_number` |
 | Export package readiness | `KSeFExportTimeoutError` | `reference_number` |
+| Permission grant or revoke | `KSeFPermissionOperationTimeoutError` | `reference_number` |
+| Certificate issuance | `KSeFCertificateEnrollmentTimeoutError` | `reference_number` |
 | Batch session completion | `KSeFBatchSessionTimeoutError` | `reference_number` |
 | Online session completion | `KSeFOnlineSessionTimeoutError` | `reference_number` |
 

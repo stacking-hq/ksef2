@@ -22,9 +22,10 @@ token_reference = token.reference_number
 token_secret = token.token
 ```
 
-`generate()` wraca, gdy tylko KSeF udostępni jednorazową wartość credentiala.
-Zwrócone pole `token` jest sekretem, którego automatyzacja użyje później do
-uwierzytelniania tokenem.
+`generate()` zwraca uchwyt `GeneratedToken`, gdy tylko KSeF udostępni
+jednorazową wartość credentiala. Jego pole `token` jest sekretem, którego
+automatyzacja użyje później do uwierzytelniania tokenem; uchwyt udostępnia
+każde pole odpowiedzi generowania.
 
 Domyślny `repr` i ogólne zrzuty Pydantic pomijają sekret. Odczytuj `.token`
 tylko na granicy chronionego magazynu albo użyj `to_sensitive_dict()`, gdy
@@ -40,50 +41,47 @@ Po zapisaniu credentiala poczekaj jawnie, gdy następna operacja wymaga już
 aktywnego tokena:
 
 ```python
-status = auth.tokens.wait_for_activation(
-    reference_number=token.reference_number,
-    timeout=60.0,
-    poll_interval=1.0,
-)
+status = auth.tokens.generate(...).wait(timeout=60.0, poll_interval=1.0)
+# albo na uchwycie, który już masz:
+status = token.wait(timeout=60.0, poll_interval=1.0)
 ```
 
-Timeout albo błąd transportu z `wait_for_activation()` nie odrzuca zapisanego
-wcześniej credentiala. Wznów sprawdzanie później z tym samym
-`reference_number`.
+Timeout albo błąd transportu z `wait()` nie odrzuca zapisanego wcześniej
+credentiala. Wznów sprawdzanie później przez
+`auth.tokens.get_status(reference_number=...)`.
 
 ## Listuj tokeny
 
-Użyj `list_page()` dla jednej strony albo `list_all()` dla pełnego przebiegu
-audytowego.
+`list()` zwraca `Pager`: iteruj po nim, by dostać każdy token, wywołaj
+`.pages()` dla list wielkości strony albo `.first_page()`, by wykonać jedno
+żądanie. Nic nie jest pobierane, dopóki go nie zużyjesz.
+
+### Wszystkie tokeny
+
+```python
+for item in auth.tokens.list():
+    print(item.reference_number, item.status, item.description)
+
+# TokenInfo
+# {
+#   "reference_number": "20260625-TOKEN-...",
+#   "description": "nightly invoice export",
+#   "requested_permissions": ["invoice_read"],
+#   "status": "active"
+# }
+```
 
 ### Jedna strona
 
 ```python
-page = auth.tokens.list_page()
-
-# QueryTokensResponse
-# {
-#   "continuation_token": null,
-#   "tokens": [
-#     {
-#       "reference_number": "20260625-TOKEN-...",
-#       "description": "nightly invoice export",
-#       "requested_permissions": ["invoice_read"],
-#       "status": "active"
-#     }
-#   ]
-# }
-
-for item in page.tokens:
-    print(item.reference_number, item.status, item.description)
+first = auth.tokens.list().first_page()
 ```
 
-### Wszystkie strony
+### Strona po stronie
 
 ```python
-for page in auth.tokens.list_all():
-    for item in page.tokens:
-        print(item.reference_number, item.status, item.description)
+for page in auth.tokens.list().pages():
+    print(len(page), "tokens on this page")
 ```
 
 ## Sprawdź albo cofnij jeden token
@@ -91,7 +89,7 @@ for page in auth.tokens.list_all():
 Do późniejszych operacji cyklu życia użyj numeru referencyjnego tokena.
 
 ```python
-status = auth.tokens.status(reference_number="20260625-TOKEN-...")
+status = auth.tokens.get_status(reference_number="20260625-TOKEN-...")
 
 # TokenStatusResponse
 # {

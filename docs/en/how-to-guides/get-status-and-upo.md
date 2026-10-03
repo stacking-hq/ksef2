@@ -157,24 +157,26 @@ while page.continuation_token is not None:
 Use `auth.invoice_sessions` when you need to find online or batch sessions after
 the original sender process has exited.
 
+`list()` returns a `Pager`: iterate it for every session, call `.pages()` for
+page-sized lists, or `.first_page()` to make a single request.
+
 ### One page
 
 ```python
-page = auth.invoice_sessions.query(
-    session_type="online",
+sessions = auth.invoice_sessions.list(
+    "online",
     statuses=["in_progress", "succeeded"],
-)
+).first_page()
 
-for item in page.sessions:
+for item in sessions:
     print(item.reference_number, item.status.code, item.total_invoice_count)
 ```
 
-### All pages
+### All sessions
 
 ```python
-for page in auth.invoice_sessions.all(session_type="batch"):
-    for item in page.sessions:
-        print(item.reference_number, item.status.description)
+for item in auth.invoice_sessions.list("batch"):
+    print(item.reference_number, item.status.description)
 ```
 
 ## Recommended flow

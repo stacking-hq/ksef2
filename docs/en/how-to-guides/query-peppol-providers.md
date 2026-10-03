@@ -9,32 +9,27 @@ authentication.
 
 ## Query providers
 
-### One page
-
-```python
-page = client.peppol.query()
-
-# ListPeppolProvidersResponse
-# {
-#   "has_more": false,
-#   "providers": [
-#     {
-#       "id": "PPL123456",
-#       "name": "Example PEPPOL Provider",
-#       "date_created": "2026-06-25T10:00:00Z"
-#     }
-#   ]
-# }
-
-for provider in page.providers:
-    print(provider.id, provider.name)
-```
+`list()` returns a `Pager`: iterate it for every provider, call `.pages()` for
+page-sized lists, or `.first_page()` to make a single request.
 
 ### All providers
 
 ```python
-for provider in client.peppol.all():
+for provider in client.peppol.list():
     print(provider.id, provider.name, provider.date_created)
+
+# PeppolProvider
+# {
+#   "id": "PPL123456",
+#   "name": "Example PEPPOL Provider",
+#   "date_created": "2026-06-25T10:00:00Z"
+# }
+```
+
+### One page
+
+```python
+first = client.peppol.list().first_page()
 ```
 
 ## Cache provider choices
@@ -45,7 +40,7 @@ display name for user selection or validation in your product.
 ```python
 providers_by_id = {
     provider.id: provider.name
-    for provider in client.peppol.all()
+    for provider in client.peppol.list()
 }
 ```
 

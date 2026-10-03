@@ -57,9 +57,20 @@ operation = auth.permissions.grant_authorization(
 )
 ```
 
-## Sprawdź status operacji
+## Poczekaj na operację
 
-Używaj zwróconego `reference_number`, aż KSeF zgłosi wynik operacji uprawnień.
+Każde wywołanie `grant_*()` i `revoke*()` zwraca uchwyt `PermissionOperation`.
+Czekaj na niego, aż KSeF zgłosi wynik operacji uprawnień.
+
+```python
+status = operation.wait(timeout=60.0, poll_interval=1.0)
+```
+
+`wait()` zgłasza `KSeFPermissionOperationFailedError`, gdy KSeF zakończy
+operację bez zastosowania uprawnienia, oraz `KSeFPermissionOperationTimeoutError`,
+gdy nie zakończy się na czas. Aby sprawdzić jednorazowo bez czekania, wywołaj
+`operation.get_status()` albo `get_operation_status()`, gdy zapisałeś tylko
+numer referencyjny:
 
 ```python
 status = auth.permissions.get_operation_status(
@@ -76,28 +87,30 @@ status = auth.permissions.get_operation_status(
 ```
 
 :::caution[Nie pokazuj uprawnienia przed zakończeniem statusu]
-Odpowiedź grant oznacza, że KSeF przyjął żądanie operacji. Sprawdź status
-operacji, zanim potraktujesz uprawnienie jako aktywne w aplikacji.
+Odpowiedź grant oznacza, że KSeF przyjął żądanie operacji. Poczekaj na
+operację, zanim potraktujesz uprawnienie jako aktywne w aplikacji.
 :::
 
 ## Wyszukaj uprawnienia
 
-Metody query mają osobne kształty, ponieważ KSeF rozróżnia rekordy personal,
-person, entity, authorization, EU entity, subordinate entity i subunit.
+Metody `list_*()` mają osobne kształty, ponieważ KSeF rozróżnia rekordy personal,
+person, entity, authorization, EU entity, subordinate entity i subunit. Każda
+zwraca `Pager`: iteruj po nim, by dostać każdy rekord, wywołaj `.pages()` dla
+list wielkości strony albo `.first_page()`, by wykonać jedno żądanie.
 
 ### Moje uprawnienia
 
 ```python
 from ksef2.models import PersonalPermissionsQuery
 
-page = auth.permissions.query_personal(
-    query=PersonalPermissionsQuery(
+permissions = auth.permissions.list_personal(
+    PersonalPermissionsQuery(
         permission_types=["invoice_read"],
         permission_state="active",
     ),
 )
 
-for permission in page.permissions:
+for permission in permissions:
     print(permission.id, permission.permission_type, permission.permission_state)
 ```
 
@@ -106,11 +119,11 @@ for permission in page.permissions:
 ```python
 from ksef2.models import EntityPermissionsQuery
 
-page = auth.permissions.query_entities(
-    query=EntityPermissionsQuery(context_type="nip", context_value="5261040828"),
+permissions = auth.permissions.list_entities(
+    EntityPermissionsQuery(context_type="nip", context_value="5261040828"),
 )
 
-for permission in page.permissions:
+for permission in permissions:
     print(permission.id, permission.permission_type, permission.can_delegate)
 ```
 
@@ -119,27 +132,25 @@ for permission in page.permissions:
 ```python
 from ksef2.models import AuthorizationPermissionsQuery
 
-page = auth.permissions.query_authorizations(
-    query=AuthorizationPermissionsQuery(
+grants = auth.permissions.list_authorizations(
+    AuthorizationPermissionsQuery(
         query_type="granted",
         permission_types=["self_invoicing"],
     ),
 )
 
-for grant in page.authorization_grants:
+for grant in grants:
     print(grant.id, grant.authorization_scope, grant.authorized_entity_value)
 ```
 
 ## Cofnij uprawnienia
 
-Użyj identyfikatora uprawnienia zwróconego przez zapytanie. Cofnięcie też zwraca
-referencję operacji.
+Użyj identyfikatora uprawnienia zwróconego przez listę. Cofnięcie też zwraca
+uchwyt `PermissionOperation`.
 
 ```python
-operation = auth.permissions.revoke_common(permission_id="permission-id")
-status = auth.permissions.get_operation_status(
-    reference_number=operation.reference_number,
-)
+operation = auth.permissions.revoke(permission_id="permission-id")
+status = operation.wait()
 print(status.status.code, status.status.description)
 ```
 
@@ -169,12 +180,12 @@ status = auth.permissions.get_attachment_permission_status()
 
 2. Zapisz `reference_number` operacji.
 
-3. Sprawdź status operacji przed pokazaniem uprawnienia jako aktywnego.
+3. Poczekaj na operację przed pokazaniem uprawnienia jako aktywnego.
 
 4. Wyszukaj uprawnienia, aby zebrać identyfikatory do audytu albo cofnięcia.
 
 5. Cofnij po identyfikatorze uprawnienia, gdy dostęp ma się zakończyć, a potem
-   sprawdź status operacji cofnięcia.
+   poczekaj na operację cofnięcia.
 
 ## Następne przepływy
 

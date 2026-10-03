@@ -20,19 +20,13 @@ from ksef2._core.tools import generate_nip
 from ksef2.xades import generate_test_certificate
 from ksef2._domain.models.permissions import (
     AuthorizationPermissionsQuery,
-    AuthorizationPermissionsQueryResponse,
     EntityPermission,
     EuEntityPermissionsQuery,
-    EuEntityPermissionsQueryResponse,
     PersonalPermissionsQuery,
-    PersonalPermissionsQueryResponse,
     PersonPermissionDetail,
     PersonPermissionsQuery,
-    PersonPermissionsQueryResponse,
     SubordinateEntityRolesQuery,
-    SubordinateEntityRolesQueryResponse,
     SubunitPermissionsQuery,
-    SubunitPermissionsQueryResponse,
 )
 
 
@@ -48,35 +42,6 @@ PermissionContext = TypedDict(
         "seller_nip": str,
     },
 )
-
-
-def _wait_for_permission_operation(
-    auth: AuthenticatedClient,
-    *,
-    reference_number: str,
-    timeout: float = 60.0,
-    poll_interval: float = 2.0,
-) -> None:
-    deadline = time.monotonic() + timeout
-    last_code = None
-
-    while time.monotonic() < deadline:
-        status = auth.permissions.get_operation_status(
-            reference_number=reference_number,
-        )
-        last_code = status.status.code
-        if last_code == 200:
-            return
-        if last_code >= 400:
-            raise AssertionError(
-                f"Permission operation failed: {last_code} {status.status.description}"
-            )
-        time.sleep(poll_interval)
-
-    raise AssertionError(
-        f"Permission operation did not finish within {timeout} seconds; "
-        f"last status={last_code}"
-    )
 
 
 @pytest.fixture(scope="module")
@@ -128,17 +93,13 @@ def test_get_attachment_permission_status(permissions_context: PermissionContext
 
 
 @pytest.mark.integration
-def test_get_entity_roles(permissions_context: PermissionContext):
+def test_list_entity_roles(permissions_context: PermissionContext):
     """Get entity roles."""
     auth = permissions_context["auth"]
 
-    response = auth.permissions.get_entity_roles()
+    roles = auth.permissions.list_entity_roles().first_page()
 
-    assert response is not None
-    assert hasattr(response, "roles")
-    assert hasattr(response, "has_more")
-    assert isinstance(response.roles, list)
-    assert isinstance(response.has_more, bool)
+    assert isinstance(roles, list)
 
 
 # ---------------------------------------------------------------------------
@@ -147,7 +108,7 @@ def test_get_entity_roles(permissions_context: PermissionContext):
 
 
 @pytest.mark.integration
-def test_query_authorizations(permissions_context: PermissionContext):
+def test_list_authorizations(permissions_context: PermissionContext):
     """Query authorization permissions."""
     auth = permissions_context["auth"]
 
@@ -155,43 +116,37 @@ def test_query_authorizations(permissions_context: PermissionContext):
         query_type="granted",
     )
 
-    response = auth.permissions.query_authorizations(query=query)
+    items = auth.permissions.list_authorizations(query).first_page()
 
-    assert isinstance(response, AuthorizationPermissionsQueryResponse)
-    assert isinstance(response.authorization_grants, list)
-    assert isinstance(response.has_more, bool)
+    assert isinstance(items, list)
 
 
 @pytest.mark.integration
-def test_query_eu_entities(permissions_context: PermissionContext):
+def test_list_eu_entities(permissions_context: PermissionContext):
     """Query EU entity permissions."""
     auth = permissions_context["auth"]
 
     query = EuEntityPermissionsQuery()
 
-    response = auth.permissions.query_eu_entities(query=query)
+    items = auth.permissions.list_eu_entities(query).first_page()
 
-    assert isinstance(response, EuEntityPermissionsQueryResponse)
-    assert isinstance(response.permissions, list)
-    assert isinstance(response.has_more, bool)
+    assert isinstance(items, list)
 
 
 @pytest.mark.integration
-def test_query_personal(permissions_context: PermissionContext):
+def test_list_personal(permissions_context: PermissionContext):
     """Query personal permissions."""
     auth = permissions_context["auth"]
 
     query = PersonalPermissionsQuery()
 
-    response = auth.permissions.query_personal(query=query)
+    items = auth.permissions.list_personal(query).first_page()
 
-    assert isinstance(response, PersonalPermissionsQueryResponse)
-    assert isinstance(response.permissions, list)
-    assert isinstance(response.has_more, bool)
+    assert isinstance(items, list)
 
 
 @pytest.mark.integration
-def test_query_persons(permissions_context: PermissionContext):
+def test_list_persons(permissions_context: PermissionContext):
     """Query person permissions and verify domain response request."""
     auth = permissions_context["auth"]
 
@@ -199,13 +154,11 @@ def test_query_persons(permissions_context: PermissionContext):
         query_type="in_context",
     )
 
-    response = auth.permissions.query_persons(query=query)
+    permissions = auth.permissions.list_persons(query).first_page()
 
-    assert isinstance(response, PersonPermissionsQueryResponse)
-    assert isinstance(response.permissions, list)
-    assert isinstance(response.has_more, bool)
+    assert isinstance(permissions, list)
 
-    for perm in response.permissions:
+    for perm in permissions:
         assert isinstance(perm, PersonPermissionDetail)
         assert perm.id
         assert perm.author_type is not None
@@ -218,31 +171,27 @@ def test_query_persons(permissions_context: PermissionContext):
 
 
 @pytest.mark.integration
-def test_query_subordinate_entities(permissions_context: PermissionContext):
+def test_list_subordinate_entities(permissions_context: PermissionContext):
     """Query subordinate entity roles."""
     auth = permissions_context["auth"]
 
     query = SubordinateEntityRolesQuery()
 
-    response = auth.permissions.query_subordinate_entities(query=query)
+    items = auth.permissions.list_subordinate_entities(query).first_page()
 
-    assert isinstance(response, SubordinateEntityRolesQueryResponse)
-    assert isinstance(response.roles, list)
-    assert isinstance(response.has_more, bool)
+    assert isinstance(items, list)
 
 
 @pytest.mark.integration
-def test_query_subunits(permissions_context: PermissionContext):
+def test_list_subunits(permissions_context: PermissionContext):
     """Query subunit permissions."""
     auth = permissions_context["auth"]
 
     query = SubunitPermissionsQuery()
 
-    response = auth.permissions.query_subunits(query=query)
+    items = auth.permissions.list_subunits(query).first_page()
 
-    assert isinstance(response, SubunitPermissionsQueryResponse)
-    assert isinstance(response.permissions, list)
-    assert isinstance(response.has_more, bool)
+    assert isinstance(items, list)
 
 
 # ---------------------------------------------------------------------------
@@ -265,19 +214,19 @@ def test_grant_entity_permission(permissions_context: PermissionContext):
         entity_name="Test Buyer Entity",
     )
 
-    assert response is not None
-    assert hasattr(response, "reference_number")
     assert response.reference_number
 
-    time.sleep(3)
+    operation_status = response.wait()
 
-    operation_status = auth.permissions.get_operation_status(
-        reference_number=response.reference_number,
+    assert operation_status.status.code == 200
+
+    # The data getter reads the same status by reference number.
+    assert (
+        auth.permissions.get_operation_status(
+            reference_number=response.reference_number,
+        ).status.code
+        == 200
     )
-
-    assert operation_status is not None
-    assert operation_status.status is not None
-    assert operation_status.status.code is not None
 
 
 @pytest.mark.integration
@@ -294,9 +243,9 @@ def test_grant_authorization_permission(permissions_context: PermissionContext):
         entity_name="Test Authorization Entity",
     )
 
-    assert response is not None
-    assert hasattr(response, "reference_number")
     assert response.reference_number
+
+    _ = response.wait()
 
 
 @pytest.mark.integration
@@ -314,9 +263,9 @@ def test_grant_person_permission(permissions_context: PermissionContext):
         last_name="Person",
     )
 
-    assert response is not None
-    assert hasattr(response, "reference_number")
     assert response.reference_number
+
+    _ = response.wait()
 
 
 @pytest.mark.integration
@@ -335,9 +284,9 @@ def test_grant_subunit_permission(permissions_context: PermissionContext):
         last_name="User",
     )
 
-    assert response is not None
-    assert hasattr(response, "reference_number")
     assert response.reference_number
+
+    _ = response.wait()
 
 
 # ---------------------------------------------------------------------------
@@ -362,22 +311,18 @@ def test_revoke_authorization_permission(permissions_context: PermissionContext)
 
     assert grant_response.reference_number
 
-    _wait_for_permission_operation(
-        auth,
-        reference_number=grant_response.reference_number,
-    )
+    _ = grant_response.wait()
 
-    # Query authorizations to find the one we just created
+    # List authorizations to find the one we just created
     from ksef2._domain.models.pagination import OffsetPaginationParams
 
     deadline = time.monotonic() + 60.0
     permission_id = None
     while time.monotonic() < deadline and permission_id is None:
-        query_response = auth.permissions.query_authorizations(
-            query=AuthorizationPermissionsQuery(query_type="granted"),
+        for grant in auth.permissions.list_authorizations(
+            AuthorizationPermissionsQuery(query_type="granted"),
             params=OffsetPaginationParams(page_size=100),
-        )
-        for grant in query_response.authorization_grants:
+        ):
             if grant.description == "Test authorization for revoke":
                 permission_id = grant.id
                 break
@@ -390,13 +335,13 @@ def test_revoke_authorization_permission(permissions_context: PermissionContext)
         permission_id=permission_id,
     )
 
-    assert revoke_response is not None
-    assert hasattr(revoke_response, "reference_number")
     assert revoke_response.reference_number
+
+    _ = revoke_response.wait()
 
 
 @pytest.mark.integration
-def test_revoke_common_permission(permissions_context: PermissionContext):
+def test_revoke_permission(permissions_context: PermissionContext):
     """Grant and then revoke a common permission."""
     auth = permissions_context["auth"]
     person_nip = generate_nip()
@@ -412,10 +357,7 @@ def test_revoke_common_permission(permissions_context: PermissionContext):
 
     assert grant_response.reference_number
 
-    _wait_for_permission_operation(
-        auth,
-        reference_number=grant_response.reference_number,
-    )
+    _ = grant_response.wait()
 
     # Query personal permissions to find the one we just created
     from ksef2._domain.models.pagination import OffsetPaginationParams
@@ -423,16 +365,15 @@ def test_revoke_common_permission(permissions_context: PermissionContext):
     deadline = time.monotonic() + 60.0
     permission_id = None
     while time.monotonic() < deadline and permission_id is None:
-        query_response = auth.permissions.query_persons(
-            query=PersonPermissionsQuery(
+        for perm in auth.permissions.list_persons(
+            PersonPermissionsQuery(
                 query_type="in_context",
                 authorized_type="nip",
                 authorized_value=person_nip,
                 permission_types=["invoice_read"],
             ),
             params=OffsetPaginationParams(page_size=100),
-        )
-        for perm in query_response.permissions:
+        ):
             if perm.description == "Test common permission for revoke":
                 permission_id = perm.id
                 break
@@ -441,10 +382,10 @@ def test_revoke_common_permission(permissions_context: PermissionContext):
 
     assert permission_id is not None
 
-    revoke_response = auth.permissions.revoke_common(
+    revoke_response = auth.permissions.revoke(
         permission_id=permission_id,
     )
 
-    assert revoke_response is not None
-    assert hasattr(revoke_response, "reference_number")
     assert revoke_response.reference_number
+
+    _ = revoke_response.wait()

@@ -14,7 +14,6 @@ from ksef2.xades import generate_test_certificate
 from ksef2._domain.models.certificates import (
     CertificateEnrollmentData,
     CertificateLimitsResponse,
-    QueryCertificatesResponse,
 )
 from ksef2._domain.models.testdata import Identifier, Permission
 
@@ -51,36 +50,6 @@ def _build_certificate_csr(data: CertificateEnrollmentData) -> str:
         .sign(private_key, hashes.SHA256())
     )
     return base64.b64encode(csr.public_bytes(serialization.Encoding.DER)).decode()
-
-
-def _wait_for_certificate_serial(
-    auth: AuthenticatedClient,
-    *,
-    reference_number: str,
-    timeout: float = 120.0,
-    poll_interval: float = 2.0,
-) -> str:
-    deadline = time.monotonic() + timeout
-    last_status = None
-
-    while time.monotonic() < deadline:
-        status = auth.certificates.get_enrollment_status(
-            reference_number=reference_number,
-        )
-        last_status = status.status_code
-        if status.certificate_serial_number:
-            return status.certificate_serial_number
-        if status.status_code >= 400:
-            raise AssertionError(
-                f"Certificate enrollment failed: "
-                f"{status.status_code} {status.status_description}"
-            )
-        time.sleep(poll_interval)
-
-    raise AssertionError(
-        f"Certificate enrollment timed out after {timeout} seconds; "
-        f"last status={last_status}"
-    )
 
 
 @pytest.mark.integration
@@ -131,11 +100,9 @@ def test_query_certificates_no_filters(
     """Query all certificates without filter."""
     client, auth = xades_authenticated_context
 
-    result = auth.certificates.query()
+    result = auth.certificates.list().first_page()
 
-    assert isinstance(result, QueryCertificatesResponse)
-    assert isinstance(result.certificates, list)
-    assert isinstance(result.has_more, bool)
+    assert isinstance(result, list)
 
 
 @pytest.mark.integration
@@ -145,11 +112,11 @@ def test_query_certificates_with_status_filter(
     """Query certificates filtering by status."""
     client, auth = xades_authenticated_context
 
-    result = auth.certificates.query(status="active")
+    result = auth.certificates.list(status="active").first_page()
 
-    assert isinstance(result, QueryCertificatesResponse)
+    assert isinstance(result, list)
     # All returned certificates should be active
-    for cert in result.certificates:
+    for cert in result:
         assert cert.status == "active"
 
 
@@ -160,11 +127,11 @@ def test_query_certificates_with_type_filter(
     """Query certificates filtering by type."""
     client, auth = xades_authenticated_context
 
-    result = auth.certificates.query(certificate_type="authentication")
+    result = auth.certificates.list(certificate_type="authentication").first_page()
 
-    assert isinstance(result, QueryCertificatesResponse)
+    assert isinstance(result, list)
     # All returned certificates should be authentication type
-    for cert in result.certificates:
+    for cert in result:
         assert cert.type == "authentication"
 
 
@@ -175,11 +142,11 @@ def test_query_certificates_with_pagination(
     """Query certificates with pagination parameters."""
     client, auth = xades_authenticated_context
 
-    # Query with small page size
-    result = auth.certificates.query()
+    # The default page size is 10
+    result = auth.certificates.list().first_page()
 
-    assert isinstance(result, QueryCertificatesResponse)
-    assert len(result.certificates) <= 10
+    assert isinstance(result, list)
+    assert len(result) <= 10
 
 
 @pytest.mark.integration
@@ -227,22 +194,19 @@ def test_query_certificates_with_name_filter() -> None:
             csr=_build_certificate_csr(enrollment_data),
         )
 
-        certificate_serial = _wait_for_certificate_serial(
-            auth,
-            reference_number=enrollment.reference_number,
-        )
+        certificate_serial = enrollment.wait(timeout=120.0).certificate_serial_number
+        assert certificate_serial is not None
 
         try:
-            result = auth.certificates.query(name=certificate_name)
+            result = list(auth.certificates.list(name=certificate_name))
 
-            assert isinstance(result, QueryCertificatesResponse)
-            assert result.certificates
+            assert result
             assert any(
                 cert.serial_number == certificate_serial
                 and cert.name == certificate_name
-                for cert in result.certificates
+                for cert in result
             )
-            for cert in result.certificates:
+            for cert in result:
                 assert certificate_name.lower() in cert.name.lower()
         finally:
             auth.certificates.revoke(

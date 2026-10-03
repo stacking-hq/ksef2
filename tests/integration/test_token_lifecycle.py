@@ -17,7 +17,6 @@ from ksef2._domain.models.testdata import (
 )
 from ksef2._domain.models.tokens import (
     GenerateTokenResponse,
-    QueryTokensResponse,
     TokenAuthorIdentifier,
     TokenStatusResponse,
 )
@@ -76,9 +75,7 @@ def token_context():
             permissions=["invoice_read"],
             description="Integration test token",
         )
-        _ = auth.tokens.wait_for_activation(
-            reference_number=generated.reference_number,
-        )
+        _ = generated.wait()
 
         yield client, auth, generated
 
@@ -88,7 +85,7 @@ def test_generate_token(token_context):
     """Generate returns a token with reference number."""
     _client, _auth, generated = token_context
 
-    assert isinstance(generated, GenerateTokenResponse)
+    assert isinstance(generated.response, GenerateTokenResponse)
     assert generated.reference_number
     assert generated.token
 
@@ -100,7 +97,7 @@ def test_token_status(token_context):
 
     assert isinstance(auth, AuthenticatedClient)
 
-    status = auth.tokens.status(
+    status = auth.tokens.get_status(
         reference_number=generated.reference_number,
     )
 
@@ -118,7 +115,7 @@ def test_revoke_token(token_context):
         reference_number=generated.reference_number,
     )
 
-    status = auth.tokens.status(
+    status = auth.tokens.get_status(
         reference_number=generated.reference_number,
     )
 
@@ -130,13 +127,10 @@ def test_list_tokens(token_context):
     """List tokens and verify the generated token appears."""
     _client, auth, generated = token_context
 
-    response = auth.tokens.list_page()
-
-    assert isinstance(response, QueryTokensResponse)
-    assert isinstance(response.tokens, list)
+    tokens = list(auth.tokens.list())
 
     # Find the generated token in the list
-    ref_numbers = [t.reference_number for t in response.tokens]
+    ref_numbers = [t.reference_number for t in tokens]
     assert generated.reference_number in ref_numbers
 
 
@@ -146,13 +140,12 @@ def test_list_tokens_with_status_filter(token_context):
     _client, auth, _generated = token_context
 
     # Filter by ACTIVE and REVOKED statuses
-    response = auth.tokens.list_page(
+    tokens = auth.tokens.list(
         params=TokenListParams(status=["active", "revoked"])
-    )
+    ).first_page()
 
-    assert isinstance(response, QueryTokensResponse)
     # All returned tokens should have ACTIVE or REVOKED status
-    for token in response.tokens:
+    for token in tokens:
         assert token.status in ("active", "revoked")
 
 
@@ -161,13 +154,12 @@ def test_list_tokens_with_description_filter(token_context):
     """List tokens filtered by description."""
     _client, auth, _generated = token_context
 
-    response = auth.tokens.list_page(
+    tokens = auth.tokens.list(
         params=TokenListParams(description="Integration test"),
-    )
+    ).first_page()
 
-    assert isinstance(response, QueryTokensResponse)
     # All returned tokens should contain "integration test" in description (case-insensitive)
-    for token in response.tokens:
+    for token in tokens:
         assert "integration test" in token.description.lower()
 
 
@@ -177,26 +169,25 @@ def test_list_tokens_with_author_filter(token_context):
     _client, auth, _generated = token_context
 
     # First, get all tokens to find an author NIP
-    all_tokens = auth.tokens.list_page()
-    if not all_tokens.tokens:
+    all_tokens = auth.tokens.list().first_page()
+    if not all_tokens:
         pytest.skip("No tokens available to test author filter")
 
     # Use the first token'request author for filtering
-    first_author = all_tokens.tokens[0].author_identifier
+    first_author = all_tokens[0].author_identifier
 
     author_filter = TokenAuthorIdentifier(
         type=first_author.type,
         value=first_author.value,
     )
 
-    response = auth.tokens.list_page(
+    tokens = auth.tokens.list(
         params=TokenListParams(
             author_identifier=author_filter.value,
             author_identifier_type=author_filter.type,
         )
-    )
+    ).first_page()
 
-    assert isinstance(response, QueryTokensResponse)
     # All returned tokens should have the same author
-    for token in response.tokens:
+    for token in tokens:
         assert token.author_identifier.value == first_author.value

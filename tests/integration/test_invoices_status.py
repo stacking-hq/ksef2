@@ -15,7 +15,6 @@ from ksef2._clients.authenticated import AuthenticatedClient
 from ksef2._core.tools import generate_nip, generate_pesel
 from ksef2.xades import generate_test_certificate
 from ksef2._domain.models.session import (
-    ListSessionsResponse,
     SessionInvoicesResponse,
     SessionInvoiceStatusResponse,
     SessionStatusEnum,
@@ -103,11 +102,9 @@ def test_list_sessions(xades_authenticated_context: tuple[Client, AuthenticatedC
     """List sessions filtered by type."""
     _client, auth = xades_authenticated_context
 
-    response = auth.invoice_sessions.query(session_type="online")
+    sessions = auth.invoice_sessions.list("online").first_page()
 
-    assert isinstance(response, ListSessionsResponse)
-    assert hasattr(response, "sessions")
-    assert hasattr(response, "continuation_token")
+    assert isinstance(sessions, list)
 
 
 @pytest.mark.integration
@@ -117,9 +114,9 @@ def test_list_sessions_batch(
     """List batch sessions."""
     _client, auth = xades_authenticated_context
 
-    response = auth.invoice_sessions.query(session_type="batch")
+    sessions = auth.invoice_sessions.list("batch").first_page()
 
-    assert isinstance(response, ListSessionsResponse)
+    assert isinstance(sessions, list)
 
 
 @pytest.mark.integration
@@ -129,12 +126,12 @@ def test_list_sessions_with_status_filter(
     """List sessions filtered by statuses."""
     _client, auth = xades_authenticated_context
 
-    response = auth.invoice_sessions.query(
-        session_type="online",
+    sessions = auth.invoice_sessions.list(
+        "online",
         statuses=[SessionStatusEnum.SUCCEEDED, SessionStatusEnum.IN_PROGRESS],
-    )
+    ).first_page()
 
-    assert isinstance(response, ListSessionsResponse)
+    assert isinstance(sessions, list)
 
 
 # ---------------------------------------------------------------------------

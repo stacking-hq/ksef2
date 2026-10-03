@@ -60,7 +60,10 @@ def run(config: ExampleConfig) -> None:
             first_name="John",
             last_name="Doe",
         )
-        print(f"Person permissions granted: {result.reference_number}")
+        status = result.wait()
+        print(
+            f"Person permissions granted: {result.reference_number} ({status.status.description})"
+        )
 
         print("Granting entity permissions...")
         result = auth.permissions.grant_entity(
@@ -74,7 +77,10 @@ def run(config: ExampleConfig) -> None:
             description="Test entity permissions",
             entity_name="Test Entity",
         )
-        print(f"Entity permissions granted: {result.reference_number}")
+        status = result.wait()
+        print(
+            f"Entity permissions granted: {result.reference_number} ({status.status.description})"
+        )
 
 
 def main() -> int:
