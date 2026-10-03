@@ -35,6 +35,11 @@ class InvoiceSessionsClient:
     """
 
     def __init__(self, transport: Middleware) -> None:
+        """Create the client.
+
+        Args:
+            transport: Middleware chain used for requests to KSeF.
+        """
         self._endpoints = SessionEndpoints(transport)
 
     def query(

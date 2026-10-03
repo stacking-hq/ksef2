@@ -48,6 +48,12 @@ class OnlineSessionClient:
     """
 
     def __init__(self, transport: Middleware, state: OnlineSessionResumeState):
+        """Create the session client.
+
+        Args:
+            transport: Middleware chain used for authenticated requests.
+            state: Resume state describing the open session and its encryption keys.
+        """
         self._transport = transport
         self._state = state
         self._invoice_eps = InvoicesEndpoints(transport)
@@ -62,8 +68,23 @@ class OnlineSessionClient:
     def send_invoice(self, *, invoice_xml: bytes) -> invoices.SendInvoiceResponse:
         """Encrypt and submit one invoice into the open session.
 
+        Args:
+            invoice_xml: Invoice XML bytes, valid against the session's schema.
+
+        Returns:
+            The reference number KSeF assigned to the submission. Poll ``get_invoice_status()`` or use ``send_invoice_and_wait()`` for the processing result.
+
         Raises:
             KSeFEncryptionError: If invoice encryption fails.
+
+        Example:
+            ```python
+            with auth.online_session(form_code=FormSchema.FA3) as session:
+                sent = session.send_invoice(invoice_xml=xml_bytes)
+                status = session.wait_for_invoice_ready(
+                    invoice_reference_number=sent.reference_number,
+                )
+            ```
         """
         self._ensure_open()
         encrypted = encrypt_invoice(
@@ -93,12 +114,27 @@ class OnlineSessionClient:
     ) -> SessionInvoiceStatusResponse:
         """Submit an invoice and poll until KSeF assigns a final processing result.
 
+        Args:
+            invoice_xml: Invoice XML bytes, valid against the session's schema.
+            timeout: Maximum number of seconds to wait before giving up.
+            poll_interval: Delay in seconds between invoice status checks.
+
+        Returns:
+            The final processing status, including the invoice's KSeF number once accepted.
+
         Raises:
             KSeFEncryptionError: If invoice encryption fails.
             KSeFInvoiceRejectedError: If invoice processing reaches a failed
                 terminal status. It subclasses ``KSeFSessionError`` and keeps the
                 status ``details`` and ``extensions``.
             KSeFInvoiceProcessingTimeoutError: If polling exceeds ``timeout``.
+
+        Example:
+            ```python
+            with auth.online_session(form_code=FormSchema.FA3) as session:
+                status = session.send_invoice_and_wait(invoice_xml=xml_bytes)
+                print(status.ksef_number)
+            ```
         """
         self._ensure_open()
         result = self.send_invoice(invoice_xml=invoice_xml)
@@ -109,7 +145,11 @@ class OnlineSessionClient:
         )
 
     def get_status(self) -> SessionStatusResponse:
-        """Fetch the current state of the online session."""
+        """Fetch the current state of the online session.
+
+        Returns:
+            The session status, including invoice counters.
+        """
         self._ensure_open()
         return session_from_spec(
             self._invoice_eps.get_session_status(
@@ -123,7 +163,15 @@ class OnlineSessionClient:
         page_size: int = 10,
         continuation_token: str | None = None,
     ) -> SessionInvoicesResponse:
-        """Fetch one page of invoices submitted in this session."""
+        """Fetch one page of invoices submitted in this session.
+
+        Args:
+            page_size: Number of invoices per page (10–1000).
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+
+        Returns:
+            One page of invoices submitted in the session, with a continuation token when more exist.
+        """
         self._ensure_open()
         return session_from_spec(
             self._invoice_eps.list_session_invoices(
@@ -136,7 +184,14 @@ class OnlineSessionClient:
     def get_invoice_status(
         self, *, invoice_reference_number: str
     ) -> SessionInvoiceStatusResponse:
-        """Fetch processing status for one invoice sent in this session."""
+        """Fetch processing status for one invoice sent in this session.
+
+        Args:
+            invoice_reference_number: Reference number of the invoice within the session, as returned by ``send_invoice()``.
+
+        Returns:
+            The processing status of the invoice.
+        """
         self._ensure_open()
         return session_from_spec(
             self._invoice_eps.get_session_invoice_status(
@@ -153,6 +208,14 @@ class OnlineSessionClient:
         poll_interval: float = 2.0,
     ) -> SessionInvoiceStatusResponse:
         """Poll invoice status until it succeeds, fails, or times out.
+
+        Args:
+            invoice_reference_number: Reference number of the invoice within the session, as returned by ``send_invoice()``.
+            timeout: Maximum number of seconds to wait before giving up.
+            poll_interval: Delay in seconds between invoice status checks.
+
+        Returns:
+            The final processing status, including the invoice's KSeF number once accepted.
 
         Raises:
             KSeFInvoiceRejectedError: If invoice processing reaches a failed
@@ -190,7 +253,15 @@ class OnlineSessionClient:
         page_size: int = 10,
         continuation_token: str | None = None,
     ) -> SessionInvoicesResponse:
-        """Fetch one page of invoices that failed within this session."""
+        """Fetch one page of invoices that failed within this session.
+
+        Args:
+            page_size: Number of invoices per page (10–1000).
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+
+        Returns:
+            One page of invoices that failed processing, with a continuation token when more exist.
+        """
         self._ensure_open()
         return session_from_spec(
             self._invoice_eps.list_failed_session_invoices(
@@ -201,7 +272,14 @@ class OnlineSessionClient:
         )
 
     def get_invoice_upo_by_ksef_number(self, *, ksef_number: str) -> bytes:
-        """Download the invoice UPO by KSeF number."""
+        """Download the invoice UPO by KSeF number.
+
+        Args:
+            ksef_number: KSeF number of an invoice accepted in this session.
+
+        Returns:
+            The UPO as XML bytes.
+        """
         self._ensure_open()
         return self._invoice_eps.get_invoice_upo_by_ksef(
             reference_number=self._state.reference_number,
@@ -213,7 +291,14 @@ class OnlineSessionClient:
         *,
         invoice_reference_number: str,
     ) -> bytes:
-        """Download the invoice UPO by session invoice reference number."""
+        """Download the invoice UPO by session invoice reference number.
+
+        Args:
+            invoice_reference_number: Reference number of the invoice within the session, as returned by ``send_invoice()``.
+
+        Returns:
+            The UPO as XML bytes.
+        """
         self._ensure_open()
         return self._invoice_eps.get_invoice_upo_by_reference(
             reference_number=self._state.reference_number,
@@ -237,7 +322,11 @@ class OnlineSessionClient:
         self._closed = True
 
     def resume_state(self) -> OnlineSessionResumeState:
-        """Return the sensitive session state needed to resume later."""
+        """Return the sensitive session state needed to resume later.
+
+        Returns:
+            The sensitive session state needed to resume later.
+        """
         return self._state
 
     @deprecated(
@@ -245,7 +334,14 @@ class OnlineSessionClient:
         "use `resume_state()` instead."
     )
     def get_state(self) -> OnlineSessionResumeState:
-        """Deprecated compatibility wrapper for ``resume_state()``."""
+        """Deprecated compatibility wrapper for ``resume_state()``.
+
+        Deprecated:
+            Will be removed in ksef2 2.0. Use ``resume_state()`` instead.
+
+        Returns:
+            The same state as ``resume_state()``.
+        """
         return self.resume_state()
 
     def __enter__(self) -> "OnlineSessionClient":

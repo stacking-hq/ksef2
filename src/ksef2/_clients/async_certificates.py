@@ -44,14 +44,27 @@ class AsyncCertificatesClient:
     """
 
     def __init__(self, transport: AsyncMiddleware) -> None:
+        """Create the client.
+
+        Args:
+            transport: Middleware chain used for requests to KSeF.
+        """
         self._endpoints = AsyncCertificatesEndpoints(transport)
 
     async def get_limits(self) -> CertificateLimitsResponse:
-        """Return the effective certificate enrollment and issuance quotas."""
+        """Return the effective certificate enrollment and issuance quotas.
+
+        Returns:
+            The effective certificate enrollment and issuance quotas.
+        """
         return from_spec(await self._endpoints.get_limits())
 
     async def get_enrollment_data(self) -> CertificateEnrollmentData:
-        """Return subject data needed to prepare a CSR for enrollment."""
+        """Return subject data needed to prepare a CSR for enrollment.
+
+        Returns:
+            Subject data needed to prepare a CSR for enrollment.
+        """
         return from_spec(await self._endpoints.get_enrollment_data())
 
     async def enroll(
@@ -62,7 +75,17 @@ class AsyncCertificatesClient:
         csr: str,
         valid_from: datetime | str | None = None,
     ) -> CertificateEnrollmentResponse:
-        """Request issuance of a certificate from a CSR."""
+        """Request issuance of a certificate from a CSR.
+
+        Args:
+            certificate_name: Name to give the certificate.
+            certificate_type: Certificate type to request, ``authentication`` or ``offline``.
+            csr: PKCS#10 certificate signing request, DER-encoded and Base64-encoded.
+            valid_from: Requested start of validity as a datetime or ISO 8601 string; ``None`` for immediately.
+
+        Returns:
+            The enrollment reference; poll ``get_enrollment_status()`` for the result.
+        """
         request = EnrollCertificateRequest(
             certificate_name=certificate_name,
             certificate_type=certificate_type,
@@ -77,7 +100,14 @@ class AsyncCertificatesClient:
         *,
         reference_number: str,
     ) -> CertificateEnrollmentStatusResponse:
-        """Fetch the current status of a certificate enrollment request."""
+        """Fetch the current status of a certificate enrollment request.
+
+        Args:
+            reference_number: Reference number returned by ``enroll()``.
+
+        Returns:
+            The enrollment status, including the certificate serial number once issued.
+        """
         return from_spec(
             await self._endpoints.get_enrollment_status(
                 reference_number=reference_number,
@@ -89,7 +119,14 @@ class AsyncCertificatesClient:
         *,
         certificate_serial_numbers: list[CertificateSerialNumber],
     ) -> RetrievedCertificatesList:
-        """Download issued certificates by serial number."""
+        """Download issued certificates by serial number.
+
+        Args:
+            certificate_serial_numbers: Serial numbers of the certificates to download.
+
+        Returns:
+            The requested certificates with their DER data.
+        """
         request = RetrieveCertificatesRequest(
             certificate_serial_numbers=certificate_serial_numbers,
         )
@@ -102,7 +139,12 @@ class AsyncCertificatesClient:
         certificate_serial_number: CertificateSerialNumber,
         reason: RevocationReason | None = None,
     ) -> None:
-        """Revoke a certificate, optionally providing a revocation reason."""
+        """Revoke a certificate, optionally providing a revocation reason.
+
+        Args:
+            certificate_serial_number: Serial number of the certificate to revoke.
+            reason: Reason for the revocation; ``None`` to omit it.
+        """
         validated_serial_number = validate_certificate_serial_number(
             certificate_serial_number
         )
@@ -123,7 +165,19 @@ class AsyncCertificatesClient:
         expires_after: datetime | str | None = None,
         params: OffsetPaginationParams | None = None,
     ) -> CertificatesInfoList:
-        """Fetch one page of certificate search results."""
+        """Fetch one page of certificate search results.
+
+        Args:
+            name: Match this certificate name.
+            certificate_serial_number: Match this certificate serial number.
+            certificate_type: Match this certificate type.
+            status: Match this lifecycle status.
+            expires_after: Match certificates that expire after this datetime or ISO 8601 string.
+            params: Page size and offset; defaults are used when ``None``.
+
+        Returns:
+            One page of certificate metadata.
+        """
         parameters = params or OffsetPaginationParams()
         request = QueryCertificatesRequest(
             certificate_serial_number=certificate_serial_number,
@@ -148,7 +202,19 @@ class AsyncCertificatesClient:
         expires_after: datetime | str | None = None,
         params: OffsetPaginationParams | None = None,
     ) -> AsyncIterator[CertificateInfo]:
-        """Iterate over all certificates matching the provided filters."""
+        """Iterate over all certificates matching the provided filters.
+
+        Args:
+            certificate_serial_number: Match this certificate serial number.
+            name: Match this certificate name.
+            certificate_type: Match this certificate type.
+            status: Match this lifecycle status.
+            expires_after: Match certificates that expire after this datetime or ISO 8601 string.
+            params: Page size and offset of the first page; defaults are used when ``None``.
+
+        Yields:
+            Each matching certificate, across all pages.
+        """
         current_params = params or OffsetPaginationParams()
 
         while True:

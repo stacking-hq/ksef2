@@ -44,6 +44,15 @@ class AsyncBatchSessionClient:
         prepared_batch: PreparedBatch | None = None,
         access_token: str | None = None,
     ) -> None:
+        """Create the session client.
+
+        Args:
+            transport: Middleware chain used for authenticated requests.
+            state: Resume state describing the open batch session, its keys and upload instructions.
+            upload_transport: Middleware used to upload parts to the presigned URLs; defaults to ``transport``.
+            prepared_batch: Prepared batch whose parts ``upload_parts()`` uploads; ``None`` for a resumed session without payload.
+            access_token: Bearer token, kept only for the deprecated ``access_token`` accessor.
+        """
         self._transport = transport
         self._external_transfers = AsyncExternalTransferClient(
             upload_transport or transport
@@ -61,7 +70,11 @@ class AsyncBatchSessionClient:
 
     @property
     def reference_number(self) -> str:
-        """Get the batch session reference number."""
+        """Get the batch session reference number.
+
+        Returns:
+            The KSeF reference number of the session.
+        """
         return self._state.reference_number
 
     @property
@@ -70,7 +83,17 @@ class AsyncBatchSessionClient:
         "ksef2 2.0; use `AuthenticatedClient.access_token` instead."
     )
     def access_token(self) -> str:
-        """Deprecated compatibility accessor for the current bearer token."""
+        """Deprecated compatibility accessor for the current bearer token.
+
+        Deprecated:
+            Will be removed in ksef2 2.0. Use ``AuthenticatedClient.access_token`` instead.
+
+        Returns:
+            The bearer access token the session was opened with.
+
+        Raises:
+            KSeFValidationError: If the session state carries no bearer token.
+        """
         self._ensure_open()
         if self._access_token is None:
             raise exceptions.KSeFValidationError(
@@ -81,24 +104,40 @@ class AsyncBatchSessionClient:
 
     @property
     def aes_key(self) -> bytes:
-        """Get the AES key for encrypting batch files."""
+        """Get the AES key for encrypting batch files.
+
+        Returns:
+            The raw AES key.
+        """
         self._ensure_open()
         return self._state.get_aes_key_bytes()
 
     @property
     def iv(self) -> bytes:
-        """Get the initialization vector for AES encryption."""
+        """Get the initialization vector for AES encryption.
+
+        Returns:
+            The raw initialization vector.
+        """
         self._ensure_open()
         return self._state.get_iv_bytes()
 
     @property
     def part_upload_requests(self) -> list[PartUploadRequest]:
-        """Get the upload instructions for each file part."""
+        """Get the upload instructions for each file part.
+
+        Returns:
+            One upload request, with presigned URL and headers, per part.
+        """
         self._ensure_open()
         return self._state.part_upload_requests
 
     def resume_state(self) -> BatchSessionResumeState:
-        """Return the sensitive session state needed to resume later."""
+        """Return the sensitive session state needed to resume later.
+
+        Returns:
+            The sensitive session state needed to resume later.
+        """
         return self._state
 
     @deprecated(
@@ -106,11 +145,22 @@ class AsyncBatchSessionClient:
         "use `resume_state()` instead."
     )
     def get_state(self) -> BatchSessionResumeState:
-        """Deprecated compatibility wrapper for ``resume_state()``."""
+        """Deprecated compatibility wrapper for ``resume_state()``.
+
+        Deprecated:
+            Will be removed in ksef2 2.0. Use ``resume_state()`` instead.
+
+        Returns:
+            The same state as ``resume_state()``.
+        """
         return self.resume_state()
 
     async def get_status(self) -> SessionStatusResponse:
-        """Fetch the current processing state of the batch session."""
+        """Fetch the current processing state of the batch session.
+
+        Returns:
+            The session status, including invoice counters.
+        """
         return session_from_spec(
             await self._invoice_eps.get_session_status(
                 reference_number=self._state.reference_number,
@@ -123,7 +173,15 @@ class AsyncBatchSessionClient:
         page_size: int = 10,
         continuation_token: str | None = None,
     ) -> SessionInvoicesResponse:
-        """Fetch one page of invoices submitted in this batch session."""
+        """Fetch one page of invoices submitted in this batch session.
+
+        Args:
+            page_size: Number of invoices per page (10–1000).
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+
+        Returns:
+            One page of invoices submitted in the session, with a continuation token when more exist.
+        """
         return session_from_spec(
             await self._invoice_eps.list_session_invoices(
                 reference_number=self._state.reference_number,
@@ -138,7 +196,15 @@ class AsyncBatchSessionClient:
         page_size: int = 10,
         continuation_token: str | None = None,
     ) -> SessionInvoicesResponse:
-        """Fetch one page of failed invoices from this batch session."""
+        """Fetch one page of failed invoices from this batch session.
+
+        Args:
+            page_size: Number of invoices per page (10–1000).
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+
+        Returns:
+            One page of invoices that failed processing, with a continuation token when more exist.
+        """
         return session_from_spec(
             await self._invoice_eps.list_failed_session_invoices(
                 reference_number=self._state.reference_number,
@@ -148,7 +214,14 @@ class AsyncBatchSessionClient:
         )
 
     async def get_upo(self, *, upo_reference_number: str) -> bytes:
-        """Download the collective UPO for the batch session."""
+        """Download the collective UPO for the batch session.
+
+        Args:
+            upo_reference_number: Reference number of the UPO, taken from the session status.
+
+        Returns:
+            The UPO as XML bytes.
+        """
         return await self._session_eps.get_session_upo(
             reference_number=self._state.reference_number,
             upo_reference_number=upo_reference_number,

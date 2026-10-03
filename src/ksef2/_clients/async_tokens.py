@@ -34,6 +34,11 @@ class AsyncTokensClient:
     """
 
     def __init__(self, transport: AsyncMiddleware) -> None:
+        """Create the client.
+
+        Args:
+            transport: Middleware chain used for requests to KSeF.
+        """
         self._endpoints = AsyncTokenEndpoints(transport)
 
     async def wait_for_activation(
@@ -153,7 +158,14 @@ class AsyncTokensClient:
         *,
         reference_number: str,
     ) -> TokenStatusResponse:
-        """Return the current status of a token."""
+        """Return the current status of a token.
+
+        Args:
+            reference_number: Reference number of the token.
+
+        Returns:
+            The token's current lifecycle status.
+        """
         spec_resp = await self._endpoints.token_status(
             reference_number=reference_number
         )
@@ -164,5 +176,9 @@ class AsyncTokensClient:
         *,
         reference_number: str,
     ) -> None:
-        """Revoke a token."""
+        """Revoke a token.
+
+        Args:
+            reference_number: Reference number of the token to revoke.
+        """
         await self._endpoints.revoke_token(reference_number=reference_number)

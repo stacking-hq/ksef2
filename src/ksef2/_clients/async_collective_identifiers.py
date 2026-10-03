@@ -25,6 +25,11 @@ class AsyncCollectiveIdentifiersClient:
     """API for generating and querying collective invoice identifiers."""
 
     def __init__(self, transport: AsyncMiddleware) -> None:
+        """Create the client.
+
+        Args:
+            transport: Middleware chain used for requests to KSeF.
+        """
         self._endpoints = AsyncCollectiveIdentifiersEndpoints(transport)
 
     async def generate(
@@ -32,7 +37,14 @@ class AsyncCollectiveIdentifiersClient:
         *,
         invoices: list[CollectiveIdentifierInvoice],
     ) -> GenerateCollectiveIdentifierResponse:
-        """Generate a collective identifier for the supplied invoices."""
+        """Generate a collective identifier for the supplied invoices.
+
+        Args:
+            invoices: Invoices to group, with optional payment details.
+
+        Returns:
+            The generated collective identifier number.
+        """
         return from_spec(await self._endpoints.generate(body=to_spec(invoices)))
 
     async def query(
@@ -42,7 +54,16 @@ class AsyncCollectiveIdentifiersClient:
         continuation_token: str | None = None,
         params: CollectiveIdentifierParams | None = None,
     ) -> CollectiveIdentifiersPage:
-        """Fetch one page of collective identifiers visible in the context."""
+        """Fetch one page of collective identifiers visible in the context.
+
+        Args:
+            filters: Criteria selecting collective identifiers.
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+            params: Page size; defaults are used when ``None``.
+
+        Returns:
+            One page of matching collective identifiers.
+        """
         parameters = params or CollectiveIdentifierParams()
         return from_spec(
             await self._endpoints.query(
@@ -58,7 +79,15 @@ class AsyncCollectiveIdentifiersClient:
         filters: CollectiveIdentifiersQuery,
         params: CollectiveIdentifierParams | None = None,
     ) -> AsyncIterator[CollectiveIdentifiersPage]:
-        """Iterate through every page matching a collective identifier query."""
+        """Iterate through every page matching a collective identifier query.
+
+        Args:
+            filters: Criteria selecting collective identifiers.
+            params: Page size; defaults are used when ``None``.
+
+        Yields:
+            Each page of matching collective identifiers, following continuation tokens.
+        """
         parameters = params or CollectiveIdentifierParams()
         response = await self.query(filters=filters, params=parameters)
         yield response
@@ -78,7 +107,16 @@ class AsyncCollectiveIdentifiersClient:
         continuation_token: str | None = None,
         params: CollectiveIdentifierParams | None = None,
     ) -> CollectiveIdentifierReferencesPage:
-        """Fetch one page of identifiers associated with a KSeF invoice."""
+        """Fetch one page of identifiers associated with a KSeF invoice.
+
+        Args:
+            ksef_number: KSeF number of the invoice.
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+            params: Page size; defaults are used when ``None``.
+
+        Returns:
+            One page of collective identifiers that reference the invoice.
+        """
         parameters = params or CollectiveIdentifierParams()
         return from_spec(
             await self._endpoints.query_by_ksef_number(
@@ -94,7 +132,15 @@ class AsyncCollectiveIdentifiersClient:
         ksef_number: str,
         params: CollectiveIdentifierParams | None = None,
     ) -> AsyncIterator[CollectiveIdentifierReferencesPage]:
-        """Iterate through identifiers associated with one KSeF invoice."""
+        """Iterate through identifiers associated with one KSeF invoice.
+
+        Args:
+            ksef_number: KSeF number of the invoice.
+            params: Page size; defaults are used when ``None``.
+
+        Yields:
+            Each page of identifiers that reference the invoice, following continuation tokens.
+        """
         parameters = params or CollectiveIdentifierParams()
         response = await self.query_by_ksef_number(
             ksef_number=ksef_number,
@@ -117,7 +163,16 @@ class AsyncCollectiveIdentifiersClient:
         continuation_token: str | None = None,
         params: CollectiveIdentifierParams | None = None,
     ) -> CollectiveIdentifierInvoicesPage:
-        """Fetch one page of invoices inside the supplied collective identifiers."""
+        """Fetch one page of invoices inside the supplied collective identifiers.
+
+        Args:
+            collective_identifier_numbers: Collective identifier numbers to expand (1–10).
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+            params: Page size; defaults are used when ``None``.
+
+        Returns:
+            One page of invoices belonging to the identifiers.
+        """
         parameters = params or CollectiveIdentifierParams()
         query = CollectiveIdentifierInvoicesQuery(
             collective_identifier_numbers=collective_identifier_numbers
@@ -136,7 +191,15 @@ class AsyncCollectiveIdentifiersClient:
         collective_identifier_numbers: list[str],
         params: CollectiveIdentifierParams | None = None,
     ) -> AsyncIterator[CollectiveIdentifierInvoicesPage]:
-        """Iterate through every invoice page for the supplied collective identifiers."""
+        """Iterate through every invoice page for the supplied collective identifiers.
+
+        Args:
+            collective_identifier_numbers: Collective identifier numbers to expand (1–10).
+            params: Page size; defaults are used when ``None``.
+
+        Yields:
+            Each page of invoices, following continuation tokens.
+        """
         parameters = params or CollectiveIdentifierParams()
         response = await self.list_invoices(
             collective_identifier_numbers=collective_identifier_numbers,

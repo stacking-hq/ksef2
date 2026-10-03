@@ -71,6 +71,14 @@ class AsyncAuthClient:
         environment: Environment = Environment.PRODUCTION,
         transfer_transport: AsyncMiddleware | None = None,
     ) -> None:
+        """Create the client.
+
+        Args:
+            transport: Middleware chain used for unauthenticated requests.
+            certificate_store: Store holding the KSeF public-key certificates used to encrypt tokens.
+            environment: KSeF environment the client talks to.
+            transfer_transport: Middleware used for transfers outside the KSeF API such as batch part uploads; defaults to ``transport``.
+        """
         self._transport = transport
         self._transfer_transport = transfer_transport or transport
         self._certificate_store = certificate_store
@@ -79,7 +87,14 @@ class AsyncAuthClient:
         self._auth_ep = AsyncAuthEndpoints(transport)
 
     def resume(self, state: AuthenticationResumeState) -> AsyncAuthenticatedClient:
-        """Rehydrate an authenticated client from saved authentication state."""
+        """Rehydrate an authenticated client from saved authentication state.
+
+        Args:
+            state: State previously exported from an authenticated client.
+
+        Returns:
+            An authenticated client bound to the saved tokens.
+        """
         return self._build_authenticated_client(auth_tokens=state.to_tokens())
 
     async def with_token(
@@ -109,6 +124,15 @@ class AsyncAuthClient:
             KSeFEncryptionError: If token encryption fails.
             KSeFAuthError: If authentication fails.
             KSeFAuthPollingTimeoutError: If polling exceeds ``timeout``.
+
+        Example:
+            ```python
+            client = AsyncClient(Environment.TEST)
+            auth = await client.authentication.with_token(
+                ksef_token="your-ksef-token",
+                nip="5261040828",
+            )
+            ```
         """
         await self._ensure_certificates()
 
@@ -169,6 +193,18 @@ class AsyncAuthClient:
         Raises:
             KSeFAuthError: If authentication fails.
             KSeFAuthPollingTimeoutError: If polling exceeds ``timeout``.
+
+        Example:
+            ```python
+            from ksef2.xades import load_certificate_from_pem, load_private_key_from_pem
+
+            client = AsyncClient(Environment.DEMO)
+            auth = await client.authentication.with_xades(
+                nip="5261040828",
+                cert=load_certificate_from_pem("company.pem"),
+                private_key=load_private_key_from_pem("company.key"),
+            )
+            ```
         """
         challenge = from_spec(await self._auth_ep.challenge())
         signed_xml = await asyncio.to_thread(
@@ -204,10 +240,25 @@ class AsyncAuthClient:
     ) -> AsyncAuthenticatedClient:
         """Authenticate in the TEST environment using an SDK-generated certificate.
 
+        Args:
+            nip: NIP to authenticate as; the generated certificate is issued for it.
+            verify_chain: Whether KSeF should verify the certificate chain.
+            timeout: Maximum number of seconds to wait for authentication.
+            poll_interval: Delay in seconds between authentication status checks.
+
+        Returns:
+            An authenticated client for the NIP's context.
+
         Raises:
             KSeFUnsupportedEnvironmentError: If the client is not configured for TEST.
             KSeFAuthError: If authentication fails.
             KSeFAuthPollingTimeoutError: If polling exceeds ``timeout``.
+
+        Example:
+            ```python
+            client = AsyncClient(Environment.TEST)
+            auth = await client.authentication.with_test_certificate(nip="5261040828")
+            ```
         """
         if self._environment is not Environment.TEST:
             raise exceptions.KSeFUnsupportedEnvironmentError(
@@ -238,6 +289,27 @@ class AsyncAuthClient:
         Profile selection follows the CLI order: explicit ``name``,
         ``KSEF2_PROFILE``, then ``active_profile`` from the local CLI config.
         The profile environment must match the root client environment.
+
+        Args:
+            name: Profile name; when ``None``, ``KSEF2_PROFILE`` and then the CLI's active profile are used.
+            config_path: Path of the ``ksef2-cli`` config file; the default location is used when ``None``.
+            timeout: Maximum number of seconds to wait for authentication; defaults to the profile's polling settings, else 60.
+            poll_interval: Delay in seconds between authentication status checks; defaults to the profile's value, else 1.
+            verify_chain: Whether KSeF should verify the certificate chain, for certificate-based profiles.
+
+        Returns:
+            An authenticated client for the profile's context.
+
+        Raises:
+            KSeFValidationError: If the profile's environment differs from the client's, or the profile is missing a required secret.
+            KSeFAuthError: If authentication fails.
+            KSeFAuthPollingTimeoutError: If polling exceeds ``timeout``.
+
+        Example:
+            ```python
+            client = AsyncClient(Environment.TEST)
+            auth = await client.authentication.with_profile("test-company")
+            ```
         """
         profile_name, profile = load_cli_profile(name, config_path=config_path)
         if profile.sdk_environment is not self._environment:
@@ -317,7 +389,14 @@ class AsyncAuthClient:
                 )
 
     async def refresh(self, *, refresh_token: str) -> RefreshedToken:
-        """Exchange a refresh token for a new access token."""
+        """Exchange a refresh token for a new access token.
+
+        Args:
+            refresh_token: Refresh token obtained during authentication.
+
+        Returns:
+            A new access token with its expiry time.
+        """
         return from_spec(await self._auth_ep.refresh_token(bearer_token=refresh_token))
 
     async def _redeem(self, auth_token: str) -> AuthTokens:

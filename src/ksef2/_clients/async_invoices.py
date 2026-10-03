@@ -40,6 +40,11 @@ class AsyncInvoicesClient:
     """
 
     def __init__(self, transport: AsyncMiddleware) -> None:
+        """Create the client.
+
+        Args:
+            transport: Middleware chain used for requests to KSeF.
+        """
         self._endpoints = AsyncInvoicesEndpoints(transport)
 
     async def query_metadata(
@@ -48,7 +53,26 @@ class AsyncInvoicesClient:
         filters: InvoicesFilter,
         params: InvoiceMetadataParams | None = None,
     ) -> QueryInvoicesMetadataResponse:
-        """Fetch one page of invoice metadata matching the provided filters."""
+        """Fetch one page of invoice metadata matching the provided filters.
+
+        Args:
+            filters: Criteria selecting the invoices.
+            params: Page size, page offset and sort order; defaults are used when ``None``.
+
+        Returns:
+            One page of invoice metadata. Use ``query_metadata_pages()`` or ``all_metadata()`` to iterate every page.
+
+        Example:
+            ```python
+            from ksef2.models import InvoicesFilter
+
+            page = await auth.invoices.query_metadata(
+                filters=InvoicesFilter.for_buyer(date_from="2026-01-01T00:00:00+01:00"),
+            )
+            for invoice in page.invoices:
+                print(invoice.ksef_number)
+            ```
+        """
         request = to_spec(filters)
         parameters = params or InvoiceMetadataParams()
         spec_resp = await self._endpoints.query_metadata(
@@ -64,6 +88,13 @@ class AsyncInvoicesClient:
         params: InvoiceMetadataParams | None = None,
     ) -> AsyncIterator[QueryInvoicesMetadataResponse]:
         """Fetch metadata pages, following KSeF page and truncation mechanics.
+
+        Args:
+            filters: Criteria selecting the invoices.
+            params: Page size, page offset and sort order; defaults are used when ``None``.
+
+        Yields:
+            Each page of invoice metadata in order.
 
         Raises:
             KSeFMetadataPaginationError: If KSeF returns inconsistent pagination
@@ -103,16 +134,46 @@ class AsyncInvoicesClient:
     ) -> AsyncIterator[InvoiceMetadata]:
         """Iterate over all invoice metadata items matching the provided filters.
 
+        Args:
+            filters: Criteria selecting the invoices.
+            params: Page size and sort order; defaults are used when ``None``.
+
+        Yields:
+            Metadata of each matching invoice, across all pages.
+
         Raises:
             KSeFMetadataPaginationError: If KSeF returns inconsistent pagination
                 boundaries.
+
+        Example:
+            ```python
+            from ksef2.models import InvoicesFilter
+
+            filters = InvoicesFilter.for_seller(date_from="2026-01-01T00:00:00+01:00")
+            async for invoice in auth.invoices.all_metadata(filters=filters):
+                print(invoice.ksef_number, invoice.gross_amount)
+            ```
         """
         async for page in self.query_metadata_pages(filters=filters, params=params):
             for invoice in page.invoices:
                 yield invoice
 
     async def download_invoice(self, *, ksef_number: str) -> bytes:
-        """Download raw invoice bytes by KSeF number."""
+        """Download raw invoice bytes by KSeF number.
+
+        Args:
+            ksef_number: KSeF number of the invoice.
+
+        Returns:
+            The invoice XML as bytes.
+
+        Example:
+            ```python
+            xml_bytes = await auth.invoices.download_invoice(
+                ksef_number="5265877635-20260101-0100100AB5B5-4B",
+            )
+            ```
+        """
         return await self._endpoints.download(ksef_number=ksef_number)
 
     async def schedule_export(
@@ -126,8 +187,29 @@ class AsyncInvoicesClient:
     ) -> ExportHandle:
         """Schedule an export and return the handle needed to decrypt it later.
 
+        Args:
+            filters: Criteria selecting the invoices to export.
+            encryption_certificate: Base64 DER KSeF public-key certificate used to encrypt the export key, for example from ``client.encryption.get_certificates()``.
+            encryption_public_key_id: Identifier of the public key in ``encryption_certificate``; ``None`` to omit it.
+            only_metadata: Export only invoice metadata instead of full invoice XML.
+            compression_type: Compression applied to the package; ``None`` for the server default.
+
+        Returns:
+            A handle holding the export reference number and the keys needed to decrypt the package.
+
         Raises:
             KSeFEncryptionError: If export key encryption fails.
+
+        Example:
+            ```python
+            handle = await auth.invoices.schedule_export(
+                filters=filters,
+                encryption_certificate=certificate.certificate,
+            )
+            status = await auth.invoices.get_export_status(
+                reference_number=handle.reference_number,
+            )
+            ```
         """
         aes_key, iv = generate_session_key()
         encrypted_key = encrypt_symmetric_key(
@@ -161,7 +243,14 @@ class AsyncInvoicesClient:
         *,
         reference_number: str,
     ) -> InvoiceExportStatusResponse:
-        """Fetch export status and package metadata by export reference number."""
+        """Fetch export status and package metadata by export reference number.
+
+        Args:
+            reference_number: Reference number of the export, from ``ExportHandle.reference_number``.
+
+        Returns:
+            The export status, with package metadata once the export is ready.
+        """
         spec_resp = await self._endpoints.get_export_status(
             reference_number=reference_number,
         )

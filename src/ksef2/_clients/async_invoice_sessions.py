@@ -32,6 +32,11 @@ class AsyncInvoiceSessionsClient:
     """
 
     def __init__(self, transport: AsyncMiddleware) -> None:
+        """Create the client.
+
+        Args:
+            transport: Middleware chain used for requests to KSeF.
+        """
         self._endpoints = AsyncSessionEndpoints(transport)
 
     async def query(
