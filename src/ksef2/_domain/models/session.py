@@ -434,10 +434,9 @@ class BaseSessionResumeState(KSeFPersistedModel):
     @field_validator("form_code", mode="before")
     @classmethod
     def _coerce_form_code(cls, value: object) -> object:
-        """
-        Pydantic serializes Enum values that are tuples as JSON arrays (lists).
-        On restore, convert list -> tuple so Enum validation succeeds.
-        Also accept enum names as a convenience ("FA3", etc.).
+        """Restore the form code from its serialized form.
+
+        Pydantic serializes Enum values that are tuples as JSON arrays (lists). On restore, convert list -> tuple so Enum validation succeeds. Also accept enum names as a convenience ("FA3", etc.).
         """
         if isinstance(value, list):
             return tuple(cast(list[object], value))
