@@ -104,7 +104,9 @@ never log it, and never commit it.
 
 After 1.0, changes that remove or rename stable import paths require a major
 version bump. Additive APIs can ship in minor releases. Patch releases should
-preserve documented imports and behavior except for bug fixes.
+preserve documented imports and behavior except for bug fixes. Two cases are
+spelled out below: changes KSeF forces on the SDK, and SDK-initiated
+deprecations.
 
 ### KSeF-driven changes
 
@@ -112,6 +114,14 @@ When KSeF removes or changes an endpoint in a way the SDK cannot absorb, the
 resulting change may ship in a minor release. It is listed in the changelog
 under a "KSeF API changes" heading so it is not mistaken for an SDK decision.
 Breaking changes the SDK initiates itself still require a major version bump.
+
+### Deprecation policy
+
+Within 1.x, anything the SDK itself wants to retire is deprecated first, in a
+minor release: it gets `@deprecated` (or a module-level warning for aliases), a
+message of the form "`X` is deprecated and will be removed in ksef2 2.0; use `Y`
+instead.", and a changelog entry. It is removed only in the next major release.
+The [deprecated APIs](#deprecated-apis) below are the current list.
 
 ## Deprecated APIs
 
@@ -137,13 +147,6 @@ outside `__main__` and test runners, so run your tests with
 
 `FA3InvoiceBuilder.dump_state()` and `from_state()` are a separate builder
 draft API and are not deprecated.
-
-### Deprecation policy
-
-In 1.x an API is deprecated in a minor release: it gets `@deprecated` (or a
-module-level warning for aliases), a message of the form "`X` is deprecated and
-will be removed in ksef2 2.0; use `Y` instead.", and a changelog entry. It is
-removed only in the next major release.
 
 ## Reference
 
