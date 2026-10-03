@@ -136,8 +136,11 @@ class SessionManagementClient:
 
         Args:
             reference_number: Reference number of the authentication session to terminate.
+
+        Returns:
+            ``None`` once the session is terminated.
         """
-        self.terminate(reference_number)
+        return self.terminate(reference_number)
 
     def list(self, *, page_size: int | None = None) -> Pager[AuthenticationSession]:
         """List the authentication sessions of the current subject.

@@ -166,17 +166,26 @@ class AsyncTokensClient:
         """
         self._endpoints = AsyncTokenEndpoints(transport)
 
+    async def _wait_for_activation(
+        self, reference_number: str, timeout: float, poll_interval: float
+    ) -> TokenStatusResponse:
+        handle = AsyncGeneratedToken(
+            self,
+            GenerateTokenResponse(reference_number=reference_number, token=""),
+        )
+        return await handle.wait(timeout=timeout, poll_interval=poll_interval)
+
     @deprecated(
         "`wait_for_activation()` is deprecated and will be removed in ksef2 1.10.0; "
         "use `generate(...).wait()` instead."
     )
-    async def wait_for_activation(
+    def wait_for_activation(
         self,
         *,
         reference_number: str,
         timeout: float = 60.0,
         poll_interval: float = 1.0,
-    ) -> TokenStatusResponse:
+    ) -> Coroutine[None, None, TokenStatusResponse]:
         """Deprecated: wait until a generated token becomes active or reaches a terminal state.
 
         Deprecated:
@@ -195,11 +204,7 @@ class AsyncTokensClient:
             KSeFTokenStatusTimeoutError: If polling exceeds ``timeout``.
             httpx.HTTPError: If a status request fails at the transport boundary.
         """
-        handle = AsyncGeneratedToken(
-            self,
-            GenerateTokenResponse(reference_number=reference_number, token=""),
-        )
-        return await handle.wait(timeout=timeout, poll_interval=poll_interval)
+        return self._wait_for_activation(reference_number, timeout, poll_interval)
 
     async def generate(
         self,

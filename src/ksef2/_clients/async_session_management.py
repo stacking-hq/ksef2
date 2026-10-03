@@ -125,7 +125,7 @@ class AsyncSessionManagementClient:
         "`close()` is deprecated and will be removed in ksef2 1.10.0; "
         "use `terminate()` instead."
     )
-    async def close(self, *, reference_number: str) -> None:
+    def close(self, *, reference_number: str) -> Coroutine[None, None, None]:
         """Deprecated: terminate an authentication session by reference number.
 
         Deprecated:
@@ -133,8 +133,11 @@ class AsyncSessionManagementClient:
 
         Args:
             reference_number: Reference number of the authentication session to terminate.
+
+        Returns:
+            ``None`` once the session is terminated.
         """
-        await self.terminate(reference_number)
+        return self.terminate(reference_number)
 
     def list(
         self, *, page_size: int | None = None
