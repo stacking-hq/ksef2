@@ -24,6 +24,7 @@ from ksef2._clients.async_permissions import AsyncPermissionsClient
 from ksef2._clients.async_session_management import AsyncSessionManagementClient
 from ksef2._clients.async_testdata import AsyncTemporalTestData
 from ksef2._clients.async_testdata import AsyncTestDataClient
+from ksef2._clients.async_tokens import AsyncGeneratedToken
 from ksef2._clients.async_tokens import AsyncTokensClient
 from ksef2._clients.authenticated import AuthenticatedClient
 from ksef2._clients.base import Client
@@ -41,6 +42,7 @@ from ksef2._clients.peppol import PeppolClient
 from ksef2._clients.permissions import PermissionsClient
 from ksef2._clients.session_management import SessionManagementClient
 from ksef2._clients.testdata import TemporalTestData, TestDataClient
+from ksef2._clients.tokens import GeneratedToken
 from ksef2._clients.tokens import TokensClient
 from ksef2._services.async_batch import AsyncBatchService
 from ksef2._services.async_invoices import AsyncExportJob
@@ -52,11 +54,13 @@ from ksef2._services.invoices import InvoicesService
 
 __all__ = [
     "AsyncExportJob",
+    "AsyncGeneratedToken",
     "AsyncInvoiceSubmission",
     "AsyncOperationHandle",
     "AsyncPager",
     "ExportJob",
     "ExportedInvoices",
+    "GeneratedToken",
     "InvoiceSubmission",
     "OperationHandle",
     "Pager",

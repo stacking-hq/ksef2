@@ -33,7 +33,7 @@ class TestTokensClient:
             description="Test token",
         )
 
-        assert isinstance(result, tokens.GenerateTokenResponse)
+        assert isinstance(result.response, tokens.GenerateTokenResponse)
         assert result.reference_number == gen_resp.referenceNumber
         assert result.token == gen_resp.token
         assert len(fake_transport.calls) == 1
@@ -41,6 +41,7 @@ class TestTokensClient:
         assert call.method == "POST"
         assert str(call.path) == TokenRoutes.GENERATE_TOKEN
 
+    @legacy_api
     def test_wait_for_activation_polls_until_active(
         self,
         tokens_client: TokensClient,
@@ -63,6 +64,7 @@ class TestTokensClient:
         assert result.status == "active"
         assert len(fake_transport.calls) == 2
 
+    @legacy_api
     def test_wait_for_activation_raises_on_failed_status(
         self,
         tokens_client: TokensClient,
@@ -78,6 +80,7 @@ class TestTokensClient:
                 reference_number=failed_resp.referenceNumber,
             )
 
+    @legacy_api
     def test_activation_timeout_does_not_discard_generated_token(
         self,
         tokens_client: TokensClient,
@@ -114,6 +117,7 @@ class TestTokensClient:
         assert len(fake_transport.calls) == 2
         assert fake_transport.calls[1].method == "GET"
 
+    @legacy_api
     def test_activation_transport_error_does_not_discard_generated_token(
         self,
         tokens_client: TokensClient,
@@ -212,6 +216,7 @@ class TestTokensClient:
         assert len(pages) == 2
         assert len(fake_transport.calls) == 2
 
+    @legacy_api
     def test_status(
         self,
         tokens_client: TokensClient,

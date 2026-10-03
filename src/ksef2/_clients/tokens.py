@@ -4,13 +4,13 @@
 """Async KSeF token branch client."""
 
 from collections.abc import Generator, Iterator
-from typing import final
+from typing import cast, final, override
 
 from typing_extensions import deprecated
 
+from ksef2._clients._handles import OperationHandle
 from ksef2._clients._pager import Pager
 from ksef2._core import exceptions
-from ksef2._core.polling import poll_until
 from ksef2._core.protocols import Middleware
 from ksef2._domain.models.pagination import TokenListParams
 from ksef2._domain.models.tokens import (
@@ -23,6 +23,125 @@ from ksef2._domain.models.tokens import (
 )
 from ksef2._endpoints.tokens import TokenEndpoints
 from ksef2._infra.mappers.tokens import from_spec, to_spec
+
+
+@final
+class GeneratedToken(OperationHandle[TokenStatusResponse, TokenStatusResponse]):
+    """Handle to a token KSeF is still activating.
+
+    Returned by ``auth.tokens.generate()``. The one-time token is readable
+    immediately, so persist it before calling ``wait()``: a polling failure does
+    not contain or recover that secret. The handle exposes every field of the
+    generation response, for example ``token`` and ``reference_number``, and never
+    includes the token in its ``repr``.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
+    """
+
+    def __init__(
+        self,
+        client: "TokensClient",
+        response: GenerateTokenResponse,
+    ) -> None:
+        """Create the handle.
+
+        Args:
+            client: Tokens client used to poll the token's status.
+            response: Generation response returned by KSeF, carrying the one-time token.
+        """
+        super().__init__(response.reference_number)
+        self._client = client
+        self._response = response
+
+    def __getattr__(self, name: str) -> object:
+        if name in GenerateTokenResponse.model_fields:
+            return cast(object, getattr(self._response, name))
+        raise AttributeError(
+            f"{type(self).__name__!r} object has no attribute {name!r}"
+        )
+
+    @property
+    def token(self) -> str:
+        """Get the one-time token value.
+
+        Returns:
+            The secret KSeF returned once at generation; store it securely.
+        """
+        return self._response.token
+
+    @property
+    def response(self) -> GenerateTokenResponse:
+        """Get the plain generation response.
+
+        Returns:
+            The data model KSeF returned when the token was generated.
+        """
+        return self._response
+
+    def to_sensitive_dict(self) -> dict[str, str]:
+        """Export the one-time token for deliberately protected persistence.
+
+        Returns:
+            A dictionary with the reference number and the plain token.
+        """
+        return self._response.to_sensitive_dict()
+
+    @override
+    def get_status(self) -> TokenStatusResponse:
+        """Fetch the token's current status without waiting.
+
+        Returns:
+            The token's current lifecycle status.
+        """
+        return self._client.get_status(reference_number=self.reference_number)
+
+    @override
+    def _is_pending(self, status: TokenStatusResponse) -> bool:
+        return status.status != "active"
+
+    @override
+    def _check_status(self, status: TokenStatusResponse) -> None:
+        if status.status in ("failed", "revoked"):
+            raise exceptions.KSeFApiError(
+                0,
+                exceptions.ExceptionCode.UNKNOWN_ERROR,
+                f"Token activation failed: status={status.status}",
+            )
+
+    @override
+    def _timeout_error(self, timeout: float) -> BaseException:
+        return exceptions.KSeFTokenStatusTimeoutError(
+            reference_number=self.reference_number,
+            timeout=timeout,
+        )
+
+    @override
+    def _finish(self, status: TokenStatusResponse) -> TokenStatusResponse:
+        return status
+
+    def wait(
+        self,
+        *,
+        timeout: float = 60.0,
+        poll_interval: float = 1.0,
+    ) -> TokenStatusResponse:
+        """Poll until the token becomes active or reaches a terminal state.
+
+        Args:
+            timeout: Maximum number of seconds to wait for activation.
+            poll_interval: Delay in seconds between status checks.
+
+        Returns:
+            The first status response that reports the token as active.
+
+        Raises:
+            KSeFApiError: If activation ends in a terminal failure state.
+            KSeFTokenStatusTimeoutError: If polling exceeds ``timeout``.
+        """
+        return self._wait(timeout, poll_interval)
 
 
 @final
@@ -48,6 +167,10 @@ class TokensClient:
         """
         self._endpoints = TokenEndpoints(transport)
 
+    @deprecated(
+        "`wait_for_activation()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `generate(...).wait()` instead."
+    )
     def wait_for_activation(
         self,
         *,
@@ -55,10 +178,10 @@ class TokensClient:
         timeout: float = 60.0,
         poll_interval: float = 1.0,
     ) -> TokenStatusResponse:
-        """Wait until a generated token becomes active or reaches a terminal state.
+        """Deprecated: wait until a generated token becomes active or reaches a terminal state.
 
-        Call this explicitly after persisting the one-time credential returned by
-        :meth:`generate`. A polling failure does not contain or recover that secret.
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Call ``wait()`` on the handle returned by ``generate()`` instead.
 
         Args:
             reference_number: Reference returned by :meth:`generate`.
@@ -73,44 +196,36 @@ class TokensClient:
             KSeFTokenStatusTimeoutError: If polling exceeds ``timeout``.
             httpx.HTTPError: If a status request fails at the transport boundary.
         """
-        reference_number_local = reference_number
-
-        def _poll() -> TokenStatusResponse:
-            result = self.status(reference_number=reference_number_local)
-            if result.status in ("failed", "revoked"):
-                raise exceptions.KSeFApiError(
-                    0,
-                    exceptions.ExceptionCode.UNKNOWN_ERROR,
-                    f"Token activation failed: status={result.status}",
-                )
-            return result
-
-        return poll_until(
-            operation=_poll,
-            retry_predicate=lambda result: result.status != "active",
-            poll_interval=poll_interval,
-            timeout_seconds=timeout,
-            timeout_error_factory=lambda: exceptions.KSeFTokenStatusTimeoutError(
-                reference_number=reference_number_local,
-                timeout=timeout,
-            ),
+        handle = GeneratedToken(
+            self,
+            GenerateTokenResponse(reference_number=reference_number, token=""),
         )
+        return handle.wait(timeout=timeout, poll_interval=poll_interval)
 
     def generate(
         self,
         *,
         permissions: list[TokenPermission],
         description: str,
-    ) -> GenerateTokenResponse:
-        """Create a token and immediately return its one-time credential.
+    ) -> GeneratedToken:
+        """Create a token and return a handle exposing its one-time credential.
 
         Args:
             permissions: Permissions to include in the generated token.
             description: Human-readable label shown in KSeF token listings.
 
         Returns:
-            The token payload returned once by KSeF. Persist its secret before
-            calling :meth:`wait_for_activation`.
+            A handle whose ``token`` is the one-time secret KSeF returns only once;
+            persist it before calling the handle's ``wait()`` for activation.
+
+        Example:
+            ```python
+            token = auth.tokens.generate(
+                permissions=["invoice_read"], description="reporting"
+            )
+            secret = token.token  # store it now, KSeF will not show it again
+            token.wait()
+            ```
         """
         request = GenerateTokenRequest(
             permissions=permissions,
@@ -118,7 +233,7 @@ class TokensClient:
         )
         body = to_spec(request)
         spec_resp = self._endpoints.generate_token(body=body)
-        return from_spec(spec_resp)
+        return GeneratedToken(self, from_spec(spec_resp))
 
     def _list_page(
         self,
@@ -188,7 +303,7 @@ class TokensClient:
         for page in self._list_pages(params):
             yield page
 
-    def status(
+    def get_status(
         self,
         *,
         reference_number: str,
@@ -203,6 +318,28 @@ class TokensClient:
         """
         spec_resp = self._endpoints.token_status(reference_number=reference_number)
         return from_spec(spec_resp)
+
+    @deprecated(
+        "`status()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `get_status()` instead."
+    )
+    def status(
+        self,
+        *,
+        reference_number: str,
+    ) -> TokenStatusResponse:
+        """Deprecated: return the current status of a token.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``get_status()`` instead.
+
+        Args:
+            reference_number: Reference number of the token.
+
+        Returns:
+            The token's current lifecycle status.
+        """
+        return self.get_status(reference_number=reference_number)
 
     def revoke(
         self,
