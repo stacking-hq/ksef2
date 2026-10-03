@@ -245,8 +245,6 @@ def test_grant_authorization_permission(permissions_context: PermissionContext):
 
     assert response.reference_number
 
-    _ = response.wait()
-
 
 @pytest.mark.integration
 def test_grant_person_permission(permissions_context: PermissionContext):
@@ -264,8 +262,6 @@ def test_grant_person_permission(permissions_context: PermissionContext):
     )
 
     assert response.reference_number
-
-    _ = response.wait()
 
 
 @pytest.mark.integration
@@ -285,8 +281,6 @@ def test_grant_subunit_permission(permissions_context: PermissionContext):
     )
 
     assert response.reference_number
-
-    _ = response.wait()
 
 
 # ---------------------------------------------------------------------------
@@ -337,8 +331,6 @@ def test_revoke_authorization_permission(permissions_context: PermissionContext)
 
     assert revoke_response.reference_number
 
-    _ = revoke_response.wait()
-
 
 @pytest.mark.integration
 def test_revoke_permission(permissions_context: PermissionContext):
@@ -387,5 +379,3 @@ def test_revoke_permission(permissions_context: PermissionContext):
     )
 
     assert revoke_response.reference_number
-
-    _ = revoke_response.wait()
