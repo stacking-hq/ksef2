@@ -48,6 +48,13 @@ class SettlementBuilder[TParent]:
         on_done: Callable[[InvoiceSettlement], None],
         existing_state: InvoiceSettlement | None = None,
     ) -> None:
+        """Create the builder.
+
+        Args:
+            parent: Parent builder that ``done()`` returns to.
+            on_done: Callback that receives the built model when ``done()`` is called.
+            existing_state: Existing model to start from; ``None`` starts empty.
+        """
         self._parent = parent
         self._on_done = on_done
         self._state: SettlementState = adapter.validate_python(
@@ -55,7 +62,14 @@ class SettlementBuilder[TParent]:
         )
 
     def from_model(self, settlement: InvoiceSettlement) -> Self:
-        """Replace the builder state from an existing domain model."""
+        """Replace the builder state from an existing domain model.
+
+        Args:
+            settlement: Model to load into the builder.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state = adapter.validate_python(settlement.model_dump())
         return self
 
@@ -78,17 +92,36 @@ class SettlementBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Add a charge entry."""
+        """Add a charge entry.
+
+        Args:
+            amount: Additional charge amount included in the settlement.
+            reason: Reason for the settlement charge.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["charges"].append(SettlementCharge(amount=amount, reason=reason))
         return self
 
     def add_charge_model(self, charge: SettlementCharge) -> Self:
-        """Add an existing settlement charge model."""
+        """Add an existing settlement charge model.
+
+        Args:
+            charge: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["charges"].append(charge)
         return self
 
     def clear_charges(self) -> Self:
-        """Remove all settlement charges."""
+        """Remove all settlement charges.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["charges"].clear()
         self._state["charges_total"] = None
         return self
@@ -105,7 +138,14 @@ class SettlementBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Set the charges total value."""
+        """Set the charges total value.
+
+        Args:
+            amount: Explicit total of settlement charges when it should be preserved instead of recomputed.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["charges_total"] = amount
         return self
 
@@ -128,19 +168,38 @@ class SettlementBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Add a deduction entry."""
+        """Add a deduction entry.
+
+        Args:
+            amount: Deduction amount included in the settlement.
+            reason: Reason for the settlement deduction.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["deductions"].append(
             SettlementDeduction(amount=amount, reason=reason)
         )
         return self
 
     def add_deduction_model(self, deduction: SettlementDeduction) -> Self:
-        """Add an existing settlement deduction model."""
+        """Add an existing settlement deduction model.
+
+        Args:
+            deduction: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["deductions"].append(deduction)
         return self
 
     def clear_deductions(self) -> Self:
-        """Remove all settlement deductions."""
+        """Remove all settlement deductions.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["deductions"].clear()
         self._state["deductions_total"] = None
         return self
@@ -157,7 +216,14 @@ class SettlementBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Set the deductions total value."""
+        """Set the deductions total value.
+
+        Args:
+            amount: Explicit total of settlement deductions when it should be preserved instead of recomputed.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["deductions_total"] = amount
         return self
 
@@ -173,7 +239,14 @@ class SettlementBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Set the amount due value."""
+        """Set the amount due value.
+
+        Args:
+            amount: Amount due after charges and deductions are applied.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["amount_due"] = amount
         return self
 
@@ -189,12 +262,23 @@ class SettlementBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Set the amount to settle value."""
+        """Set the amount to settle value.
+
+        Args:
+            amount: Remaining amount to settle after taking the settlement context into account.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["amount_to_settle"] = amount
         return self
 
     def build(self) -> InvoiceSettlement:
-        """Build the corresponding FA(3) domain model."""
+        """Build the corresponding FA(3) domain model.
+
+        Returns:
+            The built ``InvoiceSettlement``.
+        """
         return InvoiceSettlement(**self._state)
 
     def _is_empty(self) -> bool:
@@ -202,6 +286,9 @@ class SettlementBuilder[TParent]:
 
     def done(self) -> TParent:
         """Attach the built settlement details to the parent builder and return it.
+
+        Returns:
+            The parent builder.
 
         Raises:
             ValueError: If settlement details are empty.
@@ -220,7 +307,11 @@ class SettlementBuilderMixin:
     _settlement: InvoiceSettlement | None = None
 
     def settlement(self) -> SettlementBuilder[Self]:
-        """Start a settlement invoice body builder or sub-builder."""
+        """Start a settlement invoice body builder or sub-builder.
+
+        Returns:
+            A ``SettlementBuilder`` for this part of the invoice; call ``done()`` on it to attach the result and return to this builder.
+        """
         return SettlementBuilder(self, self._set_settlement, self._settlement)
 
     def _set_settlement(self, value: InvoiceSettlement) -> None:

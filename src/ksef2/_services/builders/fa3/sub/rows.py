@@ -254,6 +254,13 @@ class RowsBuilder[TParent]:
         on_done: Callable[[list[InvoiceRow]], None],
         existing_rows: list[InvoiceRow] | None = None,
     ) -> None:
+        """Create the builder.
+
+        Args:
+            parent: Parent builder that ``done()`` returns to.
+            on_done: Callback that receives the built model when ``done()`` is called.
+            existing_rows: Existing rows to start from; ``None`` starts empty.
+        """
         self._parent = parent
         self._on_done = on_done
         self._state: RowsState = adapter.validate_python(
@@ -261,7 +268,14 @@ class RowsBuilder[TParent]:
         )
 
     def from_model(self, rows: list[InvoiceRow]) -> Self:
-        """Replace the builder state from an existing domain model."""
+        """Replace the builder state from an existing domain model.
+
+        Args:
+            rows: Rows to use.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state = adapter.validate_python({"rows": list(rows)})
         return self
 
@@ -297,6 +311,38 @@ class RowsBuilder[TParent]:
         before_correction: RowBeforeCorrectionParam = False,
     ) -> Self:
         """Add an invoice row from pricing, quantity, and tax fields.
+
+        Args:
+            name: Description of the goods or service shown on the invoice line.
+            quantity: Quantity billed on this line.
+            unit_price_net: Net unit price for one item or one service unit. Provide either this or unit_price_gross.
+            vat_rate: VAT rate used for the line when a standard VAT indicator is enough.
+            vat_classification: Detailed VAT classification for non-standard cases such as WDT, export, exempt, or reverse charge.
+            unit_of_measure: Unit of measure shown on the invoice line.
+            supply_date: Supply or service date specific to this invoice line.
+            discount_amount: Discount amount applied to the line.
+            sale_category: Sale category used when the invoice line must distinguish between zero-rated, exempt, reverse-charge, or other sale contexts.
+            tax_regime: Tax regime applied to the line, for example the standard regime, margin procedure, or special Title XII procedure.
+            net_amount: Explicit line amount. Usually computed automatically; set it only when you intentionally need to override the builder's calculation.
+            vat_amount: Explicit line amount. Usually computed automatically; set it only when you intentionally need to override the builder's calculation.
+            gross_amount: Explicit line amount. Usually computed automatically; set it only when you intentionally need to override the builder's calculation.
+            unit_price_gross: Gross unit price for one item or one service unit. Provide either this or unit_price_net.
+            vat_rate_xii: VAT rate used for special Title XII scenarios.
+            annex_15_marker: Set when the line is covered by Annex 15 reporting.
+            excise_amount: Excise amount linked to the line when required by the invoice scenario.
+            unique_id: Optional reference stored for the line.
+            sku: Optional reference stored for the line.
+            gtin: Optional reference stored for the line.
+            pkwiu: Optional reference stored for the line.
+            cn: Optional reference stored for the line.
+            pkob: Optional reference stored for the line.
+            gtu_code: GTU code assigned to the line when the goods or service falls under GTU reporting.
+            procedure: Special invoice procedure marker assigned to the line.
+            currency_exchange_rate: Currency exchange rate used for this line when the line requires its own rate.
+            before_correction: Marks the line as a before-correction value on correction invoices.
+
+        Returns:
+            The builder, for chaining.
 
         Raises:
             ValueError: If both unit_price_net and unit_price_gross are provided,
@@ -369,6 +415,38 @@ class RowsBuilder[TParent]:
     ) -> Self:
         """Add an invoice line aliasing the row-building API.
 
+        Args:
+            name: Description of the goods or service shown on the invoice line.
+            quantity: Quantity billed on this line.
+            unit_price_net: Net unit price for one item or one service unit. Provide either this or unit_price_gross.
+            vat_rate: VAT rate used for the line when a standard VAT indicator is enough.
+            vat_classification: Detailed VAT classification for non-standard cases such as WDT, export, exempt, or reverse charge.
+            unit_of_measure: Unit of measure shown on the invoice line.
+            supply_date: Supply or service date specific to this invoice line.
+            discount_amount: Discount amount applied to the line.
+            sale_category: Sale category used when the invoice line must distinguish between zero-rated, exempt, reverse-charge, or other sale contexts.
+            tax_regime: Tax regime applied to the line, for example the standard regime, margin procedure, or special Title XII procedure.
+            net_amount: Explicit line amount. Usually computed automatically; set it only when you intentionally need to override the builder's calculation.
+            vat_amount: Explicit line amount. Usually computed automatically; set it only when you intentionally need to override the builder's calculation.
+            gross_amount: Explicit line amount. Usually computed automatically; set it only when you intentionally need to override the builder's calculation.
+            unit_price_gross: Gross unit price for one item or one service unit. Provide either this or unit_price_net.
+            vat_rate_xii: VAT rate used for special Title XII scenarios.
+            annex_15_marker: Set when the line is covered by Annex 15 reporting.
+            excise_amount: Excise amount linked to the line when required by the invoice scenario.
+            unique_id: Optional reference stored for the line.
+            sku: Optional reference stored for the line.
+            gtin: Optional reference stored for the line.
+            pkwiu: Optional reference stored for the line.
+            cn: Optional reference stored for the line.
+            pkob: Optional reference stored for the line.
+            gtu_code: GTU code assigned to the line when the goods or service falls under GTU reporting.
+            procedure: Special invoice procedure marker assigned to the line.
+            currency_exchange_rate: Currency exchange rate used for this line when the line requires its own rate.
+            before_correction: Marks the line as a before-correction value on correction invoices.
+
+        Returns:
+            The builder, for chaining.
+
         Raises:
             ValueError: If both unit_price_net and unit_price_gross are provided,
                 or if neither price is provided.
@@ -404,27 +482,56 @@ class RowsBuilder[TParent]:
         )
 
     def add_row_model(self, row: InvoiceRow) -> Self:
-        """Add a row model entry."""
+        """Add a row model entry.
+
+        Args:
+            row: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["rows"].append(row)
         return self
 
     def add_line_model(self, line: InvoiceRow) -> Self:
-        """Add an existing invoice line domain model."""
+        """Add an existing invoice line domain model.
+
+        Args:
+            line: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["rows"].append(line)
         return self
 
     def replace_lines(self, rows: list[InvoiceRow]) -> Self:
-        """Replace all invoice lines."""
+        """Replace all invoice lines.
+
+        Args:
+            rows: Rows to use.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["rows"] = list(rows)
         return self
 
     def clear_lines(self) -> Self:
-        """Remove all invoice lines."""
+        """Remove all invoice lines.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["rows"].clear()
         return self
 
     def build(self) -> list[InvoiceRow]:
-        """Build the corresponding FA(3) domain model."""
+        """Build the corresponding FA(3) domain model.
+
+        Returns:
+            The built ``list[InvoiceRow]``.
+        """
         return list(self._state["rows"])
 
     def _is_empty(self) -> bool:
@@ -432,6 +539,9 @@ class RowsBuilder[TParent]:
 
     def done(self) -> TParent:
         """Attach the built rows to the parent builder and return the parent.
+
+        Returns:
+            The parent builder.
 
         Raises:
             ValueError: If no invoice rows have been added.
@@ -448,7 +558,11 @@ class RowsBuilderMixin:
     _rows: list[InvoiceRow] = []
 
     def rows(self) -> RowsBuilder[Self]:
-        """Start an invoice rows sub-builder."""
+        """Start an invoice rows sub-builder.
+
+        Returns:
+            A ``RowsBuilder`` for this part of the invoice; call ``done()`` on it to attach the result and return to this builder.
+        """
         return RowsBuilder(self, self._set_rows, self._rows)
 
     def _set_rows(self, value: list[InvoiceRow]) -> None:

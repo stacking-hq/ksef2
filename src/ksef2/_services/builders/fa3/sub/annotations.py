@@ -52,6 +52,13 @@ class AnnotationsBuilder[TParent]:
         on_done: Callable[[InvoiceAnnotationsContext], None],
         existing_state: InvoiceAnnotationsContext | None = None,
     ) -> None:
+        """Create the builder.
+
+        Args:
+            parent: Parent builder that ``done()`` returns to.
+            on_done: Callback that receives the built model when ``done()`` is called.
+            existing_state: Existing model to start from; ``None`` starts empty.
+        """
         self._parent = parent
         self._on_done = on_done
         if existing_state is None:
@@ -77,7 +84,14 @@ class AnnotationsBuilder[TParent]:
         )
 
     def from_model(self, annotations: InvoiceAnnotationsContext) -> Self:
-        """Replace the builder state from an existing domain model."""
+        """Replace the builder state from an existing domain model.
+
+        Args:
+            annotations: Model to load into the builder.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state = adapter.validate_python(
             {
                 "cash_accounting": annotations.cash_accounting,
@@ -107,7 +121,14 @@ class AnnotationsBuilder[TParent]:
             ),
         ] = True,
     ) -> Self:
-        """Toggle the cash accounting annotation."""
+        """Toggle the cash accounting annotation.
+
+        Args:
+            enabled: Marks the invoice with the cash accounting annotation.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["cash_accounting"] = enabled
         return self
 
@@ -122,7 +143,14 @@ class AnnotationsBuilder[TParent]:
             ),
         ] = True,
     ) -> Self:
-        """Toggle the self-billing annotation."""
+        """Toggle the self-billing annotation.
+
+        Args:
+            enabled: Marks the invoice as self-billing.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["self_billing"] = enabled
         return self
 
@@ -137,7 +165,14 @@ class AnnotationsBuilder[TParent]:
             ),
         ] = True,
     ) -> Self:
-        """Toggle the reverse-charge annotation."""
+        """Toggle the reverse-charge annotation.
+
+        Args:
+            enabled: Marks the invoice with the reverse charge annotation.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["reverse_charge_annotation"] = enabled
         return self
 
@@ -152,7 +187,14 @@ class AnnotationsBuilder[TParent]:
             ),
         ] = True,
     ) -> Self:
-        """Toggle the split-payment annotation."""
+        """Toggle the split-payment annotation.
+
+        Args:
+            enabled: Marks the invoice with the split payment annotation.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["split_payment"] = enabled
         return self
 
@@ -167,7 +209,14 @@ class AnnotationsBuilder[TParent]:
             ),
         ] = True,
     ) -> Self:
-        """Toggle the simplified-procedure annotation."""
+        """Toggle the simplified-procedure annotation.
+
+        Args:
+            enabled: Marks the invoice with the simplified procedure annotation.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["simplified_procedure"] = enabled
         return self
 
@@ -183,7 +232,14 @@ class AnnotationsBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Set the margin procedure annotation."""
+        """Set the margin procedure annotation.
+
+        Args:
+            procedure: Margin procedure applied to the invoice when the invoice uses margin taxation.
+
+        Returns:
+            The builder, for chaining.
+        """
         if procedure is None or isinstance(procedure, MarginProcedure):
             self._state["margin_procedure"] = procedure
         else:
@@ -218,7 +274,16 @@ class AnnotationsBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
-        """Set tax-exemption legal basis details."""
+        """Set tax-exemption legal basis details.
+
+        Args:
+            legal_basis_act: Legal basis from a domestic act used to justify the tax exemption.
+            legal_basis_eu_directive: Legal basis from an EU directive used to justify the tax exemption.
+            legal_basis_other: Other legal basis used to justify the tax exemption.
+
+        Returns:
+            The builder, for chaining.
+        """
         if (
             legal_basis_act is None
             and legal_basis_eu_directive is None
@@ -234,7 +299,11 @@ class AnnotationsBuilder[TParent]:
         return self
 
     def clear_tax_exemption(self) -> Self:
-        """Remove the tax-exemption annotation."""
+        """Remove the tax-exemption annotation.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["tax_exemption"] = None
         return self
 
@@ -250,7 +319,14 @@ class AnnotationsBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
-        """Set the new-transport supply marker."""
+        """Set the new-transport supply marker.
+
+        Args:
+            article_42_5_required: Set when the new means of transport supply requires the Article 42(5) marker.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._article_42_5_required = article_42_5_required
         return self
 
@@ -395,7 +471,30 @@ class AnnotationsBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
-        """Add a new transport item entry."""
+        """Add a new transport item entry.
+
+        Args:
+            available_from: Date from which the transport item was made available.
+            row_number: Row number used to identify the transport item inside the annotation block.
+            brand: Brand of the new means of transport.
+            model: Model of the new means of transport.
+            color: Color of the new means of transport.
+            registration_number: Registration number of the new means of transport.
+            production_year: Production year of the new means of transport.
+            land_vehicle_mileage: Mileage for a land vehicle.
+            vin: VIN of the transport item.
+            body_number: Body number of the transport item.
+            chassis_number: Chassis number of the transport item.
+            frame_number: Frame number of the transport item.
+            land_vehicle_type: Type of land vehicle.
+            vessel_working_hours: Working hours for a vessel.
+            hull_number: Hull number for a vessel.
+            aircraft_working_hours: Working hours for an aircraft.
+            aircraft_serial_number: Serial number for an aircraft.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._new_transport_items.append(
             NewTransportMeansItem(
                 available_from=available_from,
@@ -420,18 +519,33 @@ class AnnotationsBuilder[TParent]:
         return self
 
     def add_new_transport_item_model(self, item: NewTransportMeansItem) -> Self:
-        """Add a new transport item model entry."""
+        """Add a new transport item model entry.
+
+        Args:
+            item: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._new_transport_items.append(item)
         return self
 
     def clear_new_transport_items(self) -> Self:
-        """Remove all new-transport-means items."""
+        """Remove all new-transport-means items.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._new_transport_items.clear()
         self._article_42_5_required = None
         return self
 
     def build(self) -> InvoiceAnnotationsContext:
-        """Build the corresponding FA(3) domain model."""
+        """Build the corresponding FA(3) domain model.
+
+        Returns:
+            The built ``InvoiceAnnotationsContext``.
+        """
         new_transport_supply = None
         if self._new_transport_items or self._article_42_5_required is not None:
             new_transport_supply = NewTransportSupply(
@@ -455,6 +569,9 @@ class AnnotationsBuilder[TParent]:
     def done(self) -> TParent:
         """Attach the built annotation details to the parent builder and return it.
 
+        Returns:
+            The parent builder.
+
         Raises:
             ValueError: If annotation details are empty.
         """
@@ -472,7 +589,11 @@ class AnnotationsBuilderMixin:
     _annotations: InvoiceAnnotationsContext | None = None
 
     def annotations(self) -> AnnotationsBuilder[Self]:
-        """Start an annotations sub-builder."""
+        """Start an annotations sub-builder.
+
+        Returns:
+            An ``AnnotationsBuilder`` for this part of the invoice; call ``done()`` on it to attach the result and return to this builder.
+        """
         return AnnotationsBuilder(self, self._set_annotations, self._annotations)
 
     def _set_annotations(self, value: InvoiceAnnotationsContext) -> None:

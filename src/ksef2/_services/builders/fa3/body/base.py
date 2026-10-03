@@ -56,12 +56,24 @@ class BaseBodyBuilder:
     """Shared fluent builder for common FA(3) body fields."""
 
     def __init__(self, existing_state: KsefInvoiceBody | None = None) -> None:
+        """Create the builder.
+
+        Args:
+            existing_state: Existing model to start from; ``None`` starts empty.
+        """
         self._state = adapter.validate_python(
             existing_state.model_dump() if existing_state else _default_state()
         )
 
     def from_model(self, body: KsefInvoiceBody) -> Self:
-        """Replace the builder state from an existing domain model."""
+        """Replace the builder state from an existing domain model.
+
+        Args:
+            body: Model to load into the builder.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state = adapter.validate_python(body.model_dump())
         return self
 
@@ -75,7 +87,14 @@ class BaseBodyBuilder:
             ),
         ],
     ) -> Self:
-        """Set the currency value."""
+        """Set the currency value.
+
+        Args:
+            value: Invoice currency code. The builder stores it in uppercase.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["currency"] = value.upper()
         return self
 
@@ -90,7 +109,14 @@ class BaseBodyBuilder:
             ),
         ],
     ) -> Self:
-        """Set the issue date value."""
+        """Set the issue date value.
+
+        Args:
+            value: Date when the invoice is issued.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["issue_date"] = value
         return self
 
@@ -104,7 +130,14 @@ class BaseBodyBuilder:
             ),
         ],
     ) -> Self:
-        """Set the issue place value."""
+        """Set the issue place value.
+
+        Args:
+            value: Place where the invoice was issued.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["issue_place"] = value
         return self
 
@@ -118,7 +151,14 @@ class BaseBodyBuilder:
             ),
         ],
     ) -> Self:
-        """Set the invoice number value."""
+        """Set the invoice number value.
+
+        Args:
+            value: Invoice number visible on the document.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["invoice_number"] = value
         return self
 
@@ -133,17 +173,35 @@ class BaseBodyBuilder:
             ),
         ],
     ) -> Self:
-        """Add a warehouse document entry."""
+        """Add a warehouse document entry.
+
+        Args:
+            value: Reference to a warehouse or stock document linked to the invoice.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["warehouse_documents"].append(value)
         return self
 
     def replace_warehouse_documents(self, values: list[str]) -> Self:
-        """Replace the warehouse documents collection."""
+        """Replace the warehouse documents collection.
+
+        Args:
+            values: Replacement values.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["warehouse_documents"] = list(values)
         return self
 
     def clear_warehouse_documents(self) -> Self:
-        """Remove all warehouse documents entries."""
+        """Remove all warehouse documents entries.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["warehouse_documents"].clear()
         return self
 
@@ -158,7 +216,14 @@ class BaseBodyBuilder:
             ),
         ],
     ) -> Self:
-        """Set the date of supply value."""
+        """Set the date of supply value.
+
+        Args:
+            value: Supply or service completion date for the invoice.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["date_of_supply"] = value
         return self
 
@@ -184,7 +249,15 @@ class BaseBodyBuilder:
             ),
         ] = None,
     ) -> Self:
-        """Set the billing period value."""
+        """Set the billing period value.
+
+        Args:
+            period_start: Start of the billing period for period-based invoices.
+            period_end: End of the billing period for period-based invoices.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["period_start"] = period_start
         self._state["period_end"] = period_end
         return self
@@ -201,7 +274,14 @@ class BaseBodyBuilder:
             ),
         ],
     ) -> Self:
-        """Set the VAT currency exchange rate value."""
+        """Set the VAT currency exchange rate value.
+
+        Args:
+            value: Exchange rate used for VAT calculations when the invoice currency differs from PLN.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["vat_currency_exchange_rate"] = value
         return self
 
@@ -216,7 +296,14 @@ class BaseBodyBuilder:
             ),
         ] = True,
     ) -> Self:
-        """Set the FP marker flag."""
+        """Set the FP marker flag.
+
+        Args:
+            enabled: Marks the invoice as an FP invoice.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["fp_invoice"] = enabled
         return self
 
@@ -231,7 +318,14 @@ class BaseBodyBuilder:
             ),
         ] = True,
     ) -> Self:
-        """Set the related party transaction value."""
+        """Set the related party transaction value.
+
+        Args:
+            enabled: Marks the invoice as a related-party transaction.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["related_party_transaction"] = enabled
         return self
 
@@ -263,7 +357,16 @@ class BaseBodyBuilder:
             ),
         ] = None,
     ) -> Self:
-        """Add a description entry."""
+        """Add a description entry.
+
+        Args:
+            key: Label for an additional invoice description entry.
+            value: Value stored under the additional description label.
+            row_number: Invoice row number that this additional description refers to.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["additional_description"].append(
             AdditionalDescriptionEntry(
                 row_number=row_number,
@@ -274,12 +377,23 @@ class BaseBodyBuilder:
         return self
 
     def add_description_model(self, entry: AdditionalDescriptionEntry) -> Self:
-        """Add an existing additional-description domain model."""
+        """Add an existing additional-description domain model.
+
+        Args:
+            entry: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["additional_description"].append(entry)
         return self
 
     def clear_descriptions(self) -> Self:
-        """Remove all additional description entries."""
+        """Remove all additional description entries.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["additional_description"].clear()
         return self
 
@@ -294,7 +408,14 @@ class BaseBodyBuilder:
             ),
         ],
     ) -> Self:
-        """Set the return of excise value."""
+        """Set the return of excise value.
+
+        Args:
+            value: Marks the invoice as related to an excise refund scenario when required.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["return_of_excise"] = value
         return self
 
@@ -311,6 +432,13 @@ class BaseBodyBuilder:
             ),
         ],
     ) -> Self:
-        """Set the summary overrides value."""
+        """Set the summary overrides value.
+
+        Args:
+            value: Explicit invoice summary totals to preserve when they should not be recomputed from lines.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["summary_overrides"] = value
         return self
