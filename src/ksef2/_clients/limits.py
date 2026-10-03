@@ -27,22 +27,43 @@ class LimitsClient:
     """
 
     def __init__(self, transport: Middleware) -> None:
+        """Create the client.
+
+        Args:
+            transport: Middleware chain used for requests to KSeF.
+        """
         self._endpoints = LimitEndpoints(transport)
 
     def get_context_limits(self) -> ContextLimits:
-        """Return the effective limits for online and batch sessions."""
+        """Return the effective limits for online and batch sessions.
+
+        Returns:
+            The effective limits for online and batch sessions.
+        """
         return from_spec(self._endpoints.get_context_limits())
 
     def get_subject_limits(self) -> SubjectLimits:
-        """Return the effective limits for certificate enrollments and issuance."""
+        """Return the effective limits for certificate enrollments and issuance.
+
+        Returns:
+            The effective limits for certificate enrollments and issuance.
+        """
         return from_spec(self._endpoints.get_subject_limits())
 
     def get_api_rate_limits(self) -> ApiRateLimits:
-        """Return the effective per-endpoint API rate limits."""
+        """Return the effective per-endpoint API rate limits.
+
+        Returns:
+            The effective per-endpoint API rate limits.
+        """
         return from_spec(self._endpoints.get_api_rate_limits())
 
     def set_session_limits(self, *, limits: ContextLimits) -> None:
-        """Override session limits for the current subject."""
+        """Override session limits for the current subject.
+
+        Args:
+            limits: New session limits.
+        """
         self._endpoints.set_session_limits(body=to_spec(limits))
 
     def reset_session_limits(self) -> None:
@@ -50,7 +71,11 @@ class LimitsClient:
         self._endpoints.reset_session_limits()
 
     def set_subject_limits(self, *, limits: SubjectLimits) -> None:
-        """Override subject-level certificate and enrollment limits."""
+        """Override subject-level certificate and enrollment limits.
+
+        Args:
+            limits: New subject-level limits.
+        """
         self._endpoints.set_subject_limits(body=to_spec(limits))
 
     def reset_subject_limits(self) -> None:
@@ -58,7 +83,11 @@ class LimitsClient:
         self._endpoints.reset_subject_limits()
 
     def set_api_rate_limits(self, *, limits: ApiRateLimits) -> None:
-        """Override API rate limits for the current subject."""
+        """Override API rate limits for the current subject.
+
+        Args:
+            limits: New API rate limits.
+        """
         self._endpoints.set_api_rate_limits(body=to_spec(limits))
 
     def reset_api_rate_limits(self) -> None:

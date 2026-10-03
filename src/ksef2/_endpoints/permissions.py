@@ -17,7 +17,14 @@ class PermissionsGrantEndpoints(BaseEndpoints):
         self,
         request: spec.PersonPermissionsGrantRequest,
     ) -> spec.PermissionsOperationResponse:
-        """Start a person permission grant operation."""
+        """Start a person permission grant operation.
+
+        Args:
+            request: Request payload (``spec.PersonPermissionsGrantRequest``).
+
+        Returns:
+            The parsed KSeF response (``spec.PermissionsOperationResponse``).
+        """
         return self._parse(
             self._transport.post(
                 path=routes.GrantPermissionsRoutes.GRANT_PERSON,
@@ -29,7 +36,14 @@ class PermissionsGrantEndpoints(BaseEndpoints):
     def grant_entity(
         self, request: spec.EntityPermissionsGrantRequest
     ) -> spec.PermissionsOperationResponse:
-        """Start an entity permission grant operation."""
+        """Start an entity permission grant operation.
+
+        Args:
+            request: Request payload (``spec.EntityPermissionsGrantRequest``).
+
+        Returns:
+            The parsed KSeF response (``spec.PermissionsOperationResponse``).
+        """
         return self._parse(
             self._transport.post(
                 path=routes.GrantPermissionsRoutes.GRANT_ENTITY,
@@ -41,7 +55,14 @@ class PermissionsGrantEndpoints(BaseEndpoints):
     def grant_authorization(
         self, request: spec.EntityAuthorizationPermissionsGrantRequest
     ) -> spec.PermissionsOperationResponse:
-        """Start an authorization permission grant operation."""
+        """Start an authorization permission grant operation.
+
+        Args:
+            request: Request payload (``spec.EntityAuthorizationPermissionsGrantRequest``).
+
+        Returns:
+            The parsed KSeF response (``spec.PermissionsOperationResponse``).
+        """
         return self._parse(
             self._transport.post(
                 path=routes.GrantPermissionsRoutes.GRANT_AUTHORIZATION,
@@ -53,7 +74,14 @@ class PermissionsGrantEndpoints(BaseEndpoints):
     def grant_indirect(
         self, request: spec.IndirectPermissionsGrantRequest
     ) -> spec.PermissionsOperationResponse:
-        """Start an indirect permission grant operation."""
+        """Start an indirect permission grant operation.
+
+        Args:
+            request: Request payload (``spec.IndirectPermissionsGrantRequest``).
+
+        Returns:
+            The parsed KSeF response (``spec.PermissionsOperationResponse``).
+        """
         return self._parse(
             self._transport.post(
                 path=routes.GrantPermissionsRoutes.GRANT_INDIRECT,
@@ -65,7 +93,14 @@ class PermissionsGrantEndpoints(BaseEndpoints):
     def grant_subunit(
         self, request: spec.SubunitPermissionsGrantRequest
     ) -> spec.PermissionsOperationResponse:
-        """Start a subunit permission grant operation."""
+        """Start a subunit permission grant operation.
+
+        Args:
+            request: Request payload (``spec.SubunitPermissionsGrantRequest``).
+
+        Returns:
+            The parsed KSeF response (``spec.PermissionsOperationResponse``).
+        """
         return self._parse(
             self._transport.post(
                 path=routes.GrantPermissionsRoutes.GRANT_SUBUNITS,
@@ -77,7 +112,14 @@ class PermissionsGrantEndpoints(BaseEndpoints):
     def grant_administered_eu_entity(
         self, request: spec.EuEntityAdministrationPermissionsGrantRequest
     ) -> spec.PermissionsOperationResponse:
-        """Start an EU-entity administration grant operation."""
+        """Start an EU-entity administration grant operation.
+
+        Args:
+            request: Request payload (``spec.EuEntityAdministrationPermissionsGrantRequest``).
+
+        Returns:
+            The parsed KSeF response (``spec.PermissionsOperationResponse``).
+        """
         return self._parse(
             self._transport.post(
                 path=routes.GrantPermissionsRoutes.GRANT_ADMINISTERED_EU_ENTITY,
@@ -89,7 +131,14 @@ class PermissionsGrantEndpoints(BaseEndpoints):
     def grant_eu_entity(
         self, request: spec.EuEntityPermissionsGrantRequest
     ) -> spec.PermissionsOperationResponse:
-        """Start an EU-entity permission grant operation."""
+        """Start an EU-entity permission grant operation.
+
+        Args:
+            request: Request payload (``spec.EuEntityPermissionsGrantRequest``).
+
+        Returns:
+            The parsed KSeF response (``spec.PermissionsOperationResponse``).
+        """
         return self._parse(
             self._transport.post(
                 path=routes.GrantPermissionsRoutes.GRANT_EU_ENTITY,
@@ -104,7 +153,14 @@ class RevokePermissionsEndpoints(BaseEndpoints):
     """Raw endpoints for permission revocation operations."""
 
     def revoke_person(self, permission_id: str) -> spec.PermissionsOperationResponse:
-        """Revoke a non-authorization permission."""
+        """Revoke a non-authorization permission.
+
+        Args:
+            permission_id: Identifier of the permission, from a query result.
+
+        Returns:
+            The parsed KSeF response (``spec.PermissionsOperationResponse``).
+        """
         return self._parse(
             self._transport.delete(
                 path=routes.RevokePermissionsRoutes.REVOKE_PERMISSION.format(
@@ -117,7 +173,14 @@ class RevokePermissionsEndpoints(BaseEndpoints):
     def revoke_authorization(
         self, permission_id: str
     ) -> spec.PermissionsOperationResponse:
-        """Revoke an authorization permission."""
+        """Revoke an authorization permission.
+
+        Args:
+            permission_id: Identifier of the permission, from a query result.
+
+        Returns:
+            The parsed KSeF response (``spec.PermissionsOperationResponse``).
+        """
         return self._parse(
             self._transport.delete(
                 path=routes.RevokePermissionsRoutes.REVOKE_AUTHORIZATION_PERMISSION.format(
@@ -137,7 +200,15 @@ class QueryPermissionsEndpoints(BaseEndpoints):
         request: spec.EntityPermissionsQueryRequest,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QueryEntityPermissionsResponse:
-        """Fetch one page of entity permission grants."""
+        """Fetch one page of entity permission grants.
+
+        Args:
+            request: Request payload (``spec.EntityPermissionsQueryRequest``).
+            **params: Optional query parameters (``OffsetPaginationQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.QueryEntityPermissionsResponse``).
+        """
         return self._parse(
             self._transport.post(
                 path=routes.QueryPermissionsRoutes.QUERY_ENTITIES_GRANTS,
@@ -152,7 +223,15 @@ class QueryPermissionsEndpoints(BaseEndpoints):
         request: spec.PersonalPermissionsQueryRequest,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QueryPersonalPermissionsResponse:
-        """Fetch one page of personal permission grants."""
+        """Fetch one page of personal permission grants.
+
+        Args:
+            request: Request payload (``spec.PersonalPermissionsQueryRequest``).
+            **params: Optional query parameters (``OffsetPaginationQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.QueryPersonalPermissionsResponse``).
+        """
         return self._parse(
             self._transport.post(
                 path=routes.QueryPermissionsRoutes.QUERY_PERSONAL_GRANTS,
@@ -165,7 +244,11 @@ class QueryPermissionsEndpoints(BaseEndpoints):
     def query_attachments_status(
         self,
     ) -> spec.CheckAttachmentPermissionStatusResponse:
-        """Fetch current attachment permission state."""
+        """Fetch current attachment permission state.
+
+        Returns:
+            The parsed KSeF response (``spec.CheckAttachmentPermissionStatusResponse``).
+        """
         return self._parse(
             self._transport.get(
                 path=routes.QueryPermissionsRoutes.QUERY_ATTACHMENTS_STATUS,
@@ -178,7 +261,15 @@ class QueryPermissionsEndpoints(BaseEndpoints):
         request: spec.EntityAuthorizationPermissionsQueryRequest,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QueryEntityAuthorizationPermissionsResponse:
-        """Fetch one page of authorization grants."""
+        """Fetch one page of authorization grants.
+
+        Args:
+            request: Request payload (``spec.EntityAuthorizationPermissionsQueryRequest``).
+            **params: Optional query parameters (``OffsetPaginationQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.QueryEntityAuthorizationPermissionsResponse``).
+        """
         return self._parse(
             self._transport.post(
                 path=routes.QueryPermissionsRoutes.QUERY_AUTHORIZATIONS_GRANTS,
@@ -193,7 +284,15 @@ class QueryPermissionsEndpoints(BaseEndpoints):
         request: spec.EuEntityPermissionsQueryRequest,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QueryEuEntityPermissionsResponse:
-        """Fetch one page of EU-entity permissions."""
+        """Fetch one page of EU-entity permissions.
+
+        Args:
+            request: Request payload (``spec.EuEntityPermissionsQueryRequest``).
+            **params: Optional query parameters (``OffsetPaginationQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.QueryEuEntityPermissionsResponse``).
+        """
         return self._parse(
             self._transport.post(
                 path=routes.QueryPermissionsRoutes.QUERY_EU_ENTITIES_GRANTS,
@@ -208,7 +307,15 @@ class QueryPermissionsEndpoints(BaseEndpoints):
         request: spec.PersonPermissionsQueryRequest,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QueryPersonPermissionsResponse:
-        """Fetch one page of person permission grants."""
+        """Fetch one page of person permission grants.
+
+        Args:
+            request: Request payload (``spec.PersonPermissionsQueryRequest``).
+            **params: Optional query parameters (``OffsetPaginationQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.QueryPersonPermissionsResponse``).
+        """
         return self._parse(
             self._transport.post(
                 path=routes.QueryPermissionsRoutes.QUERY_PERSONS_GRANTS,
@@ -223,7 +330,15 @@ class QueryPermissionsEndpoints(BaseEndpoints):
         request: spec.SubordinateEntityRolesQueryRequest,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QuerySubordinateEntityRolesResponse:
-        """Fetch one page of subordinate entity roles."""
+        """Fetch one page of subordinate entity roles.
+
+        Args:
+            request: Request payload (``spec.SubordinateEntityRolesQueryRequest``).
+            **params: Optional query parameters (``OffsetPaginationQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.QuerySubordinateEntityRolesResponse``).
+        """
         return self._parse(
             self._transport.post(
                 path=routes.QueryPermissionsRoutes.QUERY_SUBORDINATE_ENTITIES_ROLES,
@@ -238,7 +353,15 @@ class QueryPermissionsEndpoints(BaseEndpoints):
         request: spec.SubunitPermissionsQueryRequest,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QuerySubunitPermissionsResponse:
-        """Fetch one page of subunit permission grants."""
+        """Fetch one page of subunit permission grants.
+
+        Args:
+            request: Request payload (``spec.SubunitPermissionsQueryRequest``).
+            **params: Optional query parameters (``OffsetPaginationQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.QuerySubunitPermissionsResponse``).
+        """
         return self._parse(
             self._transport.post(
                 path=routes.QueryPermissionsRoutes.QUERY_SUBUNITS_GRANTS,
@@ -257,7 +380,14 @@ class GetPermissionsEndpoints(BaseEndpoints):
         self,
         reference_number: str,
     ) -> spec.PermissionsOperationStatusResponse:
-        """Fetch the status of a permission operation."""
+        """Fetch the status of a permission operation.
+
+        Args:
+            reference_number: Reference number of the permission operation.
+
+        Returns:
+            The parsed KSeF response (``spec.PermissionsOperationStatusResponse``).
+        """
         return self._parse(
             self._transport.get(
                 path=routes.QueryPermissionsRoutes.QUERY_OPERATIONS_STATUS.format(
@@ -271,7 +401,14 @@ class GetPermissionsEndpoints(BaseEndpoints):
         self,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QueryEntityRolesResponse:
-        """Fetch one page of entity roles."""
+        """Fetch one page of entity roles.
+
+        Args:
+            **params: Optional query parameters (``OffsetPaginationQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.QueryEntityRolesResponse``).
+        """
         return self._parse(
             self._transport.get(
                 path=routes.QueryPermissionsRoutes.QUERY_ENTITY_ROLES,

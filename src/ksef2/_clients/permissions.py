@@ -79,6 +79,11 @@ class PermissionsClient:
     """
 
     def __init__(self, transport: Middleware) -> None:
+        """Create the client.
+
+        Args:
+            transport: Middleware chain used for requests to KSeF.
+        """
         self._grant_eps = PermissionsGrantEndpoints(transport)
         self._revoke_eps = RevokePermissionsEndpoints(transport)
         self._query_eps = QueryPermissionsEndpoints(transport)
@@ -94,7 +99,19 @@ class PermissionsClient:
         first_name: str,
         last_name: str,
     ) -> GrantPermissionsResponse:
-        """Grant person-scoped permissions to a subject identifier."""
+        """Grant person-scoped permissions to a subject identifier.
+
+        Args:
+            subject_type: Kind of identifier in ``subject_value`` (``nip``, ``pesel`` or ``fingerprint``).
+            subject_value: Identifier of the person receiving the permissions.
+            permissions: Permission scopes to grant; at least one is required.
+            description: Free-text reason for the grant.
+            first_name: First name of the person receiving the permissions.
+            last_name: Last name of the person receiving the permissions.
+
+        Returns:
+            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+        """
         body = grant_to_spec(
             GrantPersonPermissionsRequest(
                 subject_type=subject_type,
@@ -115,7 +132,17 @@ class PermissionsClient:
         description: str,
         entity_name: str,
     ) -> GrantPermissionsResponse:
-        """Grant entity permissions to a NIP-identified entity."""
+        """Grant entity permissions to a NIP-identified entity.
+
+        Args:
+            subject_value: NIP of the entity receiving the permissions.
+            permissions: Permissions to grant, each with its delegation flag.
+            description: Free-text reason for the grant.
+            entity_name: Full name of the entity receiving the permissions.
+
+        Returns:
+            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+        """
         body = grant_to_spec(
             GrantEntityPermissionsRequest(
                 subject_value=subject_value,
@@ -135,7 +162,18 @@ class PermissionsClient:
         description: str,
         entity_name: str,
     ) -> GrantPermissionsResponse:
-        """Grant an authorization permission such as self-invoicing."""
+        """Grant an authorization permission such as self-invoicing.
+
+        Args:
+            subject_type: Kind of identifier in ``subject_value`` (``nip`` or ``peppol_id``).
+            subject_value: Identifier of the entity being authorized (NIP or Peppol ID).
+            permission: Authorization scope to grant, for example ``self_invoicing``.
+            description: Free-text reason for the grant.
+            entity_name: Full name of the entity being authorized.
+
+        Returns:
+            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+        """
         body = grant_to_spec(
             GrantAuthorizationPermissionsRequest(
                 subject_type=subject_type,
@@ -159,7 +197,21 @@ class PermissionsClient:
         target_type: IndirectTargetIdentifierType | None = None,
         target_value: str | None = None,
     ) -> GrantPermissionsResponse:
-        """Grant indirect permissions, optionally limited to a target entity."""
+        """Grant indirect permissions, optionally limited to a target entity.
+
+        Args:
+            subject_type: Kind of identifier in ``subject_value`` (``nip``, ``pesel`` or ``fingerprint``).
+            subject_value: Identifier of the person receiving the indirect permissions.
+            permissions: Indirect permission scopes to grant; at least one is required.
+            description: Free-text reason for the grant.
+            first_name: First name of the person receiving the permissions.
+            last_name: Last name of the person receiving the permissions.
+            target_type: Kind of identifier in ``target_value``; ``None`` or ``all_partners`` scopes the grant to every partner.
+            target_value: Identifier of the partner context the grant is limited to; ``None`` when the target is all partners.
+
+        Returns:
+            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+        """
         body = grant_to_spec(
             GrantIndirectPermissionsRequest(
                 subject_type=subject_type,
@@ -186,7 +238,21 @@ class PermissionsClient:
         last_name: str,
         subunit_name: str | None = None,
     ) -> GrantPermissionsResponse:
-        """Grant permissions within a subunit context."""
+        """Grant permissions within a subunit context.
+
+        Args:
+            subject_type: Kind of identifier in ``subject_value`` (``nip``, ``pesel`` or ``fingerprint``).
+            subject_value: Identifier of the person receiving the permissions.
+            context_type: Kind of identifier in ``context_value`` (``nip`` or ``internal_id``).
+            context_value: Identifier of the subunit context the permissions apply to.
+            description: Free-text reason for the grant.
+            first_name: First name of the person receiving the permissions.
+            last_name: Last name of the person receiving the permissions.
+            subunit_name: Display name of the subunit; optional.
+
+        Returns:
+            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+        """
         body = grant_to_spec(
             GrantSubunitPermissionsRequest(
                 subject_type=subject_type,
@@ -208,7 +274,16 @@ class PermissionsClient:
         permissions: list[EuEntityPermissionType],
         description: str,
     ) -> GrantPermissionsResponse:
-        """Grant permissions to an EU entity identified by fingerprint data."""
+        """Grant permissions to an EU entity identified by fingerprint data.
+
+        Args:
+            subject_value: Fingerprint of the certificate of the person receiving the permissions.
+            permissions: EU-entity permission scopes to grant.
+            description: Free-text reason for the grant.
+
+        Returns:
+            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+        """
         body = grant_to_spec(
             GrantEuEntityPermissionsRequest(
                 subject_value=subject_value,
@@ -227,7 +302,18 @@ class PermissionsClient:
         description: str,
         eu_entity_name: str,
     ) -> GrantPermissionsResponse:
-        """Grant administration rights for an EU entity in a VAT UE context."""
+        """Grant administration rights for an EU entity in a VAT UE context.
+
+        Args:
+            subject_value: Fingerprint of the certificate of the person receiving administration rights.
+            context_type: Kind of identifier in ``context_value``; always ``nip_vat_ue``.
+            context_value: NIP-VAT UE identifier of the EU entity.
+            description: Free-text reason for the grant.
+            eu_entity_name: Full name of the EU entity.
+
+        Returns:
+            The reference of the asynchronous grant operation; poll ``get_operation_status()`` for the result.
+        """
         body = grant_to_spec(
             GrantEuEntityAdministrationRequest(
                 subject_value=subject_value,
@@ -246,7 +332,14 @@ class PermissionsClient:
         *,
         permission_id: str,
     ) -> GrantPermissionsResponse:
-        """Revoke an authorization permission by permission id."""
+        """Revoke an authorization permission by permission id.
+
+        Args:
+            permission_id: Identifier of the authorization permission, from a query result.
+
+        Returns:
+            The reference of the asynchronous revoke operation; poll ``get_operation_status()`` for the result.
+        """
         return grant_from_spec(
             self._revoke_eps.revoke_authorization(
                 permission_id=permission_id,
@@ -258,7 +351,14 @@ class PermissionsClient:
         *,
         permission_id: str,
     ) -> GrantPermissionsResponse:
-        """Revoke a non-authorization permission by permission id."""
+        """Revoke a non-authorization permission by permission id.
+
+        Args:
+            permission_id: Identifier of the permission, from a query result.
+
+        Returns:
+            The reference of the asynchronous revoke operation; poll ``get_operation_status()`` for the result.
+        """
         return grant_from_spec(
             self._revoke_eps.revoke_person(
                 permission_id=permission_id,
@@ -266,7 +366,11 @@ class PermissionsClient:
         )
 
     def get_attachment_permission_status(self) -> AttachmentPermissionStatus:
-        """Return whether attachments are currently allowed for the subject."""
+        """Return whether attachments are currently allowed for the subject.
+
+        Returns:
+            Whether attachments are currently allowed for the subject.
+        """
         return grant_from_spec(self._query_eps.query_attachments_status())
 
     def get_operation_status(
@@ -274,7 +378,14 @@ class PermissionsClient:
         *,
         reference_number: str,
     ) -> PermissionOperationStatusResponse:
-        """Fetch the status of an asynchronous permission operation."""
+        """Fetch the status of an asynchronous permission operation.
+
+        Args:
+            reference_number: Reference number returned by a grant or revoke call.
+
+        Returns:
+            The operation status; ``status.code`` is ``200`` once it has completed successfully.
+        """
         return grant_from_spec(
             self._get_eps.query_operation_status(
                 reference_number=reference_number,
@@ -286,7 +397,14 @@ class PermissionsClient:
         *,
         params: OffsetPaginationParams | None = None,
     ) -> EntityRolesResponse:
-        """Fetch one page of roles assigned to the authenticated entity."""
+        """Fetch one page of roles assigned to the authenticated entity.
+
+        Args:
+            params: Page size and offset; defaults are used when ``None``.
+
+        Returns:
+            One page of roles assigned to the authenticated entity.
+        """
         spec_resp = self._get_eps.query_entity_roles(
             **params.to_query_params()
             if params
@@ -300,7 +418,15 @@ class PermissionsClient:
         query: AuthorizationPermissionsQuery,
         params: OffsetPaginationParams | None = None,
     ) -> AuthorizationPermissionsQueryResponse:
-        """Fetch one page of authorization grants matching the provided filters."""
+        """Fetch one page of authorization grants matching the provided filters.
+
+        Args:
+            query: Filters for the authorization grants.
+            params: Page size and offset; defaults are used when ``None``.
+
+        Returns:
+            One page of authorization grants.
+        """
         spec_resp = self._query_eps.query_authorizations_grants(
             request=query_to_spec(query),
             **params.to_query_params()
@@ -315,7 +441,15 @@ class PermissionsClient:
         query: EntityPermissionsQuery,
         params: OffsetPaginationParams | None = None,
     ) -> EntityPermissionsQueryResponse:
-        """Fetch one page of entity permission grants matching the provided filters."""
+        """Fetch one page of entity permission grants matching the provided filters.
+
+        Args:
+            query: Filters for the entity permissions.
+            params: Page size and offset; defaults are used when ``None``.
+
+        Returns:
+            One page of entity permissions.
+        """
         spec_resp = self._query_eps.query_entities_grants(
             request=query_to_spec(query),
             **params.to_query_params()
@@ -330,7 +464,15 @@ class PermissionsClient:
         query: EuEntityPermissionsQuery,
         params: OffsetPaginationParams | None = None,
     ) -> EuEntityPermissionsQueryResponse:
-        """Fetch one page of EU-entity permissions matching the provided filters."""
+        """Fetch one page of EU-entity permissions matching the provided filters.
+
+        Args:
+            query: Filters for the EU-entity permissions.
+            params: Page size and offset; defaults are used when ``None``.
+
+        Returns:
+            One page of EU-entity permissions.
+        """
         spec_resp = self._query_eps.query_eu_entities_grants(
             request=query_to_spec(query),
             **params.to_query_params()
@@ -345,7 +487,15 @@ class PermissionsClient:
         query: PersonalPermissionsQuery,
         params: OffsetPaginationParams | None = None,
     ) -> PersonalPermissionsQueryResponse:
-        """Fetch one page of permissions held by the authenticated subject."""
+        """Fetch one page of permissions held by the authenticated subject.
+
+        Args:
+            query: Filters for the permissions.
+            params: Page size and offset; defaults are used when ``None``.
+
+        Returns:
+            One page of permissions held by the authenticated subject.
+        """
         spec_resp = self._query_eps.query_personal_grants(
             request=query_to_spec(query),
             **params.to_query_params()
@@ -360,7 +510,15 @@ class PermissionsClient:
         query: PersonPermissionsQuery,
         params: OffsetPaginationParams | None = None,
     ) -> PersonPermissionsQueryResponse:
-        """Fetch one page of person permission grants matching the provided filters."""
+        """Fetch one page of person permission grants matching the provided filters.
+
+        Args:
+            query: Filters for the person permissions.
+            params: Page size and offset; defaults are used when ``None``.
+
+        Returns:
+            One page of person permissions.
+        """
         spec_resp = self._query_eps.query_persons_grants(
             request=query_to_spec(query),
             **params.to_query_params()
@@ -375,7 +533,15 @@ class PermissionsClient:
         query: SubordinateEntityRolesQuery,
         params: OffsetPaginationParams | None = None,
     ) -> SubordinateEntityRolesQueryResponse:
-        """Fetch one page of subordinate entity roles."""
+        """Fetch one page of subordinate entity roles.
+
+        Args:
+            query: Filters for the subordinate entity roles.
+            params: Page size and offset; defaults are used when ``None``.
+
+        Returns:
+            One page of subordinate entity roles.
+        """
         spec_resp = self._query_eps.query_subordinate_entities_roles(
             request=query_to_spec(query),
             **params.to_query_params()
@@ -390,7 +556,15 @@ class PermissionsClient:
         query: SubunitPermissionsQuery,
         params: OffsetPaginationParams | None = None,
     ) -> SubunitPermissionsQueryResponse:
-        """Fetch one page of subunit permission grants."""
+        """Fetch one page of subunit permission grants.
+
+        Args:
+            query: Filters for the subunit permissions.
+            params: Page size and offset; defaults are used when ``None``.
+
+        Returns:
+            One page of subunit permissions.
+        """
         spec_resp = self._query_eps.query_subunits_grants(
             request=query_to_spec(query),
             **params.to_query_params()

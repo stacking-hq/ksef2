@@ -39,12 +39,16 @@ _ENVIRONMENT_TO_PROFILE = {
 
 
 class ProfileEnvironment(StrEnum):
+    """KSeF environment names as written in profile files."""
+
     PRODUCTION = "production"
     DEMO = "demo"
     TEST = "test"
 
 
 class ProfileAuthType(StrEnum):
+    """Authentication methods a profile can use."""
+
     TOKEN = "token"
     TEST_CERTIFICATE = "test_certificate"
     XADES_PEM = "xades_pem"
@@ -52,30 +56,43 @@ class ProfileAuthType(StrEnum):
 
 
 class ProfileAuthConfig(BaseModel):
+    """Authentication settings of a profile.
+
+    Which fields are required depends on ``type``: token profiles need ``token_env``, PEM XAdES profiles need ``cert`` and ``key``, and PKCS#12 profiles need ``p12``. Secrets are never stored; the ``*_env`` fields name the environment variables that hold them.
+    """
+
     type: ProfileAuthType
+    """Authentication method."""
     token_env: str | None = Field(
         default=None, description="Environment variable containing a KSeF token."
     )
+    """Name of the environment variable holding the KSeF token."""
     context_type: ContextIdentifierTypeEnum | ContextIdentifierType | None = Field(
         default=None, description="Token-auth context type."
     )
+    """Kind of context identifier for token authentication; defaults to ``nip``."""
     cert: str | Path | None = Field(
         default=None, description="PEM certificate path for XAdES authentication."
     )
+    """Path to the PEM certificate for XAdES authentication."""
     key: str | Path | None = Field(
         default=None, description="PEM private key path for XAdES authentication."
     )
+    """Path to the PEM private key for XAdES authentication."""
     key_password_env: str | None = Field(
         default=None,
         description="Environment variable containing an encrypted PEM key password.",
     )
+    """Name of the environment variable holding the password of an encrypted PEM key."""
     p12: str | Path | None = Field(
         default=None, description="PKCS#12/PFX archive path for XAdES authentication."
     )
+    """Path to the PKCS#12/PFX archive for XAdES authentication."""
     p12_password_env: str | None = Field(
         default=None,
         description="Environment variable containing a PKCS#12/PFX archive password.",
     )
+    """Name of the environment variable holding the PKCS#12/PFX archive password."""
 
     @field_validator("cert", "key", "p12", mode="after")
     @classmethod
@@ -96,31 +113,56 @@ class ProfileAuthConfig(BaseModel):
 
 
 class TokenProfileAuth(ProfileAuthConfig):
+    """Authentication settings for token authentication; ``type`` defaults to ``token``."""
+
     type: ProfileAuthType = ProfileAuthType.TOKEN
+    """Authentication method; ``token``."""
 
 
 class TestCertificateProfileAuth(ProfileAuthConfig):
+    """Authentication settings for the SDK-generated TEST certificate; ``type`` defaults to ``test_certificate``."""
+
     type: ProfileAuthType = ProfileAuthType.TEST_CERTIFICATE
+    """Authentication method; ``test_certificate``."""
 
 
 class XadesPemProfileAuth(ProfileAuthConfig):
+    """Authentication settings for XAdES with a PEM certificate and key; ``type`` defaults to ``xades_pem``."""
+
     type: ProfileAuthType = ProfileAuthType.XADES_PEM
+    """Authentication method; ``xades_pem``."""
 
 
 class XadesP12ProfileAuth(ProfileAuthConfig):
+    """Authentication settings for XAdES with a PKCS#12/PFX archive; ``type`` defaults to ``xades_p12``."""
+
     type: ProfileAuthType = ProfileAuthType.XADES_P12
+    """Authentication method; ``xades_p12``."""
 
 
 class ProfileConfig(BaseModel):
+    """One named profile: environment, NIP and authentication settings.
+
+    Profiles are shared with ``ksef2-cli``, so both read the same config file.
+
+    Deprecated:
+        The flat ``auth_timeout`` key written by ksef2-cli 0.0.2 is removed in ksef2 2.0; use ``max_poll_attempts`` and optionally ``poll_interval`` instead.
+    """
+
     environment: ProfileEnvironment | Environment
+    """Environment the profile targets; ``Environment`` values are normalized to their profile names."""
     nip: str
+    """NIP of the context to authenticate in."""
     auth: ProfileAuthConfig
+    """Authentication settings."""
     poll_interval: float | None = Field(
         default=None, ge=0.1, description="Authentication polling interval."
     )
+    """Delay in seconds between authentication status checks (at least 0.1); ``None`` for the default."""
     max_poll_attempts: int | None = Field(
         default=None, ge=1, description="Authentication polling attempts."
     )
+    """Maximum number of authentication status checks (at least 1); ``None`` for the default."""
 
     @model_validator(mode="before")
     @classmethod
@@ -172,14 +214,23 @@ class ProfileConfig(BaseModel):
 
     @property
     def sdk_environment(self) -> Environment:
+        """Return the profile environment as an SDK ``Environment``.
+
+        Returns:
+            The matching ``Environment`` value.
+        """
         if isinstance(self.environment, Environment):
             return self.environment
         return _profile_environment_to_sdk(self.environment)
 
 
 class CliProfileConfig(BaseModel):
+    """Contents of the ``ksef2-cli`` config file: profiles and the active profile name."""
+
     active_profile: str | None = None
+    """Name of the profile used when none is selected; ``None`` when no profile is active."""
     profiles: dict[str, ProfileConfig] = Field(default_factory=dict)
+    """Profiles keyed by name."""
 
     @model_validator(mode="after")
     def _validate_active_profile(self) -> Self:
@@ -195,13 +246,31 @@ class ProfileStore:
     """Read and write local profiles compatible with ``ksef2-cli``."""
 
     def __init__(self, path: str | Path | None = None) -> None:
+        """Create the ProfileStore.
+
+        Args:
+            path: Path of the config file; the default location is used when ``None``.
+        """
         self.path = _resolve_profile_config_path(path)
 
     @classmethod
     def default(cls) -> Self:
+        """Create a store at the default config location.
+
+        Returns:
+            A store reading and writing ``KSEF2_CONFIG``, or the default ``ksef2`` config file.
+        """
         return cls()
 
     def load(self) -> CliProfileConfig:
+        """Read the config file.
+
+        Returns:
+            The parsed config; empty when the file does not exist.
+
+        Raises:
+            KSeFValidationError: If the file is not valid TOML or does not match the profile schema.
+        """
         return load_profile_config(self.path)
 
     def save(
@@ -212,6 +281,20 @@ class ProfileStore:
         activate: bool = True,
         overwrite: bool = False,
     ) -> ProfileConfig:
+        """Add or replace a profile and write the config file.
+
+        Args:
+            name: Name of the profile.
+            profile: Profile to store.
+            activate: Whether to make it the active profile.
+            overwrite: Whether to replace an existing profile with the same name.
+
+        Returns:
+            The stored profile.
+
+        Raises:
+            KSeFValidationError: If the profile exists and ``overwrite`` is false, or the file cannot be read or written.
+        """
         config = self.load()
         if name in config.profiles and not overwrite:
             raise exceptions.KSeFValidationError(
@@ -227,6 +310,17 @@ class ProfileStore:
         return profile
 
     def get(self, name: str) -> ProfileConfig:
+        """Look up a profile by name.
+
+        Args:
+            name: Name of the profile.
+
+        Returns:
+            The profile.
+
+        Raises:
+            KSeFValidationError: If the profile is not defined.
+        """
         config = self.load()
         profile = config.profiles.get(name)
         if profile is None:
@@ -238,15 +332,36 @@ class ProfileStore:
         return profile
 
     def list(self) -> dict[str, ProfileConfig]:
+        """List all profiles.
+
+        Returns:
+            A copy of the profile mapping, keyed by name.
+        """
         return dict(self.load().profiles)
 
     def current(self) -> tuple[str, ProfileConfig] | None:
+        """Return the active profile.
+
+        Returns:
+            The active profile's name and settings, or ``None`` when no profile is active.
+        """
         config = self.load()
         if config.active_profile is None:
             return None
         return config.active_profile, config.profiles[config.active_profile]
 
     def use(self, name: str) -> ProfileConfig:
+        """Make a profile the active one.
+
+        Args:
+            name: Name of the profile.
+
+        Returns:
+            The newly active profile.
+
+        Raises:
+            KSeFValidationError: If the profile is not defined.
+        """
         config = self.load()
         profile = config.profiles.get(name)
         if profile is None:
@@ -261,6 +376,19 @@ class ProfileStore:
         return profile
 
     def delete(self, name: str) -> ProfileConfig:
+        """Remove a profile.
+
+        If it was the active profile, no profile is active afterwards.
+
+        Args:
+            name: Name of the profile.
+
+        Returns:
+            The removed profile.
+
+        Raises:
+            KSeFValidationError: If the profile is not defined.
+        """
         config = self.load()
         profile = config.profiles.pop(name, None)
         if profile is None:
@@ -277,6 +405,16 @@ class ProfileStore:
 
 
 def default_profile_config_path(environ: Mapping[str, str] | None = None) -> Path:
+    """Resolve the default config file location.
+
+    Uses ``KSEF2_CONFIG`` when set, otherwise ``ksef2/config.toml`` under ``XDG_CONFIG_HOME`` (or ``~/.config``), falling back to the legacy ``ksef2-cli`` directory when only that exists.
+
+    Args:
+        environ: Environment mapping to read; ``os.environ`` when ``None``.
+
+    Returns:
+        Path of the config file.
+    """
     env = os.environ if environ is None else environ
     override = env.get(CONFIG_ENV_VAR)
     if override:
@@ -291,6 +429,17 @@ def default_profile_config_path(environ: Mapping[str, str] | None = None) -> Pat
 
 
 def load_profile_config(path: str | Path | None = None) -> CliProfileConfig:
+    """Read and validate a profile config file.
+
+    Args:
+        path: Path of the config file; the default location is used when ``None``.
+
+    Returns:
+        The parsed config; empty when the file does not exist.
+
+    Raises:
+        KSeFValidationError: If the file is not valid TOML or does not match the profile schema.
+    """
     config_path = _resolve_profile_config_path(path)
     if not config_path.exists():
         return CliProfileConfig()
@@ -311,6 +460,15 @@ def load_profile_config(path: str | Path | None = None) -> CliProfileConfig:
 
 
 def write_profile_config(path: str | Path, config: CliProfileConfig) -> None:
+    """Write a profile config file, creating parent directories and restricting permissions to the owner.
+
+    Args:
+        path: Path of the config file.
+        config: Config to write.
+
+    Raises:
+        KSeFValidationError: If the file cannot be written.
+    """
     config_path = Path(path).expanduser()
     try:
         config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -324,6 +482,14 @@ def write_profile_config(path: str | Path, config: CliProfileConfig) -> None:
 
 
 def render_profile_config(config: CliProfileConfig) -> str:
+    """Render a profile config as TOML text.
+
+    Args:
+        config: Config to render.
+
+    Returns:
+        The TOML document.
+    """
     lines = [
         "# ksef2-cli local profiles",
         "# CLI options override the selected profile for one invocation.",
@@ -378,6 +544,21 @@ def load_cli_profile(
     config_path: str | Path | None = None,
     environ: Mapping[str, str] | None = None,
 ) -> tuple[str, ProfileConfig]:
+    """Select and load a profile the way the CLI does.
+
+    The profile is chosen from ``name``, then ``KSEF2_PROFILE``, then the config's ``active_profile``.
+
+    Args:
+        name: Profile name to load; ``None`` to fall back to the environment variable and active profile.
+        config_path: Path of the config file; the default location is used when ``None``.
+        environ: Environment mapping to read; ``os.environ`` when ``None``.
+
+    Returns:
+        The selected profile's name and settings.
+
+    Raises:
+        KSeFValidationError: If no profile is selected, the profile is not defined, or the config file is invalid.
+    """
     env = os.environ if environ is None else environ
     resolved_config_path = _resolve_profile_config_path(config_path, environ=env)
     config = load_profile_config(resolved_config_path)

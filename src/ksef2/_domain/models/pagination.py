@@ -33,18 +33,21 @@ class PageSizeMixin(BaseModel):
     """Adds a bounded ``page_size`` query parameter."""
 
     page_size: int = Field(default=10, ge=10, le=100)
+    """Number of results per page (10–100)."""
 
 
 class PageOffsetMixin(BaseModel):
     """Adds a zero-based ``page_offset`` query parameter."""
 
     page_offset: int = Field(default=0, ge=0)
+    """Zero-based index of the page to return."""
 
 
 class SortOrderMixin(BaseModel):
     """Adds a sortable ``sort_order`` query parameter."""
 
     sort_order: SortOrder = "asc"
+    """Sort direction, ``asc`` or ``desc``."""
 
     @field_validator("sort_order", mode="before")
     @classmethod
@@ -64,7 +67,11 @@ class OffsetPaginationParams(
     """Offset-based pagination parameters."""
 
     def next_page(self) -> Self:
-        """Return a copy advanced by one page offset."""
+        """Return a copy advanced by one page offset.
+
+        Returns:
+            A copy advanced by one page offset.
+        """
         return self.model_copy(update={"page_offset": self.page_offset + 1})
 
 
@@ -77,13 +84,25 @@ class InvoiceMetadataParams(
     """Pagination parameters for invoice metadata queries."""
 
     page_size: int = Field(default=10, ge=10, le=250)
+    """Number of results per page (10–250)."""
 
     def with_page_offset(self, page_offset: int) -> Self:
-        """Return a copy with an explicit page offset."""
+        """Return a copy with an explicit page offset.
+
+        Args:
+            page_offset: Zero-based index of the page to return.
+
+        Returns:
+            A copy of these parameters with ``page_offset`` replaced.
+        """
         return self.model_copy(update={"page_offset": page_offset})
 
     def next_page(self) -> Self:
-        """Return a copy advanced by one invoice metadata page."""
+        """Return a copy advanced by one invoice metadata page.
+
+        Returns:
+            A copy advanced by one invoice metadata page.
+        """
         return self.with_page_offset(self.page_offset + 1)
 
 
@@ -95,6 +114,7 @@ class TokenPaginationParams(KSeFBaseParams[dict[str, object]]):
     """Base for endpoints using pageSize + x-continuation-token header."""
 
     page_size: int = Field(default=10, ge=10, le=100)
+    """Number of results per page (10–100)."""
 
 
 class CollectiveIdentifierParams(
@@ -103,6 +123,7 @@ class CollectiveIdentifierParams(
     """Continuation-token pagination for collective identifier endpoints."""
 
     page_size: int = Field(default=10, ge=10, le=200)
+    """Number of results per page (10–200)."""
 
 
 class SessionFiltersMixin(BaseModel):
@@ -144,15 +165,20 @@ class SessionInvoiceListParams(TokenPaginationParams):
     """Continuation-token pagination for session invoice listings."""
 
     page_size: int = Field(default=10, ge=10, le=1000)
+    """Number of results per page (10–1000)."""
 
 
 class TokenListParams(KSeFBaseParams[ListTokensQueryParams], PageSizeMixin):
     """Query parameters for token listings."""
 
     status: list[TokenStatus] | None = None
+    """Match tokens in any of these statuses."""
     description: str | None = None
+    """Match tokens whose description contains this text."""
     author_identifier: str | None = None
+    """Match tokens created by this identifier."""
     author_identifier_type: TokenAuthorIdentifierType | None = None
+    """Kind of identifier in ``author_identifier``."""
 
 
 class ListSessionsQuery(
@@ -161,11 +187,20 @@ class ListSessionsQuery(
     """Query parameters for authentication or invoice session listings."""
 
     session_type: SessionType
+    """Kind of sessions to list: ``online`` or ``batch``."""
     reference_number: str | None = None
+    """Match this session reference number."""
     date_created_from: datetime | None = None
+    """Match sessions created at or after this time."""
     date_created_to: datetime | None = None
+    """Match sessions created at or before this time."""
     date_closed_from: datetime | None = None
+    """Match sessions closed at or after this time."""
     date_closed_to: datetime | None = None
+    """Match sessions closed at or before this time."""
     date_modified_from: datetime | None = None
+    """Match sessions modified at or after this time."""
     date_modified_to: datetime | None = None
+    """Match sessions modified at or before this time."""
     statuses: list[SessionStatus] | None = None
+    """Match sessions in any of these statuses."""

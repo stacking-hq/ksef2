@@ -54,14 +54,18 @@ class InvoiceRow(KSeFBaseModel):
     """Line item stored in the FA(3) ``Fa/FaWiersz`` block."""
 
     name: str | None = Field(default=None, description="p_7: Name of good/service")
+    """Name of the goods or service (``P_7``)."""
     supply_date: date | None = Field(default=None, description="p_6_a: Date of supply")
+    """Date of the delivery or service for this row (``P_6A``)."""
     unit_price_net: Decimal | None = Field(
         default=None, description="p_9_a: Net unit price"
     )
+    """Net unit price (``P_9A``)."""
     vat_rate: VatRate | None = Field(
         default=None,
         description="Legacy raw VAT rate marker used by the FA(3) schema serializer.",
     )
+    """Raw VAT rate marker used by the FA(3) schema serializer (``P_12``). Prefer ``vat_classification``."""
     vat_classification: VatClassification | None = Field(
         default=None,
         description=(
@@ -69,32 +73,42 @@ class InvoiceRow(KSeFBaseModel):
             "Prefer this over manually mixing rate and sale category values."
         ),
     )
+    """Structured VAT treatment and rate for the row."""
     unit_of_measure: str = Field(default="szt", description="p_8_a: Unit of measure")
+    """Unit of measure (``P_8A``). Defaults to ``szt``."""
     quantity: Decimal | None = Field(default=None, description="p_8_b: Quantity")
+    """Quantity (``P_8B``)."""
     discount_amount: Decimal | None = Field(
         default=Decimal("0.00"), description="p_10: Discount amount"
     )
+    """Discount granted on the row (``P_10``). Defaults to zero."""
 
     # --- computed fields ---
     unit_price_gross: Decimal | None = Field(
         default=None, description="p_9_b: Price with VAT"
     )
+    """Gross unit price (``P_9B``)."""
     gross_amount: Decimal | None = Field(
         default=None, description="p_11_a: Gross value of the line"
     )
+    """Gross value of the row (``P_11A``)."""
     net_amount: Decimal | None = Field(
         default=None, description="p_11: Net value of the line"
     )
+    """Net value of the row (``P_11``)."""
     vat_amount: Decimal | None = Field(
         default=None, description="p_11_vat: VAT amount of the line"
     )
+    """VAT amount of the row (``P_11Vat``)."""
 
     vat_rate_xii: Decimal | None = Field(
         default=None, description="p_12_XII: VAT rate XII"
     )
+    """VAT rate under the special procedure of Section XII (``P_12_XII``)."""
     annex_15_marker: bool | None = Field(
         default=None, description="p_12_ZAL_15: Annex 15 marker"
     )
+    """Marks goods or services listed in Annex 15 to the VAT Act (``P_12_Zal_15``)."""
 
     sale_category: SaleCategory | None = Field(
         default=None,
@@ -103,6 +117,7 @@ class InvoiceRow(KSeFBaseModel):
             "normal FA(3) VAT markers."
         ),
     )
+    """Strict sale category mapped to the schema VAT code."""
     tax_regime: TaxRegime = Field(
         default=TaxRegime.STANDARD,
         description=(
@@ -110,38 +125,58 @@ class InvoiceRow(KSeFBaseModel):
             "such as taxi flat-rate, Title XII, or margin invoices."
         ),
     )
+    """Tax regime context for non-standard calculations. Defaults to the standard regime."""
 
     excise_amount: Decimal | None = Field(
         default=None, description="kwota_akcyzy: Excise amount"
     )
+    """Amount of excise duty (``KwotaAkcyzy``)."""
     unique_id: str | None = Field(default=None, description="uu_id: Unique ID")
+    """Unique row identifier (``UU_ID``)."""
     sku: str | None = Field(
         default=None, description="indeks: Internal SKU or additional description"
     )
+    """Internal product index or SKU (``Indeks``)."""
     gtin: str | None = Field(default=None, description="gtin: Global Trade Item Number")
+    """Global Trade Item Number (``GTIN``)."""
     pkwiu: str | None = Field(
         default=None, description="pkwi_u: Polish Goods Classification"
     )
+    """Polish Classification of Goods and Services code (``PKWiU``)."""
     cn: str | None = Field(default=None, description="cn: Nomenclature Code")
+    """Combined Nomenclature code (``CN``)."""
     pkob: str | None = Field(
         default=None, description="pkob: Polish Construction Object Classification"
     )
+    """Polish Classification of Construction Works code (``PKOB``)."""
 
     gtu_code: GtuCode | None = Field(default=None, description="gtu: GTU code")
+    """GTU goods and services group code (``GTU``)."""
     procedure: InvoiceProcedure | None = Field(
         default=None, description="procedura: Procedure code"
     )
+    """Special procedure marker (``Procedura``)."""
     currency_exchange_rate: Decimal | None = Field(
         default=None, description="kurs_waluty: Currency exchange rate"
     )
+    """Exchange rate applied to the row (``KursWaluty``)."""
     before_correction: bool = Field(
         default=False,
         description="stan_przed: Marks the row as representing state before correction",
     )
+    """Marks a row showing the state before correction (``StanPrzed``)."""
 
     @model_validator(mode="before")
     @classmethod
     def normalize_tax_fields(cls, data: object) -> object:
+        """Reconcile VAT rate, VAT classification, sale category and tax regime before validation.
+
+        Args:
+            data: Raw input for the model.
+
+        Returns:
+            The input with the tax fields normalized.
+        """
         if not isinstance(data, dict):
             return data
 
@@ -197,6 +232,11 @@ class InvoiceRow(KSeFBaseModel):
 
     @model_validator(mode="after")
     def compute_financial_field(self) -> Self:
+        """Derive missing net, VAT and gross amounts from the ones provided.
+
+        Returns:
+            The validated row.
+        """
         rate = self._vat_percent()
 
         if (
@@ -250,7 +290,14 @@ class InvoiceRow(KSeFBaseModel):
         return self
 
     def validate_tax_logic(self) -> Self:
-        """Validate VAT classification and amount consistency for this row."""
+        """Validate VAT classification and amount consistency for this row.
+
+        Returns:
+            The validated row.
+
+        Raises:
+            ValueError: If the quantity, tax classification or gross amount is inconsistent.
+        """
         self._validate_quantity()
         self._validate_tax_classification_rules()
         self._validate_gross_amount_consistency()

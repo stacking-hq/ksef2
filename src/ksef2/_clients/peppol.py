@@ -29,6 +29,11 @@ class PeppolClient:
     """
 
     def __init__(self, transport: Middleware):
+        """Create the client.
+
+        Args:
+            transport: Middleware chain used for requests to KSeF.
+        """
         self._transport = transport
         self._endpoints = PeppolEndpoints(transport)
 

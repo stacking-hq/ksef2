@@ -35,6 +35,13 @@ class FooterBuilder[TParent]:
         on_done: Callable[[InvoiceFooter], None],
         existing_state: InvoiceFooter | None = None,
     ) -> None:
+        """Create the builder.
+
+        Args:
+            parent: Parent builder that ``done()`` returns to.
+            on_done: Callback that receives the built model when ``done()`` is called.
+            existing_state: Existing model to start from; ``None`` starts empty.
+        """
         self._parent = parent
         self._on_done = on_done
         self._state: InvoiceFooterState = adapter.validate_python(
@@ -42,7 +49,14 @@ class FooterBuilder[TParent]:
         )
 
     def from_model(self, footer: InvoiceFooter) -> Self:
-        """Replace the builder state from an existing domain model."""
+        """Replace the builder state from an existing domain model.
+
+        Args:
+            footer: Model to load into the builder.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state = adapter.validate_python(footer.model_dump())
         return self
 
@@ -57,12 +71,23 @@ class FooterBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Add an invoice footer information entry."""
+        """Add an invoice footer information entry.
+
+        Args:
+            information: Additional footer information shown below the invoice body.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["additional_informations"].append(information)
         return self
 
     def clear_informations(self) -> Self:
-        """Remove all informations entries."""
+        """Remove all informations entries.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["additional_informations"].clear()
         return self
 
@@ -102,7 +127,17 @@ class FooterBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
-        """Add a registry entry to the invoice footer."""
+        """Add a registry entry to the invoice footer.
+
+        Args:
+            full_name: Full registry name shown in the footer.
+            krs: KRS number shown in the footer registry block.
+            regon: REGON number shown in the footer registry block.
+            bdo: BDO number shown in the footer registry block.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["registries"].append(
             FooterRegistry(
                 full_name=full_name,
@@ -114,17 +149,32 @@ class FooterBuilder[TParent]:
         return self
 
     def add_registry_model(self, registry: FooterRegistry) -> Self:
-        """Add an existing footer registry model."""
+        """Add an existing footer registry model.
+
+        Args:
+            registry: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["registries"].append(registry)
         return self
 
     def clear_registries(self) -> Self:
-        """Remove all footer registry entries."""
+        """Remove all footer registry entries.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["registries"].clear()
         return self
 
     def build(self) -> InvoiceFooter:
-        """Build the corresponding FA(3) domain model."""
+        """Build the corresponding FA(3) domain model.
+
+        Returns:
+            The built ``InvoiceFooter``.
+        """
         return InvoiceFooter(**self._state)
 
     def _is_empty(self) -> bool:
@@ -132,6 +182,9 @@ class FooterBuilder[TParent]:
 
     def done(self) -> TParent:
         """Attach the built footer to the parent builder and return the parent.
+
+        Returns:
+            The parent builder.
 
         Raises:
             ValueError: If footer details are empty.
@@ -150,7 +203,11 @@ class FooterBuilderMixin:
     _footer: InvoiceFooter | None = None
 
     def footer(self) -> FooterBuilder[Self]:
-        """Start a footer sub-builder."""
+        """Start a footer sub-builder.
+
+        Returns:
+            A ``FooterBuilder`` for this part of the invoice; call ``done()`` on it to attach the result and return to this builder.
+        """
         return FooterBuilder(self, self._set_footer, self._footer)
 
     def _set_footer(self, value: InvoiceFooter) -> None:

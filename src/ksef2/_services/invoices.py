@@ -54,6 +54,15 @@ class InvoicesService:
         client: InvoicesClient | None = None,
         ensure_encryption_certificates_loaded: Callable[[], None] | None = None,
     ) -> None:
+        """Create the service.
+
+        Args:
+            transport: Middleware chain used for authenticated API requests.
+            download_transport: Middleware used to download export parts from external storage.
+            certificate_store: Store holding the KSeF public-key certificates used to encrypt export keys.
+            client: Invoices client to delegate to; one is created from ``transport`` when ``None``.
+            ensure_encryption_certificates_loaded: Coroutine function that loads the encryption certificates into ``certificate_store`` before they are needed; no-op when ``None``.
+        """
         self._transport = transport
         self._external_transfers = ExternalTransferClient(download_transport)
         self._certificate_store = certificate_store
@@ -71,7 +80,15 @@ class InvoicesService:
         filters: InvoicesFilter,
         params: InvoiceMetadataParams | None = None,
     ) -> QueryInvoicesMetadataResponse:
-        """Fetch one invoice metadata page matching the provided filters."""
+        """Fetch one invoice metadata page matching the provided filters.
+
+        Args:
+            filters: Criteria selecting the invoices.
+            params: Page size, page offset and sort order; defaults are used when ``None``.
+
+        Returns:
+            One page of invoice metadata.
+        """
         return self._client.query_metadata(filters=filters, params=params)
 
     def query_metadata_pages(
@@ -81,6 +98,13 @@ class InvoicesService:
         params: InvoiceMetadataParams | None = None,
     ) -> Iterator[QueryInvoicesMetadataResponse]:
         """Fetch metadata pages, following KSeF page and truncation mechanics.
+
+        Args:
+            filters: Criteria selecting the invoices.
+            params: Page size, page offset and sort order; defaults are used when ``None``.
+
+        Yields:
+            Each page of invoice metadata in order.
 
         Raises:
             KSeFMetadataPaginationError: If KSeF returns inconsistent pagination
@@ -100,6 +124,13 @@ class InvoicesService:
     ) -> Iterator[InvoiceMetadata]:
         """Iterate over all invoice metadata items matching the provided filters.
 
+        Args:
+            filters: Criteria selecting the invoices.
+            params: Page size and sort order; defaults are used when ``None``.
+
+        Yields:
+            Metadata of each matching invoice, across all pages.
+
         Raises:
             KSeFMetadataPaginationError: If KSeF returns inconsistent pagination
                 boundaries.
@@ -108,7 +139,14 @@ class InvoicesService:
             yield invoice
 
     def download_invoice(self, *, ksef_number: str) -> bytes:
-        """Download one processed invoice by KSeF number."""
+        """Download one processed invoice by KSeF number.
+
+        Args:
+            ksef_number: KSeF number of the invoice.
+
+        Returns:
+            The invoice XML as bytes.
+        """
         return self._client.download_invoice(ksef_number=ksef_number)
 
     def wait_for_invoice_download(
@@ -119,6 +157,14 @@ class InvoicesService:
         poll_interval: float = 2.0,
     ) -> bytes:
         """Poll until KSeF makes a processed invoice available for download.
+
+        Args:
+            ksef_number: KSeF number of the invoice.
+            timeout: Maximum number of seconds to wait before giving up.
+            poll_interval: Delay in seconds between download attempts.
+
+        Returns:
+            The invoice XML as bytes.
 
         Raises:
             KSeFInvoiceDownloadTimeoutError: If polling exceeds ``timeout``.
@@ -157,10 +203,27 @@ class InvoicesService:
     ) -> ExportHandle:
         """Schedule an encrypted invoice export.
 
+        Args:
+            filters: Criteria selecting the invoices to export.
+            only_metadata: Export only invoice metadata instead of full invoice XML.
+            compression_type: Compression applied to the package; ``None`` for the server default.
+
+        Returns:
+            A handle holding the export reference number and the keys needed to decrypt the package.
+
         Raises:
             NoCertificateAvailableError: If no valid symmetric-key certificate is
                 available.
             KSeFEncryptionError: If export key encryption fails.
+
+        Example:
+            ```python
+            handle = auth.invoices.schedule_export(filters=filters)
+            package = auth.invoices.wait_for_export_package(
+                reference_number=handle.reference_number,
+            )
+            parts = auth.invoices.fetch_package_bytes(package=package, export=handle)
+            ```
         """
         self._ensure_encryption_certificates_loaded()
         cert = self._certificate_store.get_valid("symmetric_key_encryption")
@@ -177,7 +240,14 @@ class InvoicesService:
         *,
         reference_number: str,
     ) -> InvoiceExportStatusResponse:
-        """Fetch the current status for a scheduled invoice export."""
+        """Fetch the current status for a scheduled invoice export.
+
+        Args:
+            reference_number: Reference number of the export, from ``ExportHandle.reference_number``.
+
+        Returns:
+            The export status, with package metadata once the export is ready.
+        """
         return self._client.get_export_status(reference_number=reference_number)
 
     def fetch_package(
@@ -188,6 +258,14 @@ class InvoicesService:
         target_directory: Path | str = Path("."),
     ) -> list[Path]:
         """Download and decrypt all parts of an export package to disk.
+
+        Args:
+            package: Package metadata from the export status.
+            export: Handle returned when the export was scheduled; supplies the decryption keys.
+            target_directory: Directory to write the decrypted parts to. Defaults to the current directory.
+
+        Returns:
+            The paths of the written part files.
 
         Raises:
             KSeFEncryptionError: If a downloaded package part cannot be decrypted.
@@ -241,6 +319,13 @@ class InvoicesService:
     ) -> list[bytes]:
         """Download and decrypt all parts of an export package in memory.
 
+        Args:
+            package: Package metadata from the export status.
+            export: Handle returned when the export was scheduled; supplies the decryption keys.
+
+        Returns:
+            The decrypted package parts, in order.
+
         Raises:
             KSeFEncryptionError: If a downloaded package part cannot be decrypted.
             KSeFExternalTransferError: If external storage rejects a part download or
@@ -277,6 +362,14 @@ class InvoicesService:
     ) -> QueryInvoicesMetadataResponse:
         """Poll invoice metadata until at least one invoice matches the filters.
 
+        Args:
+            filters: Criteria selecting the invoices.
+            timeout: Maximum number of seconds to wait before giving up.
+            poll_interval: Delay in seconds between queries.
+
+        Returns:
+            The first metadata page that contains at least one invoice.
+
         Raises:
             KSeFInvoiceQueryTimeoutError: If polling exceeds ``timeout``.
         """
@@ -298,6 +391,14 @@ class InvoicesService:
         poll_interval: float = 2.0,
     ) -> InvoicePackage:
         """Poll export status until KSeF exposes a downloadable package.
+
+        Args:
+            reference_number: Reference number of the export, from ``ExportHandle.reference_number``.
+            timeout: Maximum number of seconds to wait before giving up.
+            poll_interval: Delay in seconds between export status checks.
+
+        Returns:
+            The package metadata once the export is ready.
 
         Raises:
             KSeFExportTimeoutError: If polling exceeds ``timeout``.
@@ -328,6 +429,16 @@ class InvoicesService:
     ) -> list[bytes]:
         """Schedule an export, wait for it, and download the decrypted package.
 
+        Args:
+            filters: Criteria selecting the invoices to export.
+            only_metadata: Export only invoice metadata instead of full invoice XML.
+            compression_type: Compression applied to the package; ``None`` for the server default.
+            timeout: Maximum number of seconds to wait for the export to become ready.
+            poll_interval: Delay in seconds between export status checks.
+
+        Returns:
+            The decrypted package parts, in order. Concatenate them to obtain the package archive.
+
         Raises:
             NoCertificateAvailableError: If no valid symmetric-key certificate is
                 available.
@@ -335,6 +446,15 @@ class InvoicesService:
             KSeFExportTimeoutError: If polling exceeds ``timeout``.
             KSeFExternalTransferError: If external storage rejects a part download or
                 its outcome cannot be determined.
+
+        Example:
+            ```python
+            from ksef2.models import InvoicesFilter
+
+            parts = auth.invoices.export_and_download(
+                filters=InvoicesFilter.for_seller(date_from="2026-01-01T00:00:00+01:00"),
+            )
+            ```
         """
         handle = self.schedule_export(
             filters=filters,

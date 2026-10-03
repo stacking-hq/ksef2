@@ -28,69 +28,86 @@ class InvoiceThirdParty(KSeFBaseModel):
     """Additional FA(3) subject stored in the repeated ``Faktura/Podmiot3`` block."""
 
     tax_id: str | None = None
+    """Polish NIP of the third party."""
     internal_id: str | None = Field(
         default=None,
         min_length=1,
         max_length=20,
         description="dane_identyfikacyjne/idwew: Internal identifier paired with NIP.",
     )
+    """Internal identifier of the third party within a VAT group (up to 20 characters)."""
     eu_vat_id: str | None = None
+    """EU VAT identifier of the third party."""
     country_code: str | None = Field(
         default=None,
         description="dane_identyfikacyjne/kod_kraju: Country of a non-EU alternate identifier.",
     )
+    """Two-letter country code accompanying ``other_id`` or ``eu_vat_id``."""
     other_id: str | None = Field(
         default=None,
         min_length=1,
         max_length=50,
         description="dane_identyfikacyjne/nr_id: Alternate tax identifier.",
     )
+    """Identifier of another kind (1–50 characters)."""
     no_id: bool = False
+    """Marks a third party that has no identifier."""
     name: str
+    """Full name of the third party."""
     address: InvoiceAddress | None = None
+    """Address of the third party."""
     correspondence_address: InvoiceAddress | None = Field(
         default=None,
         description="adres_koresp: Optional mailing address for the third party.",
     )
+    """Correspondence address, if different from ``address``."""
     contact: list[ContactInfo] | ContactInfo | None = None
+    """One or more contact entries."""
     role: ThirdPartyRole | None = Field(
         default=None,
         description="rola: Enumerated role of the third party on the invoice.",
     )
+    """Role of the third party on the invoice."""
     other_role: bool = Field(
         default=False,
         description="rola_inna: Marks the third party as an unlisted custom role.",
     )
+    """Marks a role not covered by ``role``; describe it in ``role_description``."""
     role_description: str | None = Field(
         default=None,
         min_length=1,
         max_length=256,
         description="opis_roli: Description required when other_role is selected.",
     )
+    """Free-text description of the role when ``other_role`` is set (1–256 characters)."""
     share_percentage: Decimal | None = Field(
         default=None,
         ge=0,
         le=100,
         description="udzial: Participation share of an additional buyer.",
     )
+    """Percentage share of the third party (0–100)."""
     customer_number: str | None = Field(
         default=None,
         min_length=1,
         max_length=256,
         description="nr_klienta: Customer number used for the third party.",
     )
+    """Customer number of the third party."""
     eori_number: str | None = Field(
         default=None,
         min_length=1,
         max_length=256,
         description="nr_eori: EORI number of the third party.",
     )
+    """EORI number of the third party."""
     buyer_id: str | None = Field(
         default=None,
         min_length=1,
         max_length=32,
         description="idnabywcy: Buyer linkage key used for additional buyers and corrections.",
     )
+    """Unique identifier of the buyer assigned by the seller."""
 
     @field_validator("eu_vat_id")
     @classmethod

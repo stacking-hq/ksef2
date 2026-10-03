@@ -25,6 +25,11 @@ class AsyncSessionManagementClient:
     """
 
     def __init__(self, transport: AsyncMiddleware) -> None:
+        """Create the client.
+
+        Args:
+            transport: Middleware chain used for requests to KSeF.
+        """
         self._auth_ep = AsyncAuthEndpoints(transport)
 
     async def query(
@@ -75,5 +80,9 @@ class AsyncSessionManagementClient:
         await self._auth_ep.terminate_current_session()
 
     async def close(self, *, reference_number: str) -> None:
-        """Terminate an authentication session by reference number."""
+        """Terminate an authentication session by reference number.
+
+        Args:
+            reference_number: Reference number of the authentication session to terminate.
+        """
         await self._auth_ep.terminate_auth_session(reference_number=reference_number)

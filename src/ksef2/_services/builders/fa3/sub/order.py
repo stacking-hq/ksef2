@@ -79,6 +79,14 @@ class OrderBuilder[TParent]:
         existing_state: InvoiceOrder | None = None,
         declared_total: Decimal | None = None,
     ) -> None:
+        """Create the builder.
+
+        Args:
+            parent: Parent builder that ``done()`` returns to.
+            on_done: Callback that receives the built model when ``done()`` is called.
+            existing_state: Existing model to start from; ``None`` starts empty.
+            declared_total: Declared order total; ``None`` to derive it from the order lines.
+        """
         self._parent = parent
         self._on_done = on_done
         if existing_state is None:
@@ -89,12 +97,26 @@ class OrderBuilder[TParent]:
             self._state["total_value"] = declared_total
 
     def from_model(self, order: InvoiceOrder) -> Self:
-        """Replace the builder state from an existing domain model."""
+        """Replace the builder state from an existing domain model.
+
+        Args:
+            order: Model to load into the builder.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state = adapter.validate_python(order.model_dump())
         return self
 
     def total_value(self, amount: OrderAmountParam) -> Self:
-        """Set the declared total value for the order."""
+        """Set the declared total value for the order.
+
+        Args:
+            amount: Monetary value used in the order section.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["total_value"] = amount
         return self
 
@@ -274,7 +296,34 @@ class OrderBuilder[TParent]:
             ),
         ] = False,
     ) -> Self:
-        """Add a line entry."""
+        """Add a line entry.
+
+        Args:
+            gross_amount: Gross amount for the order line.
+            vat_rate: VAT rate used for the order line.
+            vat_classification: Detailed VAT classification for non-standard order line cases.
+            name: Order line description.
+            quantity: Quantity recorded on the order line.
+            unit_of_measure: Unit of measure recorded on the order line.
+            unit_price_net: Net unit price recorded on the order line.
+            sale_category: Sale category used for the order line when a more detailed sales context is needed.
+            tax_regime: Tax regime used for the order line.
+            vat_rate_xii: VAT rate for Title XII order lines.
+            annex_15_marker: Set when the order line is covered by Annex 15 reporting.
+            unique_id: Unique identifier of the order line.
+            sku: Stock keeping unit stored on the order line.
+            gtin: GTIN stored on the order line.
+            pkwiu: PKWiU classification stored on the order line.
+            cn: CN code stored on the order line.
+            pkob: PKOB code stored on the order line.
+            gtu_code: GTU code stored on the order line.
+            procedure: Special procedure marker stored on the order line.
+            excise_amount: Excise amount stored on the order line when required.
+            before_correction: Marks the order line as a before-correction value.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["order_lines"].append(
             InvoiceOrderLine(
                 gross_amount=gross_amount,
@@ -303,22 +352,44 @@ class OrderBuilder[TParent]:
         return self
 
     def add_line_model(self, line: InvoiceOrderLine) -> Self:
-        """Add an existing invoice line domain model."""
+        """Add an existing invoice line domain model.
+
+        Args:
+            line: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["order_lines"].append(line)
         return self
 
     def replace_lines(self, lines: Sequence[InvoiceOrderLine]) -> Self:
-        """Replace all invoice lines."""
+        """Replace all invoice lines.
+
+        Args:
+            lines: Replacement lines.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["order_lines"] = list(lines)
         return self
 
     def clear_lines(self) -> Self:
-        """Remove all invoice lines."""
+        """Remove all invoice lines.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["order_lines"].clear()
         return self
 
     def build(self) -> InvoiceOrder:
-        """Build the corresponding FA(3) domain model."""
+        """Build the corresponding FA(3) domain model.
+
+        Returns:
+            The built ``InvoiceOrder``.
+        """
         return InvoiceOrder(**self._state)
 
     def _is_empty(self) -> bool:
@@ -326,6 +397,9 @@ class OrderBuilder[TParent]:
 
     def done(self) -> TParent:
         """Attach the built order details to the parent builder and return it.
+
+        Returns:
+            The parent builder.
 
         Raises:
             ValueError: If order details are empty.
@@ -344,7 +418,14 @@ class OrderBuilderMixin:
     _order: InvoiceOrder | None = None
 
     def order(self, *, declared_total: Decimal | None = None) -> OrderBuilder[Self]:
-        """Start an order sub-builder."""
+        """Start an order sub-builder.
+
+        Args:
+            declared_total: Declared order total; ``None`` to derive it from the order lines.
+
+        Returns:
+            An ``OrderBuilder`` for this part of the invoice; call ``done()`` on it to attach the result and return to this builder.
+        """
         return OrderBuilder(
             self, self._set_order, self._order, declared_total=declared_total
         )

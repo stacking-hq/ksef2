@@ -23,7 +23,11 @@ class AsyncBaseEndpoints(abc.ABC):
     _PARAMS_ADAPTER: ClassVar[QueryParamsAdapter] = DEFAULT_PARAMS_ADAPTER
 
     def __init__(self, transport: AsyncMiddleware):
-        """Bind the endpoint wrapper to a transport implementation."""
+        """Bind the endpoint wrapper to a transport implementation.
+
+        Args:
+            transport: Middleware chain used for requests to KSeF.
+        """
         self._transport = transport
 
     @classmethod
@@ -45,5 +49,13 @@ class AsyncBaseEndpoints(abc.ABC):
         params: Mapping[str, object],
         adapter: QueryParamsAdapter | None = None,
     ) -> httpx.QueryParams:
-        """Validate, drop ``None`` values, and encode query parameters."""
+        """Validate, drop ``None`` values, and encode query parameters.
+
+        Args:
+            params: Query parameters keyed by their API names.
+            adapter: Validator for ``params``; the endpoint group's default adapter when ``None``.
+
+        Returns:
+            The encoded query parameters.
+        """
         return build_query_params(params, adapter or self._PARAMS_ADAPTER)

@@ -61,9 +61,13 @@ class SessionEncryptionMaterial(KSeFBaseModel):
     """Raw and encrypted symmetric session key material."""
 
     aes_key: bytes = Field(exclude=True, repr=False)
+    """Raw AES-256 session key. Excluded from serialization and ``repr``."""
     iv: bytes = Field(exclude=True, repr=False)
+    """Initialization vector for the session key. Excluded from serialization and ``repr``."""
     encrypted_key: bytes = Field(exclude=True, repr=False)
+    """Session key encrypted with the KSeF public key. Excluded from serialization and ``repr``."""
     public_key_id: str | None = None
+    """Identifier of the KSeF public key used for encryption; ``None`` if the default key was used."""
 
 
 type SessionType = Literal["online", "batch"]
@@ -175,46 +179,69 @@ class StatusInfo(KSeFBaseModel):
     """Generic KSeF status code, description, and optional details."""
 
     code: int
+    """Numeric status code."""
     description: str
+    """Human-readable description of the status."""
     details: list[str] | None = None
+    """Additional status details reported by KSeF, if any."""
 
 
 class InvoiceStatusInfo(KSeFBaseModel):
     """Invoice processing status returned within session APIs."""
 
     code: int
+    """Numeric invoice processing status code; ``200`` means accepted."""
     description: str
+    """Human-readable description of the status."""
     details: list[str] | None = None
+    """Additional status details, for example validation errors."""
     extensions: dict[str, str | None] | None = None
+    """Extra key/value data attached to the status, if any."""
 
 
 class OpenOnlineSessionRequest(KSeFBaseModel):
     """Payload used to open an online invoice session."""
 
     encrypted_key: bytes
+    """Session AES key encrypted with the KSeF public key."""
     iv: bytes
+    """AES initialization vector used for the session."""
     public_key_id: str | None = None
+    """Identifier of the KSeF public key used for encryption; ``None`` for the default."""
     form_code: FormSchema = FormSchema.FA3
+    """Invoice schema accepted by the session. Defaults to FA(3)."""
 
 
 class OpenOnlineSessionResponse(KSeFBaseModel):
     """Response returned after opening an online invoice session."""
 
     reference_number: str
+    """KSeF reference number of the opened session."""
     valid_until: AwareDatetime
+    """When the session expires."""
 
 
 class UpoPage(KSeFBaseModel):
     """Download information for one UPO page."""
 
     reference_number: str
+    """Reference number of the UPO page."""
     download_url: AnyUrl = Field(exclude=True, repr=False)
+    """Pre-signed URL of the UPO page. Excluded from serialization and ``repr``."""
     download_url_expiration_date: AwareDatetime
+    """When the download URL expires."""
 
     def to_sensitive_dict(
         self, *, mode: Literal["json", "python"] | str = "json"
     ) -> dict[str, object]:
-        """Export UPO metadata with its capability-bearing download URL."""
+        """Export UPO metadata with its capability-bearing download URL.
+
+        Args:
+            mode: Pydantic dump mode, ``"json"`` for JSON-safe values or ``"python"`` for native types.
+
+        Returns:
+            A dictionary including the plain download URL.
+        """
         data: dict[str, object] = self.model_dump(mode=mode)
         data["download_url"] = (
             str(self.download_url) if mode == "json" else self.download_url
@@ -226,42 +253,71 @@ class Upo(KSeFBaseModel):
     """Collection of UPO pages available for a session or invoice."""
 
     pages: list[UpoPage]
+    """UPO pages available for download."""
 
 
 class SessionStatusResponse(KSeFBaseModel):
     """Current status and counters for an online or batch session."""
 
     status: StatusInfo
+    """Current status of the session."""
     date_created: AwareDatetime
+    """When the session was opened."""
     date_updated: AwareDatetime
+    """When the session status last changed."""
     valid_until: AwareDatetime | None = None
+    """When the session expires; ``None`` if not reported."""
     upo: Upo | None = None
+    """Session-level UPO once the session is closed and processed; ``None`` before that."""
     invoice_count: int | None = None
+    """Number of invoices submitted in the session."""
     successful_invoice_count: int | None = None
+    """Number of invoices accepted by KSeF."""
     failed_invoice_count: int | None = None
+    """Number of invoices rejected by KSeF."""
 
 
 class SessionInvoiceStatusResponse(KSeFBaseModel):
     """Processing status for one invoice submitted in a session."""
 
     ordinal_number: int
+    """One-based position of the invoice within the session."""
     invoice_number: str | None = None
+    """Seller's invoice number; ``None`` until processed."""
     ksef_number: str | None = None
+    """KSeF number; ``None`` until the invoice is accepted."""
     reference_number: str
+    """KSeF reference number of the invoice submission."""
     invoice_hash: str
+    """SHA-256 hash of the invoice XML, Base64-encoded."""
     invoice_file_name: str | None = None
+    """File name of the invoice in a batch package; ``None`` for online sessions."""
     acquisition_date: AwareDatetime | None = None
+    """When KSeF accepted the invoice; ``None`` until accepted."""
     invoicing_date: AwareDatetime
+    """When the invoice was submitted."""
     permanent_storage_date: AwareDatetime | None = None
+    """When the invoice was moved to permanent storage; ``None`` until then."""
     upo_download_url: AnyUrl | None = Field(default=None, exclude=True, repr=False)
+    """Pre-signed URL of the invoice UPO. Excluded from serialization and ``repr``."""
     upo_download_url_expiration_date: AwareDatetime | None = None
+    """When the UPO download URL expires."""
     invoicing_mode: str | None = None
+    """Invoicing mode reported by KSeF, such as ``online`` or ``offline``."""
     status: InvoiceStatusInfo
+    """Processing status of the invoice."""
 
     def to_sensitive_dict(
         self, *, mode: Literal["json", "python"] | str = "json"
     ) -> dict[str, object]:
-        """Export invoice status with its capability-bearing UPO URL."""
+        """Export invoice status with its capability-bearing UPO URL.
+
+        Args:
+            mode: Pydantic dump mode, ``"json"`` for JSON-safe values or ``"python"`` for native types.
+
+        Returns:
+            A dictionary including the plain UPO download URL.
+        """
         data: dict[str, object] = self.model_dump(mode=mode)
         if self.upo_download_url is not None:
             data["upo_download_url"] = (
@@ -274,27 +330,39 @@ class SessionInvoicesResponse(KSeFBaseModel):
     """One page of invoices submitted in a session."""
 
     continuation_token: str | None = None
+    """Opaque token for requesting the next page; ``None`` when there are no more pages."""
     invoices: list[SessionInvoiceStatusResponse]
+    """Invoice statuses on this page."""
 
 
 class SessionSummary(KSeFBaseModel):
     """Summary row returned when listing sessions."""
 
     reference_number: str
+    """KSeF reference number of the session."""
     status: StatusInfo
+    """Status of the session."""
     date_created: AwareDatetime
+    """When the session was opened."""
     date_updated: AwareDatetime
+    """When the session status last changed."""
     valid_until: AwareDatetime | None = None
+    """When the session expires; ``None`` if not reported."""
     total_invoice_count: int
+    """Number of invoices submitted in the session."""
     successful_invoice_count: int
+    """Number of invoices accepted by KSeF."""
     failed_invoice_count: int
+    """Number of invoices rejected by KSeF."""
 
 
 class ListSessionsResponse(KSeFBaseModel):
     """One page of session summaries."""
 
     continuation_token: str | None = None
+    """Opaque token for requesting the next page; ``None`` when there are no more pages."""
     sessions: list[SessionSummary]
+    """Session summaries on this page."""
 
 
 def deprecation_message(old_name: str, new_name: str) -> str:
@@ -311,9 +379,13 @@ class BaseSessionResumeState(KSeFPersistedModel):
     This class contains fields shared between online and batch sessions.
     It provides serialization/deserialization support and helper methods
     for accessing the encryption keys.
+
+    Deprecated:
+        The alias ``BaseSessionState`` is removed in ksef2 2.0; use ``BaseSessionResumeState``. An ``access_token`` key in restored state is ignored and also deprecated; persist ``AuthenticationResumeState`` separately instead.
     """
 
     format_version: Literal[1] = 1
+    """Version of the serialized state format; currently always ``1``."""
 
     reference_number: str
     """Reference number of the session."""
@@ -365,10 +437,9 @@ class BaseSessionResumeState(KSeFPersistedModel):
     @field_validator("form_code", mode="before")
     @classmethod
     def _coerce_form_code(cls, value: object) -> object:
-        """
-        Pydantic serializes Enum values that are tuples as JSON arrays (lists).
-        On restore, convert list -> tuple so Enum validation succeeds.
-        Also accept enum names as a convenience ("FA3", etc.).
+        """Restore the form code from its serialized form.
+
+        Pydantic serializes Enum values that are tuples as JSON arrays (lists). On restore, convert list -> tuple so Enum validation succeeds. Also accept enum names as a convenience ("FA3", etc.).
         """
         if isinstance(value, list):
             return tuple(cast(list[object], value))
@@ -380,11 +451,19 @@ class BaseSessionResumeState(KSeFPersistedModel):
         return value
 
     def get_aes_key_bytes(self) -> bytes:
-        """Get the AES key as raw bytes."""
+        """Get the AES key as raw bytes.
+
+        Returns:
+            The raw AES key.
+        """
         return base64.b64decode(self.aes_key.get_secret_value(), validate=True)
 
     def get_iv_bytes(self) -> bytes:
-        """Get the initialization vector as raw bytes."""
+        """Get the initialization vector as raw bytes.
+
+        Returns:
+            The raw initialization vector.
+        """
         return base64.b64decode(self.iv.get_secret_value(), validate=True)
 
     def to_dict(
@@ -397,6 +476,12 @@ class BaseSessionResumeState(KSeFPersistedModel):
         The returned data contains the AES key, IV, and for batch sessions the
         presigned upload URLs. Store and log it only as protected credential
         material.
+
+        Args:
+            mode: Pydantic dump mode, ``"json"`` for JSON-safe values or ``"python"`` for native types.
+
+        Returns:
+            A dictionary with the full resume state, including secrets.
         """
         data: dict[str, object] = self.model_dump(mode=mode)
         data["aes_key"] = self.aes_key.get_secret_value()
@@ -406,7 +491,14 @@ class BaseSessionResumeState(KSeFPersistedModel):
         return data
 
     def to_json(self, *, indent: int | None = None) -> str:
-        """Export resume state as JSON with credentials included."""
+        """Export resume state as JSON with credentials included.
+
+        Args:
+            indent: Number of spaces to indent nested values; ``None`` for compact output.
+
+        Returns:
+            JSON text with the full resume state, including secrets.
+        """
         data = self.to_dict(mode="json")
         if indent is None:
             return json.dumps(data, separators=(",", ":"))
@@ -414,12 +506,26 @@ class BaseSessionResumeState(KSeFPersistedModel):
 
     @classmethod
     def from_dict(cls, state: Mapping[str, object]) -> Self:
-        """Restore resume state from a dictionary exported by ``to_dict()``."""
+        """Restore resume state from a dictionary exported by ``to_dict()``.
+
+        Args:
+            state: Mapping produced by ``to_dict()``.
+
+        Returns:
+            The restored resume state.
+        """
         return cls.model_validate(state)
 
     @classmethod
     def from_json(cls, state: str | bytes | bytearray) -> Self:
-        """Restore resume state from JSON exported by ``to_json()``."""
+        """Restore resume state from JSON exported by ``to_json()``.
+
+        Args:
+            state: JSON text produced by ``to_json()``.
+
+        Returns:
+            The restored resume state.
+        """
         return cls.model_validate_json(state)
 
     @deprecated(
@@ -431,7 +537,17 @@ class BaseSessionResumeState(KSeFPersistedModel):
         *,
         mode: Literal["json", "python"] | str = "python",
     ) -> dict[str, object]:
-        """Deprecated compatibility wrapper for ``to_dict()``."""
+        """Deprecated compatibility wrapper for ``to_dict()``.
+
+        Deprecated:
+            Will be removed in ksef2 2.0. Use ``to_dict()`` instead.
+
+        Args:
+            mode: Pydantic dump mode, ``"json"`` for JSON-safe values or ``"python"`` for native types.
+
+        Returns:
+            The same dictionary as ``to_dict()``.
+        """
         return self.to_dict(mode=mode)
 
     @deprecated(
@@ -443,7 +559,17 @@ class BaseSessionResumeState(KSeFPersistedModel):
         *,
         mode: Literal["json", "python"] | str = "python",
     ) -> dict[str, object]:
-        """Deprecated compatibility wrapper for ``to_dict()``."""
+        """Deprecated compatibility wrapper for ``to_dict()``.
+
+        Deprecated:
+            Will be removed in ksef2 2.0. Use ``to_dict()`` instead.
+
+        Args:
+            mode: Pydantic dump mode, ``"json"`` for JSON-safe values or ``"python"`` for native types.
+
+        Returns:
+            The same dictionary as ``to_dict()``.
+        """
         return self.to_dict(mode=mode)
 
     @deprecated(
@@ -451,7 +577,17 @@ class BaseSessionResumeState(KSeFPersistedModel):
         "use `to_json()` instead."
     )
     def model_dump_sensitive_json(self, *, indent: int | None = None) -> str:
-        """Deprecated compatibility wrapper for ``to_json()``."""
+        """Deprecated compatibility wrapper for ``to_json()``.
+
+        Deprecated:
+            Will be removed in ksef2 2.0. Use ``to_json()`` instead.
+
+        Args:
+            indent: Number of spaces to indent nested values; ``None`` for compact output.
+
+        Returns:
+            The same JSON text as ``to_json()``.
+        """
         return self.to_json(indent=indent)
 
     @classmethod
@@ -460,7 +596,17 @@ class BaseSessionResumeState(KSeFPersistedModel):
         "use `from_dict()` instead."
     )
     def from_state(cls, state: Mapping[str, object]) -> Self:
-        """Deprecated compatibility wrapper for ``from_dict()``."""
+        """Deprecated compatibility wrapper for ``from_dict()``.
+
+        Deprecated:
+            Will be removed in ksef2 2.0. Use ``from_dict()`` instead.
+
+        Args:
+            state: Mapping produced by ``to_dict()``.
+
+        Returns:
+            The restored resume state.
+        """
         return cls.from_dict(state)
 
 
@@ -470,6 +616,9 @@ class OnlineSessionResumeState(BaseSessionResumeState):
     This class holds all information needed to resume an online session.
     Use ``to_json()`` when intentionally exporting
     resumable JSON containing credentials.
+
+    Deprecated:
+        The alias ``OnlineSessionState`` is removed in ksef2 2.0; use ``OnlineSessionResumeState``.
     """
 
     valid_until: AwareDatetime

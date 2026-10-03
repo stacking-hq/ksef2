@@ -70,6 +70,15 @@ class AuthenticatedClient:
         environment: Environment = Environment.PRODUCTION,
         transfer_transport: Middleware | None = None,
     ) -> None:
+        """Create the client.
+
+        Args:
+            transport: Middleware chain used for requests.
+            auth_tokens: Access and refresh tokens obtained from authentication.
+            certificate_store: Store holding the KSeF public-key certificates used to encrypt session keys.
+            environment: KSeF environment the client talks to.
+            transfer_transport: Middleware used for transfers outside the KSeF API such as batch part uploads; defaults to ``transport``.
+        """
         self._transport = transport
         self._transfer_transport = transfer_transport or transport
         self._auth_tokens = auth_tokens
@@ -83,21 +92,37 @@ class AuthenticatedClient:
 
     @property
     def auth_tokens(self) -> AuthTokens:
-        """Return the authenticated token pair used by this client branch."""
+        """Return the authenticated token pair used by this client branch.
+
+        Returns:
+            The authenticated token pair used by this client branch.
+        """
         return self._auth_tokens
 
     @property
     def access_token(self) -> str:
-        """Return the bearer access token string used for authenticated calls."""
+        """Return the bearer access token string used for authenticated calls.
+
+        Returns:
+            The bearer access token string used for authenticated calls.
+        """
         return self._auth_tokens.access_token.token
 
     @property
     def refresh_token(self) -> str:
-        """Return the refresh token string paired with the access token."""
+        """Return the refresh token string paired with the access token.
+
+        Returns:
+            The refresh token string paired with the access token.
+        """
         return self._auth_tokens.refresh_token.token
 
     def resume_state(self) -> AuthenticationResumeState:
-        """Return the authentication state needed to rehydrate this branch later."""
+        """Return the authentication state needed to rehydrate this branch later.
+
+        Returns:
+            The authentication state needed to rehydrate this branch later.
+        """
         return AuthenticationResumeState.from_tokens(self._auth_tokens)
 
     def _ensure_encryption_certificates_loaded(self) -> None:
@@ -123,6 +148,9 @@ class AuthenticatedClient:
 
     def get_encryption_key(self) -> tuple[bytes, bytes, bytes]:
         """Generate a session AES key, IV, and encrypted symmetric key payload.
+
+        Returns:
+            A tuple of the raw AES key, the initialization vector and the AES key encrypted with the KSeF public key.
 
         Raises:
             NoCertificateAvailableError: If no valid symmetric-key certificate is
@@ -165,10 +193,25 @@ class AuthenticatedClient:
     ) -> OnlineSessionClient:
         """Open a new online invoice session and return a bound session client.
 
+        Args:
+            form_code: Invoice schema the session accepts, for example ``FormSchema.FA3``.
+
+        Returns:
+            A session client that can be used as a context manager and closes the session on exit.
+
         Raises:
             NoCertificateAvailableError: If no valid symmetric-key certificate is
                 available.
             KSeFEncryptionError: If symmetric-key encryption fails.
+
+        Example:
+            ```python
+            from ksef2.models import FormSchema
+
+            with auth.online_session(form_code=FormSchema.FA3) as session:
+                result = session.send_invoice_and_wait(invoice_xml=xml_bytes)
+                print(result.ksef_number)
+            ```
         """
         return self._open_online_session(form_code=form_code)
 
@@ -176,7 +219,14 @@ class AuthenticatedClient:
         self,
         state: OnlineSessionResumeState,
     ) -> OnlineSessionClient:
-        """Rebind an existing serialized online session state to this client."""
+        """Rebind an existing serialized online session state to this client.
+
+        Args:
+            state: State previously exported from an online session client.
+
+        Returns:
+            An online session client bound to the saved state.
+        """
         return OnlineSessionClient(transport=self._authed_transport, state=state)
 
     def batch_session(
@@ -205,6 +255,17 @@ class AuthenticatedClient:
                 needed but no valid certificate is available.
             KSeFEncryptionError: If symmetric-key encryption fails.
             KSeFValidationError: If neither or both batch inputs are provided.
+
+        Example:
+            ```python
+            from ksef2.models import BatchInvoice
+
+            prepared = auth.batch.prepare_batch(
+                invoices=[BatchInvoice(file_name="invoice-1.xml", content=xml_bytes)],
+            )
+            with auth.batch_session(prepared_batch=prepared) as session:
+                session.upload_parts()
+            ```
         """
         return self._open_batch_session_from_input(
             prepared_batch=prepared_batch,
@@ -338,7 +399,14 @@ class AuthenticatedClient:
         self,
         state: BatchSessionResumeState,
     ) -> BatchSessionClient:
-        """Rebind an existing serialized batch session state to this client."""
+        """Rebind an existing serialized batch session state to this client.
+
+        Args:
+            state: State previously exported from a batch session client.
+
+        Returns:
+            A batch session client bound to the saved state.
+        """
         return BatchSessionClient(
             transport=self._authed_transport,
             state=state,
@@ -348,7 +416,11 @@ class AuthenticatedClient:
 
     @cached_property
     def invoices(self) -> InvoicesService:
-        """Return the invoices service with encryption support configured."""
+        """Return the invoices service with encryption support configured.
+
+        Returns:
+            The invoices service with encryption support configured.
+        """
         return InvoicesService(
             self._authed_transport,
             self._transfer_transport,
@@ -365,6 +437,9 @@ class AuthenticatedClient:
 
         The service orchestrates package preparation, session opening,
         presigned part uploads, session closing, and status polling.
+
+        Returns:
+            The batch upload service.
         """
         return BatchService(
             authed_transport=self._authed_transport,
@@ -375,42 +450,74 @@ class AuthenticatedClient:
 
     @cached_property
     def limits(self) -> LimitsClient:
-        """Return the authenticated rate-limit branch."""
+        """Return the authenticated rate-limit branch.
+
+        Returns:
+            The authenticated rate-limit branch.
+        """
         return LimitsClient(self._authed_transport)
 
     @cached_property
     def collective_identifiers(self) -> CollectiveIdentifiersClient:
-        """Return the collective invoice identifier branch."""
+        """Return the collective invoice identifier branch.
+
+        Returns:
+            The collective invoice identifier branch.
+        """
         return CollectiveIdentifiersClient(self._authed_transport)
 
     @cached_property
     def tokens(self) -> TokensClient:
-        """Return the authenticated token lifecycle branch."""
+        """Return the authenticated token lifecycle branch.
+
+        Returns:
+            The authenticated token lifecycle branch.
+        """
         return TokensClient(self._authed_transport)
 
     @cached_property
     def certificates(self) -> CertificatesClient:
-        """Return the authenticated certificate enrollment branch."""
+        """Return the authenticated certificate enrollment branch.
+
+        Returns:
+            The authenticated certificate enrollment branch.
+        """
         return CertificatesClient(self._authed_transport)
 
     @cached_property
     def sessions(self) -> SessionManagementClient:
-        """Return the authenticated session-management branch."""
+        """Return the authenticated session-management branch.
+
+        Returns:
+            The authenticated session-management branch.
+        """
         return SessionManagementClient(self._authed_transport)
 
     @cached_property
     def invoice_sessions(self) -> InvoiceSessionsClient:
-        """Return the authenticated invoice-session history branch."""
+        """Return the authenticated invoice-session history branch.
+
+        Returns:
+            The authenticated invoice-session history branch.
+        """
         return InvoiceSessionsClient(self._authed_transport)
 
     @cached_property
     def permissions(self) -> PermissionsClient:
-        """Return the authenticated permissions branch."""
+        """Return the authenticated permissions branch.
+
+        Returns:
+            The authenticated permissions branch.
+        """
         return PermissionsClient(self._authed_transport)
 
     @cached_property
     def testdata(self) -> TestDataClient:
-        """Return authenticated TEST-only data mutation helpers."""
+        """Return authenticated TEST-only data mutation helpers.
+
+        Returns:
+            Authenticated TEST-only data mutation helpers.
+        """
         if self._environment is not Environment.TEST:
             raise exceptions.KSeFUnsupportedEnvironmentError(
                 "testdata is only available for Environment.TEST"
@@ -419,7 +526,11 @@ class AuthenticatedClient:
 
     @cached_property
     def raw(self) -> RawAuthenticatedClient:
-        """Return raw authenticated endpoints for advanced integrations."""
+        """Return raw authenticated endpoints for advanced integrations.
+
+        Returns:
+            Raw authenticated endpoints for advanced integrations.
+        """
         return RawAuthenticatedClient(
             transport=self._transport,
             authed_transport=self._authed_transport,
