@@ -33,6 +33,13 @@ class CorrectionSettlementBodyBuilder[TParent](
         on_done: Callable[[KsefInvoiceBody], None] | None = None,
         existing_state: KsefInvoiceBody | None = None,
     ) -> None:
+        """Create the builder.
+
+        Args:
+            parent: Parent builder that ``done()`` returns to.
+            on_done: Callback that receives the built model when ``done()`` is called.
+            existing_state: Existing model to start from; ``None`` starts empty.
+        """
         self._parent = parent
         self._on_done = on_done
         BaseBodyBuilder.__init__(self, existing_state=existing_state)
@@ -73,7 +80,11 @@ class CorrectionSettlementBodyBuilder[TParent](
         )
 
     def build(self) -> KsefInvoiceBody:
-        """Build the corresponding FA(3) domain model."""
+        """Build the corresponding FA(3) domain model.
+
+        Returns:
+            The built ``KsefInvoiceBody``.
+        """
         return KsefInvoiceBody(
             **self._state,
             invoice_type=InvoiceType.CORRECTING_ROZ,
@@ -88,7 +99,14 @@ class CorrectionSettlementBodyBuilder[TParent](
 
     @override
     def from_model(self, body: KsefInvoiceBody) -> Self:
-        """Replace the builder state from an existing domain model."""
+        """Replace the builder state from an existing domain model.
+
+        Args:
+            body: Model to load into the builder.
+
+        Returns:
+            The builder, for chaining.
+        """
         _ = BaseBodyBuilder.from_model(self, body)
         self._rows = [row.model_copy(deep=True) for row in body.rows]
         self._payment = body.payment.model_copy(deep=True) if body.payment else None
@@ -111,6 +129,9 @@ class CorrectionSettlementBodyBuilder[TParent](
 
     def done(self) -> TParent:
         """Attach the built invoice body to the parent invoice builder.
+
+        Returns:
+            The parent builder.
 
         Raises:
             ValueError: If this body builder has no parent invoice builder.

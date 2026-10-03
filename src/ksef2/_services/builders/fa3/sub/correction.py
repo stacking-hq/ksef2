@@ -67,6 +67,13 @@ class CorrectionBuilder[TParent]:
         on_done: Callable[[CorrectionInvoiceContext], None],
         existing_state: CorrectionInvoiceContext | None = None,
     ) -> None:
+        """Create the builder.
+
+        Args:
+            parent: Parent builder that ``done()`` returns to.
+            on_done: Callback that receives the built model when ``done()`` is called.
+            existing_state: Existing model to start from; ``None`` starts empty.
+        """
         self._parent = parent
         self._on_done = on_done
         self._state: InvoiceCorrectionState = adapter.validate_python(
@@ -74,7 +81,14 @@ class CorrectionBuilder[TParent]:
         )
 
     def from_model(self, correction: CorrectionInvoiceContext) -> Self:
-        """Replace the builder state from an existing domain model."""
+        """Replace the builder state from an existing domain model.
+
+        Args:
+            correction: Model to load into the builder.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state = adapter.validate_python(correction.model_dump())
         return self
 
@@ -88,7 +102,14 @@ class CorrectionBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Set the reason value."""
+        """Set the reason value.
+
+        Args:
+            value: Reason for issuing the correction invoice.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["correction_reason"] = value
         return self
 
@@ -104,7 +125,14 @@ class CorrectionBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Set the effect type value."""
+        """Set the effect type value.
+
+        Args:
+            value: Correction effect type required by the FA(3) correction section.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["correction_effect_type"] = value
         return self
 
@@ -143,7 +171,17 @@ class CorrectionBuilder[TParent]:
             ),
         ] = False,
     ) -> Self:
-        """Add a corrected invoice entry."""
+        """Add a corrected invoice entry.
+
+        Args:
+            issue_date: Issue date of the corrected invoice.
+            invoice_number: Number of the corrected invoice.
+            ksef_id: KSeF identifier of the corrected invoice.
+            outside_ksef: Set to true when the corrected invoice was issued outside KSeF.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["corrected_invoices"].append(
             CorrectedInvoiceReference(
                 issue_date=issue_date,
@@ -157,12 +195,23 @@ class CorrectionBuilder[TParent]:
     def add_corrected_invoice_model(
         self, corrected_invoice: CorrectedInvoiceReference
     ) -> Self:
-        """Add an existing corrected-invoice reference model."""
+        """Add an existing corrected-invoice reference model.
+
+        Args:
+            corrected_invoice: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["corrected_invoices"].append(corrected_invoice)
         return self
 
     def clear_corrected_invoices(self) -> Self:
-        """Remove all corrected-invoice references."""
+        """Remove all corrected-invoice references.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["corrected_invoices"].clear()
         return self
 
@@ -177,7 +226,14 @@ class CorrectionBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Set the corrected invoice period value."""
+        """Set the corrected invoice period value.
+
+        Args:
+            value: Accounting period covered by the corrected invoice, when the correction refers to a period instead of a single document.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["corrected_invoice_period"] = value
         return self
 
@@ -192,7 +248,14 @@ class CorrectionBuilder[TParent]:
             ),
         ],
     ) -> Self:
-        """Set the corrected invoice number override value."""
+        """Set the corrected invoice number override value.
+
+        Args:
+            value: Manual corrected invoice number used when it must differ from the referenced invoice number.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["corrected_invoice_number_override"] = value
         return self
 
@@ -252,7 +315,20 @@ class CorrectionBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
-        """Set the corrected seller value."""
+        """Set the corrected seller value.
+
+        Args:
+            name: Seller name from the corrected invoice.
+            tax_id: Seller tax identifier from the corrected invoice.
+            country_code: Country code from the corrected seller address.
+            address_line_1: First address line from the corrected seller details.
+            address_line_2: Second address line from the corrected seller details.
+            gln: GLN from the corrected seller address.
+            vat_prefix: VAT prefix from the corrected seller identity.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["corrected_seller"] = CorrectedSellerEntity(
             vat_prefix=vat_prefix,
             tax_id=tax_id,
@@ -269,7 +345,14 @@ class CorrectionBuilder[TParent]:
     def corrected_seller_model(
         self, corrected_seller: CorrectedSellerEntity | None
     ) -> Self:
-        """Set the corrected seller from an existing domain model."""
+        """Set the corrected seller from an existing domain model.
+
+        Args:
+            corrected_seller: Model to use.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["corrected_seller"] = corrected_seller
         return self
 
@@ -365,7 +448,24 @@ class CorrectionBuilder[TParent]:
             ),
         ] = None,
     ) -> Self:
-        """Add a corrected buyer entry."""
+        """Add a corrected buyer entry.
+
+        Args:
+            name: Buyer name from the corrected invoice.
+            tax_id: Buyer tax identifier from the corrected invoice.
+            eu_vat_id: Buyer EU VAT identifier from the corrected invoice.
+            country_code: Buyer identity country code from the corrected invoice.
+            address_country_code: Country code for the corrected buyer address.
+            other_id: Alternative buyer identifier from the corrected invoice.
+            no_id: Set to true when the corrected buyer should be recorded without an identifier.
+            address_line_1: First address line from the corrected buyer details.
+            address_line_2: Second address line from the corrected buyer details.
+            gln: GLN from the corrected buyer address.
+            buyer_id: Buyer identifier stored on the corrected invoice.
+
+        Returns:
+            The builder, for chaining.
+        """
         address = None
         address_code = address_country_code or country_code
         if address_code is not None and address_line_1 is not None:
@@ -390,17 +490,32 @@ class CorrectionBuilder[TParent]:
         return self
 
     def add_corrected_buyer_model(self, corrected_buyer: CorrectedBuyerEntity) -> Self:
-        """Add an existing corrected-buyer domain model."""
+        """Add an existing corrected-buyer domain model.
+
+        Args:
+            corrected_buyer: Model to add.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["corrected_buyers"].append(corrected_buyer)
         return self
 
     def clear_corrected_buyers(self) -> Self:
-        """Remove all corrected buyer entries."""
+        """Remove all corrected buyer entries.
+
+        Returns:
+            The builder, for chaining.
+        """
         self._state["corrected_buyers"].clear()
         return self
 
     def build(self) -> CorrectionInvoiceContext:
-        """Build the corresponding FA(3) domain model."""
+        """Build the corresponding FA(3) domain model.
+
+        Returns:
+            The built ``CorrectionInvoiceContext``.
+        """
         return CorrectionInvoiceContext(**self._state)
 
     def _is_empty(self) -> bool:
@@ -408,6 +523,9 @@ class CorrectionBuilder[TParent]:
 
     def done(self) -> TParent:
         """Attach the built correction details to the parent builder and return it.
+
+        Returns:
+            The parent builder.
 
         Raises:
             ValueError: If correction details are empty.
@@ -426,7 +544,11 @@ class CorrectionBuilderMixin:
     _correction: CorrectionInvoiceContext | None = None
 
     def correction(self) -> CorrectionBuilder[Self]:
-        """Start a correction invoice body builder."""
+        """Start a correction invoice body builder.
+
+        Returns:
+            A ``CorrectionBuilder`` for this part of the invoice; call ``done()`` on it to attach the result and return to this builder.
+        """
         return CorrectionBuilder(self, self._set_correction, self._correction)
 
     def _set_correction(self, value: CorrectionInvoiceContext) -> None:

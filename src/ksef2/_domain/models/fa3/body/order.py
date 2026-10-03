@@ -26,40 +26,72 @@ class InvoiceOrderLine(KSeFBaseModel):
     """FA(3) order line used inside the invoice order block."""
 
     name: str | None = Field(default=None, description="p_7_z")
+    """Name of the ordered goods or service (``P_7Z``)."""
     quantity: Decimal | None = Field(default=None, description="p_8_bz")
+    """Ordered quantity (``P_8BZ``)."""
     unit_of_measure: str | None = Field(default=None, description="p_8_az")
+    """Unit of measure (``P_8AZ``)."""
     gross_amount: Decimal | None = Field(
         default=None, description="Gross value of the order row"
     )
+    """Gross value of the order line."""
     vat_rate: VatRate | None = Field(default=None, description="p_12_z")
+    """Raw VAT rate marker (``P_12Z``). Prefer ``vat_classification``."""
     vat_classification: VatClassification | None = Field(
         default=None,
         description="Structured VAT classification for the order row.",
     )
+    """Structured VAT treatment and rate for the line."""
     sale_category: SaleCategory | None = Field(default=None)
+    """Strict sale category mapped to the schema VAT code."""
     tax_regime: TaxRegime = Field(default=TaxRegime.STANDARD)
+    """Tax regime context for non-standard calculations. Defaults to the standard regime."""
     unit_price_net: Decimal | None = Field(default=None, description="p_9_az")
+    """Net unit price (``P_9AZ``)."""
     net_amount: Decimal | None = Field(default=None, description="p_11_netto_z")
+    """Net value of the line (``P_11NettoZ``)."""
     vat_amount: Decimal | None = Field(default=None, description="p_11_vat_z")
+    """VAT amount of the line (``P_11VatZ``)."""
     vat_rate_xii: Decimal | None = Field(default=None, description="p_12_z_xii")
+    """VAT rate under the special procedure of Section XII (``P_12Z_XII``)."""
     annex_15_marker: bool | None = Field(default=None, description="p_12_z_zal_15")
+    """Marks goods or services listed in Annex 15 to the VAT Act (``P_12Z_Zal_15``)."""
     unique_id: str | None = Field(default=None, description="uu_idz")
+    """Unique line identifier (``UU_IDZ``)."""
     sku: str | None = Field(default=None, description="indeks_z")
+    """Internal product index or SKU (``IndeksZ``)."""
     gtin: str | None = Field(default=None, description="gtinz")
+    """Global Trade Item Number (``GTINZ``)."""
     pkwiu: str | None = Field(default=None, description="pkwi_uz")
+    """Polish Classification of Goods and Services code (``PKWiUZ``)."""
     cn: str | None = Field(default=None, description="cnz")
+    """Combined Nomenclature code (``CNZ``)."""
     pkob: str | None = Field(default=None, description="pkobz")
+    """Polish Classification of Construction Works code (``PKOBZ``)."""
     gtu_code: str | None = Field(default=None, description="gtuz")
+    """GTU goods and services group code (``GTUZ``)."""
     procedure: str | None = Field(default=None, description="procedura_z")
+    """Special procedure marker (``ProceduraZ``)."""
     currency_exchange_rate: Decimal | None = Field(
         default=None, description="kurs_waluty_z: Currency exchange rate"
     )
+    """Exchange rate applied to the line (``KursWalutyZ``)."""
     excise_amount: Decimal | None = Field(default=None, description="kwota_akcyzy_z")
+    """Amount of excise duty (``KwotaAkcyzyZ``)."""
     before_correction: bool = Field(default=False, description="stan_przed_z")
+    """Marks a line showing the state before correction (``StanPrzedZ``)."""
 
     @model_validator(mode="before")
     @classmethod
     def normalize_tax_fields(cls, data: object) -> object:
+        """Reconcile VAT rate, VAT classification, sale category and tax regime before validation.
+
+        Args:
+            data: Raw input for the model.
+
+        Returns:
+            The input with the tax fields normalized.
+        """
         if not isinstance(data, dict):
             return data
 
@@ -116,6 +148,17 @@ class InvoiceOrderLine(KSeFBaseModel):
     @field_validator("gross_amount")
     @classmethod
     def validate_gross_amount(cls, value: Decimal | None) -> Decimal | None:
+        """Round the gross amount to PLN precision and require it to be positive.
+
+        Args:
+            value: Gross amount, or ``None``.
+
+        Returns:
+            The rounded amount, or ``None``.
+
+        Raises:
+            ValueError: If the amount is zero or negative.
+        """
         if value is None:
             return None
         if value <= Decimal("0.00"):
@@ -124,6 +167,11 @@ class InvoiceOrderLine(KSeFBaseModel):
 
     @model_validator(mode="after")
     def compute_financial_fields(self) -> Self:
+        """Derive missing net, VAT and gross amounts from the ones provided.
+
+        Returns:
+            The validated line.
+        """
         vat_percent = self._vat_percent()
         if self.gross_amount is not None:
             if self.net_amount is None:
@@ -208,11 +256,24 @@ class InvoiceOrder(KSeFBaseModel):
     """FA(3) order block with one or more order lines."""
 
     total_value: Decimal | None = None
+    """Total value of the order (``WartoscZamowienia``)."""
     order_lines: list[InvoiceOrderLine] = Field(min_length=1)
+    """Order lines; at least one is required."""
 
     @field_validator("total_value")
     @classmethod
     def round_total_value(cls, value: Decimal | None) -> Decimal | None:
+        """Round the order total to PLN precision and require it to be positive.
+
+        Args:
+            value: Order total, or ``None``.
+
+        Returns:
+            The rounded total, or ``None``.
+
+        Raises:
+            ValueError: If the total is zero or negative.
+        """
         if value is None:
             return None
         if value <= Decimal("0.00"):
@@ -221,6 +282,16 @@ class InvoiceOrder(KSeFBaseModel):
 
     @model_validator(mode="after")
     def validate_and_populate_total(self) -> Self:
+        """Fill in the order total from its lines and check it against them.
+
+        When no total is given it is set to the gross sum of the lines, or the net sum if there are no gross amounts.
+
+        Returns:
+            The validated order.
+
+        Raises:
+            ValueError: If a given total equals neither the gross nor the net sum of the order lines.
+        """
         after_lines = [line for line in self.order_lines if not line.before_correction]
         lines_for_total = after_lines if after_lines else self.order_lines
 

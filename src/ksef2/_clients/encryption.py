@@ -27,6 +27,11 @@ class EncryptionClient:
     """
 
     def __init__(self, transport: Middleware) -> None:
+        """Create the client.
+
+        Args:
+            transport: Middleware chain used for requests to KSeF.
+        """
         self._endpoints = EncryptionEndpoints(transport)
 
     def get_certificates(
@@ -34,7 +39,14 @@ class EncryptionClient:
         *,
         usage: list[CertUsage] | None = None,
     ) -> list[PublicKeyCertificate]:
-        """Return public certificates, optionally filtered by supported usage."""
+        """Return public certificates, optionally filtered by supported usage.
+
+        Args:
+            usage: Return only certificates valid for these usages; ``None`` for all.
+
+        Returns:
+            The public-key certificates published by KSeF.
+        """
         certificates = [
             from_spec(cert) for cert in self._endpoints.fetch_public_certificates()
         ]

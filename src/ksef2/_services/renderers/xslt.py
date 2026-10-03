@@ -25,6 +25,12 @@ class InvoiceXSLTRenderer:
         stylesheet_path: str | Path | None = None,
         enable_code_lookups: bool = False,
     ):
+        """Create the InvoiceXSLTRenderer.
+
+        Args:
+            stylesheet_path: Path of an XSLT stylesheet to use; the bundled FA(3) stylesheet when ``None``.
+            enable_code_lookups: Allow the stylesheet to read local files and the network to resolve code descriptions. Use only with trusted stylesheets.
+        """
         self._stylesheet_path = (
             Path(stylesheet_path) if stylesheet_path else _DEFAULT_STYLESHEET_PATH
         )
@@ -52,6 +58,11 @@ class InvoiceXSLTRenderer:
 
     @property
     def stylesheet_path(self) -> Path:
+        """Return the stylesheet used for rendering.
+
+        Returns:
+            Path of the XSLT stylesheet.
+        """
         return self._stylesheet_path
 
     def _load_transform(self) -> None:
@@ -105,10 +116,23 @@ class InvoiceXSLTRenderer:
     def render_from_path(self, invoice_xml_path: str | Path) -> str:
         """Render an invoice XML file to HTML.
 
+        Args:
+            invoice_xml_path: Path of the invoice XML file.
+
+        Returns:
+            The rendered HTML.
+
         Raises:
             FileNotFoundError: If ``invoice_xml_path`` does not exist.
             KSeFInvoiceRenderingError: If the stylesheet or invoice XML cannot be
                 parsed, compiled, transformed, or serialized.
+
+        Example:
+            ```python
+            from ksef2.renderers import InvoiceXSLTRenderer
+
+            html = InvoiceXSLTRenderer().render_from_path("invoice.xml")
+            ```
         """
         invoice_xml_path = Path(invoice_xml_path)
 
@@ -126,6 +150,12 @@ class InvoiceXSLTRenderer:
 
     def render_from_string(self, invoice_xml: str | bytes) -> str:
         """Render invoice XML content to HTML.
+
+        Args:
+            invoice_xml: Invoice XML content.
+
+        Returns:
+            The rendered HTML.
 
         Raises:
             KSeFInvoiceRenderingError: If the stylesheet or invoice XML cannot be
@@ -149,6 +179,13 @@ class InvoiceXSLTRenderer:
         output_html_path: str | Path,
     ) -> Path:
         """Render an invoice XML file and write HTML output to disk.
+
+        Args:
+            invoice_xml_path: Path of the invoice XML file.
+            output_html_path: Path to write the HTML to.
+
+        Returns:
+            The path of the written HTML file.
 
         Raises:
             FileNotFoundError: If ``invoice_xml_path`` does not exist.

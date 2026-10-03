@@ -38,20 +38,20 @@ def load_certificate_from_pem(source: bytes | str | Path) -> Certificate:
         source: PEM-encoded bytes, or a path (``str`` / ``Path``) to a ``.pem`` / ``.crt`` file.
 
     Returns:
-        A :class:`~cryptography.x509.Certificate` ready to pass to
-        :meth:`~ksef2._clients.auth.AuthClient.with_xades`.
+        The certificate, ready to pass to ``client.authentication.with_xades()``.
 
-    Example — certificate obtained from MCU (DEMO / PRODUCTION)::
-
-        from ksef2.xades import load_certificate_from_pem, load_private_key_from_pem
+    Example:
+        ```python
         from ksef2 import Client, Environment
+        from ksef2.xades import load_certificate_from_pem, load_private_key_from_pem
 
         cert = load_certificate_from_pem("cert.pem")
-        key  = load_private_key_from_pem("key.pem")
+        key = load_private_key_from_pem("key.pem")
 
         auth = Client(Environment.DEMO).authentication.with_xades(
             nip="1234567890", cert=cert, private_key=key
         )
+        ```
     """
     data = Path(source).read_bytes() if not isinstance(source, bytes) else source
     return x509.load_pem_x509_certificate(data)
@@ -121,6 +121,12 @@ def generate_test_certificate(nip: str) -> tuple[Certificate, RSAPrivateKey]:
 
     The DN uses the company-seal format matching the Java/C# reference implementations:
     ``2.5.4.97=VATPL-{NIP}, CN=KSeF SDK Test, C=PL``
+
+    Args:
+        nip: NIP embedded in the certificate subject.
+
+    Returns:
+        A tuple of the certificate and its private key.
     """
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
@@ -158,6 +164,13 @@ def generate_personal_test_certificate(
 
     Optionally includes NIP for company representatives:
     ``2.5.4.97=VATPL-{NIP}``
+
+    Args:
+        pesel: PESEL embedded in the certificate subject.
+        nip: NIP to add for a company representative; ``None`` to omit it.
+
+    Returns:
+        A tuple of the certificate and its private key.
     """
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
@@ -256,12 +269,24 @@ def sign_xades(
 
 
 class LocalSigner:
-    """Signs XML locally with a certificate and private key."""
+    """Signs XML locally with a certificate and private key.
+
+    Args:
+        cert: Certificate embedded in the signature.
+        private_key: RSA or EC private key used for signing.
+    """
 
     def __init__(self, cert: Certificate, private_key: XAdESPrivateKey) -> None:
         self._cert = cert
         self._private_key = private_key
 
     def sign(self, xml_bytes: bytes) -> bytes:
-        """Sign XML bytes with the certificate and key held by this signer."""
+        """Sign XML bytes with the certificate and key held by this signer.
+
+        Args:
+            xml_bytes: XML document to sign.
+
+        Returns:
+            UTF-8 XML bytes containing the enveloped XAdES signature.
+        """
         return sign_xades(xml_bytes, self._cert, self._private_key)

@@ -1,57 +1,74 @@
 from typing import Literal, NotRequired, TypedDict
 
-OffsetPaginationQueryParams = TypedDict(
-    "OffsetPaginationQueryParams",
-    {
-        "pageOffset": NotRequired[int | None],
-        "pageSize": NotRequired[int | None],
-    },
-)
 
-InvoiceMetadataQueryParams = TypedDict(
-    "InvoiceMetadataQueryParams",
-    {
-        "sortOrder": NotRequired[str | None],
-        "pageOffset": NotRequired[int | None],
-        "pageSize": NotRequired[int | None],
-    },
-)
+class OffsetPaginationQueryParams(TypedDict):
+    """Wire-format query parameters for offset-paginated endpoints."""
 
-ListSessionsQueryParams = TypedDict(
-    "ListSessionsQueryParams",
-    {
-        "pageSize": NotRequired[int | None],
-        "sessionType": Literal["Online", "Batch"],
-        "referenceNumber": NotRequired[str | None],
-        "dateCreatedFrom": NotRequired[str | None],
-        "dateCreatedTo": NotRequired[str | None],
-        "dateClosedFrom": NotRequired[str | None],
-        "dateClosedTo": NotRequired[str | None],
-        "dateModifiedFrom": NotRequired[str | None],
-        "dateModifiedTo": NotRequired[str | None],
-        "statuses": NotRequired[
-            list[Literal["InProgress", "Succeeded", "Failed", "Cancelled"]] | None
-        ],
-    },
-)
+    pageOffset: NotRequired[int | None]
+    """Zero-based index of the page to return."""
+    pageSize: NotRequired[int | None]
+    """Number of results per page."""
 
-ListTokensQueryParams = TypedDict(
-    "ListTokensQueryParams",
-    {
-        "status": NotRequired[list[str] | None],
-        "description": NotRequired[str | None],
-        "authorIdentifier": NotRequired[str | None],
-        "authorIdentifierType": NotRequired[str | None],
-        "pageSize": NotRequired[int | None],
-    },
-)
 
-CollectiveIdentifierQueryParams = TypedDict(
-    "CollectiveIdentifierQueryParams",
-    {
-        "pageSize": NotRequired[int | None],
-    },
-)
+class InvoiceMetadataQueryParams(TypedDict):
+    """Wire-format query parameters for invoice metadata queries."""
+
+    sortOrder: NotRequired[str | None]
+    """Sort direction, ``Asc`` or ``Desc``."""
+    pageOffset: NotRequired[int | None]
+    """Zero-based index of the page to return."""
+    pageSize: NotRequired[int | None]
+    """Number of results per page."""
+
+
+class ListSessionsQueryParams(TypedDict):
+    """Wire-format query parameters for listing sessions."""
+
+    pageSize: NotRequired[int | None]
+    """Number of results per page."""
+    sessionType: Literal["Online", "Batch"]
+    """Kind of sessions to list."""
+    referenceNumber: NotRequired[str | None]
+    """Match this session reference number."""
+    dateCreatedFrom: NotRequired[str | None]
+    """Match sessions created at or after this ISO 8601 time."""
+    dateCreatedTo: NotRequired[str | None]
+    """Match sessions created at or before this ISO 8601 time."""
+    dateClosedFrom: NotRequired[str | None]
+    """Match sessions closed at or after this ISO 8601 time."""
+    dateClosedTo: NotRequired[str | None]
+    """Match sessions closed at or before this ISO 8601 time."""
+    dateModifiedFrom: NotRequired[str | None]
+    """Match sessions modified at or after this ISO 8601 time."""
+    dateModifiedTo: NotRequired[str | None]
+    """Match sessions modified at or before this ISO 8601 time."""
+    statuses: NotRequired[
+        list[Literal["InProgress", "Succeeded", "Failed", "Cancelled"]] | None
+    ]
+    """Match sessions in any of these statuses."""
+
+
+class ListTokensQueryParams(TypedDict):
+    """Wire-format query parameters for listing tokens."""
+
+    status: NotRequired[list[str] | None]
+    """Match tokens in any of these statuses."""
+    description: NotRequired[str | None]
+    """Match tokens whose description contains this text."""
+    authorIdentifier: NotRequired[str | None]
+    """Match tokens created by this identifier."""
+    authorIdentifierType: NotRequired[str | None]
+    """Kind of identifier in ``authorIdentifier``."""
+    pageSize: NotRequired[int | None]
+    """Number of results per page."""
+
+
+class CollectiveIdentifierQueryParams(TypedDict):
+    """Wire-format query parameters for collective identifier queries."""
+
+    pageSize: NotRequired[int | None]
+    """Number of results per page."""
+
 
 type CurrencyCodes = Literal[
     "AED",

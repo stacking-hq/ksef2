@@ -26,6 +26,11 @@ class AsyncPeppolClient:
     """
 
     def __init__(self, transport: AsyncMiddleware):
+        """Create the client.
+
+        Args:
+            transport: Middleware chain used for requests to KSeF.
+        """
         self._transport = transport
         self._endpoints = AsyncPeppolEndpoints(transport)
 

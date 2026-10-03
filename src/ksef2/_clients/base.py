@@ -31,6 +31,16 @@ class Client:
         KSeFClientClosedError: If a branch is accessed after the client is closed.
         KSeFUnsupportedEnvironmentError: If a TEST-only branch is accessed outside
             ``Environment.TEST``.
+
+    Example:
+        ```python
+        from ksef2 import Client, Environment
+
+        with Client(Environment.TEST) as client:
+            auth = client.authentication.with_test_certificate(nip="5261040828")
+            for invoice in auth.invoices.all_metadata(filters=filters):
+                print(invoice.ksef_number)
+        ```
     """
 
     def __init__(
@@ -41,6 +51,14 @@ class Client:
         http_client: httpx.Client | None = None,
         certificate_store: stores.CertificateStoreProtocol | None = None,
     ) -> None:
+        """Create the client.
+
+        Args:
+            environment: KSeF environment to talk to. Defaults to production.
+            transport_config: HTTP transport settings (timeouts, retries, TLS, connection pool). Defaults are used when omitted.
+            http_client: Existing ``httpx.Client`` to use instead of building one. The caller then owns it and must close it.
+            certificate_store: Store for KSeF public-key certificates; an in-memory store is created when omitted.
+        """
         self._environment = environment
         self._transport_config = transport_config or TransportConfig()
         self._http_client = http_client or self._build_http_client(
@@ -86,6 +104,9 @@ class Client:
     def authentication(self) -> AuthClient:
         """Return the authentication entry point.
 
+        Returns:
+            The authentication branch, used to log in and obtain an authenticated client.
+
         Raises:
             KSeFClientClosedError: If the root client has been closed.
         """
@@ -101,6 +122,9 @@ class Client:
     def encryption(self) -> EncryptionClient:
         """Return the public encryption-certificate client.
 
+        Returns:
+            The client for downloading KSeF public-key certificates.
+
         Raises:
             KSeFClientClosedError: If the root client has been closed.
         """
@@ -110,6 +134,9 @@ class Client:
     @cached_property
     def testdata(self) -> TestDataClient:
         """Return the TEST-only data seeding client.
+
+        Returns:
+            The client for creating and removing TEST-environment data.
 
         Raises:
             KSeFClientClosedError: If the root client has been closed.
@@ -126,6 +153,9 @@ class Client:
     def peppol(self) -> PeppolClient:
         """Return the public Peppol provider client.
 
+        Returns:
+            The client for listing registered Peppol providers.
+
         Raises:
             KSeFClientClosedError: If the root client has been closed.
         """
@@ -134,7 +164,11 @@ class Client:
 
     @cached_property
     def raw(self) -> RawClient:
-        """Return raw unauthenticated endpoints for advanced integrations."""
+        """Return raw unauthenticated endpoints for advanced integrations.
+
+        Returns:
+            Raw unauthenticated endpoints for advanced integrations.
+        """
         self._ensure_open()
         return RawClient(self._transport, self._environment)
 
@@ -144,7 +178,17 @@ class Client:
         "`AuthenticationResumeState.from_tokens()` instead."
     )
     def authenticated(self, auth_tokens: AuthTokens) -> AuthenticatedClient:
-        """Deprecated compatibility wrapper for ``authentication.resume()``."""
+        """Deprecated compatibility wrapper for ``authentication.resume()``.
+
+        Deprecated:
+            Will be removed in ksef2 2.0. Use ``authentication.resume()`` with ``AuthenticationResumeState.from_tokens()`` instead.
+
+        Args:
+            auth_tokens: Access and refresh tokens from a previous authentication.
+
+        Returns:
+            An authenticated client bound to the tokens.
+        """
         self._ensure_open()
         return self.authentication.resume(
             AuthenticationResumeState.from_tokens(auth_tokens)

@@ -33,6 +33,11 @@ class InvoicePDFExporter:
     ):
         """Create a PDF exporter.
 
+        Args:
+            stylesheet_path: Path of an XSLT stylesheet to use; the bundled FA(3) stylesheet when ``None``.
+            enable_code_lookups: Allow the stylesheet to read local files and the network to resolve code descriptions. Use only with trusted stylesheets.
+            html_overrides: Extra HTML or CSS injected into the rendered page before PDF conversion; ``None`` for none.
+
         Raises:
             ImportError: If optional PDF dependencies are not installed.
         """
@@ -47,7 +52,11 @@ class InvoicePDFExporter:
 
     @property
     def stylesheet_path(self) -> Path:
-        """Return the path to the XSL stylesheet being used."""
+        """Return the path to the XSL stylesheet being used.
+
+        Returns:
+            The path to the XSL stylesheet being used.
+        """
         return self._xslt_renderer.stylesheet_path
 
     def _render_html(self, html_content: str) -> bytes:
@@ -64,6 +73,12 @@ class InvoicePDFExporter:
     def export_from_path(self, invoice_xml_path: str | Path) -> bytes:
         """Render an invoice XML file to PDF bytes.
 
+        Args:
+            invoice_xml_path: Path of the invoice XML file.
+
+        Returns:
+            The PDF as bytes.
+
         Raises:
             FileNotFoundError: If ``invoice_xml_path`` does not exist.
             KSeFInvoiceRenderingError: If HTML rendering fails.
@@ -74,6 +89,12 @@ class InvoicePDFExporter:
 
     def export_from_string(self, invoice_xml: str | bytes) -> bytes:
         """Render invoice XML content to PDF bytes.
+
+        Args:
+            invoice_xml: Invoice XML content.
+
+        Returns:
+            The PDF as bytes.
 
         Raises:
             KSeFInvoiceRenderingError: If HTML rendering fails.
@@ -88,6 +109,13 @@ class InvoicePDFExporter:
         output_pdf_path: str | Path,
     ) -> Path:
         """Render an invoice XML file and write PDF output to disk.
+
+        Args:
+            invoice_xml_path: Path of the invoice XML file.
+            output_pdf_path: Path to write the PDF to.
+
+        Returns:
+            The path of the written PDF file.
 
         Raises:
             FileNotFoundError: If ``invoice_xml_path`` does not exist.

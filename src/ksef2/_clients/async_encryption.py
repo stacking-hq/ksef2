@@ -24,6 +24,11 @@ class AsyncEncryptionClient:
     """
 
     def __init__(self, transport: AsyncMiddleware) -> None:
+        """Create the client.
+
+        Args:
+            transport: Middleware chain used for requests to KSeF.
+        """
         self._endpoints = AsyncEncryptionEndpoints(transport)
 
     async def get_certificates(
@@ -31,7 +36,14 @@ class AsyncEncryptionClient:
         *,
         usage: list[CertUsage] | None = None,
     ) -> list[PublicKeyCertificate]:
-        """Return public certificates, optionally filtered by supported usage."""
+        """Return public certificates, optionally filtered by supported usage.
+
+        Args:
+            usage: Return only certificates valid for these usages; ``None`` for all.
+
+        Returns:
+            The public-key certificates published by KSeF.
+        """
         certificates = [
             from_spec(cert)
             for cert in await self._endpoints.fetch_public_certificates()
