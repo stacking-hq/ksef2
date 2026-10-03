@@ -27,11 +27,7 @@ Potwierdź z administratorem repozytorium następujące ustawienia:
   `publish.yml` i środowiska `pypi`. Publikacja używa OIDC, więc nie ma tu
   `PYPI_TOKEN` ani tokena osobistego.
 - Zachowaj sekrety integracyjne `KSEF_TEST_SUBJECT_NIP`, `KSEF_TEST_PERSON_NIP`
-  i `KSEF_TEST_PERSON_PESEL`. Ustaw `DOCS_DISPATCH_TOKEN`, czyli token o
-  szczegółowych uprawnieniach dla `stacking-hq/ksef2-docs` z dostępem Contents do
-  odczytu i zapisu. Wydanie bez niego kończy się błędem w zadaniu `release-ref`,
-  przed testami integracyjnymi i wysyłką, więc brak tokena nie zostawi
-  opublikowanej wersji bez wdrożenia dokumentacji.
+  i `KSEF_TEST_PERSON_PESEL`.
 
 ## Zmień wersję i opisz zmiany
 
@@ -93,6 +89,11 @@ i przekazuje ją do `gh release create` jako treść wydania. Sekcja changelogu 
 źródłem prawdy, bo jako jedyna przechodzi przegląd, a treść na GitHubie jest z niej
 wyciągana, a nie pisana drugi raz.
 
+Publikacja nie wdraża dokumentacji. Strona `ksef2-docs` buduje się z najnowszego
+taga wydania codziennie według harmonogramu, więc poczekaj na to uruchomienie albo
+uruchom ręcznie workflow **Docs** w `stacking-hq/ksef2-docs`, żeby od razu
+opublikować strony nowego wydania.
+
 ## Ponów nieudane wydanie
 
 Nigdy nie usuwaj, nie przesuwaj ani nie nadpisuj tagu wydania. Blokują to reguły, a
@@ -112,9 +113,6 @@ PyPI odrzuca ponowne wysłanie tej samej wersji.
 
 - Jeśli pakiet mógł już trafić do PyPI, sprawdź PyPI i logi przed ponowieniem.
   Zmiany kodu po udanej wysyłce wymagają nowego wydania z wyższą wersją.
-- Jeśli nie powiodło się tylko wdrożenie dokumentacji, ponów to zadanie. Nie
-  powtarzaj wysyłania pakietu. Zadanie kończy się błędem, a nie pomija kroku, gdy
-  brakuje `DOCS_DISPATCH_TOKEN`, więc najpierw dodaj ten sekret.
 
 Publikacje tego samego ref wykonują się kolejno, ale powtórne uruchomienie nadal może
 podjąć próbę wysłania pakietu. Sprawdź istniejące uruchomienia przed ponowieniem.

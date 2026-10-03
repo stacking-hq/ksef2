@@ -26,11 +26,7 @@ Confirm these settings with a repository administrator:
   `publish.yml`, and environment `pypi`. The upload uses OIDC, so no `PYPI_TOKEN`
   or personal access token is involved.
 - Retain the integration credentials `KSEF_TEST_SUBJECT_NIP`,
-  `KSEF_TEST_PERSON_NIP`, and `KSEF_TEST_PERSON_PESEL`. Configure
-  `DOCS_DISPATCH_TOKEN`, a fine-grained token for `stacking-hq/ksef2-docs` with
-  Contents read and write. A release without it fails in the `release-ref` job,
-  before the integration tests and the upload, so a missing token never leaves a
-  published version without a docs deployment.
+  `KSEF_TEST_PERSON_NIP`, and `KSEF_TEST_PERSON_PESEL`.
 
 ## Bump and document
 
@@ -93,6 +89,11 @@ changelog section is the source of truth because it is the only release text tha
 passes review; the GitHub body is derived from it instead of written a second
 time.
 
+Publishing does not deploy the documentation. The `ksef2-docs` site builds from
+the latest release tag on a daily schedule, so wait for that run or start the
+**Docs** workflow in `stacking-hq/ksef2-docs` by hand to publish the new release's
+pages now.
+
 ## Recover a failed release
 
 Never delete, move, or overwrite a release tag. The rulesets reject it, and PyPI
@@ -113,9 +114,6 @@ rejects a second upload of the same version.
 - If the upload may have succeeded, inspect PyPI and the run logs before any
   retry. Code changes after a successful upload need a new release with a higher
   version.
-- If only the documentation dispatch failed, rerun that job. Do not repeat the
-  upload. The job fails, not skips, when `DOCS_DISPATCH_TOKEN` is missing, so add
-  the secret first.
 
 Concurrent publish runs for the same ref are serialized, but a duplicate run can
 still attempt an upload. Check existing runs before retrying.
