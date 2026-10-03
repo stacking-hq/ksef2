@@ -116,13 +116,28 @@ class SessionManagementClient:
         """Terminate the authentication session backing the current bearer token."""
         self._auth_ep.terminate_current_session()
 
-    def close(self, *, reference_number: str) -> None:
+    def terminate(self, reference_number: str) -> None:
         """Terminate an authentication session by reference number.
 
         Args:
             reference_number: Reference number of the authentication session to terminate.
         """
         self._auth_ep.terminate_auth_session(reference_number=reference_number)
+
+    @deprecated(
+        "`close()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `terminate()` instead."
+    )
+    def close(self, *, reference_number: str) -> None:
+        """Deprecated: terminate an authentication session by reference number.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``terminate()`` instead.
+
+        Args:
+            reference_number: Reference number of the authentication session to terminate.
+        """
+        self.terminate(reference_number)
 
     def list(self, *, page_size: int | None = None) -> Pager[AuthenticationSession]:
         """List the authentication sessions of the current subject.
