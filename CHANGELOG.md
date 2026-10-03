@@ -1,8 +1,9 @@
 ## v1.0.0 (2026-10-03)
 
 ksef2 1.0.0 is the first stable release. It targets KSeF OpenAPI 2.8.1 and starts
-the 1.x compatibility contract. Since 0.22.2 there is one breaking change
-(collective-identifier invoice queries); nothing else is removed. Read
+the 1.x compatibility contract. Since 0.22.2 there are two breaking changes
+(internal modules moved to private `_`-prefixed paths, and collective-identifier
+invoice queries); nothing else is removed. Read
 [Breaking changes](#breaking-changes) and [Deprecated](#deprecated) before upgrading.
 
 ### Highlights
@@ -10,9 +11,9 @@ the 1.x compatibility contract. Since 0.22.2 there is one breaking change
 - The documented import paths (`ksef2`, `ksef2.clients`, `ksef2.models`,
   `ksef2.fa3`, `ksef2.xades`, `ksef2.profiles`, `ksef2.renderers`, `ksef2.raw`,
   `ksef2.raw.mappers`, and the new `ksef2.testdata`) are the compatibility
-  contract for the whole 1.x line. `ksef2.domain.*`, `ksef2.core.*`,
-  `ksef2.services.*`, `ksef2.infra.*` and `ksef2.endpoints.*` are internal and
-  may change in any release. See the
+  contract for the whole 1.x line. The rule is simple: a module path with no
+  underscore is public, and anything with an underscore is private and may change
+  in any release. See the
   [public API contract](https://docs.stacking.me/ksef2/sdk/reference/public-api/)
   and the [1.0.0 release notes](https://docs.stacking.me/ksef2/sdk/reference/release-notes-1-0-0/).
 - `model_dump()` and `model_dump_json()` redact secrets by default and are not a
@@ -23,6 +24,27 @@ the 1.x compatibility contract. Since 0.22.2 there is one breaking change
   changelog entry, remove only in the next major.
 
 ### Breaking changes
+
+- **Internal modules moved to private `_`-prefixed paths (#153).** A module path
+  with no underscore is public; anything with an underscore is private. Internal
+  modules moved to underscore-prefixed paths, with no compatibility aliases, and
+  no runtime warning: importing an old path raises `ImportError`. Code that only
+  uses the documented public paths is unaffected.
+
+  | Old | New |
+  | --- | --- |
+  | `ksef2.core` | `ksef2._core` |
+  | `ksef2.domain` | `ksef2._domain` |
+  | `ksef2.infra` | `ksef2._infra` |
+  | `ksef2.endpoints` | `ksef2._endpoints` |
+  | `ksef2.services` | `ksef2._services` |
+  | `ksef2.clients.<module>` (`base`, `auth`, `online`, `async_*`, ...) | `ksef2._clients.<module>` (`ksef2.clients` stays the public facade with the same `__all__`) |
+  | `ksef2.config` | `ksef2._config` (names stay exported from `ksef2`) |
+  | `ksef2.logging` | `ksef2._logging` (names stay exported from `ksef2`) |
+  | `ksef2.raw.facade`, `ksef2.raw.async_facade` | `ksef2.raw._facade`, `ksef2.raw._async_facade` (names stay exported from `ksef2.raw`) |
+
+  If you imported something from an old path, import it from the public module
+  instead (see [Added](#added) for names newly exported from `ksef2.models`).
 
 - **Collective-identifier invoice queries (#128).** KSeF API 2.8.1 replaced
   `GET /collective-identifiers/{collectiveIdentifierNumber}/invoices` with
@@ -80,6 +102,18 @@ per call and is flagged by type checkers (PEP 702).
 - `ksef2.testdata` with `generate_nip()` and `generate_pesel()` for TEST-environment
   data (#148).
 - `CertUsageEnum` is exported from `ksef2.models` (#148).
+- 21 new `ksef2.models` exports, so code that imported them from internal paths has
+  a public home (#153): `ContextIdentifierTypeEnum`, `CertificateStatusEnum`,
+  `CertificateTypeEnum`, `RevocationReasonEnum`,
+  `validate_certificate_serial_number`, `AuthorizationPermissionTypeEnum`,
+  `AuthorizationSubjectIdentifierTypeEnum`, `EntityPermissionTypeEnum`,
+  `EuEntityAdminContextIdentifierTypeEnum`, `EuEntityPermissionTypeEnum`,
+  `IndirectPermissionTypeEnum`, `IndirectTargetIdentifierTypeEnum`,
+  `SubunitIdentifierTypeEnum`, `AuthContextIdentifierTypeEnum`,
+  `IdentifierTypeEnum` (the TEST-data one: `nip`, `pesel`, `fingerprint`,
+  `system`), `PermissionTypeEnum`, `SubjectTypeEnum`,
+  `TokenAuthorIdentifierTypeEnum`, `TokenPermissionEnum`, `TokenStatusEnum` and
+  `CurrencyCodes`.
 - Python 3.14 support: tested in CI and smoke-tested on the built wheel on 3.12,
   3.13 and 3.14 (#146).
 - PyPI project URLs and classifiers, including
@@ -113,8 +147,11 @@ per call and is flagged by type checkers (PEP 702).
 - Smoke-test the built wheel on Python 3.12, 3.13 and 3.14 before publishing, and
   add 3.14 to the CI matrix (#146).
 - `scripts/validate_examples.py` rejects examples and documentation code blocks that
-  import from non-public modules; `scripts/validate_docs_paths.py` and the
-  OpenAPI-version check cover the docs pages (#148, #136).
+  import from a module path with an underscore-prefixed component;
+  `scripts/validate_docs_paths.py` and the OpenAPI-version check cover the docs
+  pages (#148, #153, #136).
+- A module visibility contract test asserts that the public modules import and
+  that the old internal paths no longer exist (#153).
 - Remove the in-repo CLI script and its integration test; the CLI lives in the
   separate `ksef2-cli` package (#137).
 
