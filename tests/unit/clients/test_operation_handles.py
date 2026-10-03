@@ -45,8 +45,7 @@ def _handle_base(flavor: Flavor) -> type[Any]:
 
 class TestGeneratedToken:
     def _tokens(self, flavor: Flavor) -> Any:
-        cls = AsyncTokensClient if flavor.is_async else TokensClient
-        return cls(flavor.transport)
+        return flavor.client(TokensClient, AsyncTokensClient)
 
     def _generate(
         self,
@@ -202,8 +201,7 @@ def _operation_status(code: int, description: str) -> dict[str, Any]:
 
 class TestPermissionOperation:
     def _permissions(self, flavor: Flavor) -> Any:
-        cls = AsyncPermissionsClient if flavor.is_async else PermissionsClient
-        return cls(flavor.transport)
+        return flavor.client(PermissionsClient, AsyncPermissionsClient)
 
     def _start(
         self,
@@ -217,7 +215,7 @@ class TestPermissionOperation:
         permissions = self._permissions(flavor)
         if method in GRANTS:
             # An indirect grant needs a valid target; the random one often is not.
-            overrides = (
+            overrides: dict[str, Any] = (
                 {"target_type": None, "target_value": None}
                 if method == "grant_indirect"
                 else {}
@@ -331,10 +329,10 @@ class TestCertificateEnrollment:
     ) -> tuple[Any, spec.EnrollCertificateResponse]:
         response = enroll_resp.build(referenceNumber=ENROLLMENT_REF)
         flavor.transport.enqueue(response.model_dump(mode="json"))
-        cls = AsyncCertificatesClient if flavor.is_async else CertificatesClient
+        certificates = flavor.client(CertificatesClient, AsyncCertificatesClient)
         request = DomainEnrollCertificateRequestFactory.build()
         enrollment = flavor.run(
-            cls(flavor.transport).enroll(
+            certificates.enroll(
                 certificate_name=request.certificate_name,
                 certificate_type=request.certificate_type,
                 csr=request.csr,

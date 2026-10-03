@@ -22,9 +22,10 @@ token_reference = token.reference_number
 token_secret = token.token
 ```
 
-`generate()` returns as soon as KSeF provides the one-time credential. The
-returned `token` value is the secret your automation will use for token
-authentication later.
+`generate()` returns a `GeneratedToken` handle as soon as KSeF provides the
+one-time credential. Its `token` value is the secret your automation will use
+for token authentication later; the handle exposes every field of the generation
+response.
 
 Default `repr` and generic Pydantic dumps omit the secret. Read `.token` only
 at the protected storage boundary, or use `to_sensitive_dict()` when an
@@ -40,49 +41,47 @@ After persisting the credential, wait explicitly when the next operation needs
 an active token:
 
 ```python
-status = auth.tokens.wait_for_activation(
-    reference_number=token.reference_number,
-    timeout=60.0,
-    poll_interval=1.0,
-)
+status = auth.tokens.generate(...).wait(timeout=60.0, poll_interval=1.0)
+# or, on the handle you already hold:
+status = token.wait(timeout=60.0, poll_interval=1.0)
 ```
 
-A timeout or transport error from `wait_for_activation()` does not discard the
-credential you already stored. Resume the status check later with the same
-`reference_number`.
+A timeout or transport error from `wait()` does not discard the credential you
+already stored. Resume the status check later with
+`auth.tokens.get_status(reference_number=...)`.
 
 ## List tokens
 
-Use `list_page()` for one page or `list_all()` for a full audit pass.
+`list()` returns a `Pager`: iterate it for every token, call `.pages()` for
+page-sized lists, or `.first_page()` to make a single request. Nothing is
+requested until you consume it.
+
+### All tokens
+
+```python
+for item in auth.tokens.list():
+    print(item.reference_number, item.status, item.description)
+
+# TokenInfo
+# {
+#   "reference_number": "20260625-TOKEN-...",
+#   "description": "nightly invoice export",
+#   "requested_permissions": ["invoice_read"],
+#   "status": "active"
+# }
+```
 
 ### One page
 
 ```python
-page = auth.tokens.list_page()
-
-# QueryTokensResponse
-# {
-#   "continuation_token": null,
-#   "tokens": [
-#     {
-#       "reference_number": "20260625-TOKEN-...",
-#       "description": "nightly invoice export",
-#       "requested_permissions": ["invoice_read"],
-#       "status": "active"
-#     }
-#   ]
-# }
-
-for item in page.tokens:
-    print(item.reference_number, item.status, item.description)
+first = auth.tokens.list().first_page()
 ```
 
-### All pages
+### Page by page
 
 ```python
-for page in auth.tokens.list_all():
-    for item in page.tokens:
-        print(item.reference_number, item.status, item.description)
+for page in auth.tokens.list().pages():
+    print(len(page), "tokens on this page")
 ```
 
 ## Inspect or revoke one token
@@ -90,7 +89,7 @@ for page in auth.tokens.list_all():
 Use the token reference number for later lifecycle operations.
 
 ```python
-status = auth.tokens.status(reference_number="20260625-TOKEN-...")
+status = auth.tokens.get_status(reference_number="20260625-TOKEN-...")
 
 # TokenStatusResponse
 # {

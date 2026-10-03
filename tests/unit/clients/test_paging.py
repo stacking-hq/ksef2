@@ -275,8 +275,7 @@ def _page(collection: Collection, *, more: bool) -> dict[str, Any]:
 
 
 def _client(collection: Collection, flavor: Flavor) -> Any:
-    cls = collection.async_cls if flavor.is_async else collection.sync_cls
-    return cls(flavor.transport)
+    return flavor.client(collection.sync_cls, collection.async_cls)
 
 
 @pytest.fixture(params=COLLECTIONS, ids=lambda collection: collection.id)

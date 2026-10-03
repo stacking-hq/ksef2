@@ -189,8 +189,7 @@ def _token_status(flavor: Flavor, status: spec.AuthenticationTokenStatus) -> Non
 
 class TestDeprecatedTokenAliases:
     def _tokens(self, flavor: Flavor) -> Any:
-        cls = AsyncTokensClient if flavor.is_async else TokensClient
-        return cls(flavor.transport)
+        return flavor.client(TokensClient, AsyncTokensClient)
 
     def test_wait_for_activation_warns_once_and_polls_until_active(
         self, flavor: Flavor
@@ -233,8 +232,7 @@ class TestDeprecatedPermissionAliases:
     ) -> None:
         response = perm_op_resp.build()
         flavor.transport.enqueue(response.model_dump(mode="json"))
-        cls = AsyncPermissionsClient if flavor.is_async else PermissionsClient
-        permissions = cls(flavor.transport)
+        permissions = flavor.client(PermissionsClient, AsyncPermissionsClient)
 
         result = once(
             flavor,
@@ -254,10 +252,7 @@ class TestDeprecatedVerbAliases:
         self, flavor: Flavor
     ) -> None:
         flavor.transport.enqueue()
-        cls = (
-            AsyncSessionManagementClient if flavor.is_async else SessionManagementClient
-        )
-        sessions = cls(flavor.transport)
+        sessions = flavor.client(SessionManagementClient, AsyncSessionManagementClient)
 
         result = once(
             flavor,

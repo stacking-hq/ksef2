@@ -120,7 +120,9 @@ Dostosuj ustawienia pollingu do przepływu:
 | Akceptacja faktury online | `submission.wait()` |
 | Przetwarzanie batch | `session.wait()` |
 | Gotowość paczki eksportu | `auth.invoices.export(...).wait()` |
-| Aktywacja albo sprawdzanie tokenu | `auth.tokens.wait_for_activation()` albo `auth.tokens.status()` |
+| Aktywacja albo sprawdzanie tokenu | `auth.tokens.generate(...).wait()` albo `auth.tokens.get_status()` |
+| Nadanie albo cofnięcie uprawnienia | `operation.wait()` albo `auth.permissions.get_operation_status()` |
+| Wydanie certyfikatu | `enrollment.wait()` albo `auth.certificates.get_enrollment_status()` |
 
 ## Co zapisywać
 

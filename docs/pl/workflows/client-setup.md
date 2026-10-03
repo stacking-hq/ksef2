@@ -74,7 +74,7 @@ Klient główny przydaje się przed uwierzytelnieniem:
 
 ```python
 certificates = client.encryption.get_certificates()
-providers = client.peppol.query()
+providers = client.peppol.list().first_page()
 ```
 
 Gałąź tylko dla TEST także jest na kliencie głównym:

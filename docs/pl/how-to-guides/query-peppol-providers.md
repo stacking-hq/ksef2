@@ -9,32 +9,28 @@ uwierzytelniania.
 
 ## Wyszukaj dostawców
 
-### Jedna strona
-
-```python
-page = client.peppol.query()
-
-# ListPeppolProvidersResponse
-# {
-#   "has_more": false,
-#   "providers": [
-#     {
-#       "id": "PPL123456",
-#       "name": "Example PEPPOL Provider",
-#       "date_created": "2026-06-25T10:00:00Z"
-#     }
-#   ]
-# }
-
-for provider in page.providers:
-    print(provider.id, provider.name)
-```
+`list()` zwraca `Pager`: iteruj po nim, by dostać każdego dostawcę, wywołaj
+`.pages()` dla list wielkości strony albo `.first_page()`, by wykonać jedno
+żądanie.
 
 ### Wszyscy dostawcy
 
 ```python
-for provider in client.peppol.all():
+for provider in client.peppol.list():
     print(provider.id, provider.name, provider.date_created)
+
+# PeppolProvider
+# {
+#   "id": "PPL123456",
+#   "name": "Example PEPPOL Provider",
+#   "date_created": "2026-06-25T10:00:00Z"
+# }
+```
+
+### Jedna strona
+
+```python
+first = client.peppol.list().first_page()
 ```
 
 ## Cache'uj wybory dostawców
@@ -45,7 +41,7 @@ id i nazwę wyświetlaną do wyboru użytkownika albo walidacji w produkcie.
 ```python
 providers_by_id = {
     provider.id: provider.name
-    for provider in client.peppol.all()
+    for provider in client.peppol.list()
 }
 ```
 

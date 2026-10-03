@@ -71,7 +71,7 @@ The root client is useful before authentication:
 
 ```python
 certificates = client.encryption.get_certificates()
-providers = client.peppol.query()
+providers = client.peppol.list().first_page()
 ```
 
 The TEST-only branch is also on the root client:
