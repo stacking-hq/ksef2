@@ -11,7 +11,11 @@ class AsyncCertificatesEndpoints(AsyncBaseEndpoints):
     """Raw certificate endpoints backed by generated schema models."""
 
     async def get_limits(self) -> spec.CertificateLimitsResponse:
-        """Fetch effective certificate quotas."""
+        """Fetch effective certificate quotas.
+
+        Returns:
+            The parsed KSeF response (``spec.CertificateLimitsResponse``).
+        """
         return self._parse(
             await self._transport.get(
                 path=routes.CertificateRoutes.LIMITS,
@@ -20,7 +24,11 @@ class AsyncCertificatesEndpoints(AsyncBaseEndpoints):
         )
 
     async def get_enrollment_data(self) -> spec.CertificateEnrollmentDataResponse:
-        """Fetch subject data needed to prepare a certificate request."""
+        """Fetch subject data needed to prepare a certificate request.
+
+        Returns:
+            The parsed KSeF response (``spec.CertificateEnrollmentDataResponse``).
+        """
         return self._parse(
             await self._transport.get(
                 path=routes.CertificateRoutes.ENROLLMENT_DATA,
@@ -31,7 +39,14 @@ class AsyncCertificatesEndpoints(AsyncBaseEndpoints):
     async def enroll(
         self, body: spec.EnrollCertificateRequest
     ) -> spec.EnrollCertificateResponse:
-        """Start certificate enrollment from a schema-native payload."""
+        """Start certificate enrollment from a schema-native payload.
+
+        Args:
+            body: Request payload (``spec.EnrollCertificateRequest``).
+
+        Returns:
+            The parsed KSeF response (``spec.EnrollCertificateResponse``).
+        """
         return self._parse(
             await self._transport.post(
                 path=routes.CertificateRoutes.ENROLLMENT,
@@ -43,7 +58,14 @@ class AsyncCertificatesEndpoints(AsyncBaseEndpoints):
     async def get_enrollment_status(
         self, reference_number: str
     ) -> spec.CertificateEnrollmentStatusResponse:
-        """Fetch enrollment status by reference number."""
+        """Fetch enrollment status by reference number.
+
+        Args:
+            reference_number: Reference number of the enrollment request.
+
+        Returns:
+            The parsed KSeF response (``spec.CertificateEnrollmentStatusResponse``).
+        """
         return self._parse(
             await self._transport.get(
                 path=routes.CertificateRoutes.ENROLLMENT_STATUS.format(
@@ -56,7 +78,14 @@ class AsyncCertificatesEndpoints(AsyncBaseEndpoints):
     async def retrieve(
         self, body: spec.RetrieveCertificatesRequest
     ) -> spec.RetrieveCertificatesResponse:
-        """Retrieve issued certificates from a schema-native request payload."""
+        """Retrieve issued certificates from a schema-native request payload.
+
+        Args:
+            body: Request payload (``spec.RetrieveCertificatesRequest``).
+
+        Returns:
+            The parsed KSeF response (``spec.RetrieveCertificatesResponse``).
+        """
         return self._parse(
             await self._transport.post(
                 path=routes.CertificateRoutes.RETRIEVE,
@@ -70,7 +99,12 @@ class AsyncCertificatesEndpoints(AsyncBaseEndpoints):
         certificate_serial_number: str,
         body: spec.RevokeCertificateRequest | None = None,
     ) -> None:
-        """Revoke a certificate, optionally sending a revocation reason."""
+        """Revoke a certificate, optionally sending a revocation reason.
+
+        Args:
+            certificate_serial_number: Serial number of the certificate.
+            body: Request payload (``spec.RevokeCertificateRequest | None``).
+        """
         _ = await self._transport.post(
             path=routes.CertificateRoutes.REVOKE.format(
                 certificateSerialNumber=certificate_serial_number
@@ -83,7 +117,15 @@ class AsyncCertificatesEndpoints(AsyncBaseEndpoints):
         body: spec.QueryCertificatesRequest,
         **params: Unpack[OffsetPaginationQueryParams],
     ) -> spec.QueryCertificatesResponse:
-        """Fetch one page of certificate query results."""
+        """Fetch one page of certificate query results.
+
+        Args:
+            body: Request payload (``spec.QueryCertificatesRequest``).
+            **params: Optional query parameters (``OffsetPaginationQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.QueryCertificatesResponse``).
+        """
         return self._parse(
             await self._transport.post(
                 path=routes.CertificateRoutes.QUERY,

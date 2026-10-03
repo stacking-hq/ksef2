@@ -24,7 +24,14 @@ class SessionEndpoints(BaseEndpoints):
     def open_online(
         self, body: OpenOnlineSessionRequest
     ) -> spec.OpenOnlineSessionResponse:
-        """Open an online session using a schema-native request payload."""
+        """Open an online session using a schema-native request payload.
+
+        Args:
+            body: Request payload (``OpenOnlineSessionRequest``).
+
+        Returns:
+            The parsed KSeF response (``spec.OpenOnlineSessionResponse``).
+        """
         return self._parse(
             self._transport.post(
                 path=routes.SessionRoutes.OPEN_ONLINE,
@@ -34,7 +41,11 @@ class SessionEndpoints(BaseEndpoints):
         )
 
     def terminate_online(self, reference_number: str) -> None:
-        """Terminate an online session."""
+        """Terminate an online session.
+
+        Args:
+            reference_number: Reference number of the session.
+        """
         _ = self._transport.post(
             path=routes.SessionRoutes.TERMINATE_ONLINE.format(
                 referenceNumber=reference_number
@@ -44,7 +55,14 @@ class SessionEndpoints(BaseEndpoints):
     def open_batch(
         self, body: OpenBatchSessionRequest
     ) -> spec.OpenBatchSessionResponse:
-        """Open a batch session using a schema-native request payload."""
+        """Open a batch session using a schema-native request payload.
+
+        Args:
+            body: Request payload (``OpenBatchSessionRequest``).
+
+        Returns:
+            The parsed KSeF response (``spec.OpenBatchSessionResponse``).
+        """
         return self._parse(
             self._transport.post(
                 path=routes.SessionRoutes.OPEN_BATCH,
@@ -54,7 +72,11 @@ class SessionEndpoints(BaseEndpoints):
         )
 
     def close_batch(self, reference_number: str) -> None:
-        """Close a batch session after all parts have been uploaded."""
+        """Close a batch session after all parts have been uploaded.
+
+        Args:
+            reference_number: Reference number of the session.
+        """
         _ = self._transport.post(
             path=routes.SessionRoutes.CLOSE_BATCH.format(
                 referenceNumber=reference_number
@@ -66,7 +88,15 @@ class SessionEndpoints(BaseEndpoints):
         reference_number: str,
         upo_reference_number: str,
     ) -> bytes:
-        """Download the session UPO document as raw bytes."""
+        """Download the session UPO document as raw bytes.
+
+        Args:
+            reference_number: Reference number of the session.
+            upo_reference_number: Reference number of the UPO.
+
+        Returns:
+            The raw response body.
+        """
         return self._transport.get(
             path=routes.SessionRoutes.GET_SESSION_UPO.format(
                 referenceNumber=reference_number,
@@ -79,7 +109,15 @@ class SessionEndpoints(BaseEndpoints):
         continuation_token: str | None = None,
         **params: Unpack[ListSessionsQueryParams],
     ) -> spec.SessionsQueryResponse:
-        """Fetch one page of sessions using query filters and continuation state."""
+        """Fetch one page of sessions using query filters and continuation state.
+
+        Args:
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+            **params: Optional query parameters (``ListSessionsQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.SessionsQueryResponse``).
+        """
         headers = (
             {"x-continuation-token": continuation_token} if continuation_token else None
         )

@@ -39,34 +39,20 @@ def poll_until(
 ) -> T:
     """Call *operation* repeatedly until it produces a non-retry result.
 
-    Parameters
-    ----------
-    operation:
-        Synchronous callable that performs one poll attempt.
-    retry_predicate:
-        When it returns ``True`` the result is considered incomplete and the
-        poller will retry after *poll_interval* seconds.
-    poll_interval:
-        Seconds to wait between attempts.
-    timeout_seconds:
-        If given, polling stops after this many **seconds** have elapsed.
-    max_attempts:
-        If given, polling stops after this many **attempts** (inclusive of
-        the first call). Values below ``1`` exhaust before calling *operation*.
-        Exactly one of *timeout_seconds* and *max_attempts* must be provided.
-    timeout_error_factory:
-        Called (with no arguments) to produce the exception raised when
-        polling is exhausted.
+    Args:
+        operation: Synchronous callable that performs one poll attempt.
+        retry_predicate: When it returns ``True`` the result is considered incomplete and the poller retries after *poll_interval* seconds.
+        poll_interval: Seconds to wait between attempts.
+        timeout_seconds: If given, polling stops after this many seconds have elapsed.
+        max_attempts: If given, polling stops after this many attempts (inclusive of the first call). Values below ``1`` exhaust before calling *operation*. Exactly one of *timeout_seconds* and *max_attempts* must be provided.
+        timeout_error_factory: Called with no arguments to produce the exception raised when polling is exhausted.
+        sleep: Function used to wait between attempts; defaults to ``time.sleep``.
 
-    Returns
-    -------
-    The first result for which *retry_predicate* returns ``False``.
+    Returns:
+        The first result for which *retry_predicate* returns ``False``.
 
-    Raises
-    ------
-    The exception produced by *timeout_error_factory* when retries are
-    exhausted.  SDK/domain exceptions raised by *operation* propagate
-    unchanged.
+    Raises:
+        BaseException: The exception produced by *timeout_error_factory* when retries are exhausted. SDK/domain exceptions raised by *operation* propagate unchanged.
     """
     stop = _build_stop(timeout_seconds, max_attempts)
     if max_attempts is not None and max_attempts < 1:
@@ -110,8 +96,20 @@ async def async_poll_until(
 ) -> T:
     """Async variant of :func:`poll_until`.
 
-    Parameters are identical to :func:`poll_until` except that *operation*
-    must return an awaitable.
+    Args:
+        operation: Callable returning an awaitable that performs one poll attempt.
+        retry_predicate: When it returns ``True`` the result is considered incomplete and the poller retries after *poll_interval* seconds.
+        poll_interval: Seconds to wait between attempts.
+        timeout_seconds: If given, polling stops after this many seconds have elapsed.
+        max_attempts: If given, polling stops after this many attempts (inclusive of the first call). Values below ``1`` exhaust before calling *operation*. Exactly one of *timeout_seconds* and *max_attempts* must be provided.
+        timeout_error_factory: Called with no arguments to produce the exception raised when polling is exhausted.
+        sleep: Coroutine function used to wait between attempts; defaults to ``asyncio.sleep``.
+
+    Returns:
+        The first result for which *retry_predicate* returns ``False``.
+
+    Raises:
+        BaseException: The exception produced by *timeout_error_factory* when retries are exhausted. SDK/domain exceptions raised by *operation* propagate unchanged.
     """
     stop = _build_stop(timeout_seconds, max_attempts)
     if max_attempts is not None and max_attempts < 1:

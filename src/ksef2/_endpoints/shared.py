@@ -10,7 +10,18 @@ from ksef2._domain.types import OffsetPaginationQueryParams
 
 
 class QueryParamsAdapter(Protocol):
-    def validate_python(self, value: object, /) -> Mapping[str, object]: ...
+    """Validator that turns raw query-parameter input into a mapping."""
+
+    def validate_python(self, value: object, /) -> Mapping[str, object]:
+        """Validate query parameters.
+
+        Args:
+            value: Raw query parameters.
+
+        Returns:
+            The validated mapping.
+        """
+        ...
 
 
 DEFAULT_PARAMS_ADAPTER = cast(

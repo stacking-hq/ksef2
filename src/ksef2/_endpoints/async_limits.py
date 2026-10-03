@@ -12,7 +12,11 @@ class AsyncLimitEndpoints(AsyncBaseEndpoints):
     """Raw endpoints for reading and overriding effective limits."""
 
     async def get_context_limits(self) -> spec.EffectiveContextLimits:
-        """Fetch the effective session limits."""
+        """Fetch the effective session limits.
+
+        Returns:
+            The parsed KSeF response (``spec.EffectiveContextLimits``).
+        """
         return self._parse(
             await self._transport.get(
                 path=routes.LimitRoutes.GET_CONTEXT_LIMITS,
@@ -21,7 +25,11 @@ class AsyncLimitEndpoints(AsyncBaseEndpoints):
         )
 
     async def get_subject_limits(self) -> spec.EffectiveSubjectLimits:
-        """Fetch the effective subject-level limits."""
+        """Fetch the effective subject-level limits.
+
+        Returns:
+            The parsed KSeF response (``spec.EffectiveSubjectLimits``).
+        """
         return self._parse(
             await self._transport.get(
                 path=routes.LimitRoutes.GET_SUBJECT_LIMITS,
@@ -30,7 +38,11 @@ class AsyncLimitEndpoints(AsyncBaseEndpoints):
         )
 
     async def get_api_rate_limits(self) -> spec.EffectiveApiRateLimits:
-        """Fetch the effective API rate limits."""
+        """Fetch the effective API rate limits.
+
+        Returns:
+            The parsed KSeF response (``spec.EffectiveApiRateLimits``).
+        """
         return self._parse(
             await self._transport.get(
                 path=routes.LimitRoutes.GET_API_RATE_LIMITS,
@@ -39,7 +51,11 @@ class AsyncLimitEndpoints(AsyncBaseEndpoints):
         )
 
     async def set_session_limits(self, body: spec.SetSessionLimitsRequest) -> None:
-        """Override session limits."""
+        """Override session limits.
+
+        Args:
+            body: Request payload (``spec.SetSessionLimitsRequest``).
+        """
         _ = await self._transport.post(
             path=routes.LimitRoutes.SET_SESSION_LIMITS,
             json=body.model_dump(mode="json", by_alias=True),
@@ -52,7 +68,11 @@ class AsyncLimitEndpoints(AsyncBaseEndpoints):
         )
 
     async def set_subject_limits(self, body: spec.SetSubjectLimitsRequest) -> None:
-        """Override subject-level limits."""
+        """Override subject-level limits.
+
+        Args:
+            body: Request payload (``spec.SetSubjectLimitsRequest``).
+        """
         _ = await self._transport.post(
             path=routes.LimitRoutes.SET_SUBJECT_LIMITS,
             json=body.model_dump(mode="json", by_alias=True),
@@ -65,7 +85,11 @@ class AsyncLimitEndpoints(AsyncBaseEndpoints):
         )
 
     async def set_api_rate_limits(self, body: spec.SetRateLimitsRequest) -> None:
-        """Override API rate limits."""
+        """Override API rate limits.
+
+        Args:
+            body: Request payload (``spec.SetRateLimitsRequest``).
+        """
         _ = await self._transport.post(
             path=routes.LimitRoutes.SET_API_RATE_LIMITS,
             json=body.model_dump(mode="json", by_alias=True),
