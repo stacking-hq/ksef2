@@ -14,8 +14,8 @@ invoice queries); nothing else is removed. Read
   contract for the whole 1.x line. The rule is simple: a module path with no
   underscore is public, and anything with an underscore is private and may change
   in any release. See the
-  [public API contract](https://docs.stacking.me/ksef2/sdk/reference/public-api/)
-  and the [1.0.0 release notes](https://docs.stacking.me/ksef2/sdk/reference/release-notes-1-0-0/).
+  [public API contract](https://docs.stacking.me/sdk/reference/public-api/)
+  and the [1.0.0 release notes](https://docs.stacking.me/sdk/reference/release-notes-1-0-0/).
 - `model_dump()` and `model_dump_json()` redact secrets by default and are not a
   persistence format. Use `to_dict()` / `to_json()` / `from_dict()` on resume
   states and `to_sensitive_dict()` to persist.
