@@ -720,6 +720,7 @@ dependencies = [
     { name = "signxml" },
     { name = "structlog" },
     { name = "tenacity" },
+    { name = "typing-extensions" },
     { name = "xsdata" },
     { name = "xsdata-pydantic" },
 ]
@@ -763,6 +764,7 @@ requires-dist = [
     { name = "signxml", specifier = ">=4.0" },
     { name = "structlog", specifier = ">=25.5.0" },
     { name = "tenacity", specifier = ">=9.0" },
+    { name = "typing-extensions", specifier = ">=4.5" },
     { name = "weasyprint", marker = "extra == 'pdf'", specifier = ">=63.0" },
     { name = "xsdata", specifier = ">=26.1" },
     { name = "xsdata-pydantic", specifier = ">=24.5" },

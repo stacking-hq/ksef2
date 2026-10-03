@@ -3,11 +3,11 @@
 
 """Client bound to an open online invoice session."""
 
-import warnings
 from types import TracebackType
 from typing import final
 
 import httpx
+from typing_extensions import deprecated
 
 from ksef2.core import exceptions
 from ksef2.core.crypto import encrypt_invoice
@@ -240,14 +240,12 @@ class OnlineSessionClient:
         """Return the sensitive session state needed to resume later."""
         return self._state
 
+    @deprecated(
+        "`get_state()` is deprecated and will be removed in ksef2 2.0; "
+        "use `resume_state()` instead."
+    )
     def get_state(self) -> OnlineSessionResumeState:
         """Deprecated compatibility wrapper for ``resume_state()``."""
-        warnings.warn(
-            "get_state() is deprecated and will be removed in a future release; "
-            "use resume_state() instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
         return self.resume_state()
 
     def __enter__(self) -> "OnlineSessionClient":

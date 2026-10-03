@@ -113,6 +113,38 @@ resulting change may ship in a minor release. It is listed in the changelog
 under a "KSeF API changes" heading so it is not mistaken for an SDK decision.
 Breaking changes the SDK initiates itself still require a major version bump.
 
+## Deprecated APIs
+
+These APIs still work throughout 1.x. Each one emits a `DeprecationWarning`
+once per call, is marked with PEP 702 `@deprecated` so type checkers and IDEs
+flag call sites, and is removed in ksef2 2.0. Python hides `DeprecationWarning`
+outside `__main__` and test runners, so run your tests with
+`python -W error::DeprecationWarning` to find them.
+
+| Deprecated | Use instead | Removed in |
+| --- | --- | --- |
+| `Client.authenticated(tokens)` and `AsyncClient.authenticated(tokens)` | `client.authentication.resume(AuthenticationResumeState.from_tokens(tokens))` | 2.0 |
+| `get_state()` on online and batch session clients | `resume_state()` | 2.0 |
+| `BatchSessionClient.access_token` | `AuthenticatedClient.access_token` of the parent client | 2.0 |
+| `dump_state()` on session resume state | `to_dict()` | 2.0 |
+| `model_dump_sensitive()` on session resume state | `to_dict()` | 2.0 |
+| `model_dump_sensitive_json()` on session resume state | `to_json()` | 2.0 |
+| `from_state()` on session resume state | `from_dict()` | 2.0 |
+| `BaseSessionState`, `OnlineSessionState`, `BatchSessionState` | `BaseSessionResumeState`, `OnlineSessionResumeState`, `BatchSessionResumeState` | 2.0 |
+| `access_token=` argument of `from_encoded()` on session resume state (ignored) | Persist `AuthenticationResumeState` separately | 2.0 |
+| `access_token` key in stored session resume state (ignored; old files still load) | Persist `AuthenticationResumeState` separately | 2.0 |
+| `auth_timeout` key in a profile written by ksef2-cli 0.0.2 | `max_poll_attempts` (and optionally `poll_interval`) | 2.0 |
+
+`FA3InvoiceBuilder.dump_state()` and `from_state()` are a separate builder
+draft API and are not deprecated.
+
+### Deprecation policy
+
+In 1.x an API is deprecated in a minor release: it gets `@deprecated` (or a
+module-level warning for aliases), a message of the form "`X` is deprecated and
+will be removed in ksef2 2.0; use `Y` instead.", and a changelog entry. It is
+removed only in the next major release.
+
 ## Reference
 
 <LinkCard

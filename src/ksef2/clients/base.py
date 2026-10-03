@@ -1,11 +1,11 @@
 """Public root client for authenticated and unauthenticated SDK entry points."""
 
-import warnings
 from functools import cached_property
 from types import TracebackType
 from typing import final, Self
 
 import httpx
+from typing_extensions import deprecated
 
 from ksef2.clients.auth import AuthClient
 from ksef2.clients.authenticated import AuthenticatedClient
@@ -138,17 +138,14 @@ class Client:
         self._ensure_open()
         return RawClient(self._transport, self._environment)
 
+    @deprecated(
+        "`Client.authenticated()` is deprecated and will be removed in ksef2 2.0; "
+        "use `Client.authentication.resume()` with "
+        "`AuthenticationResumeState.from_tokens()` instead."
+    )
     def authenticated(self, auth_tokens: AuthTokens) -> AuthenticatedClient:
         """Deprecated compatibility wrapper for ``authentication.resume()``."""
         self._ensure_open()
-        warnings.warn(
-            "Client.authenticated(auth_tokens) is deprecated and will be removed "
-            "in a future release; use "
-            "client.authentication.resume(AuthenticationResumeState.from_tokens(auth_tokens)) "
-            "instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
         return self.authentication.resume(
             AuthenticationResumeState.from_tokens(auth_tokens)
         )

@@ -3,9 +3,10 @@
 
 """Batch session client for managing batch upload sessions."""
 
-import warnings
 from types import TracebackType
 from typing import final
+
+from typing_extensions import deprecated
 
 from ksef2.core import exceptions
 from ksef2.core.external_transfer import ExternalTransferClient
@@ -65,15 +66,13 @@ class BatchSessionClient:
         return self._state.reference_number
 
     @property
+    @deprecated(
+        "`BatchSessionClient.access_token` is deprecated and will be removed in "
+        "ksef2 2.0; use `AuthenticatedClient.access_token` instead."
+    )
     def access_token(self) -> str:
         """Deprecated compatibility accessor for the current bearer token."""
         self._ensure_open()
-        warnings.warn(
-            "BatchSessionClient.access_token is deprecated and will be removed "
-            "in a future release; persist AuthenticationResumeState separately.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
         if self._access_token is None:
             raise exceptions.KSeFValidationError(
                 "Batch session state does not contain bearer authentication. "
@@ -103,14 +102,12 @@ class BatchSessionClient:
         """Return the sensitive session state needed to resume later."""
         return self._state
 
+    @deprecated(
+        "`get_state()` is deprecated and will be removed in ksef2 2.0; "
+        "use `resume_state()` instead."
+    )
     def get_state(self) -> BatchSessionResumeState:
         """Deprecated compatibility wrapper for ``resume_state()``."""
-        warnings.warn(
-            "get_state() is deprecated and will be removed in a future release; "
-            "use resume_state() instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
         return self.resume_state()
 
     def get_status(self) -> SessionStatusResponse:
