@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from ksef2.core.polling import async_poll_until, poll_until
+from ksef2._core.polling import async_poll_until, poll_until
 
 
 class PollTimeoutError(Exception):

@@ -1,19 +1,19 @@
 from datetime import date
 from decimal import Decimal
 
-from ksef2.domain.models.fa3.body.payment import (
+from ksef2._domain.models.fa3.body.payment import (
     BankAccount,
     InvoicePayment,
     PartialPayment,
     PaymentTerm,
     PaymentTermDescription,
 )
-from ksef2.infra.mappers.invoices.fa3.domain.payment import from_spec, to_spec
-from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import (
+from ksef2._infra.mappers.invoices.fa3.domain.payment import from_spec, to_spec
+from ksef2._infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import (
     Twybor1,
     Twybor12,
 )
-from ksef2.infra.schema.fa3.models.schemat import (
+from ksef2._infra.schema.fa3.models.schemat import (
     FakturaFaPlatnosc,
     FakturaFaPlatnoscTerminPlatnosci,
     FakturaFaPlatnoscTerminPlatnosciTerminOpis,

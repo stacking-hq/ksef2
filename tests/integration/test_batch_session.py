@@ -3,14 +3,14 @@
 import pytest
 
 from ksef2 import Client, Environment
-from ksef2.domain.models import BatchSessionResumeState
-from ksef2.domain.models.batch import (
+from ksef2._domain.models import BatchSessionResumeState
+from ksef2._domain.models.batch import (
     BatchFileInfo,
     BatchFilePart,
     BatchInvoice,
     PartUploadRequest,
 )
-from ksef2.domain.models.session import FormSchema
+from ksef2._domain.models.session import FormSchema
 from tests.integration.conftest import KSeFCredentials
 from scripts.examples._common import example_invoice_xml
 from tests.integration.invoice_payload import invoice_seller_nip

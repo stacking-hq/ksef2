@@ -1,6 +1,6 @@
 """Public helpers for local ``ksef2-cli`` compatible profiles."""
 
-from ksef2.clients.profiles import (
+from ksef2._clients.profiles import (
     CONFIG_ENV_VAR,
     PROFILE_ENV_VAR,
     CliProfileConfig,

@@ -13,16 +13,16 @@ from unittest.mock import AsyncMock
 import httpx
 import pytest
 
-from ksef2.core.middlewares.async_auth import AsyncBearerTokenMiddleware
-from ksef2.core.middlewares.async_retry import AsyncRetryMiddleware
-from ksef2.core.middlewares.async_exceptions import AsyncKSeFExceptionMiddleware
-from ksef2.core.middlewares.async_lifecycle import (
+from ksef2._core.middlewares.async_auth import AsyncBearerTokenMiddleware
+from ksef2._core.middlewares.async_retry import AsyncRetryMiddleware
+from ksef2._core.middlewares.async_exceptions import AsyncKSeFExceptionMiddleware
+from ksef2._core.middlewares.async_lifecycle import (
     AsyncClientLifecycleMiddleware,
     AsyncClientLifecycleState,
 )
-from ksef2.config import RetryConfig
-from ksef2.core.routes import AuthRoutes
-from ksef2.core.exceptions import (
+from ksef2._config import RetryConfig
+from ksef2._core.routes import AuthRoutes
+from ksef2._core.exceptions import (
     KSeFApiError,
     KSeFAuthError,
     KSeFClientClosedError,

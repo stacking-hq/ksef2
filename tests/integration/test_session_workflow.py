@@ -13,18 +13,18 @@ import time
 import pytest
 
 from ksef2 import Client, Environment, FormSchema
-from ksef2.clients.online import OnlineSessionClient
-from ksef2.core.tools import generate_nip, generate_pesel
+from ksef2._clients.online import OnlineSessionClient
+from ksef2._core.tools import generate_nip, generate_pesel
 from ksef2.xades import generate_test_certificate
-from ksef2.domain.models.session import (
+from ksef2._domain.models.session import (
     OnlineSessionResumeState,
     SessionStatusResponse,
 )
-from ksef2.domain.models.testdata import (
+from ksef2._domain.models.testdata import (
     Identifier,
     Permission,
 )
-from ksef2.endpoints.session import SessionEndpoints
+from ksef2._endpoints.session import SessionEndpoints
 from tests.integration.conftest import KSeFCredentials
 from scripts.examples._common import example_invoice_xml
 from tests.integration.invoice_payload import invoice_seller_nip
@@ -130,7 +130,7 @@ def test_resume_state_returns_session_state(workflow_context):
 @pytest.mark.integration
 def test_download_invoice_returns_xml_bytes(workflow_context):
     """download_invoice returns non-empty XML bytes."""
-    from ksef2.clients.authenticated import AuthenticatedClient
+    from ksef2._clients.authenticated import AuthenticatedClient
 
     auth: AuthenticatedClient = workflow_context["auth"]
     invoices_list = workflow_context["invoices_list"]
@@ -191,7 +191,7 @@ def test_get_invoice_upo_by_reference(workflow_context):
 @pytest.mark.integration
 def test_resume_session_from_resume_state(workflow_context):
     """Resume a session from serialized state and use it."""
-    from ksef2.clients.authenticated import AuthenticatedClient
+    from ksef2._clients.authenticated import AuthenticatedClient
 
     auth: AuthenticatedClient = workflow_context["auth"]
     session: OnlineSessionClient = workflow_context["session"]

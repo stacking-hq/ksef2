@@ -1,21 +1,21 @@
 from polyfactory import BaseFactory
 
-from ksef2.domain.models.batch import (
+from ksef2._domain.models.batch import (
     BatchFileInfo,
     OpenBatchSessionRequest,
     OpenBatchSessionResponse,
     PartUploadRequest,
 )
-from ksef2.domain.models.pagination import ListSessionsQuery
-from ksef2.domain.models.session import (
+from ksef2._domain.models.pagination import ListSessionsQuery
+from ksef2._domain.models.session import (
     FormSchema,
     OpenOnlineSessionRequest,
     OpenOnlineSessionResponse,
     SessionInvoicesResponse,
     SessionStatusResponse,
 )
-from ksef2.infra.mappers.sessions import from_spec, to_spec
-from ksef2.infra.schema.api import spec
+from ksef2._infra.mappers.sessions import from_spec, to_spec
+from ksef2._infra.schema.api import spec
 
 
 class TestSessionRequestMapper:

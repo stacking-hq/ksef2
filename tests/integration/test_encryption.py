@@ -7,7 +7,7 @@ Run with:
 import pytest
 
 from ksef2 import Client
-from ksef2.domain.models.encryption import CertUsageEnum, PublicKeyCertificate
+from ksef2._domain.models.encryption import CertUsageEnum, PublicKeyCertificate
 
 
 @pytest.mark.integration

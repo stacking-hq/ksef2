@@ -5,11 +5,11 @@ from typing import Annotated, cast, get_args, get_origin, get_type_hints
 from pydantic.fields import FieldInfo
 
 from ksef2.fa3 import FA3InvoiceBuilder
-from ksef2.domain.models.fa3.body import VatRate
-from ksef2.services.builders.fa3.body.base import BaseBodyBuilder
-from ksef2.services.builders.fa3.root import StandardInvoiceBuilder
-from ksef2.services.builders.fa3.sub.payment import PaymentBuilder
-from ksef2.services.builders.fa3.sub.rows import RowsBuilder
+from ksef2._domain.models.fa3.body import VatRate
+from ksef2._services.builders.fa3.body.base import BaseBodyBuilder
+from ksef2._services.builders.fa3.root import StandardInvoiceBuilder
+from ksef2._services.builders.fa3.sub.payment import PaymentBuilder
+from ksef2._services.builders.fa3.sub.rows import RowsBuilder
 
 
 def _field_info(annotation: object) -> FieldInfo:
@@ -77,7 +77,7 @@ def test_add_line_metadata_marks_advanced_and_override_fields() -> None:
         "x-builder-prefer-omit-when-null": True,
         "x-builder-format": "object",
         "x-builder-priority": "advanced",
-        "x-builder-schema-ref": "ksef2.domain.models.fa3.body.tax.VatClassification",
+        "x-builder-schema-ref": "ksef2._domain.models.fa3.body.tax.VatClassification",
     }
     assert net_amount.json_schema_extra == {
         "x-builder-prefer-omit-when-null": True,

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from ksef2.clients.profiles import (
+from ksef2._clients.profiles import (
     CONFIG_ENV_VAR,
     PROFILE_ENV_VAR,
     CliProfileConfig,
@@ -19,8 +19,8 @@ from ksef2.clients.profiles import (
     load_cli_profile,
     load_profile_config,
 )
-from ksef2.config import Environment
-from ksef2.core.exceptions import KSeFValidationError
+from ksef2._config import Environment
+from ksef2._core.exceptions import KSeFValidationError
 
 
 def test_load_cli_profile_uses_active_profile_and_env_override(tmp_path) -> None:
@@ -326,7 +326,7 @@ def _profile(
 
 
 def test_resolve_profile_secret_reads_the_named_variable() -> None:
-    from ksef2.clients.profiles import resolve_profile_secret
+    from ksef2._clients.profiles import resolve_profile_secret
 
     assert resolve_profile_secret(None, label="x", profile_name="p", environ={}) is None
     assert (
@@ -340,7 +340,7 @@ def test_resolve_profile_secret_reads_the_named_variable() -> None:
 
 
 def test_pem_credentials_require_cert_and_key_and_wrap_load_errors(tmp_path) -> None:
-    from ksef2.clients.profiles import load_profile_pem_credentials
+    from ksef2._clients.profiles import load_profile_pem_credentials
 
     with pytest.raises(KSeFValidationError, match="requires auth.cert and auth.key"):
         load_profile_pem_credentials(_profile(), profile_name="p")
@@ -359,7 +359,7 @@ def test_pem_credentials_require_cert_and_key_and_wrap_load_errors(tmp_path) -> 
 
 
 def test_p12_credentials_require_a_path_and_wrap_load_errors(tmp_path) -> None:
-    from ksef2.clients.profiles import load_profile_p12_credentials
+    from ksef2._clients.profiles import load_profile_p12_credentials
 
     with pytest.raises(KSeFValidationError, match="requires auth.p12"):
         load_profile_p12_credentials(_profile(), profile_name="p")
@@ -371,7 +371,7 @@ def test_p12_credentials_require_a_path_and_wrap_load_errors(tmp_path) -> None:
 
 
 def test_profile_context_type_defaults_to_nip() -> None:
-    from ksef2.clients.profiles import profile_context_type
+    from ksef2._clients.profiles import profile_context_type
 
     assert profile_context_type(_profile().auth) == "nip"
     assert profile_context_type(_profile(context_type="nip").auth) == "nip"

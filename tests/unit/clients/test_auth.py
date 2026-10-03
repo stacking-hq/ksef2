@@ -9,12 +9,12 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import NameOID, ObjectIdentifier
 from polyfactory import BaseFactory
 
-from ksef2.clients.auth import AuthClient
-from ksef2.clients.authenticated import AuthenticatedClient
-from ksef2.clients.session_management import SessionManagementClient
-from ksef2.config import Environment
+from ksef2._clients.auth import AuthClient
+from ksef2._clients.authenticated import AuthenticatedClient
+from ksef2._clients.session_management import SessionManagementClient
+from ksef2._config import Environment
 from ksef2.xades import generate_test_certificate
-from ksef2.core.exceptions import (
+from ksef2._core.exceptions import (
     KSeFAuthError,
     KSeFAuthPollingTimeoutError,
     KSeFAuthTokenRedemptionError,
@@ -22,12 +22,12 @@ from ksef2.core.exceptions import (
     KSeFValidationError,
     NoCertificateAvailableError,
 )
-from ksef2.core.routes import AuthRoutes
-from ksef2.core.stores import CertificateStore
-from ksef2.domain.models import auth as domain_auth
-from ksef2.domain.models.encryption import PublicKeyCertificate
-from ksef2.infra.schema.api.supp.auth import InitTokenAuthenticationRequest
-from ksef2.infra.schema.api import spec
+from ksef2._core.routes import AuthRoutes
+from ksef2._core.stores import CertificateStore
+from ksef2._domain.models import auth as domain_auth
+from ksef2._domain.models.encryption import PublicKeyCertificate
+from ksef2._infra.schema.api.supp.auth import InitTokenAuthenticationRequest
+from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import FakeTransport
 from tests.unit.helpers import VALID_BASE64
 
@@ -91,7 +91,7 @@ class TestAuthClient:
         assert isinstance(result, AuthenticatedClient)
         assert result.auth_tokens == auth_tokens
 
-    @patch("ksef2.clients.auth.encrypt_token", return_value=VALID_BASE64)
+    @patch("ksef2._clients.auth.encrypt_token", return_value=VALID_BASE64)
     def test_with_token(
         self,
         _mock_encrypt_token: MagicMock,
@@ -144,7 +144,7 @@ class TestAuthClient:
             "Authorization": f"Bearer {init_response.authenticationToken.token}"
         }
 
-    @patch("ksef2.clients.auth.encrypt_token", return_value=VALID_BASE64)
+    @patch("ksef2._clients.auth.encrypt_token", return_value=VALID_BASE64)
     def test_with_token_reports_ambiguous_lost_redemption_response(
         self,
         _mock_encrypt_token: MagicMock,
@@ -180,7 +180,7 @@ class TestAuthClient:
         assert len(fake_transport.calls) == 4
         assert fake_transport.calls[-1].path == AuthRoutes.REDEEM_TOKEN
 
-    @patch("ksef2.clients.auth.encrypt_token", return_value=VALID_BASE64)
+    @patch("ksef2._clients.auth.encrypt_token", return_value=VALID_BASE64)
     def test_with_token_raises_without_ksef_token_encryption_certificate(
         self,
         _mock_encrypt_token: MagicMock,
@@ -197,7 +197,7 @@ class TestAuthClient:
         ):
             _ = client.with_token(ksef_token="ksef-token", nip="1234567890")
 
-    @patch("ksef2.clients.auth.encrypt_token", return_value=VALID_BASE64)
+    @patch("ksef2._clients.auth.encrypt_token", return_value=VALID_BASE64)
     def test_with_token_raises_when_authentication_fails(
         self,
         _mock_encrypt_token: MagicMock,
@@ -222,7 +222,7 @@ class TestAuthClient:
         with pytest.raises(KSeFAuthError, match="Authentication failed"):
             _ = client.with_token(ksef_token="ksef-token", nip="1234567890")
 
-    @patch("ksef2.clients.auth.encrypt_token", return_value=VALID_BASE64)
+    @patch("ksef2._clients.auth.encrypt_token", return_value=VALID_BASE64)
     def test_with_token_raises_on_timeout(
         self,
         _mock_encrypt_token: MagicMock,
@@ -373,7 +373,7 @@ class TestAuthClient:
         assert call.headers == {"Authorization": "Bearer refresh-token"}
 
     @patch.object(AuthClient, "with_xades")
-    @patch("ksef2.clients.auth.generate_test_certificate")
+    @patch("ksef2._clients.auth.generate_test_certificate")
     def test_with_test_certificate(
         self,
         mock_generate_test_certificate: MagicMock,
@@ -497,7 +497,7 @@ class TestAuthClient:
         )
 
     @patch.object(AuthClient, "with_xades")
-    @patch("ksef2.clients.auth.load_profile_pem_credentials")
+    @patch("ksef2._clients.auth.load_profile_pem_credentials")
     def test_with_profile_uses_pem_xades_profile(
         self,
         mock_load_pem_credentials: MagicMock,

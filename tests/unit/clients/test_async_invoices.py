@@ -4,16 +4,16 @@ from unittest.mock import MagicMock, patch
 
 from polyfactory import BaseFactory
 
-from ksef2.clients.async_authenticated import AsyncAuthenticatedClient
-from ksef2.clients.async_invoices import AsyncInvoicesClient
-from ksef2.core.routes import EncryptionRoutes, InvoiceRoutes
-from ksef2.core.stores import CertificateStore
-from ksef2.domain.models import invoices
-from ksef2.domain.models.pagination import InvoiceMetadataParams
-from ksef2.domain.models.auth import AuthTokens
-from ksef2.domain.models.session import FormSchema
-from ksef2.infra.mappers.invoices import to_spec
-from ksef2.infra.schema.api import spec
+from ksef2._clients.async_authenticated import AsyncAuthenticatedClient
+from ksef2._clients.async_invoices import AsyncInvoicesClient
+from ksef2._core.routes import EncryptionRoutes, InvoiceRoutes
+from ksef2._core.stores import CertificateStore
+from ksef2._domain.models import invoices
+from ksef2._domain.models.pagination import InvoiceMetadataParams
+from ksef2._domain.models.auth import AuthTokens
+from ksef2._domain.models.session import FormSchema
+from ksef2._infra.mappers.invoices import to_spec
+from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import AsyncFakeTransport
 from tests.unit.helpers import VALID_PUBLIC_KEY_ID
 
@@ -233,10 +233,10 @@ class TestAsyncInvoicesClient:
         assert len(async_fake_transport.calls) == 2
 
     @patch(
-        "ksef2.clients.async_invoices.encrypt_symmetric_key", return_value=b"enc-key"
+        "ksef2._clients.async_invoices.encrypt_symmetric_key", return_value=b"enc-key"
     )
     @patch(
-        "ksef2.clients.async_invoices.generate_session_key",
+        "ksef2._clients.async_invoices.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
     )
     def test_schedule_export(
@@ -305,10 +305,10 @@ class TestAsyncAuthenticatedInvoicesService:
         assert call.headers == {"Authorization": "Bearer fake-access-token"}
 
     @patch(
-        "ksef2.clients.async_invoices.encrypt_symmetric_key", return_value=b"enc-key"
+        "ksef2._clients.async_invoices.encrypt_symmetric_key", return_value=b"enc-key"
     )
     @patch(
-        "ksef2.clients.async_invoices.generate_session_key",
+        "ksef2._clients.async_invoices.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
     )
     def test_schedule_export_loads_certificates_when_store_empty(

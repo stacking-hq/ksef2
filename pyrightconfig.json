@@ -1,6 +1,6 @@
 {
   "include": ["src", "tests"],
-  "exclude": [".venv","src/ksef2/infra/schema/api/spec", "src/ksef2/infra/schema/fa3/models"],
+  "exclude": [".venv","src/ksef2/_infra/schema/api/spec", "src/ksef2/_infra/schema/fa3/models"],
   "venvPath": ".",
   "venv": ".venv",
   "reportImplicitStringConcatenation": false,

@@ -1,5 +1,5 @@
-from ksef2.domain.models import testdata as domain_testdata
-from ksef2.infra.schema.api.supp.testdata import (
+from ksef2._domain.models import testdata as domain_testdata
+from ksef2._infra.schema.api.supp.testdata import (
     BlockContextRequest,
     CreatePersonRequest,
     CreateSubjectRequest,

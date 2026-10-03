@@ -12,9 +12,9 @@ from typing import Any
 import httpx
 import pytest
 
-from ksef2.core.async_protocols import AsyncMiddleware
-from ksef2.core.async_http import AsyncHttpTransport
-from ksef2.core.middlewares.async_base import AsyncBaseMiddleware
+from ksef2._core.async_protocols import AsyncMiddleware
+from ksef2._core.async_http import AsyncHttpTransport
+from ksef2._core.middlewares.async_base import AsyncBaseMiddleware
 from tests.unit.fakes.transport import AsyncFakeTransport
 
 

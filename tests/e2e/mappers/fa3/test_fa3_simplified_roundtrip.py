@@ -1,6 +1,6 @@
 import pytest
 
-from ksef2.domain.models.fa3.body import InvoiceType
+from ksef2._domain.models.fa3.body import InvoiceType
 
 from tests.e2e.mappers.fa3._roundtrip import assert_roundtrip
 

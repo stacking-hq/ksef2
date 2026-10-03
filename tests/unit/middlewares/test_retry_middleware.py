@@ -4,9 +4,9 @@ from unittest.mock import patch
 import httpx
 import pytest
 
-from ksef2.config import RetryConfig
-from ksef2.core.middlewares.retry import RetryMiddleware
-from ksef2.core.routes import AuthRoutes, CollectiveIdentifierRoutes
+from ksef2._config import RetryConfig
+from ksef2._core.middlewares.retry import RetryMiddleware
+from ksef2._core.routes import AuthRoutes, CollectiveIdentifierRoutes
 from tests.unit.fakes.transport import FakeTransport
 
 
@@ -39,7 +39,7 @@ class FailingThenSucceedingTransport(FakeTransport):
 
 
 class TestRetryMiddleware:
-    @patch("ksef2.core.middlewares.retry.time.sleep")
+    @patch("ksef2._core.middlewares.retry.time.sleep")
     def test_retries_get_on_retryable_status(
         self,
         sleep_mock,
@@ -55,7 +55,7 @@ class TestRetryMiddleware:
         assert len(transport.calls) == 2
         sleep_mock.assert_called_once()
 
-    @patch("ksef2.core.middlewares.retry.time.sleep")
+    @patch("ksef2._core.middlewares.retry.time.sleep")
     def test_retries_put_on_retryable_status(
         self,
         sleep_mock,
@@ -71,7 +71,7 @@ class TestRetryMiddleware:
         assert len(transport.calls) == 2
         sleep_mock.assert_called_once()
 
-    @patch("ksef2.core.middlewares.retry.time.sleep")
+    @patch("ksef2._core.middlewares.retry.time.sleep")
     def test_does_not_retry_non_retryable_post(
         self,
         sleep_mock,
@@ -86,7 +86,7 @@ class TestRetryMiddleware:
         assert len(transport.calls) == 1
         sleep_mock.assert_not_called()
 
-    @patch("ksef2.core.middlewares.retry.time.sleep")
+    @patch("ksef2._core.middlewares.retry.time.sleep")
     def test_one_shot_redemption_response_is_not_retried(
         self,
         sleep_mock,
@@ -102,7 +102,7 @@ class TestRetryMiddleware:
         assert len(transport.calls) == 1
         sleep_mock.assert_not_called()
 
-    @patch("ksef2.core.middlewares.retry.time.sleep")
+    @patch("ksef2._core.middlewares.retry.time.sleep")
     def test_one_shot_redemption_transport_error_is_not_retried(
         self,
         sleep_mock,
@@ -118,7 +118,7 @@ class TestRetryMiddleware:
         assert len(transport.calls) == 1
         sleep_mock.assert_not_called()
 
-    @patch("ksef2.core.middlewares.retry.time.sleep")
+    @patch("ksef2._core.middlewares.retry.time.sleep")
     def test_retries_safe_post_query_paths(
         self,
         sleep_mock,
@@ -134,7 +134,7 @@ class TestRetryMiddleware:
         assert len(transport.calls) == 2
         sleep_mock.assert_called_once()
 
-    @patch("ksef2.core.middlewares.retry.time.sleep")
+    @patch("ksef2._core.middlewares.retry.time.sleep")
     def test_retries_collective_identifier_invoices_post(
         self,
         sleep_mock,
@@ -155,7 +155,7 @@ class TestRetryMiddleware:
         assert len(transport.calls) == 2
         sleep_mock.assert_called_once()
 
-    @patch("ksef2.core.middlewares.retry.time.sleep")
+    @patch("ksef2._core.middlewares.retry.time.sleep")
     def test_retries_transport_errors_for_retryable_requests(
         self,
         sleep_mock,

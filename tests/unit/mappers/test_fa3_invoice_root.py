@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from ksef2.domain.models.fa3 import (
+from ksef2._domain.models.fa3 import (
     CorrectedBuyerEntity,
     CorrectedInvoiceReference,
     CorrectedSellerEntity,
@@ -13,7 +13,7 @@ from ksef2.domain.models.fa3 import (
     KsefInvoiceBody,
     KsefInvoice,
 )
-from ksef2.domain.models.fa3.body import (
+from ksef2._domain.models.fa3.body import (
     AdvancePaymentInvoiceContext,
     InvoiceRow,
     AdditionalDescriptionEntry,
@@ -24,19 +24,19 @@ from ksef2.domain.models.fa3.body import (
     TaxRegime,
     VatRate,
 )
-from ksef2.domain.models.fa3.body import CorrectionInvoiceContext
-from ksef2.domain.models.fa3.body.payment import InvoicePayment
-from ksef2.domain.models.fa3.body.transaction import (
+from ksef2._domain.models.fa3.body import CorrectionInvoiceContext
+from ksef2._domain.models.fa3.body.payment import InvoicePayment
+from ksef2._domain.models.fa3.body.transaction import (
     TransactionAddress,
     TransactionConditions,
     TransactionTransport,
 )
-from ksef2.infra.mappers.invoices.fa3.domain.invoice import to_spec as invoice_to_spec
-from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import (
+from ksef2._infra.mappers.invoices.fa3.domain.invoice import to_spec as invoice_to_spec
+from ksef2._infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import (
     Twybor1,
     Twybor12,
 )
-from ksef2.infra.schema.fa3.models.schemat import (
+from ksef2._infra.schema.fa3.models.schemat import (
     Faktura,
     TrodzajFaktury,
     TstawkaPodatku,

@@ -5,21 +5,21 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from polyfactory import BaseFactory
 
-from ksef2.clients.async_authenticated import AsyncAuthenticatedClient
-from ksef2.clients.async_online import AsyncOnlineSessionClient
-from ksef2.core.exceptions import (
+from ksef2._clients.async_authenticated import AsyncAuthenticatedClient
+from ksef2._clients.async_online import AsyncOnlineSessionClient
+from ksef2._core.exceptions import (
     KSeFClientClosedError,
     KSeFInvoiceProcessingTimeoutError,
     KSeFInvoiceRejectedError,
     KSeFSessionError,
     NoCertificateAvailableError,
 )
-from ksef2.core.routes import EncryptionRoutes, InvoiceRoutes, SessionRoutes
-from ksef2.core.stores import CertificateStore
-from ksef2.domain.models.auth import AuthenticationResumeState, AuthTokens
-from ksef2.domain.models.encryption import PublicKeyCertificate
-from ksef2.domain.models.session import FormSchema, OnlineSessionResumeState
-from ksef2.infra.schema.api import spec
+from ksef2._core.routes import EncryptionRoutes, InvoiceRoutes, SessionRoutes
+from ksef2._core.stores import CertificateStore
+from ksef2._domain.models.auth import AuthenticationResumeState, AuthTokens
+from ksef2._domain.models.encryption import PublicKeyCertificate
+from ksef2._domain.models.session import FormSchema, OnlineSessionResumeState
+from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import AsyncFakeTransport
 
 
@@ -294,7 +294,7 @@ class TestAsyncOnlineSessionClient:
         )
 
         with patch(
-            "ksef2.clients.async_online.encrypt_invoice", return_value=b"encrypted"
+            "ksef2._clients.async_online.encrypt_invoice", return_value=b"encrypted"
         ):
             status = asyncio.run(
                 client.send_invoice_and_wait(
@@ -314,11 +314,11 @@ class TestAsyncOnlineSessionClient:
 
 class TestAsyncAuthenticatedOnlineSession:
     @patch(
-        "ksef2.clients.async_authenticated.encrypt_symmetric_key",
+        "ksef2._clients.async_authenticated.encrypt_symmetric_key",
         return_value=b"enc-key",
     )
     @patch(
-        "ksef2.clients.async_authenticated.generate_session_key",
+        "ksef2._clients.async_authenticated.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
     )
     def test_get_encryption_key_uses_fresh_symmetric_key_certificate_without_refresh(
@@ -354,11 +354,11 @@ class TestAsyncAuthenticatedOnlineSession:
         assert async_fake_transport.calls == []
 
     @patch(
-        "ksef2.clients.async_authenticated.encrypt_symmetric_key",
+        "ksef2._clients.async_authenticated.encrypt_symmetric_key",
         return_value=b"enc-key",
     )
     @patch(
-        "ksef2.clients.async_authenticated.generate_session_key",
+        "ksef2._clients.async_authenticated.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
     )
     def test_get_encryption_key_refreshes_stale_symmetric_key_certificate(
@@ -410,11 +410,11 @@ class TestAsyncAuthenticatedOnlineSession:
         )
 
     @patch(
-        "ksef2.clients.async_authenticated.encrypt_symmetric_key",
+        "ksef2._clients.async_authenticated.encrypt_symmetric_key",
         return_value=b"enc-key",
     )
     @patch(
-        "ksef2.clients.async_authenticated.generate_session_key",
+        "ksef2._clients.async_authenticated.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
     )
     def test_get_encryption_key_fetches_certificates_when_store_lacks_symmetric_key_usage(
@@ -506,11 +506,11 @@ class TestAsyncAuthenticatedOnlineSession:
         )
 
     @patch(
-        "ksef2.clients.async_authenticated.encrypt_symmetric_key",
+        "ksef2._clients.async_authenticated.encrypt_symmetric_key",
         return_value=b"enc-key",
     )
     @patch(
-        "ksef2.clients.async_authenticated.generate_session_key",
+        "ksef2._clients.async_authenticated.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
     )
     def test_online_session_uses_bearer_transport_and_returns_client(
@@ -554,11 +554,11 @@ class TestAsyncAuthenticatedOnlineSession:
         assert "access_token" not in session_client.resume_state().to_dict()
 
     @patch(
-        "ksef2.clients.async_authenticated.encrypt_symmetric_key",
+        "ksef2._clients.async_authenticated.encrypt_symmetric_key",
         return_value=b"enc-key",
     )
     @patch(
-        "ksef2.clients.async_authenticated.generate_session_key",
+        "ksef2._clients.async_authenticated.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
     )
     def test_online_session_context_manager_opens_and_closes_session(
@@ -601,11 +601,11 @@ class TestAsyncAuthenticatedOnlineSession:
         )
 
     @patch(
-        "ksef2.clients.async_authenticated.encrypt_symmetric_key",
+        "ksef2._clients.async_authenticated.encrypt_symmetric_key",
         return_value=b"enc-key",
     )
     @patch(
-        "ksef2.clients.async_authenticated.generate_session_key",
+        "ksef2._clients.async_authenticated.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
     )
     def test_online_session_context_manager_closes_after_exception(

@@ -4,13 +4,13 @@ import pytest
 
 from pydantic import BaseModel
 
-from ksef2.core import exceptions
-from ksef2.core.routes import PeppolRoutes
-from ksef2.endpoints.peppol import PeppolEndpoints
+from ksef2._core import exceptions
+from ksef2._core.routes import PeppolRoutes
+from ksef2._endpoints.peppol import PeppolEndpoints
 from tests.unit.fakes import transport
 from tests.unit.factories.peppol import QueryPeppolProvidersResponseFactory
 
-from ksef2.core.middlewares.exceptions import KSeFExceptionMiddleware
+from ksef2._core.middlewares.exceptions import KSeFExceptionMiddleware
 
 
 class TestPeppolEndpoints:

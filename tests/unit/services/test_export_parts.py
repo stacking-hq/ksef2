@@ -1,6 +1,6 @@
 import pytest
 
-from ksef2.services.export_parts import safe_part_filename
+from ksef2._services.export_parts import safe_part_filename
 
 
 @pytest.mark.parametrize(

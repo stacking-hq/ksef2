@@ -3,7 +3,7 @@
 import warnings
 from typing import TYPE_CHECKING
 
-from ksef2.domain.models import (
+from ksef2._domain.models import (
     ApiRateLimits,
     AttachmentPermissionStatus,
     AuthContextIdentifier,
@@ -183,7 +183,7 @@ from ksef2.domain.models import (
     Upo,
     UpoPage,
 )
-from ksef2.domain.models.certificates import (
+from ksef2._domain.models.certificates import (
     Certificate,
     CertificateEnrollmentResponse,
     CertificateEnrollmentStatusResponse,
@@ -194,28 +194,59 @@ from ksef2.domain.models.certificates import (
     RevocationReason,
     SubjectIdentifier,
 )
-from ksef2.domain.models.encryption import (
+from ksef2._domain.models.encryption import (
     CertUsage,
     CertUsageEnum,
     PublicKeyCertificate,
 )
-from ksef2.domain.models.limits import (
+from ksef2._domain.models.limits import (
     RateLimitValues,
     SubjectCertificateLimits,
     SubjectEnrollmentLimits,
 )
-from ksef2.domain.models.pagination import (
+from ksef2._domain.models.pagination import (
     ListSessionsQuery,
     OffsetPaginationParams,
     TokenListParams,
 )
-from ksef2.domain.models.session import (
+from ksef2._domain.models.session import (
     SessionStatus,
     SessionStatusEnum,
     StatusInfo,
     deprecation_message,
 )
-from ksef2.domain.models.tokens import GenerateTokenResponse, TokenStatusResponse
+from ksef2._domain.models.tokens import GenerateTokenResponse, TokenStatusResponse
+from ksef2._domain.models.auth import (
+    ContextIdentifierTypeEnum,
+)
+from ksef2._domain.models.certificates import (
+    CertificateStatusEnum,
+    CertificateTypeEnum,
+    RevocationReasonEnum,
+    validate_certificate_serial_number,
+)
+from ksef2._domain.models.permissions import (
+    AuthorizationPermissionTypeEnum,
+    AuthorizationSubjectIdentifierTypeEnum,
+    EntityPermissionTypeEnum,
+    EuEntityAdminContextIdentifierTypeEnum,
+    EuEntityPermissionTypeEnum,
+    IndirectPermissionTypeEnum,
+    IndirectTargetIdentifierTypeEnum,
+    SubunitIdentifierTypeEnum,
+)
+from ksef2._domain.models.testdata import (
+    AuthContextIdentifierTypeEnum,
+    IdentifierTypeEnum,
+    PermissionTypeEnum,
+    SubjectTypeEnum,
+)
+from ksef2._domain.models.tokens import (
+    TokenAuthorIdentifierTypeEnum,
+    TokenPermissionEnum,
+    TokenStatusEnum,
+)
+from ksef2._domain.types import CurrencyCodes
 
 if TYPE_CHECKING:
     BaseSessionState = BaseSessionResumeState
@@ -453,4 +484,25 @@ __all__ = [
     "OffsetPaginationParams",
     "PeppolProvider",
     "ListPeppolProvidersResponse",
+    "ContextIdentifierTypeEnum",
+    "CertificateStatusEnum",
+    "CertificateTypeEnum",
+    "RevocationReasonEnum",
+    "validate_certificate_serial_number",
+    "AuthorizationPermissionTypeEnum",
+    "AuthorizationSubjectIdentifierTypeEnum",
+    "EntityPermissionTypeEnum",
+    "EuEntityAdminContextIdentifierTypeEnum",
+    "EuEntityPermissionTypeEnum",
+    "IndirectPermissionTypeEnum",
+    "IndirectTargetIdentifierTypeEnum",
+    "SubunitIdentifierTypeEnum",
+    "AuthContextIdentifierTypeEnum",
+    "IdentifierTypeEnum",
+    "PermissionTypeEnum",
+    "SubjectTypeEnum",
+    "TokenAuthorIdentifierTypeEnum",
+    "TokenPermissionEnum",
+    "TokenStatusEnum",
+    "CurrencyCodes",
 ]

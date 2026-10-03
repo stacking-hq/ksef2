@@ -5,14 +5,14 @@ from zipfile import ZipFile
 import pytest
 from polyfactory import BaseFactory
 
-from ksef2.clients.batch import BatchSessionClient
-from ksef2.core.crypto import decrypt_aes_cbc, sha256_b64
-from ksef2.core.exceptions import (
+from ksef2._clients.batch import BatchSessionClient
+from ksef2._core.crypto import decrypt_aes_cbc, sha256_b64
+from ksef2._core.exceptions import (
     KSeFBatchSessionTimeoutError,
     KSeFSessionError,
     KSeFValidationError,
 )
-from ksef2.domain.models.batch import (
+from ksef2._domain.models.batch import (
     BatchEncryptionData,
     BatchFileInfo,
     BatchFilePart,
@@ -22,9 +22,9 @@ from ksef2.domain.models.batch import (
     PartUploadRequest,
     PreparedBatch,
 )
-from ksef2.domain.models.session import FormSchema, SessionEncryptionMaterial
-from ksef2.infra.schema.api import spec
-from ksef2.services.batch import BatchService, BatchSessionOpener
+from ksef2._domain.models.session import FormSchema, SessionEncryptionMaterial
+from ksef2._infra.schema.api import spec
+from ksef2._services.batch import BatchService, BatchSessionOpener
 from tests.unit.fakes.transport import FakeTransport
 from tests.unit.helpers import VALID_PUBLIC_KEY_ID
 

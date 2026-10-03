@@ -5,8 +5,8 @@ from tests.unit.factories.peppol import (
     QueryPeppolProvidersResponseFactory,
 )
 from tests.unit.fakes.transport import AsyncFakeTransport
-from ksef2.clients.async_peppol import AsyncPeppolClient
-from ksef2.core.routes import PeppolRoutes
+from ksef2._clients.async_peppol import AsyncPeppolClient
+from ksef2._core.routes import PeppolRoutes
 
 
 async def _collect_async_providers(iterator):

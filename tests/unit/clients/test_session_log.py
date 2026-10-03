@@ -2,11 +2,11 @@ from polyfactory import BaseFactory
 
 import pytest
 
-from ksef2.clients.invoice_sessions import InvoiceSessionsClient
-from ksef2.core.routes import SessionRoutes
-from ksef2.domain.models.pagination import ListSessionsQuery
-from ksef2.domain.models.session import ListSessionsResponse
-from ksef2.infra.schema.api import spec
+from ksef2._clients.invoice_sessions import InvoiceSessionsClient
+from ksef2._core.routes import SessionRoutes
+from ksef2._domain.models.pagination import ListSessionsQuery
+from ksef2._domain.models.session import ListSessionsResponse
+from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import FakeTransport
 
 

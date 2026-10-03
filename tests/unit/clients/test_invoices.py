@@ -5,13 +5,13 @@ from polyfactory import BaseFactory
 import pytest
 from pydantic import ValidationError
 
-from ksef2.clients.invoices import InvoicesClient
-from ksef2.core.routes import InvoiceRoutes
-from ksef2.domain.models import invoices
-from ksef2.domain.models.session import FormSchema
-from ksef2.domain.models.pagination import InvoiceMetadataParams
-from ksef2.infra.mappers.invoices import to_spec
-from ksef2.infra.schema.api import spec
+from ksef2._clients.invoices import InvoicesClient
+from ksef2._core.routes import InvoiceRoutes
+from ksef2._domain.models import invoices
+from ksef2._domain.models.session import FormSchema
+from ksef2._domain.models.pagination import InvoiceMetadataParams
+from ksef2._infra.mappers.invoices import to_spec
+from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import FakeTransport
 from tests.unit.helpers import VALID_PUBLIC_KEY_ID
 
@@ -226,9 +226,9 @@ class TestInvoicesClient:
         assert call.method == "GET"
         assert str(call.path) == InvoiceRoutes.DOWNLOAD.format(ksefNumber="ksef-123")
 
-    @patch("ksef2.clients.invoices.encrypt_symmetric_key", return_value=b"enc-key")
+    @patch("ksef2._clients.invoices.encrypt_symmetric_key", return_value=b"enc-key")
     @patch(
-        "ksef2.clients.invoices.generate_session_key",
+        "ksef2._clients.invoices.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
     )
     def test_schedule_export(

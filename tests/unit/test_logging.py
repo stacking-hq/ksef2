@@ -5,7 +5,7 @@ import logging
 import pytest
 import structlog
 
-from ksef2.logging import configure_logging, get_logger
+from ksef2._logging import configure_logging, get_logger
 
 
 @pytest.fixture(autouse=True)

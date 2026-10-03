@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from ksef2.domain.models.fa3 import (
+from ksef2._domain.models.fa3 import (
     AdvanceOrderLine,
     InvoiceOrder,
     ContactInfo,
@@ -15,15 +15,15 @@ from ksef2.domain.models.fa3 import (
     KsefInvoiceBody,
     KsefInvoice,
 )
-from ksef2.domain.models.fa3.body import InvoiceRow, InvoiceType
-from ksef2.domain.models.fa3.body import (
+from ksef2._domain.models.fa3.body import InvoiceRow, InvoiceType
+from ksef2._domain.models.fa3.body import (
     SaleCategory,
     TaxRegime,
     VatClassification,
     VatRate,
     VatTreatment,
 )
-from ksef2.domain.models.fa3.body.row import round_pln
+from ksef2._domain.models.fa3.body.row import round_pln
 
 
 def make_polish_address() -> InvoiceAddress:

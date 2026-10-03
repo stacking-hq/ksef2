@@ -5,9 +5,9 @@ import pytest
 from polyfactory.factories import BaseFactory
 from pydantic import BaseModel
 
-from ksef2.core import exceptions
-from ksef2.core.routes import InvoiceRoutes
-from ksef2.endpoints.invoices import InvoicesEndpoints
+from ksef2._core import exceptions
+from ksef2._core.routes import InvoiceRoutes
+from ksef2._endpoints.invoices import InvoicesEndpoints
 from tests.unit.fakes import transport
 from tests.unit.factories.invoices import (
     QueryInvoicesMetadataRequestFactory,
@@ -15,7 +15,7 @@ from tests.unit.factories.invoices import (
     SessionInvoicesResponseFactory,
 )
 
-from ksef2.core.middlewares.exceptions import KSeFExceptionMiddleware
+from ksef2._core.middlewares.exceptions import KSeFExceptionMiddleware
 
 _REF = "20250625-SO-2C3E6C8000-B675CF5D68-07"
 _INV_REF = "20250625-EE-319D7EE000-B67F415CDC-2C"

@@ -1,6 +1,6 @@
 import pytest
 
-from ksef2.domain.models.limits import ApiRateLimits, ContextLimits, SubjectLimits
+from ksef2._domain.models.limits import ApiRateLimits, ContextLimits, SubjectLimits
 
 
 @pytest.mark.integration

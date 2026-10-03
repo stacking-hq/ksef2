@@ -2,11 +2,11 @@ from datetime import datetime, timezone
 
 from polyfactory import BaseFactory
 
-from ksef2.domain.models import invoices as domain_invoices
-from ksef2.domain.models.session import FormSchema
-from ksef2.domain.models.invoices import ExportInvoicesPayload, SendInvoicePayload
-from ksef2.infra.mappers.invoices import from_spec, to_spec
-from ksef2.infra.schema.api import spec
+from ksef2._domain.models import invoices as domain_invoices
+from ksef2._domain.models.session import FormSchema
+from ksef2._domain.models.invoices import ExportInvoicesPayload, SendInvoicePayload
+from ksef2._infra.mappers.invoices import from_spec, to_spec
+from ksef2._infra.schema.api import spec
 
 
 class TestInvoicesRequestMapper:

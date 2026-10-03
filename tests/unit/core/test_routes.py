@@ -1,6 +1,6 @@
 import json
 
-from ksef2.core import routes
+from ksef2._core import routes
 
 
 def test_route_constant_is_its_path_string() -> None:

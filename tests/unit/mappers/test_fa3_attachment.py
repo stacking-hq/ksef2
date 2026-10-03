@@ -1,6 +1,6 @@
-from ksef2.domain.models.fa3.attachment import Attachment, AttachmentTable, DataBlock
-from ksef2.infra.mappers.invoices.fa3.domain.attachment import from_spec, to_spec
-from ksef2.infra.schema.fa3.models.schemat import (
+from ksef2._domain.models.fa3.attachment import Attachment, AttachmentTable, DataBlock
+from ksef2._infra.mappers.invoices.fa3.domain.attachment import from_spec, to_spec
+from ksef2._infra.schema.fa3.models.schemat import (
     FakturaZalacznik,
     FakturaZalacznikBlokDanychTabelaTnaglowekKolTyp,
 )

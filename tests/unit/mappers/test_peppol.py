@@ -2,9 +2,9 @@ from datetime import datetime, timezone
 
 from polyfactory import BaseFactory
 
-from ksef2.domain.models import peppol
-from ksef2.infra.mappers.peppol import from_spec
-from ksef2.infra.schema.api import spec
+from ksef2._domain.models import peppol
+from ksef2._infra.mappers.peppol import from_spec
+from ksef2._infra.schema.api import spec
 
 
 class TestPeppolMapper:

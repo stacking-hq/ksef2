@@ -2,8 +2,9 @@
 """Validate that examples and documentation only import the public SDK surface.
 
 Checks ``import`` lines in the example scripts, in fenced Python blocks of the
-documentation pages and in the READMEs against the documented contract in
-``docs/en/reference/public-api.mdx``.
+documentation pages and in the READMEs against the rule in
+``docs/en/reference/public-api.mdx``: a module path with an underscore-prefixed
+component is private and must not appear in examples or documentation.
 """
 
 import argparse
@@ -16,21 +17,6 @@ from typing import cast, override
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-PUBLIC_MODULES = (
-    "ksef2",
-    "ksef2.clients",
-    "ksef2.fa3",
-    "ksef2.models",
-    "ksef2.profiles",
-    "ksef2.raw",
-    "ksef2.renderers",
-    "ksef2.testdata",
-    "ksef2.xades",
-)
-# ``ksef2.raw`` is public together with its documented submodules
-# (``ksef2.raw.mappers``, ``ksef2.raw.spec`` and so on).
-PUBLIC_PREFIXES = ("ksef2.raw.",)
-
 DOC_IMPORT_RE = re.compile(
     r"^\s*(?:from\s+(ksef2[\w.]*)\s+import\b|import\s+(ksef2[\w.]*))"
 )
@@ -40,16 +26,21 @@ DOC_SUFFIXES = {".md", ".mdx"}
 
 
 def is_public_module(module: str) -> bool:
-    """Return whether ``module`` is a documented public import path."""
-    if module != "ksef2" and not module.startswith("ksef2."):
+    """Return whether ``module`` is a public import path.
+
+    The contract is: a module path with no underscore-prefixed component is
+    public; anything with one is private.
+    """
+    parts = module.split(".")
+    if parts[0] != "ksef2":
         return True
-    return module in PUBLIC_MODULES or module.startswith(PUBLIC_PREFIXES)
+    return not any(part.startswith("_") for part in parts[1:])
 
 
 def _import_error(module: str, line: int) -> str | None:
     if is_public_module(module):
         return None
-    return f"line {line}: non-public import {module!r}; use the public facade"
+    return f"line {line}: private import {module!r}; use the public facade"
 
 
 class ImportVisitor(ast.NodeVisitor):

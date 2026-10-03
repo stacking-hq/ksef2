@@ -116,7 +116,7 @@ def test_fa3_public_builder_rejects_xsd_invalid_invoice_number() -> None:
 
 
 def test_services_builders_exports_only_canonical_builder() -> None:
-    import ksef2.services.builders as builders
+    import ksef2._services.builders as builders
 
     assert builders.__all__ == ["FA3InvoiceBuilder"]
     assert builders.FA3InvoiceBuilder is FA3InvoiceBuilder

@@ -5,16 +5,16 @@ import httpx
 import pytest
 from polyfactory import BaseFactory
 
-from ksef2.clients.async_base import AsyncClient
-from ksef2.clients.base import Client
-from ksef2.core.crypto import sha256_b64
-from ksef2.core.exceptions import (
+from ksef2._clients.async_base import AsyncClient
+from ksef2._clients.base import Client
+from ksef2._core.crypto import sha256_b64
+from ksef2._core.exceptions import (
     KSeFAuthError,
     KSeFBatchUploadError,
     KSeFExternalTransferError,
 )
-from ksef2.domain.models.auth import AuthenticationResumeState, AuthTokens
-from ksef2.domain.models.batch import (
+from ksef2._domain.models.auth import AuthenticationResumeState, AuthTokens
+from ksef2._domain.models.batch import (
     BatchEncryptionData,
     BatchFileInfo,
     BatchFilePart,
@@ -23,7 +23,7 @@ from ksef2.domain.models.batch import (
     PartUploadRequest,
     PreparedBatch,
 )
-from ksef2.domain.models.invoices import ExportHandle, InvoicePackage, PackagePart
+from ksef2._domain.models.invoices import ExportHandle, InvoicePackage, PackagePart
 
 
 _SIGNED_DOWNLOAD_URL = "https://storage.example/export/part-1?sig=secret"

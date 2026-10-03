@@ -1,8 +1,8 @@
 from polyfactory import BaseFactory
 
-from ksef2.domain.models.encryption import PublicKeyCertificate
-from ksef2.infra.mappers.encryption import from_spec, to_spec, usage_from_spec
-from ksef2.infra.schema.api import spec
+from ksef2._domain.models.encryption import PublicKeyCertificate
+from ksef2._infra.mappers.encryption import from_spec, to_spec, usage_from_spec
+from ksef2._infra.schema.api import spec
 
 
 class TestEncryptionResponseMapper:

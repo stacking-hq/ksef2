@@ -1,6 +1,6 @@
 import pytest
 
-from ksef2.domain.models.testdata import (
+from ksef2._domain.models.testdata import (
     AuthContextIdentifier,
 )
 
