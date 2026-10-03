@@ -642,6 +642,19 @@ class TestSessionManagementClient:
         assert call.method == "DELETE"
         assert call.path == AuthRoutes.TERMINATE_CURRENT_SESSION
 
+    def test_terminate(self, fake_transport: FakeTransport) -> None:
+        client = SessionManagementClient(fake_transport)
+        fake_transport.enqueue()
+
+        client.terminate("ref-123")
+
+        call = fake_transport.calls[0]
+        assert call.method == "DELETE"
+        assert call.path == AuthRoutes.TERMINATE_AUTH_SESSION.format(
+            referenceNumber="ref-123"
+        )
+
+    @legacy_api
     def test_close(self, fake_transport: FakeTransport) -> None:
         client = SessionManagementClient(fake_transport)
         fake_transport.enqueue()

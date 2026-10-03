@@ -11,9 +11,14 @@ import pytest
 from polyfactory import BaseFactory
 from pydantic import BaseModel
 
+import ksef2.clients
+
 from ksef2._clients.async_permissions import AsyncPermissionsClient
+from ksef2._clients.async_session_management import AsyncSessionManagementClient
 from ksef2._clients.async_tokens import AsyncTokensClient
 from ksef2._clients.permissions import PermissionsClient
+from ksef2._clients.session_management import SessionManagementClient
+from ksef2._core.routes import AuthRoutes
 from ksef2._clients.tokens import TokensClient
 from ksef2._domain.models.permissions import GrantPermissionsResponse
 from ksef2._infra.schema.api import spec
@@ -242,3 +247,59 @@ class TestDeprecatedPermissionAliases:
         assert result.reference_number == response.referenceNumber
         assert flavor.transport.calls[0].method == "DELETE"
         assert flavor.transport.calls[0].path.endswith("/common/grants/permission-id")
+
+
+class TestDeprecatedVerbAliases:
+    def test_sessions_close_warns_once_and_terminates_the_session(
+        self, flavor: Flavor
+    ) -> None:
+        flavor.transport.enqueue()
+        cls = (
+            AsyncSessionManagementClient if flavor.is_async else SessionManagementClient
+        )
+        sessions = cls(flavor.transport)
+
+        result = once(
+            flavor,
+            lambda: sessions.close(reference_number="ref-123"),
+            "close()",
+            "terminate()",
+        )
+
+        assert result is None
+        call = flavor.transport.calls[0]
+        assert call.method == "DELETE"
+        assert call.path == AuthRoutes.TERMINATE_AUTH_SESSION.format(
+            referenceNumber="ref-123"
+        )
+
+
+class TestInvoicesClientExport:
+    @pytest.mark.parametrize(
+        ("name", "replacement"),
+        [
+            ("InvoicesClient", "AuthenticatedClient.invoices"),
+            ("AsyncInvoicesClient", "AsyncAuthenticatedClient.invoices"),
+        ],
+    )
+    def test_import_from_ksef2_clients_warns_once_and_still_resolves(
+        self, name: str, replacement: str
+    ) -> None:
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            resolved = getattr(ksef2.clients, name)
+
+        deprecations = [w for w in caught if issubclass(w.category, DeprecationWarning)]
+        assert len(deprecations) == 1
+        assert str(deprecations[0].message) == (
+            f"`ksef2.clients.{name}` is deprecated and will be removed in "
+            f"ksef2 1.10.0; use `{replacement}` instead."
+        )
+        assert resolved.__name__ == name
+        assert resolved.__module__.startswith("ksef2._clients.")
+
+    def test_it_is_no_longer_part_of_the_public_namespace(self) -> None:
+        assert "InvoicesClient" not in ksef2.clients.__all__
+        assert "AsyncInvoicesClient" not in ksef2.clients.__all__
+        with pytest.raises(AttributeError):
+            _ = ksef2.clients.NoSuchClient  # pyright: ignore[reportAttributeAccessIssue]
