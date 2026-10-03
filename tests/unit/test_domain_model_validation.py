@@ -3,8 +3,8 @@ from datetime import datetime, timezone
 import pytest
 from pydantic import ValidationError
 
-from ksef2.domain.models.batch import BatchFileInfo, BatchFilePart
-from ksef2.domain.models.invoices import InvoicesFilter
+from ksef2._domain.models.batch import BatchFileInfo, BatchFilePart
+from ksef2._domain.models.invoices import InvoicesFilter
 
 
 def _batch_part(

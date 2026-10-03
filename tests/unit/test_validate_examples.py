@@ -25,6 +25,7 @@ from scripts.validate_examples import (
         "ksef2.raw",
         "ksef2.raw.mappers",
         "ksef2.raw.spec",
+        "ksef2.raw.mappers.auth",
         "datetime",
         "pydantic",
     ],
@@ -33,16 +34,29 @@ def test_public_modules_are_accepted(module: str) -> None:
     assert is_public_module(module)
 
 
+def test_unknown_non_underscore_modules_are_not_judged_by_the_underscore_rule() -> None:
+    # Names without an underscore component are public by the rule; whether
+    # they exist is the contract test's concern, not this gate's.
+    assert is_public_module("ksef2.rawish")
+
+
+def test_third_party_modules_with_underscores_are_not_rejected() -> None:
+    assert is_public_module("pydantic._internal")
+
+
 @pytest.mark.parametrize(
     "module",
     [
-        "ksef2.domain",
-        "ksef2.domain.models.encryption",
-        "ksef2.core.tools",
-        "ksef2.infra.mappers",
-        "ksef2.services.renderers",
-        "ksef2.endpoints.auth",
-        "ksef2.rawish",
+        "ksef2._domain",
+        "ksef2._domain.models.encryption",
+        "ksef2._core.tools",
+        "ksef2._infra.mappers",
+        "ksef2._services.renderers",
+        "ksef2._endpoints.auth",
+        "ksef2._clients.base",
+        "ksef2._config",
+        "ksef2.raw._facade",
+        "ksef2.models._internal.helpers",
     ],
 )
 def test_internal_modules_are_rejected(module: str) -> None:
@@ -52,15 +66,15 @@ def test_internal_modules_are_rejected(module: str) -> None:
 def test_python_source_reports_internal_imports_with_line_numbers() -> None:
     source = (
         "from ksef2 import Client\n"
-        "from ksef2.core.tools import generate_nip\n"
-        "import ksef2.domain.models\n"
+        "from ksef2._core.tools import generate_nip\n"
+        "import ksef2._domain.models\n"
     )
 
     errors = check_python_source(source)
 
     assert len(errors) == 2
-    assert errors[0].startswith("line 2:") and "ksef2.core.tools" in errors[0]
-    assert errors[1].startswith("line 3:") and "ksef2.domain.models" in errors[1]
+    assert errors[0].startswith("line 2:") and "ksef2._core.tools" in errors[0]
+    assert errors[1].startswith("line 3:") and "ksef2._domain.models" in errors[1]
 
 
 def test_python_source_accepts_public_imports_and_ignores_relative_imports() -> None:
@@ -76,21 +90,21 @@ def test_python_source_reports_syntax_errors() -> None:
 def test_markdown_checks_only_fenced_python_blocks() -> None:
     text = "\n".join(
         [
-            "Prose mentioning `from ksef2.core.tools import generate_nip`.",
+            "Prose mentioning `from ksef2._core.tools import generate_nip`.",
             "",
             "```bash",
-            "from ksef2.infra import nothing",
+            "from ksef2._infra import nothing",
             "```",
             "",
             "<Tabs>",
             '  ```python title="x.py"',
             "  from ksef2 import Client",
-            "  from ksef2.domain.models.encryption import CertUsage",
+            "  from ksef2._domain.models.encryption import CertUsage",
             "  ```",
             "</Tabs>",
             "",
             "```python",
-            "import ksef2.services.invoices",
+            "import ksef2._services.invoices",
             "```",
             "",
             "```python",
@@ -102,8 +116,8 @@ def test_markdown_checks_only_fenced_python_blocks() -> None:
     errors = check_markdown_source(text)
 
     assert len(errors) == 2
-    assert errors[0].startswith("line 10:") and "ksef2.domain" in errors[0]
-    assert errors[1].startswith("line 15:") and "ksef2.services" in errors[1]
+    assert errors[0].startswith("line 10:") and "ksef2._domain" in errors[0]
+    assert errors[1].startswith("line 15:") and "ksef2._services" in errors[1]
 
 
 def make_repo(root: Path, *, example: str, page: str) -> None:
@@ -131,8 +145,8 @@ def test_validate_accepts_a_public_only_repo(tmp_path: Path) -> None:
 def test_validate_reports_failures_per_file(tmp_path: Path) -> None:
     make_repo(
         tmp_path,
-        example="from ksef2.core.tools import generate_nip\n",
-        page="```python\nfrom ksef2.domain.models import X\n```\n",
+        example="from ksef2._core.tools import generate_nip\n",
+        page="```python\nfrom ksef2._domain.models import X\n```\n",
     )
 
     failures, _, _ = validate(tmp_path)

@@ -19,11 +19,11 @@ if sys.platform == "darwin":
         )
 
 from ksef2 import Client
-from ksef2.clients.testdata import TemporalTestData
-from ksef2.config import Environment
+from ksef2._clients.testdata import TemporalTestData
+from ksef2._config import Environment
 from ksef2.xades import generate_test_certificate
-from ksef2.clients.authenticated import AuthenticatedClient
-from ksef2.logging import get_logger
+from ksef2._clients.authenticated import AuthenticatedClient
+from ksef2._logging import get_logger
 
 
 from dotenv import load_dotenv

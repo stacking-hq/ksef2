@@ -145,13 +145,13 @@ def test_public_client_annotations_resolve_through_stable_facades() -> None:
 
         for annotation_type in _annotated_types(client_type):
             module_name = annotation_type.__module__
-            if module_name.startswith(("ksef2.clients.", "ksef2.services.")):
+            if module_name.startswith(("ksef2.clients.", "ksef2._services.")):
                 exported = getattr(public_clients, annotation_type.__name__, None)
                 if not _matches_facade_export(exported, annotation_type):
                     missing_clients.add(annotation_type.__name__)
                 else:
                     pending_clients.add(annotation_type)
-            elif module_name.startswith("ksef2.domain.models"):
+            elif module_name.startswith("ksef2._domain.models"):
                 reachable_models.add(annotation_type)
 
     checked_models: set[type[object]] = set()
@@ -170,11 +170,11 @@ def test_public_client_annotations_resolve_through_stable_facades() -> None:
 
         for field in getattr(model_type, "model_fields", {}).values():
             for annotation_type in _annotation_types(field.annotation):
-                if annotation_type.__module__.startswith("ksef2.domain.models"):
+                if annotation_type.__module__.startswith("ksef2._domain.models"):
                     pending_models.add(annotation_type)
 
         for annotation_type in _annotated_types(model_type):
-            if annotation_type.__module__.startswith("ksef2.domain.models"):
+            if annotation_type.__module__.startswith("ksef2._domain.models"):
                 pending_models.add(annotation_type)
 
     assert not missing_clients, (

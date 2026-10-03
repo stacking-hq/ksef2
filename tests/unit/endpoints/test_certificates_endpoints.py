@@ -5,9 +5,9 @@ import pytest
 from polyfactory.factories import BaseFactory
 from pydantic import BaseModel
 
-from ksef2.core import exceptions
-from ksef2.core.routes import CertificateRoutes
-from ksef2.endpoints.certificates import CertificatesEndpoints
+from ksef2._core import exceptions
+from ksef2._core.routes import CertificateRoutes
+from ksef2._endpoints.certificates import CertificatesEndpoints
 from tests.unit.fakes import transport
 from tests.unit.factories.certificates import (
     EnrollCertificateRequestFactory,
@@ -20,7 +20,7 @@ from tests.unit.factories.certificates import (
     QueryCertificatesResponseFactory,
 )
 
-from ksef2.core.middlewares.exceptions import KSeFExceptionMiddleware
+from ksef2._core.middlewares.exceptions import KSeFExceptionMiddleware
 
 
 @pytest.fixture

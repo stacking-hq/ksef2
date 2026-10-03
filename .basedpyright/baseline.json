@@ -1,6 +1,6 @@
 {
     "files": {
-        "./src/ksef2/clients/_async_session.py": [
+        "./src/ksef2/_clients/_async_session.py": [
             {
                 "code": "reportUnusedClass",
                 "range": {
@@ -34,7 +34,7 @@
                 }
             }
         ],
-        "./src/ksef2/clients/_metadata_pagination.py": [
+        "./src/ksef2/_clients/_metadata_pagination.py": [
             {
                 "code": "reportUnnecessaryComparison",
                 "range": {
@@ -44,17 +44,17 @@
                 }
             }
         ],
-        "./src/ksef2/clients/async_authenticated.py": [
+        "./src/ksef2/_clients/async_authenticated.py": [
             {
                 "code": "reportPrivateUsage",
                 "range": {
-                    "startColumn": 41,
-                    "endColumn": 58,
+                    "startColumn": 42,
+                    "endColumn": 59,
                     "lineCount": 1
                 }
             }
         ],
-        "./src/ksef2/clients/async_online.py": [
+        "./src/ksef2/_clients/async_online.py": [
             {
                 "code": "reportAny",
                 "range": {
@@ -80,83 +80,7 @@
                 }
             }
         ],
-        "./src/ksef2/clients/async_testdata.py": [
-            {
-                "code": "reportAny",
-                "range": {
-                    "startColumn": 0,
-                    "endColumn": 6,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportAny",
-                "range": {
-                    "startColumn": 12,
-                    "endColumn": 26,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportAny",
-                "range": {
-                    "startColumn": 12,
-                    "endColumn": 26,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportAny",
-                "range": {
-                    "startColumn": 12,
-                    "endColumn": 26,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportAny",
-                "range": {
-                    "startColumn": 12,
-                    "endColumn": 26,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportAny",
-                "range": {
-                    "startColumn": 12,
-                    "endColumn": 26,
-                    "lineCount": 1
-                }
-            }
-        ],
-        "./src/ksef2/clients/online.py": [
-            {
-                "code": "reportAny",
-                "range": {
-                    "startColumn": 0,
-                    "endColumn": 6,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportAny",
-                "range": {
-                    "startColumn": 12,
-                    "endColumn": 26,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportAny",
-                "range": {
-                    "startColumn": 12,
-                    "endColumn": 26,
-                    "lineCount": 1
-                }
-            }
-        ],
-        "./src/ksef2/clients/testdata.py": [
+        "./src/ksef2/_clients/async_testdata.py": [
             {
                 "code": "reportAny",
                 "range": {
@@ -206,7 +130,83 @@
                 }
             }
         ],
-        "./src/ksef2/core/codecs.py": [
+        "./src/ksef2/_clients/online.py": [
+            {
+                "code": "reportAny",
+                "range": {
+                    "startColumn": 0,
+                    "endColumn": 6,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportAny",
+                "range": {
+                    "startColumn": 12,
+                    "endColumn": 26,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportAny",
+                "range": {
+                    "startColumn": 12,
+                    "endColumn": 26,
+                    "lineCount": 1
+                }
+            }
+        ],
+        "./src/ksef2/_clients/testdata.py": [
+            {
+                "code": "reportAny",
+                "range": {
+                    "startColumn": 0,
+                    "endColumn": 6,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportAny",
+                "range": {
+                    "startColumn": 12,
+                    "endColumn": 26,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportAny",
+                "range": {
+                    "startColumn": 12,
+                    "endColumn": 26,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportAny",
+                "range": {
+                    "startColumn": 12,
+                    "endColumn": 26,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportAny",
+                "range": {
+                    "startColumn": 12,
+                    "endColumn": 26,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportAny",
+                "range": {
+                    "startColumn": 12,
+                    "endColumn": 26,
+                    "lineCount": 1
+                }
+            }
+        ],
+        "./src/ksef2/_core/codecs.py": [
             {
                 "code": "reportAny",
                 "range": {
@@ -216,7 +216,7 @@
                 }
             }
         ],
-        "./src/ksef2/core/exceptions.py": [
+        "./src/ksef2/_core/exceptions.py": [
             {
                 "code": "reportAny",
                 "range": {
@@ -258,7 +258,7 @@
                 }
             }
         ],
-        "./src/ksef2/core/xades.py": [
+        "./src/ksef2/_core/xades.py": [
             {
                 "code": "reportUnknownVariableType",
                 "range": {
@@ -284,7 +284,7 @@
                 }
             }
         ],
-        "./src/ksef2/core/xml.py": [
+        "./src/ksef2/_core/xml.py": [
             {
                 "code": "reportPrivateUsage",
                 "range": {
@@ -302,7 +302,7 @@
                 }
             }
         ],
-        "./src/ksef2/domain/models/base.py": [
+        "./src/ksef2/_domain/models/base.py": [
             {
                 "code": "reportAny",
                 "range": {
@@ -424,7 +424,7 @@
                 }
             }
         ],
-        "./src/ksef2/domain/models/certificates.py": [
+        "./src/ksef2/_domain/models/certificates.py": [
             {
                 "code": "reportUnknownVariableType",
                 "range": {
@@ -442,7 +442,7 @@
                 }
             }
         ],
-        "./src/ksef2/domain/models/compression.py": [
+        "./src/ksef2/_domain/models/compression.py": [
             {
                 "code": "reportUnnecessaryTypeIgnoreComment",
                 "range": {
@@ -460,7 +460,7 @@
                 }
             }
         ],
-        "./src/ksef2/domain/models/fa3/attachment.py": [
+        "./src/ksef2/_domain/models/fa3/attachment.py": [
             {
                 "code": "reportUnnecessaryComparison",
                 "range": {
@@ -470,7 +470,7 @@
                 }
             }
         ],
-        "./src/ksef2/domain/models/fa3/body/__init__.py": [
+        "./src/ksef2/_domain/models/fa3/body/__init__.py": [
             {
                 "code": "reportPrivateLocalImportUsage",
                 "range": {
@@ -480,7 +480,7 @@
                 }
             }
         ],
-        "./src/ksef2/domain/models/fa3/body/order.py": [
+        "./src/ksef2/_domain/models/fa3/body/order.py": [
             {
                 "code": "reportUnknownVariableType",
                 "range": {
@@ -586,7 +586,7 @@
                 }
             }
         ],
-        "./src/ksef2/domain/models/fa3/body/root.py": [
+        "./src/ksef2/_domain/models/fa3/body/root.py": [
             {
                 "code": "reportAny",
                 "range": {
@@ -596,7 +596,7 @@
                 }
             }
         ],
-        "./src/ksef2/domain/models/fa3/body/row.py": [
+        "./src/ksef2/_domain/models/fa3/body/row.py": [
             {
                 "code": "reportUnknownVariableType",
                 "range": {
@@ -702,7 +702,7 @@
                 }
             }
         ],
-        "./src/ksef2/domain/models/fa3/body/tax.py": [
+        "./src/ksef2/_domain/models/fa3/body/tax.py": [
             {
                 "code": "reportExplicitAny",
                 "range": {
@@ -712,7 +712,7 @@
                 }
             }
         ],
-        "./src/ksef2/domain/models/fa3/header.py": [
+        "./src/ksef2/_domain/models/fa3/header.py": [
             {
                 "code": "reportUnusedFunction",
                 "range": {
@@ -722,7 +722,7 @@
                 }
             }
         ],
-        "./src/ksef2/domain/models/invoices.py": [
+        "./src/ksef2/_domain/models/invoices.py": [
             {
                 "code": "reportUnnecessaryTypeIgnoreComment",
                 "range": {
@@ -740,7 +740,7 @@
                 }
             }
         ],
-        "./src/ksef2/domain/models/pagination.py": [
+        "./src/ksef2/_domain/models/pagination.py": [
             {
                 "code": "reportUnknownVariableType",
                 "range": {
@@ -758,7 +758,7 @@
                 }
             }
         ],
-        "./src/ksef2/infra/mappers/exceptions.py": [
+        "./src/ksef2/_infra/mappers/exceptions.py": [
             {
                 "code": "reportUnusedParameter",
                 "range": {
@@ -768,17 +768,17 @@
                 }
             }
         ],
-        "./src/ksef2/infra/mappers/invoices/fa3/domain/buyer.py": [
+        "./src/ksef2/_infra/mappers/invoices/fa3/domain/buyer.py": [
             {
                 "code": "reportPrivateUsage",
                 "range": {
-                    "startColumn": 60,
-                    "endColumn": 76,
+                    "startColumn": 61,
+                    "endColumn": 77,
                     "lineCount": 1
                 }
             }
         ],
-        "./src/ksef2/infra/mappers/invoices/fa3/domain/invoice.py": [
+        "./src/ksef2/_infra/mappers/invoices/fa3/domain/invoice.py": [
             {
                 "code": "reportUnnecessaryComparison",
                 "range": {
@@ -804,7 +804,7 @@
                 }
             }
         ],
-        "./src/ksef2/infra/mappers/invoices/fa3/domain/lines.py": [
+        "./src/ksef2/_infra/mappers/invoices/fa3/domain/lines.py": [
             {
                 "code": "reportUnusedParameter",
                 "range": {
@@ -814,7 +814,7 @@
                 }
             }
         ],
-        "./src/ksef2/infra/mappers/invoices/fa3/spec/annotations.py": [
+        "./src/ksef2/_infra/mappers/invoices/fa3/spec/annotations.py": [
             {
                 "code": "reportUnnecessaryComparison",
                 "range": {
@@ -872,7 +872,7 @@
                 }
             }
         ],
-        "./src/ksef2/infra/mappers/invoices/fa3/spec/correction_party.py": [
+        "./src/ksef2/_infra/mappers/invoices/fa3/spec/correction_party.py": [
             {
                 "code": "reportUnnecessaryComparison",
                 "range": {
@@ -882,17 +882,17 @@
                 }
             }
         ],
-        "./src/ksef2/infra/mappers/invoices/fa3/spec/header.py": [
+        "./src/ksef2/_infra/mappers/invoices/fa3/spec/header.py": [
             {
                 "code": "reportPrivateUsage",
                 "range": {
-                    "startColumn": 43,
-                    "endColumn": 63,
+                    "startColumn": 44,
+                    "endColumn": 64,
                     "lineCount": 1
                 }
             }
         ],
-        "./src/ksef2/infra/mappers/invoices/fa3/spec/invoice.py": [
+        "./src/ksef2/_infra/mappers/invoices/fa3/spec/invoice.py": [
             {
                 "code": "reportAny",
                 "range": {
@@ -902,7 +902,7 @@
                 }
             }
         ],
-        "./src/ksef2/infra/mappers/invoices/fa3/spec/lines.py": [
+        "./src/ksef2/_infra/mappers/invoices/fa3/spec/lines.py": [
             {
                 "code": "reportUnusedParameter",
                 "range": {
@@ -912,7 +912,7 @@
                 }
             }
         ],
-        "./src/ksef2/infra/mappers/invoices/requests.py": [
+        "./src/ksef2/_infra/mappers/invoices/requests.py": [
             {
                 "code": "reportUnnecessaryComparison",
                 "range": {
@@ -1010,7 +1010,7 @@
                 }
             }
         ],
-        "./src/ksef2/infra/mappers/permissions/responses/query_person.py": [
+        "./src/ksef2/_infra/mappers/permissions/responses/query_person.py": [
             {
                 "code": "reportUnnecessaryComparison",
                 "range": {
@@ -1044,7 +1044,7 @@
                 }
             }
         ],
-        "./src/ksef2/infra/mappers/permissions/responses/query_personal.py": [
+        "./src/ksef2/_infra/mappers/permissions/responses/query_personal.py": [
             {
                 "code": "reportUnnecessaryComparison",
                 "range": {
@@ -1094,7 +1094,7 @@
                 }
             }
         ],
-        "./src/ksef2/infra/schema/api/supp/base.py": [
+        "./src/ksef2/_infra/schema/api/supp/base.py": [
             {
                 "code": "reportAny",
                 "range": {
@@ -1176,7 +1176,7 @@
                 }
             }
         ],
-        "./src/ksef2/logging.py": [
+        "./src/ksef2/_logging.py": [
             {
                 "code": "reportExplicitAny",
                 "range": {
@@ -1218,17 +1218,17 @@
                 }
             }
         ],
-        "./src/ksef2/services/async_batch.py": [
+        "./src/ksef2/_services/async_batch.py": [
             {
                 "code": "reportPrivateUsage",
                 "range": {
-                    "startColumn": 41,
-                    "endColumn": 58,
+                    "startColumn": 42,
+                    "endColumn": 59,
                     "lineCount": 1
                 }
             }
         ],
-        "./src/ksef2/services/async_invoices.py": [
+        "./src/ksef2/_services/async_invoices.py": [
             {
                 "code": "reportAny",
                 "range": {
@@ -1278,7 +1278,7 @@
                 }
             }
         ],
-        "./src/ksef2/services/invoices.py": [
+        "./src/ksef2/_services/invoices.py": [
             {
                 "code": "reportAny",
                 "range": {
@@ -1328,7 +1328,7 @@
                 }
             }
         ],
-        "./src/ksef2/services/renderers/pdf.py": [
+        "./src/ksef2/_services/renderers/pdf.py": [
             {
                 "code": "reportAny",
                 "range": {
@@ -1418,7 +1418,7 @@
                 }
             }
         ],
-        "./src/ksef2/services/renderers/xslt.py": [
+        "./src/ksef2/_services/renderers/xslt.py": [
             {
                 "code": "reportPrivateUsage",
                 "range": {

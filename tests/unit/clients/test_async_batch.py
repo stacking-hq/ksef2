@@ -5,14 +5,14 @@ import httpx
 import pytest
 from polyfactory import BaseFactory
 
-from ksef2.clients.async_authenticated import AsyncAuthenticatedClient
-from ksef2.clients.async_batch import AsyncBatchSessionClient
-from ksef2.core.crypto import sha256_b64
-from ksef2.core.exceptions import KSeFBatchUploadError, KSeFClientClosedError
-from ksef2.core.routes import InvoiceRoutes, SessionRoutes
-from ksef2.core.stores import CertificateStore
-from ksef2.domain.models.auth import AuthTokens
-from ksef2.domain.models.batch import (
+from ksef2._clients.async_authenticated import AsyncAuthenticatedClient
+from ksef2._clients.async_batch import AsyncBatchSessionClient
+from ksef2._core.crypto import sha256_b64
+from ksef2._core.exceptions import KSeFBatchUploadError, KSeFClientClosedError
+from ksef2._core.routes import InvoiceRoutes, SessionRoutes
+from ksef2._core.stores import CertificateStore
+from ksef2._domain.models.auth import AuthTokens
+from ksef2._domain.models.batch import (
     BatchEncryptionData,
     BatchFileInfo,
     BatchFilePart,
@@ -21,8 +21,8 @@ from ksef2.domain.models.batch import (
     PartUploadRequest,
     PreparedBatch,
 )
-from ksef2.domain.models.session import FormSchema
-from ksef2.infra.schema.api import spec
+from ksef2._domain.models.session import FormSchema
+from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import AsyncFakeTransport
 
 

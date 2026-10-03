@@ -2,9 +2,9 @@ import asyncio
 
 from polyfactory import BaseFactory
 
-from ksef2.clients.async_session_management import AsyncSessionManagementClient
-from ksef2.domain.models.auth import AuthenticationSessionsResponse
-from ksef2.infra.schema.api import spec
+from ksef2._clients.async_session_management import AsyncSessionManagementClient
+from ksef2._domain.models.auth import AuthenticationSessionsResponse
+from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import AsyncFakeTransport
 
 

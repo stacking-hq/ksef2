@@ -4,14 +4,14 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from ksef2.domain.models.fa3 import (
+from ksef2._domain.models.fa3 import (
     AdvanceInvoiceReference,
     CorrectedBuyerEntity,
     CorrectedInvoiceReference,
     CorrectedSellerEntity,
     InvoiceAddress,
 )
-from ksef2.domain.models.fa3.body import (
+from ksef2._domain.models.fa3.body import (
     AdvancePaymentInvoiceContext,
     CorrectionInvoiceContext,
     InvoiceType,

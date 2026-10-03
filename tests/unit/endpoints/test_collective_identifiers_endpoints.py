@@ -1,8 +1,8 @@
 from polyfactory.factories import BaseFactory
 
-from ksef2.core.routes import CollectiveIdentifierRoutes
-from ksef2.endpoints.collective_identifiers import CollectiveIdentifiersEndpoints
-from ksef2.infra.schema.api import spec
+from ksef2._core.routes import CollectiveIdentifierRoutes
+from ksef2._endpoints.collective_identifiers import CollectiveIdentifiersEndpoints
+from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import FakeTransport
 
 _KSEF_NUMBER = "1234567890-20250625-ABC123-DEF456-07"

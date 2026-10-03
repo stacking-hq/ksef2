@@ -3,17 +3,17 @@ from decimal import Decimal
 
 from xsdata.models.datatype import XmlDateTime
 
-from ksef2.domain.models.fa3.body.transaction import (
+from ksef2._domain.models.fa3.body.transaction import (
     TransactionAddress,
     TransactionConditions,
     TransactionIdentity,
     TransactionOrder,
     TransactionTransport,
 )
-from ksef2.infra.mappers.invoices.fa3.domain.transaction import from_spec, to_spec
-from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import Twybor1
-from ksef2.infra.schema.fa3.models.kody_krajow_v10_0_e import TkodKraju
-from ksef2.infra.schema.fa3.models.schemat import (
+from ksef2._infra.mappers.invoices.fa3.domain.transaction import from_spec, to_spec
+from ksef2._infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import Twybor1
+from ksef2._infra.schema.fa3.models.kody_krajow_v10_0_e import TkodKraju
+from ksef2._infra.schema.fa3.models.schemat import (
     FakturaFaWarunkiTransakcji,
     FakturaFaWarunkiTransakcjiTransport,
     FakturaFaWarunkiTransakcjiTransportPrzewoznik,

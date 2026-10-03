@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
-from ksef2.domain.models import auth as domain_auth
-from ksef2.infra.schema.api import spec
+from ksef2._domain.models import auth as domain_auth
+from ksef2._infra.schema.api import spec
 from polyfactory.factories.pydantic_factory import ModelFactory
 from polyfactory.pytest_plugin import register_fixture
 

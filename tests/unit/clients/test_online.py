@@ -3,16 +3,16 @@ from unittest.mock import patch
 import pytest
 from polyfactory import BaseFactory
 
-from ksef2.clients.online import OnlineSessionClient
-from ksef2.core.exceptions import (
+from ksef2._clients.online import OnlineSessionClient
+from ksef2._core.exceptions import (
     KSeFClientClosedError,
     KSeFInvoiceProcessingTimeoutError,
     KSeFInvoiceRejectedError,
     KSeFSessionError,
 )
-from ksef2.core.routes import InvoiceRoutes, SessionRoutes
-from ksef2.domain.models.session import OnlineSessionResumeState
-from ksef2.infra.schema.api import spec
+from ksef2._core.routes import InvoiceRoutes, SessionRoutes
+from ksef2._domain.models.session import OnlineSessionResumeState
+from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import FakeTransport
 
 
@@ -233,7 +233,7 @@ class TestOnlineSessionClient:
             ).model_dump(mode="json")
         )
 
-        with patch("ksef2.clients.online.encrypt_invoice", return_value=b"encrypted"):
+        with patch("ksef2._clients.online.encrypt_invoice", return_value=b"encrypted"):
             status = client.send_invoice_and_wait(
                 invoice_xml=b"<Invoice />",
                 timeout=1.0,

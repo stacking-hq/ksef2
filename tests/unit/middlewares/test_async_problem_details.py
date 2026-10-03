@@ -4,8 +4,8 @@ from collections.abc import Mapping
 import httpx
 import pytest
 
-from ksef2.core import exceptions, middlewares
-from ksef2.infra.schema.api import spec
+from ksef2._core import exceptions, middlewares
+from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import AsyncFakeTransport
 
 _CONTENT_TYPE_PROBLEM = "application/problem+json"

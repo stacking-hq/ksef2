@@ -1,7 +1,7 @@
 from pydantic import ValidationError
 import pytest
 
-from ksef2.domain.models.fa3.attachment import AttachmentTable
+from ksef2._domain.models.fa3.attachment import AttachmentTable
 
 
 def test_attachment_table_accepts_column_names_matching_column_format() -> None:

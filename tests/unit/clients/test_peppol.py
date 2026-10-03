@@ -1,5 +1,5 @@
-from ksef2.clients.peppol import PeppolClient
-from ksef2.core.routes import PeppolRoutes
+from ksef2._clients.peppol import PeppolClient
+from ksef2._core.routes import PeppolRoutes
 from tests.unit.factories.peppol import (
     PeppolProviderFactory,
     QueryPeppolProvidersResponseFactory,

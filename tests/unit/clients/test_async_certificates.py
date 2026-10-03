@@ -2,10 +2,10 @@ import asyncio
 
 from polyfactory import BaseFactory
 
-from ksef2.clients.async_certificates import AsyncCertificatesClient
-from ksef2.core.routes import CertificateRoutes
-from ksef2.domain.models import certificates
-from ksef2.infra.schema.api import spec
+from ksef2._clients.async_certificates import AsyncCertificatesClient
+from ksef2._core.routes import CertificateRoutes
+from ksef2._domain.models import certificates
+from ksef2._infra.schema.api import spec
 from tests.unit.factories.certificates import (
     CertificateListItemFactory,
     VALID_CERTIFICATE_SERIAL_NUMBER,

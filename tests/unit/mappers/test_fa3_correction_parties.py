@@ -1,11 +1,11 @@
-from ksef2.domain.models.fa3 import (
+from ksef2._domain.models.fa3 import (
     CorrectedBuyerEntity,
     CorrectedSellerEntity,
     InvoiceAddress,
 )
-from ksef2.infra.mappers.invoices.fa3.domain.correction_party import to_spec
-from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import Twybor1
-from ksef2.infra.schema.fa3.models.schemat import (
+from ksef2._infra.mappers.invoices.fa3.domain.correction_party import to_spec
+from ksef2._infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import Twybor1
+from ksef2._infra.schema.fa3.models.schemat import (
     FakturaFaPodmiot1K,
     FakturaFaPodmiot2K,
     TkodyKrajowUe,

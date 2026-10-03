@@ -13,15 +13,15 @@ from polyfactory import BaseFactory
 from pydantic import SecretStr
 
 from ksef2 import AsyncClient, Client, Environment
-from ksef2.clients.async_authenticated import AsyncAuthenticatedClient
-from ksef2.clients.async_batch import AsyncBatchSessionClient
-from ksef2.clients.async_online import AsyncOnlineSessionClient
-from ksef2.clients.authenticated import AuthenticatedClient
-from ksef2.clients.batch import BatchSessionClient
-from ksef2.clients.online import OnlineSessionClient
-from ksef2.domain.models.auth import AuthTokens
-from ksef2.domain.models.batch import BatchSessionResumeState
-from ksef2.domain.models.session import FormSchema, OnlineSessionResumeState
+from ksef2._clients.async_authenticated import AsyncAuthenticatedClient
+from ksef2._clients.async_batch import AsyncBatchSessionClient
+from ksef2._clients.async_online import AsyncOnlineSessionClient
+from ksef2._clients.authenticated import AuthenticatedClient
+from ksef2._clients.batch import BatchSessionClient
+from ksef2._clients.online import OnlineSessionClient
+from ksef2._domain.models.auth import AuthTokens
+from ksef2._domain.models.batch import BatchSessionResumeState
+from ksef2._domain.models.session import FormSchema, OnlineSessionResumeState
 from tests.unit.fakes.transport import AsyncFakeTransport, FakeTransport
 
 AES_KEY = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
@@ -186,16 +186,16 @@ class TestModuleAliases:
             ("ksef2.models", "BaseSessionState", "BaseSessionResumeState"),
             ("ksef2.models", "OnlineSessionState", "OnlineSessionResumeState"),
             ("ksef2.models", "BatchSessionState", "BatchSessionResumeState"),
-            ("ksef2.domain.models", "BaseSessionState", "BaseSessionResumeState"),
-            ("ksef2.domain.models", "OnlineSessionState", "OnlineSessionResumeState"),
-            ("ksef2.domain.models", "BatchSessionState", "BatchSessionResumeState"),
+            ("ksef2._domain.models", "BaseSessionState", "BaseSessionResumeState"),
+            ("ksef2._domain.models", "OnlineSessionState", "OnlineSessionResumeState"),
+            ("ksef2._domain.models", "BatchSessionState", "BatchSessionResumeState"),
             (
-                "ksef2.domain.models.session",
+                "ksef2._domain.models.session",
                 "OnlineSessionState",
                 "OnlineSessionResumeState",
             ),
             (
-                "ksef2.domain.models.batch",
+                "ksef2._domain.models.batch",
                 "BatchSessionState",
                 "BatchSessionResumeState",
             ),

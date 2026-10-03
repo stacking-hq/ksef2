@@ -11,17 +11,17 @@ Run with:
 import pytest
 
 from ksef2 import Client, Environment, FormSchema
-from ksef2.clients.authenticated import AuthenticatedClient
-from ksef2.core.tools import generate_nip, generate_pesel
+from ksef2._clients.authenticated import AuthenticatedClient
+from ksef2._core.tools import generate_nip, generate_pesel
 from ksef2.xades import generate_test_certificate
-from ksef2.domain.models.session import (
+from ksef2._domain.models.session import (
     ListSessionsResponse,
     SessionInvoicesResponse,
     SessionInvoiceStatusResponse,
     SessionStatusEnum,
     SessionStatusResponse,
 )
-from ksef2.domain.models.testdata import (
+from ksef2._domain.models.testdata import (
     Identifier,
     Permission,
 )

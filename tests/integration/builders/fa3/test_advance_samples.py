@@ -4,14 +4,14 @@ from decimal import Decimal
 import pytest
 from xsdata.formats.dataclass.parsers import XmlParser
 
-from ksef2.domain.models.fa3.body import InvoiceSummaryOverrides
-from ksef2.domain.models.fa3.party import ContactInfo, InvoiceAddress
-from ksef2.domain.models.fa3.third_party import InvoiceThirdParty
-from ksef2.infra.mappers.invoices.fa3.spec.invoice import (
+from ksef2._domain.models.fa3.body import InvoiceSummaryOverrides
+from ksef2._domain.models.fa3.party import ContactInfo, InvoiceAddress
+from ksef2._domain.models.fa3.third_party import InvoiceThirdParty
+from ksef2._infra.mappers.invoices.fa3.spec.invoice import (
     from_spec as invoice_from_spec,
 )
-from ksef2.infra.schema.fa3.models.schemat import Faktura
-from ksef2.services.builders.fa3.root import StandardInvoiceBuilder
+from ksef2._infra.schema.fa3.models.schemat import Faktura
+from ksef2._services.builders.fa3.root import StandardInvoiceBuilder
 from tests.integration.builders.helpers import (
     load_sample,
     sample_path,

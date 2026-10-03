@@ -1,7 +1,7 @@
 import pytest
 
 from ksef2 import Client
-from ksef2.clients.authenticated import AuthenticatedClient
+from ksef2._clients.authenticated import AuthenticatedClient
 
 
 @pytest.mark.integration

@@ -25,12 +25,12 @@ def _enable_runtime_checks() -> None:
     filterwarnings(
         "ignore",
         category=BeartypeClawDecorWarning,
-        module=r"ksef2\.endpoints\.(base|async_base|shared)",
+        module=r"ksef2\._endpoints\.(base|async_base|shared)",
     )
 
     beartype_this_package(
         conf=BeartypeConf(
-            claw_skip_package_names=("ksef2.infra.schema.fa3",),
+            claw_skip_package_names=("ksef2._infra.schema.fa3",),
         ),
     )
 
@@ -38,12 +38,12 @@ def _enable_runtime_checks() -> None:
 if os.environ.get("KSEF2_RUNTIME_CHECKS", "").lower() in _TRUE_ENV_VALUES:
     _enable_runtime_checks()
 
-from ksef2.clients.async_base import AsyncClient
-from ksef2.clients.base import Client
-from ksef2.domain.models import FormSchema
+from ksef2._clients.async_base import AsyncClient
+from ksef2._clients.base import Client
+from ksef2._domain.models import FormSchema
 
 __version__ = version("ksef2")
-from ksef2.config import (
+from ksef2._config import (
     ConnectionPoolConfig,
     Environment,
     RetryConfig,
@@ -51,7 +51,7 @@ from ksef2.config import (
     TlsConfig,
     TransportConfig,
 )
-from ksef2.core.exceptions import (
+from ksef2._core.exceptions import (
     ExceptionCode,
     KSeFApiError,
     KSeFAuthError,
@@ -77,7 +77,7 @@ from ksef2.core.exceptions import (
     KSeFValidationError,
     NoCertificateAvailableError,
 )
-from ksef2.core.stores import CertificateStore, CertificateStoreProtocol
+from ksef2._core.stores import CertificateStore, CertificateStoreProtocol
 
 __all__ = [
     "AsyncClient",

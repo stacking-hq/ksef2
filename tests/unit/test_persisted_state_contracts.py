@@ -4,13 +4,13 @@ from datetime import UTC, datetime
 import pytest
 from pydantic import SecretStr, ValidationError
 
-from ksef2.domain.models.auth import (
+from ksef2._domain.models.auth import (
     AuthenticationResumeState,
     AuthTokens,
     TokenCredentials,
 )
-from ksef2.domain.models.fa3.invoice import KsefInvoiceDraft
-from ksef2.domain.models.session import FormSchema, OnlineSessionResumeState
+from ksef2._domain.models.fa3.invoice import KsefInvoiceDraft
+from ksef2._domain.models.session import FormSchema, OnlineSessionResumeState
 
 
 AES_KEY = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="

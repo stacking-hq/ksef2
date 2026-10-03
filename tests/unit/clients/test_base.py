@@ -6,16 +6,16 @@ import httpx
 import pytest
 from polyfactory import BaseFactory
 
-from ksef2.clients.authenticated import AuthenticatedClient
-from ksef2.clients.base import Client
-from ksef2.clients.testdata import TestDataClient as KSeFTestDataClient
-from ksef2.config import Environment, TimeoutConfig, TransportConfig
-from ksef2.core.exceptions import (
+from ksef2._clients.authenticated import AuthenticatedClient
+from ksef2._clients.base import Client
+from ksef2._clients.testdata import TestDataClient as KSeFTestDataClient
+from ksef2._config import Environment, TimeoutConfig, TransportConfig
+from ksef2._core.exceptions import (
     KSeFClientClosedError,
     KSeFUnsupportedEnvironmentError,
 )
-from ksef2.domain.models.auth import AuthTokens
-from ksef2.domain.models.encryption import (
+from ksef2._domain.models.auth import AuthTokens
+from ksef2._domain.models.encryption import (
     CertUsage,
     CertUsageEnum,
     PublicKeyCertificate,
@@ -65,7 +65,7 @@ class TestClient:
         ):
             _ = client.testdata
 
-    @patch("ksef2.clients.base.httpx.Client")
+    @patch("ksef2._clients.base.httpx.Client")
     def test_close_closes_owned_http_client(
         self,
         client_cls: MagicMock,
@@ -86,7 +86,7 @@ class TestClient:
 
         http_client.close.assert_not_called()
 
-    @patch("ksef2.clients.base.httpx.Client")
+    @patch("ksef2._clients.base.httpx.Client")
     def test_context_manager_closes_owned_client(
         self,
         client_cls: MagicMock,
@@ -99,7 +99,7 @@ class TestClient:
 
         http_client.close.assert_called_once()
 
-    @patch("ksef2.clients.base.httpx.Client")
+    @patch("ksef2._clients.base.httpx.Client")
     def test_transport_config_is_translated_to_httpx_client(
         self,
         client_cls: MagicMock,
@@ -124,7 +124,7 @@ class TestClient:
         assert kwargs["proxy"] == "http://proxy.local:8080"
         assert kwargs["http2"] is True
 
-    @patch("ksef2.clients.base.httpx.Client")
+    @patch("ksef2._clients.base.httpx.Client")
     def test_accessors_raise_after_close(
         self,
         client_cls: MagicMock,
@@ -136,7 +136,7 @@ class TestClient:
         with pytest.raises(KSeFClientClosedError, match="Client is closed"):
             _ = client.authentication
 
-    @patch("ksef2.clients.base.AuthClient")
+    @patch("ksef2._clients.base.AuthClient")
     def test_authentication_accessor_uses_custom_certificate_store(
         self,
         auth_client_cls: MagicMock,

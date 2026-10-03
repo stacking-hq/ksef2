@@ -1,8 +1,8 @@
 import pytest
 
 from ksef2 import Client
-from ksef2.clients.authenticated import AuthenticatedClient
-from ksef2.core.exceptions import KSeFAuthError
+from ksef2._clients.authenticated import AuthenticatedClient
+from ksef2._core.exceptions import KSeFAuthError
 
 
 @pytest.mark.integration

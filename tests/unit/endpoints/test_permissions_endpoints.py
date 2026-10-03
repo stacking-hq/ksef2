@@ -6,9 +6,9 @@ import pytest
 from polyfactory.factories import BaseFactory
 from pydantic import BaseModel
 
-from ksef2.core import exceptions
-from ksef2.domain.models.pagination import PermissionsQueryParams
-from ksef2.endpoints.permissions import (
+from ksef2._core import exceptions
+from ksef2._domain.models.pagination import PermissionsQueryParams
+from ksef2._endpoints.permissions import (
     GetPermissionsEndpoints,
     PermissionsGrantEndpoints,
     RevokePermissionsEndpoints,
@@ -22,13 +22,13 @@ from tests.unit.factories.permissions import (
     QueryEntityRolesResponseFactory,
 )
 
-from ksef2.core.routes import (
+from ksef2._core.routes import (
     GrantPermissionsRoutes,
     RevokePermissionsRoutes,
     QueryPermissionsRoutes,
 )
 
-from ksef2.core.middlewares.exceptions import KSeFExceptionMiddleware
+from ksef2._core.middlewares.exceptions import KSeFExceptionMiddleware
 
 
 @pytest.fixture

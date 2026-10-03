@@ -33,172 +33,172 @@ class GeneratedPair:
 GENERATED_PAIRS: tuple[GeneratedPair, ...] = (
     # endpoints/
     GeneratedPair(
-        Path("src/ksef2/endpoints/async_auth.py"), Path("src/ksef2/endpoints/auth.py")
+        Path("src/ksef2/_endpoints/async_auth.py"), Path("src/ksef2/_endpoints/auth.py")
     ),
     GeneratedPair(
-        Path("src/ksef2/endpoints/async_certificates.py"),
-        Path("src/ksef2/endpoints/certificates.py"),
+        Path("src/ksef2/_endpoints/async_certificates.py"),
+        Path("src/ksef2/_endpoints/certificates.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/endpoints/async_collective_identifiers.py"),
-        Path("src/ksef2/endpoints/collective_identifiers.py"),
+        Path("src/ksef2/_endpoints/async_collective_identifiers.py"),
+        Path("src/ksef2/_endpoints/collective_identifiers.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/endpoints/async_encryption.py"),
-        Path("src/ksef2/endpoints/encryption.py"),
+        Path("src/ksef2/_endpoints/async_encryption.py"),
+        Path("src/ksef2/_endpoints/encryption.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/endpoints/async_invoices.py"),
-        Path("src/ksef2/endpoints/invoices.py"),
+        Path("src/ksef2/_endpoints/async_invoices.py"),
+        Path("src/ksef2/_endpoints/invoices.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/endpoints/async_limits.py"),
-        Path("src/ksef2/endpoints/limits.py"),
+        Path("src/ksef2/_endpoints/async_limits.py"),
+        Path("src/ksef2/_endpoints/limits.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/endpoints/async_peppol.py"),
-        Path("src/ksef2/endpoints/peppol.py"),
+        Path("src/ksef2/_endpoints/async_peppol.py"),
+        Path("src/ksef2/_endpoints/peppol.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/endpoints/async_permissions.py"),
-        Path("src/ksef2/endpoints/permissions.py"),
+        Path("src/ksef2/_endpoints/async_permissions.py"),
+        Path("src/ksef2/_endpoints/permissions.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/endpoints/async_session.py"),
-        Path("src/ksef2/endpoints/session.py"),
+        Path("src/ksef2/_endpoints/async_session.py"),
+        Path("src/ksef2/_endpoints/session.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/endpoints/async_testdata.py"),
-        Path("src/ksef2/endpoints/testdata.py"),
+        Path("src/ksef2/_endpoints/async_testdata.py"),
+        Path("src/ksef2/_endpoints/testdata.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/endpoints/async_tokens.py"),
-        Path("src/ksef2/endpoints/tokens.py"),
+        Path("src/ksef2/_endpoints/async_tokens.py"),
+        Path("src/ksef2/_endpoints/tokens.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/endpoints/async_base.py"), Path("src/ksef2/endpoints/base.py")
+        Path("src/ksef2/_endpoints/async_base.py"), Path("src/ksef2/_endpoints/base.py")
     ),
     # core/middlewares/ and core/
     GeneratedPair(
-        Path("src/ksef2/core/middlewares/async_auth.py"),
-        Path("src/ksef2/core/middlewares/auth.py"),
+        Path("src/ksef2/_core/middlewares/async_auth.py"),
+        Path("src/ksef2/_core/middlewares/auth.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/core/middlewares/async_exceptions.py"),
-        Path("src/ksef2/core/middlewares/exceptions.py"),
+        Path("src/ksef2/_core/middlewares/async_exceptions.py"),
+        Path("src/ksef2/_core/middlewares/exceptions.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/core/middlewares/async_lifecycle.py"),
-        Path("src/ksef2/core/middlewares/lifecycle.py"),
+        Path("src/ksef2/_core/middlewares/async_lifecycle.py"),
+        Path("src/ksef2/_core/middlewares/lifecycle.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/core/middlewares/async_retry.py"),
-        Path("src/ksef2/core/middlewares/retry.py"),
+        Path("src/ksef2/_core/middlewares/async_retry.py"),
+        Path("src/ksef2/_core/middlewares/retry.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/core/middlewares/async_base.py"),
-        Path("src/ksef2/core/middlewares/base.py"),
+        Path("src/ksef2/_core/middlewares/async_base.py"),
+        Path("src/ksef2/_core/middlewares/base.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/core/async_protocols.py"), Path("src/ksef2/core/protocols.py")
+        Path("src/ksef2/_core/async_protocols.py"), Path("src/ksef2/_core/protocols.py")
     ),
     GeneratedPair(
-        Path("src/ksef2/core/async_external_transfer.py"),
-        Path("src/ksef2/core/external_transfer.py"),
+        Path("src/ksef2/_core/async_external_transfer.py"),
+        Path("src/ksef2/_core/external_transfer.py"),
     ),
     # clients/
     GeneratedPair(
-        Path("src/ksef2/clients/async_auth.py"), Path("src/ksef2/clients/auth.py")
+        Path("src/ksef2/_clients/async_auth.py"), Path("src/ksef2/_clients/auth.py")
     ),
     GeneratedPair(
-        Path("src/ksef2/clients/async_authenticated.py"),
-        Path("src/ksef2/clients/authenticated.py"),
+        Path("src/ksef2/_clients/async_authenticated.py"),
+        Path("src/ksef2/_clients/authenticated.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/clients/async_batch.py"), Path("src/ksef2/clients/batch.py")
+        Path("src/ksef2/_clients/async_batch.py"), Path("src/ksef2/_clients/batch.py")
     ),
     GeneratedPair(
-        Path("src/ksef2/clients/async_certificates.py"),
-        Path("src/ksef2/clients/certificates.py"),
+        Path("src/ksef2/_clients/async_certificates.py"),
+        Path("src/ksef2/_clients/certificates.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/clients/async_collective_identifiers.py"),
-        Path("src/ksef2/clients/collective_identifiers.py"),
+        Path("src/ksef2/_clients/async_collective_identifiers.py"),
+        Path("src/ksef2/_clients/collective_identifiers.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/clients/async_encryption.py"),
-        Path("src/ksef2/clients/encryption.py"),
+        Path("src/ksef2/_clients/async_encryption.py"),
+        Path("src/ksef2/_clients/encryption.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/clients/async_invoice_sessions.py"),
-        Path("src/ksef2/clients/invoice_sessions.py"),
+        Path("src/ksef2/_clients/async_invoice_sessions.py"),
+        Path("src/ksef2/_clients/invoice_sessions.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/clients/async_invoices.py"),
-        Path("src/ksef2/clients/invoices.py"),
+        Path("src/ksef2/_clients/async_invoices.py"),
+        Path("src/ksef2/_clients/invoices.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/clients/async_limits.py"), Path("src/ksef2/clients/limits.py")
+        Path("src/ksef2/_clients/async_limits.py"), Path("src/ksef2/_clients/limits.py")
     ),
     GeneratedPair(
-        Path("src/ksef2/clients/async_online.py"), Path("src/ksef2/clients/online.py")
+        Path("src/ksef2/_clients/async_online.py"), Path("src/ksef2/_clients/online.py")
     ),
     GeneratedPair(
-        Path("src/ksef2/clients/async_peppol.py"), Path("src/ksef2/clients/peppol.py")
+        Path("src/ksef2/_clients/async_peppol.py"), Path("src/ksef2/_clients/peppol.py")
     ),
     GeneratedPair(
-        Path("src/ksef2/clients/async_permissions.py"),
-        Path("src/ksef2/clients/permissions.py"),
+        Path("src/ksef2/_clients/async_permissions.py"),
+        Path("src/ksef2/_clients/permissions.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/clients/async_session_management.py"),
-        Path("src/ksef2/clients/session_management.py"),
+        Path("src/ksef2/_clients/async_session_management.py"),
+        Path("src/ksef2/_clients/session_management.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/clients/async_testdata.py"),
-        Path("src/ksef2/clients/testdata.py"),
+        Path("src/ksef2/_clients/async_testdata.py"),
+        Path("src/ksef2/_clients/testdata.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/clients/async_tokens.py"), Path("src/ksef2/clients/tokens.py")
+        Path("src/ksef2/_clients/async_tokens.py"), Path("src/ksef2/_clients/tokens.py")
     ),
     # services/
     GeneratedPair(
-        Path("src/ksef2/services/async_invoices.py"),
-        Path("src/ksef2/services/invoices.py"),
+        Path("src/ksef2/_services/async_invoices.py"),
+        Path("src/ksef2/_services/invoices.py"),
     ),
     GeneratedPair(
-        Path("src/ksef2/services/async_batch.py"), Path("src/ksef2/services/batch.py")
+        Path("src/ksef2/_services/async_batch.py"), Path("src/ksef2/_services/batch.py")
     ),
 )
 
 EXCLUDED: dict[Path, str] = {
-    Path("src/ksef2/core/async_http.py"): (
+    Path("src/ksef2/_core/async_http.py"): (
         "structurally divergent transport ownership and close semantics"
     ),
-    Path("src/ksef2/core/http.py"): (
+    Path("src/ksef2/_core/http.py"): (
         "structurally divergent transport ownership and close semantics"
     ),
-    Path("src/ksef2/clients/async_base.py"): (
+    Path("src/ksef2/_clients/async_base.py"): (
         "root client wiring differs; async owns awaitable-session helper integration"
     ),
-    Path("src/ksef2/clients/base.py"): (
+    Path("src/ksef2/_clients/base.py"): (
         "root client wiring differs; sync constructs and closes httpx.Client directly"
     ),
-    Path("src/ksef2/endpoints/shared.py"): "shared helper module with no sync twin",
+    Path("src/ksef2/_endpoints/shared.py"): "shared helper module with no sync twin",
     Path(
-        "src/ksef2/services/batch_preparation.py"
+        "src/ksef2/_services/batch_preparation.py"
     ): "shared helper module with no sync twin",
     Path(
-        "src/ksef2/services/export_parts.py"
+        "src/ksef2/_services/export_parts.py"
     ): "shared helper module with no sync twin",
     Path(
-        "src/ksef2/clients/_metadata_pagination.py"
+        "src/ksef2/_clients/_metadata_pagination.py"
     ): "shared helper module with no sync twin",
-    Path("src/ksef2/clients/_async_session.py"): (
+    Path("src/ksef2/_clients/_async_session.py"): (
         "async-only awaitable context wrapper; sync factories return sessions directly"
     ),
-    Path("src/ksef2/core/polling.py"): "shared sync and async polling implementations",
-    Path("src/ksef2/core/response_errors.py"): "shared response error mapper",
+    Path("src/ksef2/_core/polling.py"): "shared sync and async polling implementations",
+    Path("src/ksef2/_core/response_errors.py"): "shared response error mapper",
 }
 
 NAME_MAP = {
@@ -248,7 +248,9 @@ DOCSTRING_REPLACEMENTS = (
 )
 
 ASYNC_CLASS_RE = re.compile(r"^Async[A-Z]\w*$")
-ASYNC_MODULE_RE = re.compile(r"(^|\.)async_")
+# Private async twins keep their underscore (ksef2.raw._async_facade -> _facade);
+# _async_session is an async-only helper with no sync twin and is left alone.
+ASYNC_MODULE_RE = re.compile(r"(^|\.)(?:(_)async_(?!session\b)|async_)")
 
 
 def resolve_pair(only: str | None) -> list[GeneratedPair]:
@@ -487,10 +489,12 @@ def _rewrite_string_annotation(node: cst.SimpleString) -> cst.SimpleString:
 
 
 def _sync_module_name(module_name: str) -> str:
-    if module_name == "ksef2.core.async_protocols":
-        return "ksef2.core.protocols"
+    if module_name == "ksef2._core.async_protocols":
+        return "ksef2._core.protocols"
     if ASYNC_MODULE_RE.search(module_name):
-        return module_name.replace(".async_", ".")
+        return ASYNC_MODULE_RE.sub(
+            lambda m: m.group(1) + (m.group(2) or ""), module_name
+        )
     return module_name
 
 

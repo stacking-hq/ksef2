@@ -4,8 +4,8 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from ksef2.domain.models.fa3 import AdvanceInvoiceReference
-from ksef2.domain.models.fa3.body import (
+from ksef2._domain.models.fa3 import AdvanceInvoiceReference
+from ksef2._domain.models.fa3.body import (
     AdvancePaymentInvoiceContext,
     InvoiceType,
     InvoiceRow,

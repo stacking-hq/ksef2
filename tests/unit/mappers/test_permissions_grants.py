@@ -4,8 +4,8 @@ from enum import StrEnum
 import pytest
 from polyfactory import BaseFactory
 
-from ksef2.domain.models import permissions as domain_permissions
-from ksef2.infra.mappers.permissions.requests import (
+from ksef2._domain.models import permissions as domain_permissions
+from ksef2._infra.mappers.permissions.requests import (
     authorization_permission_from_enum,
     authorization_permission_from_literal,
     authorization_subject_identifier_from_literal,
@@ -20,8 +20,8 @@ from ksef2.infra.mappers.permissions.requests import (
     person_permission_scope_from_literal,
     subunit_context_identifier_from_literal,
 )
-from ksef2.infra.mappers.permissions.responses import grant_from_spec
-from ksef2.infra.schema.api import spec
+from ksef2._infra.mappers.permissions.responses import grant_from_spec
+from ksef2._infra.schema.api import spec
 from tests.unit.factories.permissions import (
     DomainGrantEuEntityAdministrationRequestFactory,
     DomainGrantIndirectPermissionsRequestFactory,

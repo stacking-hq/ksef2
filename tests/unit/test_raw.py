@@ -5,29 +5,29 @@ import httpx
 import pytest
 from polyfactory import BaseFactory
 
-from ksef2.clients.async_authenticated import AsyncAuthenticatedClient
-from ksef2.clients.async_base import AsyncClient
-from ksef2.clients.authenticated import AuthenticatedClient
-from ksef2.clients.base import Client
-from ksef2.config import Environment
-from ksef2.core.exceptions import KSeFUnsupportedEnvironmentError
-from ksef2.core.routes import TokenRoutes
-from ksef2.core.stores import CertificateStore
-from ksef2.domain.models.auth import AuthenticationResumeState, AuthTokens
-from ksef2.endpoints.auth import AuthEndpoints
-from ksef2.endpoints.encryption import EncryptionEndpoints
-from ksef2.endpoints.invoices import InvoicesEndpoints
-from ksef2.endpoints.permissions import (
+from ksef2._clients.async_authenticated import AsyncAuthenticatedClient
+from ksef2._clients.async_base import AsyncClient
+from ksef2._clients.authenticated import AuthenticatedClient
+from ksef2._clients.base import Client
+from ksef2._config import Environment
+from ksef2._core.exceptions import KSeFUnsupportedEnvironmentError
+from ksef2._core.routes import TokenRoutes
+from ksef2._core.stores import CertificateStore
+from ksef2._domain.models.auth import AuthenticationResumeState, AuthTokens
+from ksef2._endpoints.auth import AuthEndpoints
+from ksef2._endpoints.encryption import EncryptionEndpoints
+from ksef2._endpoints.invoices import InvoicesEndpoints
+from ksef2._endpoints.permissions import (
     GetPermissionsEndpoints,
     PermissionsGrantEndpoints,
     QueryPermissionsEndpoints,
     RevokePermissionsEndpoints,
 )
-from ksef2.endpoints.tokens import TokenEndpoints
-from ksef2.infra.schema.api import spec
+from ksef2._endpoints.tokens import TokenEndpoints
+from ksef2._infra.schema.api import spec
 from ksef2.raw import encrypt_invoice, generate_session_key, sha256_b64
-from ksef2.raw.async_facade import AsyncRawAuthenticatedClient, AsyncRawClient
-from ksef2.raw.facade import RawAuthenticatedClient, RawClient
+from ksef2.raw._async_facade import AsyncRawAuthenticatedClient, AsyncRawClient
+from ksef2.raw._facade import RawAuthenticatedClient, RawClient
 from ksef2.raw.mappers import auth as auth_mapper
 from tests.unit.fakes.transport import AsyncFakeTransport, FakeTransport
 

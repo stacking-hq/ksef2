@@ -7,17 +7,17 @@ import httpx
 import pytest
 from polyfactory import BaseFactory
 
-from ksef2.core.exceptions import (
+from ksef2._core.exceptions import (
     ExceptionCode,
     KSeFApiError,
     KSeFExportTimeoutError,
     KSeFInvoiceDownloadTimeoutError,
     KSeFInvoiceQueryTimeoutError,
 )
-from ksef2.core.stores import CertificateStore
-from ksef2.domain.models import invoices
-from ksef2.infra.schema.api import spec
-from ksef2.services.async_invoices import AsyncInvoicesService
+from ksef2._core.stores import CertificateStore
+from ksef2._domain.models import invoices
+from ksef2._infra.schema.api import spec
+from ksef2._services.async_invoices import AsyncInvoicesService
 from tests.unit.fakes.transport import AsyncFakeTransport
 
 
@@ -178,10 +178,10 @@ class TestAsyncInvoicesService:
 
         with (
             patch(
-                "ksef2.services.async_invoices.decrypt_aes_cbc",
+                "ksef2._services.async_invoices.decrypt_aes_cbc",
                 return_value=b"decrypted",
             ),
-            patch("ksef2.services.async_invoices.logger.info") as log_info,
+            patch("ksef2._services.async_invoices.logger.info") as log_info,
         ):
             saved_files = asyncio.run(
                 service.fetch_package(
@@ -220,7 +220,7 @@ class TestAsyncInvoicesService:
             )
         )
 
-        with patch("ksef2.services.async_invoices.decrypt_aes_cbc", return_value=b"x"):
+        with patch("ksef2._services.async_invoices.decrypt_aes_cbc", return_value=b"x"):
             with pytest.raises(ValueError, match="Invalid export package part name"):
                 _ = asyncio.run(
                     service.fetch_package(

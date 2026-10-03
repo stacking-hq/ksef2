@@ -3,7 +3,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from ksef2.domain.models.fa3.body import InvoiceOrder, InvoiceOrderLine, VatRate
+from ksef2._domain.models.fa3.body import InvoiceOrder, InvoiceOrderLine, VatRate
 
 
 def test_invoice_order_populates_total_value_from_order_lines() -> None:

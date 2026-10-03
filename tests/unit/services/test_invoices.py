@@ -6,17 +6,17 @@ import httpx
 import pytest
 from polyfactory import BaseFactory
 
-from ksef2.core.exceptions import (
+from ksef2._core.exceptions import (
     ExceptionCode,
     KSeFApiError,
     KSeFExportTimeoutError,
     KSeFInvoiceDownloadTimeoutError,
     KSeFInvoiceQueryTimeoutError,
 )
-from ksef2.core.stores import CertificateStore
-from ksef2.domain.models import invoices
-from ksef2.infra.schema.api import spec
-from ksef2.services.invoices import InvoicesService
+from ksef2._core.stores import CertificateStore
+from ksef2._domain.models import invoices
+from ksef2._infra.schema.api import spec
+from ksef2._services.invoices import InvoicesService
 from tests.unit.fakes.transport import FakeTransport
 
 
@@ -169,8 +169,10 @@ class TestInvoicesService:
         )
 
         with (
-            patch("ksef2.services.invoices.decrypt_aes_cbc", return_value=b"decrypted"),
-            patch("ksef2.services.invoices.logger.info") as log_info,
+            patch(
+                "ksef2._services.invoices.decrypt_aes_cbc", return_value=b"decrypted"
+            ),
+            patch("ksef2._services.invoices.logger.info") as log_info,
         ):
             saved_files = service.fetch_package(
                 package=package,
@@ -207,7 +209,7 @@ class TestInvoicesService:
             )
         )
 
-        with patch("ksef2.services.invoices.decrypt_aes_cbc", return_value=b"x"):
+        with patch("ksef2._services.invoices.decrypt_aes_cbc", return_value=b"x"):
             with pytest.raises(ValueError, match="Invalid export package part name"):
                 _ = service.fetch_package(
                     package=package,

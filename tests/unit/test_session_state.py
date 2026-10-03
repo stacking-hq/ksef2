@@ -4,16 +4,16 @@ from typing import cast
 import pytest
 from pydantic import SecretStr
 
-from ksef2.domain.models.auth import (
+from ksef2._domain.models.auth import (
     AuthenticationResumeState,
     AuthTokens,
     TokenCredentials,
 )
-from ksef2.domain.models.batch import (
+from ksef2._domain.models.batch import (
     BatchSessionResumeState,
     PartUploadRequest,
 )
-from ksef2.domain.models.session import (
+from ksef2._domain.models.session import (
     BaseSessionResumeState,
     FormSchema,
     OnlineSessionResumeState,
@@ -148,13 +148,13 @@ def test_batch_session_state_sensitive_export_round_trips_for_resume() -> None:
 
 def test_deprecated_state_model_imports_warn() -> None:
     with pytest.deprecated_call(match="BaseSessionState"):
-        from ksef2.domain.models.session import BaseSessionState as LegacyBaseState
+        from ksef2._domain.models.session import BaseSessionState as LegacyBaseState
 
     with pytest.deprecated_call(match="OnlineSessionState"):
-        from ksef2.domain.models.session import OnlineSessionState as LegacyOnlineState
+        from ksef2._domain.models.session import OnlineSessionState as LegacyOnlineState
 
     with pytest.deprecated_call(match="BatchSessionState"):
-        from ksef2.domain.models.batch import BatchSessionState as LegacyBatchState
+        from ksef2._domain.models.batch import BatchSessionState as LegacyBatchState
 
     base_state = LegacyBaseState
     online_state = LegacyOnlineState
@@ -166,7 +166,7 @@ def test_deprecated_state_model_imports_warn() -> None:
 
 
 def test_deprecated_state_facade_imports_warn() -> None:
-    import ksef2.domain.models as domain_models
+    import ksef2._domain.models as domain_models
     import ksef2.models as facade_models
 
     assert "OnlineSessionState" not in domain_models.__all__
@@ -174,8 +174,8 @@ def test_deprecated_state_facade_imports_warn() -> None:
     assert "OnlineSessionState" not in facade_models.__all__
     assert "BatchSessionState" not in facade_models.__all__
 
-    with pytest.deprecated_call(match="ksef2.domain.models.OnlineSessionState"):
-        from ksef2.domain.models import OnlineSessionState as DomainOnlineState
+    with pytest.deprecated_call(match="ksef2._domain.models.OnlineSessionState"):
+        from ksef2._domain.models import OnlineSessionState as DomainOnlineState
 
     with pytest.deprecated_call(match="ksef2.models.BatchSessionState"):
         from ksef2.models import BatchSessionState as FacadeBatchState

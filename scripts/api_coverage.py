@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import TypedDict, cast
 
-from ksef2.core.routes import ALL_ROUTES
+from ksef2._core.routes import ALL_ROUTES
 
 OPENAPI_PATH = Path(__file__).resolve().parent.parent / "openapi.json"
 BADGE_PATH = Path(__file__).resolve().parent.parent / "coverage.json"

@@ -4,9 +4,9 @@ import pytest
 
 from pydantic import BaseModel
 
-from ksef2.core import exceptions, headers
-from ksef2.core.routes import AuthRoutes
-from ksef2.endpoints.auth import AuthEndpoints
+from ksef2._core import exceptions, headers
+from ksef2._core.routes import AuthRoutes
+from ksef2._endpoints.auth import AuthEndpoints
 from tests.unit.fakes import transport
 from tests.unit.factories.auth import (
     AuthenticationChallengeResponseFactory,
@@ -18,7 +18,7 @@ from tests.unit.factories.auth import (
     InitTokenAuthenticationRequestFactory,
 )
 
-from ksef2.core.middlewares.exceptions import KSeFExceptionMiddleware
+from ksef2._core.middlewares.exceptions import KSeFExceptionMiddleware
 
 
 class TestAuthEndpoints:

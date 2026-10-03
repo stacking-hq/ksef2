@@ -1,9 +1,9 @@
 from polyfactory import BaseFactory
 
-from ksef2.domain.models import certificates
-from ksef2.infra.mappers.certificates.requests import to_spec
-from ksef2.infra.mappers.certificates.responses import from_spec
-from ksef2.infra.schema.api import spec
+from ksef2._domain.models import certificates
+from ksef2._infra.mappers.certificates.requests import to_spec
+from ksef2._infra.mappers.certificates.responses import from_spec
+from ksef2._infra.schema.api import spec
 from tests.unit.factories.certificates import (
     CertificateListItemFactory,
     CertificateSubjectIdentifierFactory,

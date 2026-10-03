@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import pytest
 
-from ksef2.domain.models.auth import RefreshedToken
+from ksef2._domain.models.auth import RefreshedToken
 
 
 @pytest.mark.integration

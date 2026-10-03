@@ -4,18 +4,18 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 
-from ksef2.clients.async_batch import AsyncBatchSessionClient
-from ksef2.clients.async_base import AsyncClient
-from ksef2.clients.base import Client
-from ksef2.clients.batch import BatchSessionClient
-from ksef2.config import Environment, TimeoutConfig, TransportConfig
-from ksef2.core.http_config import HttpClientKwargs
-from ksef2.domain.models.batch import BatchFileInfo, BatchInvoice, PreparedBatch
-from ksef2.domain.models.session import FormSchema, SessionEncryptionMaterial
-from ksef2.endpoints.async_base import AsyncBaseEndpoints
-from ksef2.endpoints.base import BaseEndpoints
-from ksef2.services.async_batch import AsyncBatchService
-from ksef2.services.batch import BatchService
+from ksef2._clients.async_batch import AsyncBatchSessionClient
+from ksef2._clients.async_base import AsyncClient
+from ksef2._clients.base import Client
+from ksef2._clients.batch import BatchSessionClient
+from ksef2._config import Environment, TimeoutConfig, TransportConfig
+from ksef2._core.http_config import HttpClientKwargs
+from ksef2._domain.models.batch import BatchFileInfo, BatchInvoice, PreparedBatch
+from ksef2._domain.models.session import FormSchema, SessionEncryptionMaterial
+from ksef2._endpoints.async_base import AsyncBaseEndpoints
+from ksef2._endpoints.base import BaseEndpoints
+from ksef2._services.async_batch import AsyncBatchService
+from ksef2._services.batch import BatchService
 from tests.unit.fakes.transport import AsyncFakeTransport, FakeTransport
 from tests.unit.helpers import VALID_PUBLIC_KEY_ID
 
@@ -45,8 +45,8 @@ def test_sync_and_async_root_clients_use_equivalent_http_config_kwargs() -> None
     )
 
     with (
-        patch("ksef2.clients.base.httpx.Client") as sync_client_cls,
-        patch("ksef2.clients.async_base.httpx.AsyncClient") as async_client_cls,
+        patch("ksef2._clients.base.httpx.Client") as sync_client_cls,
+        patch("ksef2._clients.async_base.httpx.AsyncClient") as async_client_cls,
     ):
         sync_client_cls.return_value = MagicMock(spec=HTTPX_CLIENT_CLASS)
         async_client_cls.return_value = AsyncMock(spec=HTTPX_ASYNC_CLIENT_CLASS)
@@ -166,11 +166,11 @@ def test_sync_and_async_batch_preparation_share_metadata_logic() -> None:
 
     with (
         patch(
-            "ksef2.services.batch_preparation.build_zip",
+            "ksef2._services.batch_preparation.build_zip",
             return_value=b"deterministic-zip",
         ),
         patch(
-            "ksef2.services.batch_preparation.encrypt_batch_part",
+            "ksef2._services.batch_preparation.encrypt_batch_part",
             side_effect=_encrypt_batch_part,
         ),
     ):

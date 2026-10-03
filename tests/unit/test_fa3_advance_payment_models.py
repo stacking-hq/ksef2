@@ -4,8 +4,8 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from ksef2.domain.models.fa3 import AdvancePayment, PartialAdvancePayment
-from ksef2.domain.models.fa3.body import AdvancePaymentInvoiceContext
+from ksef2._domain.models.fa3 import AdvancePayment, PartialAdvancePayment
+from ksef2._domain.models.fa3.body import AdvancePaymentInvoiceContext
 
 
 def test_partial_advance_payment_accepts_schema_shape() -> None:

@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from ksef2.domain.models.fa3.body.payment import (
+from ksef2._domain.models.fa3.body.payment import (
     InvoicePayment,
     PartialPayment,
     PaymentTerm,

@@ -1,11 +1,11 @@
 from polyfactory import BaseFactory
 
-from ksef2.clients.permissions import PermissionsClient
-from ksef2.core.routes import GrantPermissionsRoutes, QueryPermissionsRoutes
-from ksef2.domain.models import permissions as domain_permissions
-from ksef2.domain.models.pagination import OffsetPaginationParams
-from ksef2.infra.mappers.permissions import grant_to_spec, query_to_spec
-from ksef2.infra.schema.api import spec
+from ksef2._clients.permissions import PermissionsClient
+from ksef2._core.routes import GrantPermissionsRoutes, QueryPermissionsRoutes
+from ksef2._domain.models import permissions as domain_permissions
+from ksef2._domain.models.pagination import OffsetPaginationParams
+from ksef2._infra.mappers.permissions import grant_to_spec, query_to_spec
+from ksef2._infra.schema.api import spec
 from tests.unit.factories.permissions import (
     DomainAuthorizationPermissionsQueryFactory,
     DomainEntityPermissionsQueryFactory,

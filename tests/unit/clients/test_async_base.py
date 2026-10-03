@@ -7,17 +7,17 @@ import httpx
 import pytest
 from polyfactory import BaseFactory
 
-from ksef2.clients.async_auth import AsyncAuthClient
-from ksef2.clients.async_authenticated import AsyncAuthenticatedClient
-from ksef2.clients.async_base import AsyncClient
-from ksef2.clients.async_encryption import AsyncEncryptionClient
-from ksef2.clients.async_peppol import AsyncPeppolClient
-from ksef2.clients.async_testdata import AsyncTestDataClient
-from ksef2.config import Environment, TimeoutConfig, TransportConfig
-from ksef2.core.exceptions import KSeFClientClosedError
-from ksef2.core.exceptions import KSeFUnsupportedEnvironmentError
-from ksef2.domain.models.auth import AuthTokens
-from ksef2.domain.models.encryption import (
+from ksef2._clients.async_auth import AsyncAuthClient
+from ksef2._clients.async_authenticated import AsyncAuthenticatedClient
+from ksef2._clients.async_base import AsyncClient
+from ksef2._clients.async_encryption import AsyncEncryptionClient
+from ksef2._clients.async_peppol import AsyncPeppolClient
+from ksef2._clients.async_testdata import AsyncTestDataClient
+from ksef2._config import Environment, TimeoutConfig, TransportConfig
+from ksef2._core.exceptions import KSeFClientClosedError
+from ksef2._core.exceptions import KSeFUnsupportedEnvironmentError
+from ksef2._domain.models.auth import AuthTokens
+from ksef2._domain.models.encryption import (
     CertUsage,
     CertUsageEnum,
     PublicKeyCertificate,
@@ -73,7 +73,7 @@ class TestAsyncClient:
         finally:
             asyncio.run(client.aclose())
 
-    @patch("ksef2.clients.async_base.httpx.AsyncClient")
+    @patch("ksef2._clients.async_base.httpx.AsyncClient")
     def test_aclose_closes_owned_http_client(
         self,
         client_cls: MagicMock,
@@ -94,7 +94,7 @@ class TestAsyncClient:
 
         http_client.aclose.assert_not_awaited()
 
-    @patch("ksef2.clients.async_base.httpx.AsyncClient")
+    @patch("ksef2._clients.async_base.httpx.AsyncClient")
     def test_async_context_manager_closes_owned_client(
         self,
         client_cls: MagicMock,
@@ -110,7 +110,7 @@ class TestAsyncClient:
 
         http_client.aclose.assert_awaited_once()
 
-    @patch("ksef2.clients.async_base.httpx.AsyncClient")
+    @patch("ksef2._clients.async_base.httpx.AsyncClient")
     def test_transport_config_is_translated_to_httpx_client(
         self,
         client_cls: MagicMock,
@@ -136,7 +136,7 @@ class TestAsyncClient:
         assert kwargs["proxy"] == "http://proxy.local:8080"
         assert kwargs["http2"] is True
 
-    @patch("ksef2.clients.async_base.httpx.AsyncClient")
+    @patch("ksef2._clients.async_base.httpx.AsyncClient")
     def test_accessors_raise_after_close(
         self,
         client_cls: MagicMock,
@@ -148,7 +148,7 @@ class TestAsyncClient:
         with pytest.raises(KSeFClientClosedError, match="Client is closed"):
             _ = client.authentication
 
-    @patch("ksef2.clients.async_base.AsyncAuthClient")
+    @patch("ksef2._clients.async_base.AsyncAuthClient")
     def test_authentication_accessor_uses_custom_certificate_store(
         self,
         auth_client_cls: MagicMock,

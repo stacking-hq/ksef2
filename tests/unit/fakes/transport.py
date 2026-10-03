@@ -4,8 +4,8 @@ from typing import Any, final
 
 import httpx
 
-from ksef2.core import protocols
-from ksef2.core.async_protocols import AsyncMiddleware
+from ksef2._core import protocols
+from ksef2._core.async_protocols import AsyncMiddleware
 
 
 @dataclass
