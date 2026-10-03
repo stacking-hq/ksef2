@@ -16,6 +16,7 @@ from tests.unit.factories.collective_identifiers import (
     CollectiveIdentifiersQueryResponseFactory,
 )
 from tests.unit.fakes.transport import FakeTransport
+from tests.unit.helpers import legacy_api
 
 _KSEF_NUMBER = "1234567890-20250625-ABC123-DEF456-07"
 _SECOND_KSEF_NUMBER = "1234567890-20250625-ABC123-DEF457-08"
@@ -59,6 +60,7 @@ class TestCollectiveIdentifiersClient:
             ]
         }
 
+    @legacy_api
     def test_query_all_follows_continuation_token(
         self,
         fake_transport: FakeTransport,
@@ -83,6 +85,7 @@ class TestCollectiveIdentifiersClient:
         assert pages[0].continuation_token == "next-page"
         assert fake_transport.calls[1].headers == {"x-continuation-token": "next-page"}
 
+    @legacy_api
     def test_query_by_ksef_and_list_invoices_map_responses(
         self,
         fake_transport: FakeTransport,
@@ -98,15 +101,13 @@ class TestCollectiveIdentifiersClient:
         client = CollectiveIdentifiersClient(fake_transport)
 
         identifiers = client.query_by_ksef_number(ksef_number=_KSEF_NUMBER)
-        invoices = client.list_invoices(
-            collective_identifier_numbers=[_COLLECTIVE_IDENTIFIER_NUMBER]
-        )
+        invoices = client.list_invoices([_COLLECTIVE_IDENTIFIER_NUMBER]).first_page()
 
         assert (
             identifiers.collective_identifiers[0].collective_identifier_number
             == _COLLECTIVE_IDENTIFIER_NUMBER
         )
-        assert invoices.invoices[0].ksef_number == _KSEF_NUMBER
+        assert invoices[0].ksef_number == _KSEF_NUMBER
         assert [(call.method, call.path) for call in fake_transport.calls] == [
             (
                 "GET",
@@ -120,6 +121,7 @@ class TestCollectiveIdentifiersClient:
             "collectiveIdentifierNumbers": [_COLLECTIVE_IDENTIFIER_NUMBER]
         }
 
+    @legacy_api
     def test_list_all_invoices_follows_continuation_token(
         self,
         fake_transport: FakeTransport,
@@ -164,8 +166,6 @@ class TestCollectiveIdentifiersClient:
         client = CollectiveIdentifiersClient(fake_transport)
 
         with pytest.raises(ValidationError, match="collective_identifier_numbers"):
-            _ = client.list_invoices(
-                collective_identifier_numbers=collective_identifier_numbers
-            )
+            _ = client.list_invoices(collective_identifier_numbers).first_page()
 
         assert fake_transport.calls == []

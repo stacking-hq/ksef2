@@ -23,6 +23,7 @@ from tests.unit.factories.permissions import (
     DomainSubunitPermissionsQueryFactory,
 )
 from tests.unit.fakes.transport import FakeTransport
+from tests.unit.helpers import legacy_api
 
 
 class TestPermissionsClient:
@@ -201,6 +202,7 @@ class TestPermissionsClient:
         assert call.method == "POST"
         assert str(call.path) == GrantPermissionsRoutes.GRANT_ADMINISTERED_EU_ENTITY
 
+    @legacy_api
     def test_query_persons(
         self,
         permissions_client: PermissionsClient,
@@ -221,6 +223,7 @@ class TestPermissionsClient:
         assert call.params["pageOffset"] == "0"
         assert call.params["pageSize"] == "10"
 
+    @legacy_api
     def test_query_authorizations(
         self,
         permissions_client: PermissionsClient,
@@ -242,6 +245,7 @@ class TestPermissionsClient:
         assert call.method == "POST"
         assert str(call.path) == QueryPermissionsRoutes.QUERY_AUTHORIZATIONS_GRANTS
 
+    @legacy_api
     def test_query_entities(
         self,
         permissions_client: PermissionsClient,
@@ -259,6 +263,7 @@ class TestPermissionsClient:
         assert call.method == "POST"
         assert str(call.path) == QueryPermissionsRoutes.QUERY_ENTITIES_GRANTS
 
+    @legacy_api
     def test_query_personal(
         self,
         permissions_client: PermissionsClient,
@@ -276,6 +281,7 @@ class TestPermissionsClient:
         assert call.method == "POST"
         assert str(call.path) == QueryPermissionsRoutes.QUERY_PERSONAL_GRANTS
 
+    @legacy_api
     def test_query_eu_entities(
         self,
         permissions_client: PermissionsClient,
@@ -293,6 +299,7 @@ class TestPermissionsClient:
         assert call.method == "POST"
         assert str(call.path) == QueryPermissionsRoutes.QUERY_EU_ENTITIES_GRANTS
 
+    @legacy_api
     def test_query_subordinate_entities(
         self,
         permissions_client: PermissionsClient,
@@ -314,6 +321,7 @@ class TestPermissionsClient:
         assert call.method == "POST"
         assert str(call.path) == QueryPermissionsRoutes.QUERY_SUBORDINATE_ENTITIES_ROLES
 
+    @legacy_api
     def test_query_subunits(
         self,
         permissions_client: PermissionsClient,
@@ -403,6 +411,7 @@ class TestPermissionsClient:
         assert call.method == "GET"
         assert call.path.endswith("/operations/ref-123")
 
+    @legacy_api
     def test_get_entity_roles_with_custom_pagination(
         self,
         permissions_client: PermissionsClient,
@@ -424,6 +433,7 @@ class TestPermissionsClient:
         assert call.params["pageOffset"] == "2"
         assert call.params["pageSize"] == "25"
 
+    @legacy_api
     def test_query_persons_with_custom_pagination(
         self,
         permissions_client: PermissionsClient,

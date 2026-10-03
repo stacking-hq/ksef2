@@ -3,10 +3,13 @@
 
 """Async certificate branch client."""
 
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
 from datetime import datetime
 from typing import final
 
+from typing_extensions import deprecated
+
+from ksef2._clients._pager import Pager
 from ksef2._core.protocols import Middleware
 from ksef2._domain.models.certificates import (
     CertificateEnrollmentData,
@@ -158,7 +161,7 @@ class CertificatesClient:
             body=body,
         )
 
-    def query(
+    def _query(
         self,
         *,
         name: str | None = None,
@@ -168,19 +171,6 @@ class CertificatesClient:
         expires_after: datetime | str | None = None,
         params: OffsetPaginationParams | None = None,
     ) -> CertificatesInfoList:
-        """Fetch one page of certificate search results.
-
-        Args:
-            name: Match this certificate name.
-            certificate_serial_number: Match this certificate serial number.
-            certificate_type: Match this certificate type.
-            status: Match this lifecycle status.
-            expires_after: Match certificates that expire after this datetime or ISO 8601 string.
-            params: Page size and offset; defaults are used when ``None``.
-
-        Returns:
-            One page of certificate metadata.
-        """
         parameters = params or OffsetPaginationParams()
         request = QueryCertificatesRequest(
             certificate_serial_number=certificate_serial_number,
@@ -193,6 +183,77 @@ class CertificatesClient:
         spec_resp = self._endpoints.query(body=body, **parameters.to_query_params())
         return from_spec(spec_resp)
 
+    def _pages(
+        self,
+        *,
+        name: str | None,
+        certificate_serial_number: CertificateSerialNumber | None,
+        certificate_type: CertificateTypeValue | None,
+        status: CertificateStatusValue | None,
+        expires_after: datetime | str | None,
+        params: OffsetPaginationParams | None,
+    ) -> Generator[CertificatesInfoList, None]:
+        current_params = params or OffsetPaginationParams()
+
+        while True:
+            response = self._query(
+                name=name,
+                certificate_serial_number=certificate_serial_number,
+                certificate_type=certificate_type,
+                status=status,
+                expires_after=expires_after,
+                params=current_params,
+            )
+            yield response
+
+            if not response.has_more:
+                break
+
+            current_params = current_params.next_page()
+
+    @deprecated(
+        "`query()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list()` instead."
+    )
+    def query(
+        self,
+        *,
+        name: str | None = None,
+        certificate_serial_number: CertificateSerialNumber | None = None,
+        certificate_type: CertificateTypeValue | None = None,
+        status: CertificateStatusValue | None = None,
+        expires_after: datetime | str | None = None,
+        params: OffsetPaginationParams | None = None,
+    ) -> CertificatesInfoList:
+        """Deprecated: fetch one page of certificate search results.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list()`` instead; ``first_page()`` fetches one page.
+
+        Args:
+            name: Match this certificate name.
+            certificate_serial_number: Match this certificate serial number.
+            certificate_type: Match this certificate type.
+            status: Match this lifecycle status.
+            expires_after: Match certificates that expire after this datetime or ISO 8601 string.
+            params: Page size and offset; defaults are used when ``None``.
+
+        Returns:
+            One page of certificate metadata.
+        """
+        return self._query(
+            name=name,
+            certificate_serial_number=certificate_serial_number,
+            certificate_type=certificate_type,
+            status=status,
+            expires_after=expires_after,
+            params=params,
+        )
+
+    @deprecated(
+        "`all()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list()` instead."
+    )
     def all(
         self,
         *,
@@ -203,7 +264,10 @@ class CertificatesClient:
         expires_after: datetime | str | None = None,
         params: OffsetPaginationParams | None = None,
     ) -> Iterator[CertificateInfo]:
-        """Iterate over all certificates matching the provided filters.
+        """Deprecated: iterate over all certificates matching the provided filters.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list()`` instead.
 
         Args:
             certificate_serial_number: Match this certificate serial number.
@@ -216,21 +280,60 @@ class CertificatesClient:
         Yields:
             Each matching certificate, across all pages.
         """
-        current_params = params or OffsetPaginationParams()
+        for page in self._pages(
+            name=name,
+            certificate_serial_number=certificate_serial_number,
+            certificate_type=certificate_type,
+            status=status,
+            expires_after=expires_after,
+            params=params,
+        ):
+            for certificate in page.certificates:
+                yield certificate
 
-        while True:
-            response = self.query(
+    def list(
+        self,
+        *,
+        name: str | None = None,
+        certificate_serial_number: CertificateSerialNumber | None = None,
+        certificate_type: CertificateTypeValue | None = None,
+        status: CertificateStatusValue | None = None,
+        expires_after: datetime | str | None = None,
+        params: OffsetPaginationParams | None = None,
+    ) -> Pager[CertificateInfo]:
+        """List the certificates of the authenticated context.
+
+        Nothing is requested until the result is consumed. Iterate it for every
+        matching certificate, call ``pages()`` for page-sized lists or
+        ``first_page()`` for one request only.
+
+        Args:
+            name: Match this certificate name.
+            certificate_serial_number: Match this certificate serial number.
+            certificate_type: Match this certificate type.
+            status: Match this lifecycle status.
+            expires_after: Match certificates that expire after this datetime or ISO 8601 string.
+            params: Page size and offset of the first page; defaults are used when ``None``.
+
+        Returns:
+            A paging object over the matching certificates.
+
+        Example:
+            ```python
+            for certificate in auth.certificates.list(status="active"):
+                print(certificate.certificate_serial_number)
+            ```
+        """
+
+        def _certificate_pages() -> Generator[list[CertificateInfo], None]:
+            for page in self._pages(
                 name=name,
                 certificate_serial_number=certificate_serial_number,
                 certificate_type=certificate_type,
                 status=status,
                 expires_after=expires_after,
-                params=current_params,
-            )
-            for certificate in response.certificates:
-                yield certificate
+                params=params,
+            ):
+                yield page.certificates
 
-            if not response.has_more:
-                break
-
-            current_params = current_params.next_page()
+        return Pager(_certificate_pages)

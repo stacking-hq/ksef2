@@ -12,6 +12,7 @@ from tests.unit.factories.tokens import (
     TokenStatusResponseFactory,
 )
 from tests.unit.fakes.transport import FakeTransport
+from tests.unit.helpers import legacy_api
 
 
 class TestTokensClient:
@@ -137,6 +138,7 @@ class TestTokensClient:
         assert len(fake_transport.calls) == 2
         assert fake_transport.calls[1].method == "GET"
 
+    @legacy_api
     def test_list_page(
         self,
         tokens_client: TokensClient,
@@ -155,6 +157,7 @@ class TestTokensClient:
         assert call.method == "GET"
         assert str(call.path) == TokenRoutes.LIST_TOKENS
 
+    @legacy_api
     def test_list_page_with_continuation_token(
         self,
         tokens_client: TokensClient,
@@ -171,6 +174,7 @@ class TestTokensClient:
         assert call.headers is not None
         assert call.headers["x-continuation-token"] == "ct-abc"
 
+    @legacy_api
     def test_list_all_single_page(
         self,
         tokens_client: TokensClient,
@@ -185,6 +189,7 @@ class TestTokensClient:
         assert len(pages) == 1
         assert len(fake_transport.calls) == 1
 
+    @legacy_api
     def test_list_all_multiple_pages(
         self,
         tokens_client: TokensClient,
