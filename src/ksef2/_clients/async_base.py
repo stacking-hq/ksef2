@@ -182,7 +182,7 @@ class AsyncClient:
         return AsyncRawClient(self._transport, self._environment)
 
     @deprecated(
-        "`AsyncClient.authenticated()` is deprecated and will be removed in ksef2 2.0; "
+        "`AsyncClient.authenticated()` is deprecated and will be removed in ksef2 1.10.0; "
         "use `AsyncClient.authentication.resume()` with "
         "`AuthenticationResumeState.from_tokens()` instead."
     )
@@ -190,7 +190,7 @@ class AsyncClient:
         """Deprecated compatibility wrapper for ``authentication.resume()``.
 
         Deprecated:
-            Will be removed in ksef2 2.0. Use ``authentication.resume()`` with ``AuthenticationResumeState.from_tokens()`` instead.
+            Will be removed in ksef2 1.10.0. Use ``authentication.resume()`` with ``AuthenticationResumeState.from_tokens()`` instead.
 
         Args:
             auth_tokens: Access and refresh tokens from a previous authentication.

@@ -11,7 +11,7 @@ They are the paths intended to remain stable through the 1.x line.
 | Import path | Use it for |
 | --- | --- |
 | `ksef2` | Root clients, environment and transport config, `FormSchema`, `__version__`, and public exceptions. |
-| `ksef2.clients` | Concrete sync/async clients and the stable `InvoicesService` / `BatchService` workflow types (plus async twins) for type annotations. |
+| `ksef2.clients` | Concrete sync/async clients, the stable `InvoicesService` / `BatchService` workflow types, and the handle, paging and export result types (`InvoiceSubmission`, `ExportJob`, `ExportedInvoices`, `Pager`, `OperationHandle`), plus async twins, for type annotations. |
 | `ksef2.models` | SDK request, response, filter, pagination, token, permission, session, and batch models. |
 | `ksef2.fa3` | FA(3) invoice builder, draft snapshots, and public FA(3) domain models used by builder workflows. |
 | `ksef2.xades` | Certificate loading, TEST certificate generation, local XAdES signing helpers, and `LocalSigner`. |
@@ -102,10 +102,11 @@ never log it, and never commit it.
 ## Compatibility rule
 
 After 1.0, changes that remove or rename stable import paths require a major
-version bump. Additive APIs can ship in minor releases. Patch releases should
-preserve documented imports and behavior except for bug fixes. Two cases are
-spelled out below: changes KSeF forces on the SDK, and SDK-initiated
-deprecations.
+version bump, with one exception: a deprecated API is removed in the 1.x release
+that its deprecation names. Additive APIs can ship in minor releases. Patch
+releases should preserve documented imports and behavior except for bug fixes.
+Two cases are spelled out below: changes KSeF forces on the SDK, and
+SDK-initiated deprecations.
 
 ### KSeF-driven changes
 
@@ -118,31 +119,49 @@ Breaking changes the SDK initiates itself still require a major version bump.
 
 Within 1.x, anything the SDK itself wants to retire is deprecated first, in a
 minor release: it gets `@deprecated` (or a module-level warning for aliases), a
-message of the form "`X` is deprecated and will be removed in ksef2 2.0; use `Y`
-instead.", and a changelog entry. It is removed only in the next major release.
-The [deprecated APIs](#deprecated-apis) below are the current list.
+message of the form "`X` is deprecated and will be removed in ksef2 1.10.0; use
+`Y` instead.", and a changelog entry. The message and the
+[deprecated APIs](#deprecated-apis) table name the 1.x release that removes the
+API, so you can plan the migration. Every deprecation listed today is removed in
+**ksef2 1.10.0**; until then each one keeps its old behavior and return type. A
+later deprecation names its own 1.x release, never a major version.
 
 ## Deprecated APIs
 
 These APIs still work throughout 1.x. Each one emits a `DeprecationWarning`
 once per call, is marked with PEP 702 `@deprecated` so type checkers and IDEs
-flag call sites, and is removed in ksef2 2.0. Python hides `DeprecationWarning`
+flag call sites, and is removed in ksef2 1.10.0. Python hides `DeprecationWarning`
 outside `__main__` and test runners, so run your tests with
 `python -W error::DeprecationWarning` to find them.
 
 | Deprecated | Use instead | Removed in |
 | --- | --- | --- |
-| `Client.authenticated(tokens)` and `AsyncClient.authenticated(tokens)` | `client.authentication.resume(AuthenticationResumeState.from_tokens(tokens))` | 2.0 |
-| `get_state()` on online and batch session clients | `resume_state()` | 2.0 |
-| `BatchSessionClient.access_token` | `AuthenticatedClient.access_token` of the parent client | 2.0 |
-| `dump_state()` on session resume state | `to_dict()` | 2.0 |
-| `model_dump_sensitive()` on session resume state | `to_dict()` | 2.0 |
-| `model_dump_sensitive_json()` on session resume state | `to_json()` | 2.0 |
-| `from_state()` on session resume state | `from_dict()` | 2.0 |
-| `BaseSessionState`, `OnlineSessionState`, `BatchSessionState` | `BaseSessionResumeState`, `OnlineSessionResumeState`, `BatchSessionResumeState` | 2.0 |
-| `access_token=` argument of `from_encoded()` on session resume state (ignored) | Persist `AuthenticationResumeState` separately | 2.0 |
-| `access_token` key in stored session resume state (ignored; old files still load) | Persist `AuthenticationResumeState` separately | 2.0 |
-| `auth_timeout` key in a profile written by ksef2-cli 0.0.2 | `max_poll_attempts` (and optionally `poll_interval`) | 2.0 |
+| `Client.authenticated(tokens)` and `AsyncClient.authenticated(tokens)` | `client.authentication.resume(AuthenticationResumeState.from_tokens(tokens))` | 1.10.0 |
+| `get_state()` on online and batch session clients | `resume_state()` | 1.10.0 |
+| `BatchSessionClient.access_token` | `AuthenticatedClient.access_token` of the parent client | 1.10.0 |
+| `dump_state()` on session resume state | `to_dict()` | 1.10.0 |
+| `model_dump_sensitive()` on session resume state | `to_dict()` | 1.10.0 |
+| `model_dump_sensitive_json()` on session resume state | `to_json()` | 1.10.0 |
+| `from_state()` on session resume state | `from_dict()` | 1.10.0 |
+| `BaseSessionState`, `OnlineSessionState`, `BatchSessionState` | `BaseSessionResumeState`, `OnlineSessionResumeState`, `BatchSessionResumeState` | 1.10.0 |
+| `access_token=` argument of `from_encoded()` on session resume state (ignored) | Persist `AuthenticationResumeState` separately | 1.10.0 |
+| `access_token` key in stored session resume state (ignored; old files still load) | Persist `AuthenticationResumeState` separately | 1.10.0 |
+| `auth_timeout` key in a profile written by ksef2-cli 0.0.2 | `max_poll_attempts` (and optionally `poll_interval`) | 1.10.0 |
+| `send_invoice_and_wait()` and `wait_for_invoice_ready()` on the online session | `send_invoice(...).wait()` | 1.10.0 |
+| `get_invoice_upo_by_ksef_number()` and `get_invoice_upo_by_reference()` on the online session | `download_invoice_upo(ksef_number=...)` or `download_invoice_upo(reference_number=...)` | 1.10.0 |
+| `BatchSessionClient.get_upo(upo_reference_number=...)` | `download_upo()` | 1.10.0 |
+| `auth.batch.prepare_batch()` and `prepare_batch_from_paths()` | `auth.batch.prepare()` | 1.10.0 |
+| `auth.batch.submit_batch()`, `submit_prepared_batch()` and `open_session()` | `auth.batch.submit()` or `auth.batch_session(...)` | 1.10.0 |
+| `auth.batch.get_status()`, `list_invoices()`, `list_failed_invoices()`, `get_upo()` and `wait_for_completion()` (with `session=`) | The same operations on the session client, with `wait()` and `download_upo()` | 1.10.0 |
+| `auth.open_batch_session(aes_key=..., iv=..., ...)` | `auth.raw` | 1.10.0 |
+| `auth.invoices.query_metadata()`, `query_metadata_pages()`, `all_metadata()` and `wait_for_invoices()` | `auth.invoices.search(...)` with `.pages()`, `.first_page()` and `.wait()` | 1.10.0 |
+| `auth.invoices.download_invoice()` and `wait_for_invoice_download()` | `auth.invoices.download(...)` | 1.10.0 |
+| `auth.invoices.schedule_export()`, `get_export_status()`, `wait_for_export_package()`, `fetch_package()`, `fetch_package_bytes()` and `export_and_download()` | `auth.invoices.export(...)`, then `ExportJob.wait()` | 1.10.0 |
+
+`session.send_invoice()` keeps its name and accepts the XML positionally as
+`bytes` or `str`. It now returns an `InvoiceSubmission` handle that exposes every
+field of the old `SendInvoiceResponse`, so code that reads `.reference_number`
+keeps working.
 
 `FA3InvoiceBuilder.dump_state()` and `from_state()` are a separate builder
 draft API and are not deprecated.
