@@ -152,6 +152,8 @@ per call and is flagged by type checkers (PEP 702).
   pages (#148, #153, #136).
 - A module visibility contract test asserts that the public modules import and
   that the old internal paths no longer exist (#153).
+- A docstring test and ruff pydocstyle keep every public API documented (#159).
+- `scripts/validate_docs_markdown.py` checks the docs Markdown (#158).
 - Remove the in-repo CLI script and its integration test; the CLI lives in the
   separate `ksef2-cli` package (#137).
 
@@ -164,6 +166,10 @@ per call and is flagged by type checkers (PEP 702).
   (#148, #150).
 - Correct the 1.0.0 release notes (OpenAPI 2.8.1, collective-identifier surface),
   drop the stale pre-1.0 migration page and add drift gates (#136).
+- Document every public API with Google-style docstrings (1428 of 1428 public
+  units and 957 of 957 model fields). The docstrings are now the source of the
+  generated API reference (#159).
+- The SDK docs are plain Markdown instead of MDX (#158).
 
 ### Release history note
 
