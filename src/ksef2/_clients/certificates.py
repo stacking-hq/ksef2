@@ -3,6 +3,7 @@
 
 """Async certificate branch client."""
 
+import builtins
 from collections.abc import Generator, Iterator
 from datetime import datetime
 from typing import cast, final, override
@@ -254,7 +255,7 @@ class CertificatesClient:
     def retrieve(
         self,
         *,
-        certificate_serial_numbers: list[CertificateSerialNumber],
+        certificate_serial_numbers: builtins.list[CertificateSerialNumber],
     ) -> RetrievedCertificatesList:
         """Download issued certificates by serial number.
 
