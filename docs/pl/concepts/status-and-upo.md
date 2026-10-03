@@ -87,14 +87,9 @@ UPO nie jest dostępne w momencie wysyłki:
 SDK udostępnia typowe ścieżki UPO przez klientów sesji:
 
 ```python
-invoice_upo = session.get_invoice_upo_by_reference(
-    invoice_reference_number=sent.reference_number,
-)
+invoice_upo = submission.download_upo()
 
-batch_upo = auth.batch.get_upo(
-    session=batch_state.reference_number,
-    upo_reference_number="referencja-upo-ze-statusu-sesji",
-)
+session_upo_pages = session.download_upo()  # wszystkie strony, referencje rozwiązuje SDK
 ```
 
 Odpowiedzi statusowe mogą też wystawiać dane stron UPO, takie jak
@@ -122,7 +117,7 @@ Dostosuj ustawienia pollingu do przepływu:
 
 | Przepływ | Typowy helper oczekujący |
 | --- | --- |
-| Akceptacja faktury online | `session.wait_for_invoice_ready()` albo `send_invoice_and_wait()` |
+| Akceptacja faktury online | `submission.wait()` |
 | Przetwarzanie batch | `session.wait()` |
 | Gotowość paczki eksportu | `auth.invoices.export(...).wait()` |
 | Aktywacja albo sprawdzanie tokenu | `auth.tokens.wait_for_activation()` albo `auth.tokens.status()` |

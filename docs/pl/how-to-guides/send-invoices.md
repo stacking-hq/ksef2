@@ -91,13 +91,13 @@ with auth.online_session(form_code=FormSchema.FA3) as session:
 ```
 
 `send_invoice()` oznacza tylko, że KSeF przyjął zaszyfrowany payload do sesji.
-`wait_for_invoice_ready()` czeka na wynik konkretnej faktury i zwraca numer KSeF
-po udanym przetworzeniu.
+`submission.wait()` czeka na wynik konkretnej faktury i zwraca numer KSeF
+po udanym przetworzeniu. Działa też po zamknięciu sesji, a `session.wait()`
+zwraca końcowy status zamkniętej sesji.
 
-:::tip[Dla prostych skryptów użyj helpera łączonego]
-`session.send_invoice_and_wait(invoice_xml=invoice_xml)` wykonuje ten sam
-ciąg: wysyłka i polling, gdy nie potrzebujesz osobno pośredniej referencji
-faktury.
+:::tip[Dla prostych skryptów połącz wywołania]
+`session.send_invoice(invoice_xml).wait()` wykonuje wysyłkę i polling, gdy nie
+potrzebujesz osobno uchwytu.
 :::
 
 ## Zachowaj uchwyty sesji
@@ -119,7 +119,9 @@ with auth.online_session(form_code=FormSchema.FA3) as session:
 
 Batcha użyj, gdy chcesz wysłać wiele plików XML jako jeden przepływ KSeF.
 Serwis wysokiego poziomu przygotowuje paczkę ZIP, szyfruje części, otwiera
-sesję batch, wysyła części, zamyka sesję i zwraca `BatchSessionResumeState`.
+sesję batch, wysyła części, zamyka sesję i zwraca zamkniętego klienta `BatchSessionClient`. Wywołaj potem
+jego `wait()`, `list_failed_invoices()` i `download_upo()`. `auth.batch.prepare()`
+i `submit()` przyjmują elementy `bytes`, `str`, `Path` lub `BatchInvoice`.
 
 ### Z plików
 
@@ -128,18 +130,14 @@ from pathlib import Path
 
 from ksef2 import FormSchema
 
-prepared = auth.batch.prepare_batch_from_paths(
-    invoice_paths=[
-        Path("invoice-1.xml"),
-        Path("invoice-2.xml"),
-    ],
+prepared = auth.batch.prepare(
+    [Path("invoice-1.xml"), Path("invoice-2.xml")],
     form_code=FormSchema.FA3,
 )
 
 session = auth.batch.submit(prepared)
 
-# BatchSessionResumeState(reference_number="20260625-BATCH-...")
-# Zapisz state bezpiecznie. Zawiera dane szyfrowania i URL-e uploadu.
+# session.reference_number == "20260625-BATCH-..."
 ```
 
 ### Z bajtów
@@ -164,8 +162,7 @@ session = auth.batch.submit(
     form_code=FormSchema.FA3,
 )
 
-# BatchSessionResumeState(reference_number="20260625-BATCH-...")
-# Zapisz state bezpiecznie. Zawiera dane szyfrowania i URL-e uploadu.
+# session.reference_number == "20260625-BATCH-..."
 ```
 
 ## Poczekaj na zakończenie batcha

@@ -85,12 +85,10 @@ The high-level `auth.batch` service owns the normal workflow:
 5. Upload all parts, close the session, then poll status.
 
 ```python
-prepared = auth.batch.prepare_batch_from_paths(
-    invoice_paths=["invoice-1.xml", "invoice-2.xml"],
-)
+prepared = auth.batch.prepare([Path("invoice-1.xml"), Path("invoice-2.xml")])
 
 session = auth.batch.submit(prepared)
-print(state.reference_number)
+print(session.reference_number)
 ```
 
 For batch workflows, keep the mapping between local source files and the

@@ -16,8 +16,8 @@ result locally, and serve operational views from your own store.
 
 ## Metadata finds invoices
 
-`auth.invoices.query_metadata()` returns `QueryInvoicesMetadataResponse`. The
-response contains `InvoiceMetadata` rows, not invoice XML.
+`auth.invoices.search()` returns a `Pager` over `InvoiceMetadata` rows, not
+invoice XML. Iterate it, or use `pages()`, `first_page()` and `wait()`.
 
 Metadata is useful for lists, reconciliation, polling after submission, and
 deciding what to download later. A metadata row can include identifiers, dates,
@@ -38,39 +38,33 @@ validates that range filters name the KSeF amount field they apply to.
 
 ## Direct download gets one XML document
 
-`auth.invoices.download_invoice()` downloads one processed invoice XML document
+`auth.invoices.download()` downloads one processed invoice XML document
 by `ksef_number`.
 
 This path is intentionally narrow. Use it when you already have the KSeF number
 from a session result, metadata query, UPO workflow, or your own database. If
 the invoice was just accepted and KSeF has not exposed the XML yet,
-`auth.invoices.wait_for_invoice_download()` polls until the document is
+`auth.invoices.download(ksef_number, timeout=...)` polls until the document is
 downloadable or the local timeout expires.
 
 ## Exports produce encrypted packages
 
-Exports are asynchronous. You schedule an export with the same `InvoicesFilter`
-shape used for metadata queries, keep the returned `ExportHandle`, wait for an
-`InvoicePackage`, then download and decrypt its package parts.
+Exports are asynchronous. `auth.invoices.export()` takes the same `InvoicesFilter`
+shape used for metadata queries and returns an `ExportJob`. Its `wait()` polls
+until the package is ready, downloads and decrypts the parts, joins them and
+returns an `ExportedInvoices` object.
 
 ```text
 InvoicesFilter
-  -> auth.invoices.schedule_export()
-    -> ExportHandle(reference_number, aes_key, iv)
-      -> auth.invoices.wait_for_export_package()
-        -> InvoicePackage(parts)
-          -> auth.invoices.fetch_package()
-          -> auth.invoices.fetch_package_bytes()
+  -> auth.invoices.export()
+    -> ExportJob
+      -> job.wait()
+        -> ExportedInvoices: invoices(), metadata, archive, save()
 ```
 
-`fetch_package()` writes decrypted ZIP parts to disk. `fetch_package_bytes()`
-returns those decrypted ZIP parts in memory. Both methods use the AES material
-stored in the `ExportHandle`.
-
 :::caution[Treat export handles as sensitive]
-`ExportHandle` contains the reference number and the local AES key material
-needed to decrypt the package. Persist it only in secure storage and avoid
-logging full export objects.
+The `ExportJob` holds the local AES key material needed to decrypt the
+package. Keep it in memory, and avoid logging full export objects.
 :::
 
 ## HWM is the sync boundary

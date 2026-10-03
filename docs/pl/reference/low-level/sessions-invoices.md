@@ -84,8 +84,8 @@ te same pola szyfrowania co przy sesjach:
 | `filters` | `spec.InvoiceQueryFilters`. |
 | `compressionType` | `spec.CompressionType`, zwykle ZIP. |
 
-Używaj wysokopoziomowego `auth.invoices.fetch_package_bytes(...)` tylko wtedy,
-gdy nadal masz klucz AES i IV wymagane do odszyfrowania części paczki.
+Używaj wysokopoziomowego `auth.invoices.export(...).wait()`, chyba że sam
+odszyfrowujesz części paczki kluczem AES i IV, które wygenerowałeś.
 
 ## Handoff paczki batch
 

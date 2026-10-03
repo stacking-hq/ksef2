@@ -16,8 +16,8 @@ wynik lokalnie i zasilać widoki operacyjne z własnego magazynu.
 
 ## Metadane znajdują faktury
 
-`auth.invoices.query_metadata()` zwraca `QueryInvoicesMetadataResponse`.
-Odpowiedź zawiera wiersze `InvoiceMetadata`, a nie XML faktury.
+`auth.invoices.search()` zwraca `Pager` po wierszach `InvoiceMetadata`, a nie po
+XML faktury. Iteruj go albo użyj `pages()`, `first_page()` i `wait()`.
 
 Metadane są przydatne do list, uzgodnień, pollingu po wysyłce i decyzji, co
 pobrać później. Wiersz metadanych może zawierać identyfikatory, daty, dane
@@ -38,40 +38,33 @@ SDK waliduje, że filtry zakresu wskazują pole kwoty KSeF, którego dotyczą.
 
 ## Bezpośrednie pobieranie zwraca jeden XML
 
-`auth.invoices.download_invoice()` pobiera jeden przetworzony dokument XML po
+`auth.invoices.download()` pobiera jeden przetworzony dokument XML po
 `ksef_number`.
 
 Ta ścieżka jest celowo wąska. Użyj jej, gdy masz już numer KSeF z wyniku sesji,
 zapytania o metadane, przepływu UPO albo własnej bazy. Jeśli faktura została
 właśnie zaakceptowana, ale KSeF jeszcze nie udostępnił XML-a,
-`auth.invoices.wait_for_invoice_download()` polluje do gotowości dokumentu albo
-do lokalnego timeoutu.
+`auth.invoices.download(ksef_number, timeout=...)` polluje do gotowości
+dokumentu albo do lokalnego timeoutu.
 
 ## Eksporty tworzą szyfrowane paczki
 
-Eksport jest asynchroniczny. Planujesz eksport tym samym kształtem
-`InvoicesFilter`, którego używają zapytania o metadane, zachowujesz zwrócony
-`ExportHandle`, czekasz na `InvoicePackage`, a potem pobierasz i odszyfrowujesz
-części paczki.
+Eksport jest asynchroniczny. `auth.invoices.export()` przyjmuje ten sam kształt
+`InvoicesFilter`, którego używają zapytania o metadane, i zwraca `ExportJob`.
+Jego `wait()` odpytuje KSeF, aż paczka będzie gotowa, pobiera i odszyfrowuje
+części, łączy je i zwraca obiekt `ExportedInvoices`.
 
 ```text
 InvoicesFilter
-  -> auth.invoices.schedule_export()
-    -> ExportHandle(reference_number, aes_key, iv)
-      -> auth.invoices.wait_for_export_package()
-        -> InvoicePackage(parts)
-          -> auth.invoices.fetch_package()
-          -> auth.invoices.fetch_package_bytes()
+  -> auth.invoices.export()
+    -> ExportJob
+      -> job.wait()
+        -> ExportedInvoices: invoices(), metadata, archive, save()
 ```
 
-`fetch_package()` zapisuje odszyfrowane części ZIP na dysku.
-`fetch_package_bytes()` zwraca te odszyfrowane części ZIP w pamięci. Obie metody
-używają materiału AES zapisanego w `ExportHandle`.
-
 :::caution[Traktuj uchwyty eksportu jak dane wrażliwe]
-`ExportHandle` zawiera numer referencyjny oraz lokalny materiał klucza AES
-potrzebny do odszyfrowania paczki. Zapisuj go tylko w bezpiecznym magazynie i
-unikaj logowania pełnych obiektów eksportu.
+`ExportJob` trzyma lokalny materiał klucza AES potrzebny do odszyfrowania
+paczki. Trzymaj go tylko w pamięci i unikaj logowania pełnych obiektów eksportu.
 :::
 
 ## HWM jest granicą synchronizacji

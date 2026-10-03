@@ -92,13 +92,13 @@ with auth.online_session(form_code=FormSchema.FA3) as session:
 ```
 
 `send_invoice()` only means KSeF accepted the encrypted payload into the session.
-`wait_for_invoice_ready()` waits for the per-invoice result and returns the KSeF
-number when processing succeeds.
+`submission.wait()` waits for the per-invoice result and returns the KSeF
+number when processing succeeds. It also works after the session is closed, and
+`session.wait()` returns the terminal status of the closed session.
 
-:::tip[Use the combined helper for simple scripts]
-`session.send_invoice_and_wait(invoice_xml=invoice_xml)` performs the same
-submit-and-poll sequence when you do not need the intermediate invoice
-reference separately.
+:::tip[Chain it for simple scripts]
+`session.send_invoice(invoice_xml).wait()` performs the submit-and-poll
+sequence when you do not need the handle separately.
 :::
 
 ## Keep session handles
@@ -120,8 +120,10 @@ with auth.online_session(form_code=FormSchema.FA3) as session:
 
 Use a batch when you need to submit many XML files as one KSeF batch workflow.
 The high-level batch service prepares the ZIP package, encrypts package parts,
-opens the batch session, uploads the parts, closes the session, and returns a
-`BatchSessionResumeState`.
+opens the batch session, uploads the parts, closes the session, and returns the closed
+`BatchSessionClient`. Call its `wait()`, `list_failed_invoices()` and
+`download_upo()` next. `auth.batch.prepare()` and `submit()` take `bytes`, `str`,
+`Path` or `BatchInvoice` items.
 
 ### From paths
 

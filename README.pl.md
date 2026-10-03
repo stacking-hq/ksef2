@@ -203,15 +203,9 @@ client = Client(Environment.TEST)
 auth = client.authentication.with_test_certificate(nip="5261040828")
 
 with auth.online_session(form_code=FormSchema.FA3) as session:
-    status = session.send_invoice_and_wait(
-        invoice_xml=Path("invoice.xml").read_bytes(),
-        timeout=60.0,
-    )
+    status = session.send_invoice(Path("invoice.xml").read_bytes()).wait(timeout=60.0)
 
-invoice_xml = auth.invoices.wait_for_invoice_download(
-    ksef_number=status.ksef_number,
-    timeout=120.0,
-)
+invoice_xml = auth.invoices.download(status.ksef_number, timeout=120.0)
 
 Path("downloads").mkdir(exist_ok=True)
 Path("downloads/invoice.xml").write_bytes(invoice_xml)

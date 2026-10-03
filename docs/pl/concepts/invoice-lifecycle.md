@@ -51,13 +51,13 @@ XML FA(3)
 `send_invoice()` szyfruje XML i wysyła go do otwartej sesji online. Zwraca
 `reference_number` faktury.
 
-`send_invoice_and_wait()` wykonuje tę samą wysyłkę, a potem polluje status
+`send_invoice()` zwraca uchwyt `InvoiceSubmission`. Jego `wait()` polluje status
 faktury, aż KSeF nada `ksef_number`, osiągnie terminalny błąd albo minie lokalny
 timeout.
 
 ```python
-sent = session.send_invoice(invoice_xml=xml_bytes)
-print(sent.reference_number)
+submission = session.send_invoice(xml_bytes)
+print(submission.reference_number)
 
 status = session.get_invoice_status(
     invoice_reference_number=sent.reference_number,
