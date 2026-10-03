@@ -104,7 +104,9 @@ nie loguj i nie commituj.
 
 Po 1.0 usunięcie albo zmiana nazwy stabilnej ścieżki importu wymaga major
 version bump. Dodatkowe API może wejść w minor release. Patch release powinien
-zachować udokumentowane importy i zachowanie poza poprawkami błędów.
+zachować udokumentowane importy i zachowanie poza poprawkami błędów. Poniżej
+opisano dwa przypadki: zmiany wymuszone przez KSeF oraz wycofywanie inicjowane
+przez SDK.
 
 ### Zmiany wymuszone przez KSeF
 
@@ -112,6 +114,15 @@ Gdy KSeF usuwa lub zmienia endpoint w sposób, którego SDK nie może wchłoną�
 wynikająca z tego zmiana może trafić do wydania minor. Jest opisana w
 changelogu pod nagłówkiem „KSeF API changes”, żeby nie pomylić jej z decyzją
 SDK. Zmiany łamiące, które SDK inicjuje samo, nadal wymagają major version bump.
+
+### Polityka wycofywania
+
+W obrębie 1.x wszystko, co SDK samo chce wycofać, jest najpierw oznaczane jako
+deprecated w wydaniu minor: dostaje `@deprecated` (albo ostrzeżenie na poziomie
+modułu dla aliasów), komunikat w formie „`X` is deprecated and will be removed in
+ksef2 2.0; use `Y` instead." oraz wpis w changelogu. Usunięcie następuje dopiero
+w kolejnym wydaniu major. Aktualna lista to [wycofywane API](#wycofywane-api)
+poniżej.
 
 ## Wycofywane API
 
@@ -137,13 +148,6 @@ wskazują miejsca użycia, i zostanie usunięte w ksef2 2.0. Python ukrywa
 
 `FA3InvoiceBuilder.dump_state()` i `from_state()` to osobne API szkiców buildera
 i nie są wycofane.
-
-### Polityka wycofywania
-
-W 1.x API jest wycofywane w wydaniu minor: dostaje `@deprecated` (albo ostrzeżenie
-na poziomie modułu dla aliasów), komunikat w formie „`X` is deprecated and will
-be removed in ksef2 2.0; use `Y` instead." oraz wpis w changelogu. Usunięcie
-następuje dopiero w kolejnym wydaniu major.
 
 ## Referencja
 
