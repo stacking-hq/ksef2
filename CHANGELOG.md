@@ -1,3 +1,183 @@
+## v1.0.0 (2026-10-03)
+
+ksef2 1.0.0 is the first stable release. It targets KSeF OpenAPI 2.8.1 and starts
+the 1.x compatibility contract. Since 0.22.2 there are two breaking changes
+(internal modules moved to private `_`-prefixed paths, and collective-identifier
+invoice queries); nothing else is removed. Read
+[Breaking changes](#breaking-changes) and [Deprecated](#deprecated) before upgrading.
+
+### Highlights
+
+- The documented import paths (`ksef2`, `ksef2.clients`, `ksef2.models`,
+  `ksef2.fa3`, `ksef2.xades`, `ksef2.profiles`, `ksef2.renderers`, `ksef2.raw`,
+  `ksef2.raw.mappers`, and the new `ksef2.testdata`) are the compatibility
+  contract for the whole 1.x line. The rule is simple: a module path with no
+  underscore is public, and anything with an underscore is private and may change
+  in any release. See the
+  [public API contract](https://docs.stacking.me/sdk/reference/public-api/)
+  and the [1.0.0 release notes](https://docs.stacking.me/sdk/reference/release-notes-1-0-0/).
+- `model_dump()` and `model_dump_json()` redact secrets by default and are not a
+  persistence format. Use `to_dict()` / `to_json()` / `from_dict()` on resume
+  states and `to_sensitive_dict()` to persist.
+- Deprecations are now visible to type checkers and IDEs (PEP 702 `@deprecated`),
+  with one stated policy: deprecate in a minor release with `@deprecated` and a
+  changelog entry, remove only in the next major.
+
+### Breaking changes
+
+- **Internal modules moved to private `_`-prefixed paths (#153).** A module path
+  with no underscore is public; anything with an underscore is private. Internal
+  modules moved to underscore-prefixed paths, with no compatibility aliases, and
+  no runtime warning: importing an old path raises `ImportError`. Code that only
+  uses the documented public paths is unaffected.
+
+  | Old | New |
+  | --- | --- |
+  | `ksef2.core` | `ksef2._core` |
+  | `ksef2.domain` | `ksef2._domain` |
+  | `ksef2.infra` | `ksef2._infra` |
+  | `ksef2.endpoints` | `ksef2._endpoints` |
+  | `ksef2.services` | `ksef2._services` |
+  | `ksef2.clients.<module>` (`base`, `auth`, `online`, `async_*`, ...) | `ksef2._clients.<module>` (`ksef2.clients` stays the public facade with the same `__all__`) |
+  | `ksef2.config` | `ksef2._config` (names stay exported from `ksef2`) |
+  | `ksef2.logging` | `ksef2._logging` (names stay exported from `ksef2`) |
+  | `ksef2.raw.facade`, `ksef2.raw.async_facade` | `ksef2.raw._facade`, `ksef2.raw._async_facade` (names stay exported from `ksef2.raw`) |
+
+  If you imported something from an old path, import it from the public module
+  instead (see [Added](#added) for names newly exported from `ksef2.models`).
+
+- **Collective-identifier invoice queries (#128).** KSeF API 2.8.1 replaced
+  `GET /collective-identifiers/{collectiveIdentifierNumber}/invoices` with
+  `POST /collective-identifiers/invoices`, which takes up to 10 identifiers in
+  the body. The old call is removed, not deprecated. Migration is mechanical:
+
+  ```python
+  # before (0.22.x)
+  page = auth.collective_identifiers.list_invoices(collective_identifier_number=cid)
+  everything = auth.collective_identifiers.list_all_invoices(
+      collective_identifier_number=cid
+  )
+
+  # after (1.0.0)
+  page = auth.collective_identifiers.list_invoices(collective_identifier_numbers=[cid])
+  everything = auth.collective_identifiers.list_all_invoices(
+      collective_identifier_numbers=[cid]
+  )
+  ```
+
+  The high-level client validates 1 to 10 identifiers before sending. The raw
+  endpoint takes a request body instead of a path parameter:
+
+  ```python
+  from ksef2.raw import spec
+
+  # before (0.22.x)
+  auth.raw.collective_identifiers.list_invoices(cid)
+
+  # after (1.0.0)
+  auth.raw.collective_identifiers.list_invoices(
+      spec.CollectiveIdentifierInvoicesQueryRequest(collectiveIdentifierNumbers=[cid])
+  )
+  ```
+
+### Deprecated
+
+Deprecated APIs stay through 1.x and are removed in ksef2 2.0. Each warns once
+per call and is flagged by type checkers (PEP 702).
+
+| Deprecated | Use instead |
+| --- | --- |
+| `Client.authenticated(tokens)`, `AsyncClient.authenticated(tokens)` | `client.authentication.resume(AuthenticationResumeState.from_tokens(tokens))` |
+| `get_state()` on online and batch session clients | `resume_state()` |
+| `BatchSessionClient.access_token` | `AuthenticatedClient.access_token` of the parent client |
+| `dump_state()`, `model_dump_sensitive()` on session resume state | `to_dict()` |
+| `model_dump_sensitive_json()` | `to_json()` |
+| `from_state()` | `from_dict()` |
+| `BaseSessionState`, `OnlineSessionState`, `BatchSessionState` | `BaseSessionResumeState`, `OnlineSessionResumeState`, `BatchSessionResumeState` |
+| `access_token=` argument of `from_encoded()` and the `access_token` key in stored resume state (ignored; old files still load) | Persist `AuthenticationResumeState` separately |
+| `auth_timeout` in a profile written by ksef2-cli 0.0.2 (now mapped to `max_poll_attempts`) | `max_poll_attempts` and optionally `poll_interval` |
+
+### Added
+
+- `ksef2.testdata` with `generate_nip()` and `generate_pesel()` for TEST-environment
+  data (#148).
+- `CertUsageEnum` is exported from `ksef2.models` (#148).
+- 21 new `ksef2.models` exports, so code that imported them from internal paths has
+  a public home (#153): `ContextIdentifierTypeEnum`, `CertificateStatusEnum`,
+  `CertificateTypeEnum`, `RevocationReasonEnum`,
+  `validate_certificate_serial_number`, `AuthorizationPermissionTypeEnum`,
+  `AuthorizationSubjectIdentifierTypeEnum`, `EntityPermissionTypeEnum`,
+  `EuEntityAdminContextIdentifierTypeEnum`, `EuEntityPermissionTypeEnum`,
+  `IndirectPermissionTypeEnum`, `IndirectTargetIdentifierTypeEnum`,
+  `SubunitIdentifierTypeEnum`, `AuthContextIdentifierTypeEnum`,
+  `IdentifierTypeEnum` (the TEST-data one: `nip`, `pesel`, `fingerprint`,
+  `system`), `PermissionTypeEnum`, `SubjectTypeEnum`,
+  `TokenAuthorIdentifierTypeEnum`, `TokenPermissionEnum`, `TokenStatusEnum` and
+  `CurrencyCodes`.
+- Python 3.14 support: tested in CI and smoke-tested on the built wheel on 3.12,
+  3.13 and 3.14 (#146).
+- PyPI project URLs and classifiers, including
+  `Development Status :: 5 - Production/Stable` (#146).
+- `ProfileConfig` accepts the flat `auth_timeout` key written by ksef2-cli 0.0.2,
+  maps it to `max_poll_attempts` and warns, instead of silently using the 60-second
+  default (#150).
+- `typing-extensions` is now a direct dependency, for `@deprecated` (#150).
+
+### KSeF API
+
+- Targets KSeF OpenAPI 2.8.1; API coverage is 100% of the 83 endpoints in the spec.
+- Policy: a breaking change forced by KSeF itself may ship in a minor release under
+  a "KSeF API changes" heading. Breaking changes the SDK chooses to make need a
+  new major version.
+
+### Fixed
+
+- Give each invoice in the batch examples its own FA(3) number (#135).
+- Compare `(method, path)` pairs in the API coverage check and enforce the result,
+  so a missing or SDK-only endpoint fails the check (#129).
+- Remove the invalid `[project] pythonpath` setting from `pyproject.toml` (#146).
+
+### Build and CI
+
+- Run the invoice workflows against KSeF TEST instead of skipping them (#138), on
+  every push to `main`, pull request and dispatch through a new `integration.yml`,
+  and in the release path with a check that rejects workflows that never ran (#139).
+- Releases no longer dispatch a docs deployment. The ksef2-docs site picks up the
+  new release on its daily run or a manual run (#154).
+- Smoke-test the built wheel on Python 3.12, 3.13 and 3.14 before publishing, and
+  add 3.14 to the CI matrix (#146).
+- `scripts/validate_examples.py` rejects examples and documentation code blocks that
+  import from a module path with an underscore-prefixed component;
+  `scripts/validate_docs_paths.py` and the OpenAPI-version check cover the docs
+  pages (#148, #153, #136).
+- A module visibility contract test asserts that the public modules import and
+  that the old internal paths no longer exist (#153).
+- A docstring test and ruff pydocstyle keep every public API documented (#159).
+- `scripts/validate_docs_markdown.py` checks the docs Markdown (#158).
+- Remove the in-repo CLI script and its integration test; the CLI lives in the
+  separate `ksef2-cli` package (#137).
+
+### Docs
+
+- Rewrite the examples and documentation snippets to import from public paths only;
+  the one example that needs internals moved to `scripts/advanced_examples/` (#148).
+- Document the public API contract, the "Deprecated APIs" table, the secrets and
+  serialization rules and the KSeF-driven change policy, in English and Polish
+  (#148, #150).
+- Correct the 1.0.0 release notes (OpenAPI 2.8.1, collective-identifier surface),
+  drop the stale pre-1.0 migration page and add drift gates (#136).
+- Document every public API with Google-style docstrings (1428 of 1428 public
+  units and 957 of 957 model fields). The docstrings are now the source of the
+  generated API reference (#159).
+- The SDK docs are plain Markdown instead of MDX (#158).
+
+### Release history note
+
+Two earlier versions never reached PyPI. v0.21.0 was bumped but never tagged; its
+changes (OpenAPI 2.8.1) shipped in v0.22.0. The v0.22.1 tag points at a commit whose
+project version was still 0.22.0, so the publish run failed its version check; its
+fix (#118) shipped in v0.22.2. PyPI goes 0.20.0, 0.22.0, 0.22.2, 1.0.0.
+
 ## v0.22.2 (2026-09-25)
 
 ## v0.22.1 (2026-09-25)

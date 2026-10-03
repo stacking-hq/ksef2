@@ -3,12 +3,6 @@ title: ksef2 1.0.0 Release Notes
 description: Stability boundary and the documented public surface of the first stable ksef2 SDK release.
 ---
 
-:::caution[Draft until the 1.0.0 tag]
-These notes describe the intended 1.0.0 public contract. Treat the package
-changelog and the final GitHub release as authoritative once `v1.0.0` is
-tagged.
-:::
-
 ksef2 1.0.0 is the first release that treats documented application-facing
 imports as a compatibility contract for the 1.x line.
 The SDK currently targets KSeF OpenAPI version `2.8.1`.

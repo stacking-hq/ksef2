@@ -3,12 +3,6 @@ title: Notatki wydania 1.0.0
 description: Granica stabilności i udokumentowana publiczna powierzchnia pierwszego stabilnego wydania SDK.
 ---
 
-:::caution[Draft do czasu tagu 1.0.0]
-Te notatki opisują planowany kontrakt publiczny 1.0.0. Po oznaczeniu
-`v1.0.0` traktuj changelog pakietu i finalny GitHub release jako źródło
-rozstrzygające.
-:::
-
 ksef2 1.0.0 to pierwsze wydanie, które traktuje udokumentowane, aplikacyjne
 ścieżki importu jako kontrakt kompatybilności dla linii 1.x.
 SDK obecnie celuje w wersję OpenAPI KSeF `2.8.1`.
