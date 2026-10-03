@@ -21,6 +21,30 @@ PUBLIC_DOMAIN_ALIAS_NAMES = (
     "TokenStatus",
 )
 
+PUBLIC_RUNTIME_ENUM_AND_HELPER_NAMES = (
+    "AuthContextIdentifierTypeEnum",
+    "AuthorizationPermissionTypeEnum",
+    "AuthorizationSubjectIdentifierTypeEnum",
+    "CertificateStatusEnum",
+    "CertificateTypeEnum",
+    "ContextIdentifierTypeEnum",
+    "CurrencyCodes",
+    "EntityPermissionTypeEnum",
+    "EuEntityAdminContextIdentifierTypeEnum",
+    "EuEntityPermissionTypeEnum",
+    "IdentifierTypeEnum",
+    "IndirectPermissionTypeEnum",
+    "IndirectTargetIdentifierTypeEnum",
+    "PermissionTypeEnum",
+    "RevocationReasonEnum",
+    "SubjectTypeEnum",
+    "SubunitIdentifierTypeEnum",
+    "TokenAuthorIdentifierTypeEnum",
+    "TokenPermissionEnum",
+    "TokenStatusEnum",
+    "validate_certificate_serial_number",
+)
+
 
 def _public_functions(cls: type[object]) -> list[object]:
     functions: list[object] = []
@@ -91,6 +115,16 @@ def test_public_facades_have_unique_resolvable_exports() -> None:
 def test_public_model_facade_exports_domain_aliases_used_by_clients(name: str) -> None:
     assert name in public_models.__all__
     assert hasattr(public_models, name)
+
+
+@pytest.mark.parametrize("name", PUBLIC_RUNTIME_ENUM_AND_HELPER_NAMES)
+def test_public_model_facade_exports_runtime_enums_and_helpers(name: str) -> None:
+    assert name in public_models.__all__
+    assert hasattr(public_models, name)
+
+
+def test_public_model_facade_does_not_export_nip_weights() -> None:
+    assert "NIP_WEIGHTS" not in public_models.__all__
 
 
 def test_public_client_annotations_resolve_through_stable_facades() -> None:
