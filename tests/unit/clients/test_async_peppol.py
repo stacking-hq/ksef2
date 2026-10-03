@@ -7,6 +7,7 @@ from tests.unit.factories.peppol import (
 from tests.unit.fakes.transport import AsyncFakeTransport
 from ksef2._clients.async_peppol import AsyncPeppolClient
 from ksef2._core.routes import PeppolRoutes
+from tests.unit.helpers import legacy_api
 
 
 async def _collect_async_providers(iterator):
@@ -17,6 +18,7 @@ async def _collect_async_providers(iterator):
 
 
 class TestAsyncPeppolClient:
+    @legacy_api
     def test_query(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -32,6 +34,7 @@ class TestAsyncPeppolClient:
         assert async_fake_transport.calls[0].method == "GET"
         assert str(async_fake_transport.calls[0].path) == PeppolRoutes.QUERY_PROVIDERS
 
+    @legacy_api
     def test_all_multiple_pages(
         self,
         async_fake_transport: AsyncFakeTransport,

@@ -13,6 +13,7 @@ from tests.unit.factories.certificates import (
     VALID_CERTIFICATE_SERIAL_NUMBER_3,
 )
 from tests.unit.fakes.transport import AsyncFakeTransport
+from tests.unit.helpers import legacy_api
 
 
 async def _collect_async_items(iterator):
@@ -59,6 +60,7 @@ class TestAsyncCertificatesClient:
         assert async_fake_transport.calls[0].method == "POST"
         assert str(async_fake_transport.calls[0].path) == CertificateRoutes.ENROLLMENT
 
+    @legacy_api
     def test_all_multiple_pages(
         self,
         async_fake_transport: AsyncFakeTransport,

@@ -8,9 +8,11 @@ from ksef2._domain.models.pagination import ListSessionsQuery
 from ksef2._domain.models.session import ListSessionsResponse
 from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import FakeTransport
+from tests.unit.helpers import legacy_api
 
 
 class TestInvoiceSessionsClient:
+    @legacy_api
     def test_query(
         self,
         invoice_sessions_client: InvoiceSessionsClient,
@@ -31,6 +33,7 @@ class TestInvoiceSessionsClient:
             "sessionType": "Online",
         }
 
+    @legacy_api
     def test_query_uses_explicit_params(
         self,
         invoice_sessions_client: InvoiceSessionsClient,
@@ -48,6 +51,7 @@ class TestInvoiceSessionsClient:
             "sessionType": "Online",
         }
 
+    @legacy_api
     def test_all(
         self,
         invoice_sessions_client: InvoiceSessionsClient,
@@ -69,6 +73,7 @@ class TestInvoiceSessionsClient:
         assert all(isinstance(result, ListSessionsResponse) for result in results)
         assert fake_transport.calls[1].headers == {"x-continuation-token": "next-token"}
 
+    @legacy_api
     def test_query_rejects_invalid_session_type(
         self,
         invoice_sessions_client: InvoiceSessionsClient,

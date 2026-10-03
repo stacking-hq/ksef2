@@ -3,11 +3,17 @@
 
 """Session-management branch client."""
 
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
 from typing import final
 
+from typing_extensions import deprecated
+
+from ksef2._clients._pager import Pager
 from ksef2._core.protocols import Middleware
-from ksef2._domain.models.auth import AuthenticationSessionsResponse
+from ksef2._domain.models.auth import (
+    AuthenticationSession,
+    AuthenticationSessionsResponse,
+)
 from ksef2._endpoints.auth import AuthEndpoints
 from ksef2._infra.mappers.auth import from_spec
 
@@ -35,13 +41,43 @@ class SessionManagementClient:
         """
         self._auth_ep = AuthEndpoints(transport)
 
+    def _query(
+        self,
+        *,
+        page_size: int | None = None,
+        continuation_token: str | None = None,
+    ) -> AuthenticationSessionsResponse:
+        return from_spec(
+            self._auth_ep.list_sessions(
+                continuation_token=continuation_token,
+                pageSize=page_size,
+            )
+        )
+
+    def _pages(
+        self, page_size: int | None
+    ) -> Generator[AuthenticationSessionsResponse, None]:
+        response = self._query(page_size=page_size)
+        yield response
+
+        while ct := response.continuation_token:
+            response = self._query(page_size=page_size, continuation_token=ct)
+            yield response
+
+    @deprecated(
+        "`query()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list()` instead."
+    )
     def query(
         self,
         *,
         page_size: int | None = None,
         continuation_token: str | None = None,
     ) -> AuthenticationSessionsResponse:
-        """Fetch one page of authentication sessions.
+        """Deprecated: fetch one page of authentication sessions.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list()`` instead; ``first_page()`` fetches one page.
 
         Args:
             page_size: Maximum number of sessions to request from KSeF.
@@ -50,19 +86,21 @@ class SessionManagementClient:
         Returns:
             One page of authentication sessions for the current subject.
         """
-        return from_spec(
-            self._auth_ep.list_sessions(
-                continuation_token=continuation_token,
-                pageSize=page_size,
-            )
-        )
+        return self._query(page_size=page_size, continuation_token=continuation_token)
 
+    @deprecated(
+        "`all()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list()` instead."
+    )
     def all(
         self,
         *,
         page_size: int | None = None,
     ) -> Iterator[AuthenticationSessionsResponse]:
-        """Iterate through all authentication session pages.
+        """Deprecated: iterate through all authentication session pages.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list().pages()`` instead.
 
         Args:
             page_size: Maximum number of sessions to request per page.
@@ -71,12 +109,8 @@ class SessionManagementClient:
             Successive pages of authentication sessions until KSeF stops
             returning a continuation token.
         """
-        response = self.query(page_size=page_size)
-        yield response
-
-        while ct := response.continuation_token:
-            response = self.query(page_size=page_size, continuation_token=ct)
-            yield response
+        for page in self._pages(page_size):
+            yield page
 
     def terminate_current(self) -> None:
         """Terminate the authentication session backing the current bearer token."""
@@ -89,3 +123,29 @@ class SessionManagementClient:
             reference_number: Reference number of the authentication session to terminate.
         """
         self._auth_ep.terminate_auth_session(reference_number=reference_number)
+
+    def list(self, *, page_size: int | None = None) -> Pager[AuthenticationSession]:
+        """List the authentication sessions of the current subject.
+
+        Nothing is requested until the result is consumed. Iterate it for every
+        session, call ``pages()`` for page-sized lists or ``first_page()`` for one
+        request only.
+
+        Args:
+            page_size: Maximum number of sessions to request per page; the KSeF default when ``None``.
+
+        Returns:
+            A paging object over the authentication sessions.
+
+        Example:
+            ```python
+            for session in auth.sessions.list():
+                print(session.reference_number)
+            ```
+        """
+
+        def _session_pages() -> Generator[list[AuthenticationSession], None]:
+            for page in self._pages(page_size):
+                yield page.items
+
+        return Pager(_session_pages)

@@ -15,6 +15,7 @@ from tests.unit.factories.tokens import (
     TokenStatusResponseFactory,
 )
 from tests.unit.fakes.transport import AsyncFakeTransport
+from tests.unit.helpers import legacy_api
 
 
 async def _collect_async_pages(
@@ -162,6 +163,7 @@ class TestAsyncTokensClient:
         assert len(async_fake_transport.calls) == 2
         assert async_fake_transport.calls[1].method == "GET"
 
+    @legacy_api
     def test_list_page(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -178,6 +180,7 @@ class TestAsyncTokensClient:
         assert async_fake_transport.calls[0].method == "GET"
         assert str(async_fake_transport.calls[0].path) == TokenRoutes.LIST_TOKENS
 
+    @legacy_api
     def test_list_all_multiple_pages(
         self,
         async_fake_transport: AsyncFakeTransport,

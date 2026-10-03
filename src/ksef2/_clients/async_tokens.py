@@ -1,8 +1,11 @@
 """Async KSeF token branch client."""
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator, AsyncIterator, Coroutine
 from typing import final
 
+from typing_extensions import deprecated
+
+from ksef2._clients._async_pager import AsyncPager
 from ksef2._core import exceptions
 from ksef2._core.async_protocols import AsyncMiddleware
 from ksef2._core.polling import async_poll_until
@@ -11,6 +14,7 @@ from ksef2._domain.models.tokens import (
     GenerateTokenRequest,
     GenerateTokenResponse,
     QueryTokensResponse,
+    TokenInfo,
     TokenPermission,
     TokenStatusResponse,
 )
@@ -113,13 +117,43 @@ class AsyncTokensClient:
         spec_resp = await self._endpoints.generate_token(body=body)
         return from_spec(spec_resp)
 
-    async def list_page(
+    async def _list_page(
         self,
         *,
         continuation_token: str | None = None,
         params: TokenListParams | None = None,
     ) -> QueryTokensResponse:
-        """Fetch one page of tokens using optional filters and continuation state.
+        parameters = params or TokenListParams()
+        spec_resp = await self._endpoints.list_tokens(
+            continuation_token=continuation_token, **parameters.to_query_params()
+        )
+        return from_spec(spec_resp)
+
+    async def _list_pages(
+        self, params: TokenListParams | None
+    ) -> AsyncGenerator[QueryTokensResponse, None]:
+        parameters = params or TokenListParams()
+        response = await self._list_page(params=parameters)
+        yield response
+
+        while ct := response.continuation_token:
+            response = await self._list_page(params=parameters, continuation_token=ct)
+            yield response
+
+    @deprecated(
+        "`list_page()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list()` instead."
+    )
+    def list_page(
+        self,
+        *,
+        continuation_token: str | None = None,
+        params: TokenListParams | None = None,
+    ) -> Coroutine[None, None, QueryTokensResponse]:
+        """Deprecated: fetch one page of tokens using optional filters and continuation state.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list()`` instead; ``first_page()`` fetches one page.
 
         Args:
             continuation_token: Token identifying the next page to fetch.
@@ -128,16 +162,19 @@ class AsyncTokensClient:
         Returns:
             A single page of token results.
         """
-        parameters = params or TokenListParams()
-        spec_resp = await self._endpoints.list_tokens(
-            continuation_token=continuation_token, **parameters.to_query_params()
-        )
-        return from_spec(spec_resp)
+        return self._list_page(continuation_token=continuation_token, params=params)
 
+    @deprecated(
+        "`list_all()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `list()` instead."
+    )
     async def list_all(
         self, *, params: TokenListParams | None = None
     ) -> AsyncIterator[QueryTokensResponse]:
-        """Iterate through all token pages until KSeF stops returning a continuation token.
+        """Deprecated: iterate through all token pages until KSeF stops returning a continuation token.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``list().pages()`` instead.
 
         Args:
             params: Optional filters and page size applied to every request.
@@ -145,13 +182,8 @@ class AsyncTokensClient:
         Yields:
             Each page returned by the token listing endpoint.
         """
-        parameters = params or TokenListParams()
-        response = await self.list_page(params=parameters)
-        yield response
-
-        while ct := response.continuation_token:
-            response = await self.list_page(params=parameters, continuation_token=ct)
-            yield response
+        async for page in self._list_pages(params):
+            yield page
 
     async def status(
         self,
@@ -182,3 +214,29 @@ class AsyncTokensClient:
             reference_number: Reference number of the token to revoke.
         """
         await self._endpoints.revoke_token(reference_number=reference_number)
+
+    def list(self, *, params: TokenListParams | None = None) -> AsyncPager[TokenInfo]:
+        """List the tokens of the authenticated context.
+
+        Nothing is requested until the result is consumed. Iterate it for every
+        token, call ``pages()`` for page-sized lists or ``first_page()`` for one
+        request only.
+
+        Args:
+            params: Optional filters and page size applied to every request.
+
+        Returns:
+            A paging object over the tokens matching ``params``.
+
+        Example:
+            ```python
+            async for token in auth.tokens.list():
+                print(token.reference_number, token.status)
+            ```
+        """
+
+        async def _pages() -> AsyncGenerator[list[TokenInfo], None]:
+            async for page in self._list_pages(params):
+                yield page.tokens
+
+        return AsyncPager(_pages)
