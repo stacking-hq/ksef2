@@ -144,6 +144,9 @@ class ProfileConfig(BaseModel):
     """One named profile: environment, NIP and authentication settings.
 
     Profiles are shared with ``ksef2-cli``, so both read the same config file.
+
+    Deprecated:
+        The flat ``auth_timeout`` key written by ksef2-cli 0.0.2 is removed in ksef2 2.0; use ``max_poll_attempts`` and optionally ``poll_interval`` instead.
     """
 
     environment: ProfileEnvironment | Environment

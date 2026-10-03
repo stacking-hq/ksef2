@@ -379,6 +379,9 @@ class BaseSessionResumeState(KSeFPersistedModel):
     This class contains fields shared between online and batch sessions.
     It provides serialization/deserialization support and helper methods
     for accessing the encryption keys.
+
+    Deprecated:
+        The alias ``BaseSessionState`` is removed in ksef2 2.0; use ``BaseSessionResumeState``. An ``access_token`` key in restored state is ignored and also deprecated; persist ``AuthenticationResumeState`` separately instead.
     """
 
     format_version: Literal[1] = 1
@@ -613,6 +616,9 @@ class OnlineSessionResumeState(BaseSessionResumeState):
     This class holds all information needed to resume an online session.
     Use ``to_json()`` when intentionally exporting
     resumable JSON containing credentials.
+
+    Deprecated:
+        The alias ``OnlineSessionState`` is removed in ksef2 2.0; use ``OnlineSessionResumeState``.
     """
 
     valid_until: AwareDatetime

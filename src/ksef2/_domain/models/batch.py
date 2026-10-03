@@ -294,6 +294,9 @@ class BatchSessionResumeState(BaseSessionResumeState):
     Inherits common session fields from BaseSessionResumeState:
     - reference_number, aes_key, iv, form_code
     - get_aes_key_bytes(), get_iv_bytes() helper methods
+
+    Deprecated:
+        The alias ``BatchSessionState`` is removed in ksef2 2.0; use ``BatchSessionResumeState``.
     """
 
     part_upload_requests: list[PartUploadRequest] = Field(exclude=True, repr=False)
