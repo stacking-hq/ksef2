@@ -22,7 +22,6 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
 
-import pytest
 from pydantic import BaseModel
 
 PUBLIC_MODULES = (
@@ -178,14 +177,24 @@ def _field_nodes(cls: type) -> list[tuple[str, bool]] | None:
     return fields
 
 
+def _resolve_forward_ref_proxy(cls: type) -> type | None:
+    """Map a beartype forward-reference proxy (runtime checks on) to the real class."""
+    if not any(base.__name__ == "BeartypeForwardRefABC" for base in cls.__mro__):
+        return cls
+    target: object = sys.modules.get(cls.__module__)
+    for part in cls.__qualname__.split("."):
+        target = getattr(target, part, None)
+    return target if inspect.isclass(target) else None
+
+
 def _annotation_classes(annotation: object) -> Iterator[type]:
     if isinstance(annotation, str):
         return
-    if inspect.isclass(annotation):
-        yield annotation
-    origin = typing.get_origin(annotation)
-    if inspect.isclass(origin):
-        yield origin
+    for candidate in (annotation, typing.get_origin(annotation)):
+        if inspect.isclass(candidate):
+            resolved = _resolve_forward_ref_proxy(candidate)
+            if resolved is not None:
+                yield resolved
     for arg in typing.get_args(annotation):
         yield from _annotation_classes(arg)
     value = getattr(annotation, "__value__", None)  # PEP 695 aliases
@@ -348,9 +357,10 @@ def _allowed(issue: Issue) -> bool:
     return issue.unit in ALLOWLIST
 
 
-def test_allowlist_entries_have_reasons() -> None:
+def test_allowlist_entries_are_public_and_have_reasons() -> None:
     for unit, reason in ALLOWLIST.items():
         assert reason.strip(), f"allowlist entry {unit} needs a reason"
+        assert not any(part.startswith("_") for part in unit.split(".")[2:]), unit
 
 
 def test_public_api_is_fully_documented() -> None:
@@ -388,11 +398,6 @@ def test_allowlist_has_no_stale_entries() -> None:
     flagged = {issue.unit for issue in report.issues}
     stale = sorted(unit for unit in ALLOWLIST if unit not in flagged)
     assert not stale, f"allowlist entries no longer needed: {stale}"
-
-
-@pytest.mark.parametrize("unit", sorted(ALLOWLIST))
-def test_allowlist_unit_is_public(unit: str) -> None:
-    assert not any(part.startswith("_") for part in unit.split(".")[2:])
 
 
 if __name__ == "__main__":
