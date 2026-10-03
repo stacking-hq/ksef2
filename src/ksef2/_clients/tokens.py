@@ -167,6 +167,15 @@ class TokensClient:
         """
         self._endpoints = TokenEndpoints(transport)
 
+    def _wait_for_activation(
+        self, reference_number: str, timeout: float, poll_interval: float
+    ) -> TokenStatusResponse:
+        handle = GeneratedToken(
+            self,
+            GenerateTokenResponse(reference_number=reference_number, token=""),
+        )
+        return handle.wait(timeout=timeout, poll_interval=poll_interval)
+
     @deprecated(
         "`wait_for_activation()` is deprecated and will be removed in ksef2 1.10.0; "
         "use `generate(...).wait()` instead."
@@ -196,11 +205,7 @@ class TokensClient:
             KSeFTokenStatusTimeoutError: If polling exceeds ``timeout``.
             httpx.HTTPError: If a status request fails at the transport boundary.
         """
-        handle = GeneratedToken(
-            self,
-            GenerateTokenResponse(reference_number=reference_number, token=""),
-        )
-        return handle.wait(timeout=timeout, poll_interval=poll_interval)
+        return self._wait_for_activation(reference_number, timeout, poll_interval)
 
     def generate(
         self,
