@@ -39,56 +39,36 @@ unattended incremental sync, use `date_type="permanent_storage"` and
 
 ## Query one page
 
-Use `query_metadata()` when you need one page for a screen, reconciliation step,
-or diagnostic check.
+`auth.invoices.search()` returns a lazy `Pager`; nothing is requested until you
+use it. Call `first_page()` when you need one page for a screen, reconciliation
+step, or diagnostic check.
 
 ```python
 from ksef2.models import InvoiceMetadataParams
 
-page = auth.invoices.query_metadata(
-    filters=filters,
-    params=InvoiceMetadataParams(page_size=25, sort_order="asc"),
+pager = auth.invoices.search(
+    filters,
+    InvoiceMetadataParams(page_size=25, sort_order="asc"),
 )
 
-# QueryInvoicesMetadataResponse
-# {
-#   "has_more": false,
-#   "is_truncated": false,
-#   "permanent_storage_hwm_date": null,
-#   "invoices": [
-#     {
-#       "ksef_number": "1234567890-20260625-...",
-#       "invoice_number": "FV/42/2026",
-#       "issue_date": "2026-06-25",
-#       "gross_amount": 1230.0,
-#       "currency": "PLN",
-#       "invoice_type": "vat"
-#     }
-#   ]
-# }
-
-for invoice in page.invoices:
+for invoice in pager.first_page():
     print(invoice.ksef_number, invoice.invoice_number)
 ```
 
-`has_more` means another page exists. `is_truncated` means the result hit a KSeF
-window boundary and should continue from the returned lifecycle date rather than
-from a normal page offset.
-
 ## Iterate through results
 
-Use the page iterator when each page matters. Use the item iterator when your
-job only needs invoice rows.
+Iterate the pager for invoice rows, or call `pages()` when each page matters.
+The pager follows KSeF page and truncation boundaries for you.
 
 ### Pages
 
 ```python
 params = InvoiceMetadataParams(page_size=100, sort_order="asc")
 
-for page in auth.invoices.query_metadata_pages(filters=filters, params=params):
-    print(f"page={len(page.invoices)} has_more={page.has_more}")
+for page in auth.invoices.search(filters, params).pages():
+    print(f"page={len(page)}")
 
-    for invoice in page.invoices:
+    for invoice in page:
         print(invoice.ksef_number, invoice.permanent_storage_date)
 ```
 
@@ -97,7 +77,7 @@ for page in auth.invoices.query_metadata_pages(filters=filters, params=params):
 ```python
 params = InvoiceMetadataParams(page_size=100, sort_order="asc")
 
-for invoice in auth.invoices.all_metadata(filters=filters, params=params):
+for invoice in auth.invoices.search(filters, params):
     print(invoice.ksef_number, invoice.invoice_number)
 ```
 
@@ -114,7 +94,7 @@ filters = InvoicesFilter.for_seller(
     invoice_number="FV/42/2026",
 )
 
-page = auth.invoices.query_metadata(filters=filters)
+page = auth.invoices.search(filters).first_page()
 ```
 
 ```python
@@ -125,7 +105,7 @@ filters = InvoicesFilter.for_seller(
     ksef_number="1234567890-20260625-...",
 )
 
-page = auth.invoices.query_metadata(filters=filters)
+page = auth.invoices.search(filters).first_page()
 ```
 
 ## Wait after sending
@@ -140,30 +120,16 @@ filters = InvoicesFilter.for_seller(
     invoice_number="FV/42/2026",
 )
 
-result = auth.invoices.wait_for_invoices(
-    filters=filters,
-    timeout=120.0,
-    poll_interval=2.0,
-)
+pager = auth.invoices.search(filters).wait(timeout=120.0, poll_interval=2.0)
 
-# QueryInvoicesMetadataResponse
-# {
-#   "has_more": false,
-#   "is_truncated": false,
-#   "permanent_storage_hwm_date": null,
-#   "invoices": [
-#     {
-#       "ksef_number": "1234567890-20260625-...",
-#       "invoice_number": "FV/42/2026"
-#     }
-#   ]
-# }
+for invoice in pager:
+    print(invoice.ksef_number, invoice.invoice_number)
 ```
 
 :::caution[Polling waits for any match]
-`wait_for_invoices()` returns when at least one row matches the filter. Keep
-the filter specific enough that the first match is the invoice you are waiting
-for.
+`wait()` returns when at least one row matches the filter. Keep the filter
+specific enough that the first match is the invoice you are waiting for. If
+nothing appears in time it raises `KSeFInvoiceQueryTimeoutError`.
 :::
 
 ## Recommended flow

@@ -19,13 +19,9 @@ from pathlib import Path
 from ksef2 import FormSchema
 
 with auth.online_session(form_code=FormSchema.FA3) as session:
-    sent = session.send_invoice(invoice_xml=invoice_xml)
+    submission = session.send_invoice(invoice_xml)
 
-    invoice_status = session.wait_for_invoice_ready(
-        invoice_reference_number=sent.reference_number,
-        timeout=120.0,
-        poll_interval=2.0,
-    )
+    invoice_status = submission.wait(timeout=120.0, poll_interval=2.0)
 
     # SessionInvoiceStatusResponse
     # {
@@ -39,9 +35,7 @@ with auth.online_session(form_code=FormSchema.FA3) as session:
     #   }
     # }
 
-    upo_xml = session.get_invoice_upo_by_reference(
-        invoice_reference_number=sent.reference_number,
-    )
+    upo_xml = submission.download_upo()
     Path("upo.xml").write_bytes(upo_xml)
 ```
 
@@ -53,9 +47,7 @@ ksef_number = invoice_status.ksef_number
 if ksef_number is None:
     raise RuntimeError("KSeF did not assign an invoice number.")
 
-upo_xml = session.get_invoice_upo_by_ksef_number(
-    ksef_number=ksef_number,
-)
+upo_xml = session.download_invoice_upo(ksef_number=ksef_number)
 ```
 
 :::caution[Keep the invoice reference]
@@ -95,11 +87,7 @@ poll by state or by plain session reference number.
 ```python
 from pathlib import Path
 
-final_status = auth.batch.wait_for_completion(
-    session=state,
-    timeout=300.0,
-    poll_interval=2.0,
-)
+final_status = session.wait(timeout=300.0, poll_interval=2.0)
 
 # SessionStatusResponse
 # {
@@ -120,13 +108,8 @@ final_status = auth.batch.wait_for_completion(
 #   }
 # }
 
-if final_status.upo is not None and final_status.upo.pages:
-    upo_reference_number = final_status.upo.pages[0].reference_number
-    upo_xml = auth.batch.get_upo(
-        session=state,
-        upo_reference_number=upo_reference_number,
-    )
-    Path("batch-upo.xml").write_bytes(upo_xml)
+for number, upo_xml in enumerate(session.download_upo(), start=1):
+    Path(f"batch-upo-{number}.xml").write_bytes(upo_xml)
 ```
 
 :::note[UPO is an audit artifact]
@@ -142,7 +125,7 @@ batch.
 ### Accepted
 
 ```python
-page = auth.batch.list_invoices(session=state, page_size=100)
+page = session.list_invoices(page_size=100)
 
 for invoice in page.invoices:
     print(invoice.invoice_file_name, invoice.ksef_number, invoice.status.description)
@@ -151,7 +134,7 @@ for invoice in page.invoices:
 ### Failed
 
 ```python
-page = auth.batch.list_failed_invoices(session=state, page_size=100)
+page = session.list_failed_invoices(page_size=100)
 
 for invoice in page.invoices:
     print(invoice.invoice_file_name, invoice.status.code, invoice.status.details)
@@ -160,11 +143,10 @@ for invoice in page.invoices:
 When a page has `continuation_token`, pass it to the next call:
 
 ```python
-page = auth.batch.list_invoices(session=state, page_size=100)
+page = session.list_invoices(page_size=100)
 
 while page.continuation_token is not None:
-    page = auth.batch.list_invoices(
-        session=state,
+    page = session.list_invoices(
         page_size=100,
         continuation_token=page.continuation_token,
     )

@@ -102,7 +102,7 @@ Używaj tych powierzchni do różnych zadań:
 | UPO | Daj urzędowe poświadczenie dla przyjętej faktury albo sesji. |
 
 ```python
-invoice_xml = auth.invoices.download_invoice(ksef_number=status.ksef_number)
+invoice_xml = auth.invoices.download(status.ksef_number)
 print(len(invoice_xml))
 ```
 

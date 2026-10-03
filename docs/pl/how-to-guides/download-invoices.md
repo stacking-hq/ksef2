@@ -9,31 +9,23 @@ KSeF. Przykłady poniżej zakładają, że masz już uwierzytelnionego klienta
 
 ## Pobierz jedną fakturę
 
-Jeśli masz już numer KSeF, bezpośrednie pobranie jest najkrótszą ścieżką.
+Jeśli masz numer KSeF, bezpośrednie pobranie to najkrótsza droga.
 
 ```python
 from pathlib import Path
 
 ksef_number = "1234567890-20260625-..."
 
-xml_bytes = auth.invoices.download_invoice(ksef_number=ksef_number)
+xml_bytes = auth.invoices.download(ksef_number)
 Path("invoice.xml").write_bytes(xml_bytes)
 ```
 
 Jeśli faktura została dopiero wysłana, KSeF może potrzebować czasu, zanim
-przetworzony XML będzie dostępny do pobrania. Użyj helpera oczekującego, gdy
-przepływ ma blokować do dostępności dokumentu.
+przetworzony XML będzie dostępny. Podaj `timeout`, a `download()` będzie
+odpytywać KSeF, aż dokument będzie dostępny.
 
 ```python
-from pathlib import Path
-
-ksef_number = "1234567890-20260625-..."
-
-xml_bytes = auth.invoices.wait_for_invoice_download(
-    ksef_number=ksef_number,
-    timeout=120.0,
-    poll_interval=2.0,
-)
+xml_bytes = auth.invoices.download(ksef_number, timeout=120.0, poll_interval=2.0)
 Path("invoice.xml").write_bytes(xml_bytes)
 ```
 
@@ -65,89 +57,45 @@ w granicy, którą KSeF raportuje jako kompletną. Zapisz
 
 ## Wyeksportuj wiele faktur
 
-Zaplanuj eksport, poczekaj na paczkę, a potem pobierz odszyfrowane części ZIP.
+`export()` planuje eksport i zwraca `ExportJob`. Jego `wait()` odpytuje KSeF,
+aż paczka będzie gotowa, pobiera i odszyfrowuje części, łączy je i zwraca obiekt
+`ExportedInvoices`.
+
+```python
+job = auth.invoices.export(filters)
+package = job.wait(timeout=300.0)
+
+for ksef_number, xml in package.invoices():
+    print(ksef_number, len(xml))
+
+# Sparsowany _metadata.json (lista InvoiceMetadata) albo None, gdy go brak.
+metadata = package.metadata
+
+# Szczegóły paczki do synchronizacji przyrostowej.
+print(package.package.is_truncated, package.package.permanent_storage_hwm_date)
+```
 
 ### Zapis do plików
 
 ```python
 from pathlib import Path
 
-export = auth.invoices.schedule_export(filters=filters)
-
-# ExportHandle(reference_number="...")
-# Zachowaj ten obiekt jako prywatny. Ukryte pola aes_key i iv zawierają
-# materiał deszyfrujący.
-
-package = auth.invoices.wait_for_export_package(
-    reference_number=export.reference_number,
-    timeout=300.0,
-)
-
-# InvoicePackage
-# {
-#   "invoice_count": 3,
-#   "size": 14820,
-#   "is_truncated": false,
-#   "last_permanent_storage_date": "2026-06-25T09:58:21Z",
-#   "permanent_storage_hwm_date": "2026-06-25T10:00:00Z",
-#   "parts": [
-#     {
-#       "ordinal_number": 1,
-#       "part_name": "package-1.zip",
-#       "expiration_date": "2026-06-26T10:00:00Z"
-#     }
-#   ]
-# }
-
-saved_paths = auth.invoices.fetch_package(
-    package=package,
-    export=export,
-    target_directory=Path("downloads"),
-)
-
-for path in saved_paths:
-    print(path)
+written = package.save(Path("downloads"))
 ```
 
-### W pamięci
-
-```python
-export = auth.invoices.schedule_export(filters=filters)
-package = auth.invoices.wait_for_export_package(
-    reference_number=export.reference_number,
-    timeout=300.0,
-)
-
-zip_parts = auth.invoices.fetch_package_bytes(package=package, export=export)
-
-for zip_part in zip_parts:
-    print(len(zip_part))
-```
-
-### Jedno wywołanie
-
-```python
-zip_parts = auth.invoices.export_and_download(
-    filters=filters,
-    timeout=300.0,
-    poll_interval=2.0,
-)
-
-for zip_part in zip_parts:
-    print(len(zip_part))
-```
+`save()` rozpakowuje archiwum i odrzuca każdy wpis, którego ścieżka wychodziłaby
+poza katalog docelowy. Surowe bajty ZIP są dostępne jako `package.archive`.
 
 :::note[SDK odszyfrowuje części paczki]
-KSeF zwraca URL-e zaszyfrowanych części paczki. Helpery wysokiego poziomu
-wczytują ważny certyfikat szyfrowania KSeF, planują eksport z lokalnym
-materiałem AES, pobierają części paczki i odszyfrowują je przed zwróceniem
-ścieżek albo bajtów.
+KSeF zwraca zaszyfrowane adresy części paczki. `export()` ładuje poprawny
+certyfikat szyfrowania KSeF i planuje eksport z lokalnym materiałem AES, a
+`wait()` pobiera części i odszyfrowuje je przed zwróceniem wyniku.
 :::
 
 :::caution[Części paczki są tymczasowe]
-URL-e paczki wygasają. Zapisz odszyfrowane części ZIP albo wyodrębniony XML
-faktur we własnym magazynie i zachowaj `_metadata.json`, gdy paczka go
-zawiera.
+Adresy paczki wygasają. Zapisz wypakowane XML-e faktur we własnym magazynie i
+zachowaj `_metadata.json`, jeśli paczka go zawiera. Gdy KSeF zakończy eksport
+błędem albo eksport wygaśnie, `wait()` rzuca `KSeFExportFailedError`.
 :::
 
 ## Po wysyłce faktur

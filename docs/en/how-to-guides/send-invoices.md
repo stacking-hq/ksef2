@@ -72,18 +72,12 @@ exits.
 from ksef2 import FormSchema
 
 with auth.online_session(form_code=FormSchema.FA3) as session:
-    sent = session.send_invoice(invoice_xml=invoice_xml)
+    submission = session.send_invoice(invoice_xml)
 
-    # SendInvoiceResponse
-    # {
-    #   "reference_number": "20260625-ABCD-EF1234567890"
-    # }
+    # InvoiceSubmission handle
+    # submission.reference_number == "20260625-ABCD-EF1234567890"
 
-    status = session.wait_for_invoice_ready(
-        invoice_reference_number=sent.reference_number,
-        timeout=120.0,
-        poll_interval=2.0,
-    )
+    status = submission.wait(timeout=120.0, poll_interval=2.0)
 
     # SessionInvoiceStatusResponse
     # {
@@ -115,8 +109,8 @@ process.
 ```python
 with auth.online_session(form_code=FormSchema.FA3) as session:
     session_state_json = session.resume_state().to_json()
-    sent = session.send_invoice(invoice_xml=invoice_xml)
-    invoice_reference_number = sent.reference_number
+    submission = session.send_invoice(invoice_xml)
+    invoice_reference_number = submission.reference_number
 
 # Store session_state_json and invoice_reference_number in secure storage.
 # Do not log session_state_json because it contains session encryption data.
@@ -136,18 +130,14 @@ from pathlib import Path
 
 from ksef2 import FormSchema
 
-prepared = auth.batch.prepare_batch_from_paths(
-    invoice_paths=[
-        Path("invoice-1.xml"),
-        Path("invoice-2.xml"),
-    ],
+prepared = auth.batch.prepare(
+    [Path("invoice-1.xml"), Path("invoice-2.xml")],
     form_code=FormSchema.FA3,
 )
 
-state = auth.batch.submit_prepared_batch(prepared_batch=prepared)
+session = auth.batch.submit(prepared)
 
-# BatchSessionResumeState(reference_number="20260625-BATCH-...")
-# Persist the state securely. It contains encryption material and upload URLs.
+# session.reference_number == "20260625-BATCH-..."
 ```
 
 ### From bytes
@@ -158,8 +148,8 @@ from pathlib import Path
 from ksef2 import FormSchema
 from ksef2.models import BatchInvoice
 
-state = auth.batch.submit_batch(
-    invoices=[
+session = auth.batch.submit(
+    [
         BatchInvoice(
             file_name="invoice-1.xml",
             content=Path("invoice-1.xml").read_bytes(),
@@ -172,8 +162,7 @@ state = auth.batch.submit_batch(
     form_code=FormSchema.FA3,
 )
 
-# BatchSessionResumeState(reference_number="20260625-BATCH-...")
-# Persist the state securely. It contains encryption material and upload URLs.
+# session.reference_number == "20260625-BATCH-..."
 ```
 
 ## Wait for batch completion
@@ -182,11 +171,7 @@ After the batch is submitted, poll the batch session and inspect accepted and
 failed invoices.
 
 ```python
-final_status = auth.batch.wait_for_completion(
-    session=state,
-    timeout=300.0,
-    poll_interval=2.0,
-)
+final_status = session.wait(timeout=300.0, poll_interval=2.0)
 
 # SessionStatusResponse
 # {
@@ -206,8 +191,8 @@ final_status = auth.batch.wait_for_completion(
 #   }
 # }
 
-accepted = auth.batch.list_invoices(session=state, page_size=100)
-failed = auth.batch.list_failed_invoices(session=state, page_size=100)
+accepted = session.list_invoices(page_size=100)
+failed = session.list_failed_invoices(page_size=100)
 ```
 
 :::caution[Batch success still needs inspection]

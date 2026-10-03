@@ -102,7 +102,7 @@ Use the surfaces for different jobs:
 | UPO | Give me official confirmation for the accepted invoice or session. |
 
 ```python
-invoice_xml = auth.invoices.download_invoice(ksef_number=status.ksef_number)
+invoice_xml = auth.invoices.download(status.ksef_number)
 print(len(invoice_xml))
 ```
 

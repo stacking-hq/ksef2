@@ -89,7 +89,7 @@ prepared = auth.batch.prepare_batch_from_paths(
     invoice_paths=["invoice-1.xml", "invoice-2.xml"],
 )
 
-state = auth.batch.submit_prepared_batch(prepared_batch=prepared)
+session = auth.batch.submit(prepared)
 print(state.reference_number)
 ```
 
@@ -113,7 +113,7 @@ print it or store it in logs. Status and history responses are the safe objects
 to persist for audit and support.
 
 ```python
-status = auth.batch.get_status(session=state.reference_number)
+status = session.get_status()
 print(
     status.status.code,
     status.invoice_count,

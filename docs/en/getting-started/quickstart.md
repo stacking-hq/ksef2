@@ -81,30 +81,21 @@ with Client(Environment.TEST) as client:
     auth = client.authentication.with_test_certificate(nip=SELLER_NIP)
 
     with auth.online_session(form_code=FormSchema.FA3) as session:
-        sent = session.send_invoice(invoice_xml=invoice_xml)
-        print("Sent invoice:")
-        print(sent.model_dump_json(indent=2))
+        submission = session.send_invoice(invoice_xml)
+        print(f"Sent invoice: {submission.reference_number}")
 
-        status = session.wait_for_invoice_ready(
-            invoice_reference_number=sent.reference_number,
-            timeout=120.0,
-        )
+        status = submission.wait(timeout=120.0)
         print("Invoice status:")
         print(status.model_dump_json(indent=2))
 
-        upo_xml = session.get_invoice_upo_by_reference(
-            invoice_reference_number=sent.reference_number,
-        )
+        upo_xml = submission.download_upo()
         (DOWNLOADS / "upo.xml").write_bytes(upo_xml)
         print("Saved downloads/upo.xml")
 
     if status.ksef_number is None:
         raise RuntimeError("KSeF did not assign an invoice number.")
 
-    downloaded_xml = auth.invoices.wait_for_invoice_download(
-        ksef_number=status.ksef_number,
-        timeout=120.0,
-    )
+    downloaded_xml = auth.invoices.download(status.ksef_number, timeout=120.0)
     (DOWNLOADS / "processed-invoice.xml").write_bytes(downloaded_xml)
     print("Saved downloads/processed-invoice.xml")
 ```
@@ -146,13 +137,13 @@ covered in the authentication guide.
 4. `online_session(FormSchema.FA3)` opened an online session for FA(3) invoice
    submission.
 
-5. `send_invoice()` submitted the invoice and returned a session invoice
-   reference number.
+5. `send_invoice()` submitted the invoice and returned an `InvoiceSubmission`
+   handle that carries the session invoice reference number.
 
-6. `wait_for_invoice_ready()` polled until KSeF assigned a KSeF invoice number.
+6. `submission.wait()` polled until KSeF assigned a KSeF invoice number.
 
-7. `get_invoice_upo_by_reference()` downloaded the UPO XML, and
-   `auth.invoices.wait_for_invoice_download()` fetched the processed invoice XML.
+7. `submission.download_upo()` downloaded the UPO XML, and
+   `auth.invoices.download()` fetched the processed invoice XML.
 
 ## Adapt the script
 

@@ -39,56 +39,36 @@ synchronizacji przyrostowej użyj `date_type="permanent_storage"` oraz
 
 ## Pobierz jedną stronę
 
-Użyj `query_metadata()`, gdy potrzebujesz jednej strony dla ekranu, uzgodnienia
-albo diagnostyki.
+`auth.invoices.search()` zwraca leniwy obiekt `Pager`; nic nie jest pobierane,
+dopóki go nie użyjesz. Wywołaj `first_page()`, gdy potrzebujesz jednej strony
+dla ekranu, uzgodnienia albo diagnostyki.
 
 ```python
 from ksef2.models import InvoiceMetadataParams
 
-page = auth.invoices.query_metadata(
-    filters=filters,
-    params=InvoiceMetadataParams(page_size=25, sort_order="asc"),
+pager = auth.invoices.search(
+    filters,
+    InvoiceMetadataParams(page_size=25, sort_order="asc"),
 )
 
-# QueryInvoicesMetadataResponse
-# {
-#   "has_more": false,
-#   "is_truncated": false,
-#   "permanent_storage_hwm_date": null,
-#   "invoices": [
-#     {
-#       "ksef_number": "1234567890-20260625-...",
-#       "invoice_number": "FV/42/2026",
-#       "issue_date": "2026-06-25",
-#       "gross_amount": 1230.0,
-#       "currency": "PLN",
-#       "invoice_type": "vat"
-#     }
-#   ]
-# }
-
-for invoice in page.invoices:
+for invoice in pager.first_page():
     print(invoice.ksef_number, invoice.invoice_number)
 ```
 
-`has_more` oznacza, że istnieje kolejna strona. `is_truncated` oznacza, że wynik
-dotarł do granicy okna KSeF i powinien być kontynuowany od zwróconej daty cyklu
-życia, a nie od zwykłego offsetu strony.
-
 ## Przejdź po wynikach
 
-Użyj iteratora stron, gdy każda strona ma znaczenie. Użyj iteratora faktur, gdy
-zadanie potrzebuje tylko wierszy faktur.
+Iteruj po pagerze, by dostać wiersze faktur, albo wywołaj `pages()`, gdy ważna
+jest każda strona. Pager sam obsługuje granice stron i obcięcia w KSeF.
 
 ### Strony
 
 ```python
 params = InvoiceMetadataParams(page_size=100, sort_order="asc")
 
-for page in auth.invoices.query_metadata_pages(filters=filters, params=params):
-    print(f"page={len(page.invoices)} has_more={page.has_more}")
+for page in auth.invoices.search(filters, params).pages():
+    print(f"page={len(page)}")
 
-    for invoice in page.invoices:
+    for invoice in page:
         print(invoice.ksef_number, invoice.permanent_storage_date)
 ```
 
@@ -97,7 +77,7 @@ for page in auth.invoices.query_metadata_pages(filters=filters, params=params):
 ```python
 params = InvoiceMetadataParams(page_size=100, sort_order="asc")
 
-for invoice in auth.invoices.all_metadata(filters=filters, params=params):
+for invoice in auth.invoices.search(filters, params):
     print(invoice.ksef_number, invoice.invoice_number)
 ```
 
@@ -113,7 +93,7 @@ filters = InvoicesFilter.for_seller(
     invoice_number="FV/42/2026",
 )
 
-page = auth.invoices.query_metadata(filters=filters)
+page = auth.invoices.search(filters).first_page()
 ```
 
 ```python
@@ -124,13 +104,13 @@ filters = InvoicesFilter.for_seller(
     ksef_number="1234567890-20260625-...",
 )
 
-page = auth.invoices.query_metadata(filters=filters)
+page = auth.invoices.search(filters).first_page()
 ```
 
 ## Poczekaj po wysyłce
 
 Przetwarzanie w KSeF jest asynchroniczne. Jeśli przepływ wysyła fakturę i od
-razu potrzebuje jej widoczności w API pobierania, polluj wąskim filtrem.
+razu potrzebuje jej widoczności w API pobierania, odpytuj wąskim filtrem.
 
 ```python
 filters = InvoicesFilter.for_seller(
@@ -139,30 +119,16 @@ filters = InvoicesFilter.for_seller(
     invoice_number="FV/42/2026",
 )
 
-result = auth.invoices.wait_for_invoices(
-    filters=filters,
-    timeout=120.0,
-    poll_interval=2.0,
-)
+pager = auth.invoices.search(filters).wait(timeout=120.0, poll_interval=2.0)
 
-# QueryInvoicesMetadataResponse
-# {
-#   "has_more": false,
-#   "is_truncated": false,
-#   "permanent_storage_hwm_date": null,
-#   "invoices": [
-#     {
-#       "ksef_number": "1234567890-20260625-...",
-#       "invoice_number": "FV/42/2026"
-#     }
-#   ]
-# }
+for invoice in pager:
+    print(invoice.ksef_number, invoice.invoice_number)
 ```
 
-:::caution[Polling czeka na dowolne dopasowanie]
-`wait_for_invoices()` zwraca wynik, gdy co najmniej jeden wiersz pasuje do
-filtra. Utrzymaj filtr na tyle konkretny, żeby pierwsze dopasowanie było
-fakturą, na którą czekasz.
+:::caution[Odpytywanie czeka na dowolne dopasowanie]
+`wait()` zwraca wynik, gdy co najmniej jeden wiersz pasuje do filtra. Utrzymaj
+filtr na tyle konkretny, żeby pierwsze dopasowanie było fakturą, na którą
+czekasz. Jeśli nic nie pojawi się na czas, rzuca `KSeFInvoiceQueryTimeoutError`.
 :::
 
 ## Zalecany przepływ

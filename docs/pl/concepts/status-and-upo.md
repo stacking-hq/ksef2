@@ -123,8 +123,8 @@ Dostosuj ustawienia pollingu do przepływu:
 | Przepływ | Typowy helper oczekujący |
 | --- | --- |
 | Akceptacja faktury online | `session.wait_for_invoice_ready()` albo `send_invoice_and_wait()` |
-| Przetwarzanie batch | `auth.batch.wait_for_completion()` |
-| Gotowość paczki eksportu | `auth.invoices.wait_for_export_package()` |
+| Przetwarzanie batch | `session.wait()` |
+| Gotowość paczki eksportu | `auth.invoices.export(...).wait()` |
 | Aktywacja albo sprawdzanie tokenu | `auth.tokens.wait_for_activation()` albo `auth.tokens.status()` |
 
 ## Co zapisywać

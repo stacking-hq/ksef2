@@ -101,7 +101,7 @@ filters = InvoicesFilter.for_buyer(
     restrict_to_permanent_storage_hwm_date=True,
 )
 
-page = auth.invoices.query_metadata(filters=filters)
+page = auth.invoices.search(filters).first_page()
 
 # QueryInvoicesMetadataResponse
 # {
