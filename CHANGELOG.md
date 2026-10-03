@@ -142,8 +142,8 @@ per call and is flagged by type checkers (PEP 702).
 - Run the invoice workflows against KSeF TEST instead of skipping them (#138), on
   every push to `main`, pull request and dispatch through a new `integration.yml`,
   and in the release path with a check that rejects workflows that never ran (#139).
-- Fail a release before upload when `DOCS_DISPATCH_TOKEN` is missing, and fail
-  instead of silently skipping the docs dispatch (#146).
+- Releases no longer dispatch a docs deployment. The ksef2-docs site picks up the
+  new release on its daily run or a manual run (#154).
 - Smoke-test the built wheel on Python 3.12, 3.13 and 3.14 before publishing, and
   add 3.14 to the CI matrix (#146).
 - `scripts/validate_examples.py` rejects examples and documentation code blocks that
