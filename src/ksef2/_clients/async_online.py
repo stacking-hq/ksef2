@@ -1,11 +1,13 @@
 """Async client bound to an open online invoice session."""
 
 from types import TracebackType
-from typing import final
+from collections.abc import Coroutine
+from typing import cast, final, override
 
 import httpx
 from typing_extensions import deprecated
 
+from ksef2._clients._async_handles import AsyncOperationHandle
 from ksef2._core import exceptions
 from ksef2._core.async_protocols import AsyncMiddleware
 from ksef2._core.crypto import encrypt_invoice
@@ -29,8 +31,132 @@ logger = get_logger(__name__)
 
 
 @final
+class AsyncInvoiceSubmission(
+    AsyncOperationHandle[SessionInvoiceStatusResponse, SessionInvoiceStatusResponse]
+):
+    """Handle to one invoice sent into an online session.
+
+    Returned by ``session.send_invoice()``. It exposes every field of the
+    submission response, for example ``reference_number``, and polls the invoice's
+    processing status with ``wait()``. It keeps working after the session is
+    closed, so a typical flow sends inside the ``with`` block and waits after it.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
+    """
+
+    def __init__(
+        self,
+        session: "AsyncOnlineSessionClient",
+        response: invoices.SendInvoiceResponse,
+    ) -> None:
+        """Create the handle.
+
+        Args:
+            session: Online session the invoice was sent into.
+            response: Submission response returned by KSeF.
+        """
+        super().__init__(response.reference_number)
+        self._session = session
+        self._response = response
+
+    def __getattr__(self, name: str) -> object:
+        if name in invoices.SendInvoiceResponse.model_fields:
+            return cast(object, getattr(self._response, name))
+        raise AttributeError(
+            f"{type(self).__name__!r} object has no attribute {name!r}"
+        )
+
+    @property
+    def response(self) -> invoices.SendInvoiceResponse:
+        """Get the plain submission response.
+
+        Returns:
+            The data model KSeF returned when the invoice was accepted for processing.
+        """
+        return self._response
+
+    @override
+    async def get_status(self) -> SessionInvoiceStatusResponse:
+        """Fetch the invoice's current processing status without waiting.
+
+        Returns:
+            The processing status of the invoice.
+        """
+        return await self._session._invoice_status(  # pyright: ignore[reportPrivateUsage]
+            invoice_reference_number=self.reference_number
+        )
+
+    @override
+    def _is_pending(self, status: SessionInvoiceStatusResponse) -> bool:
+        return not status.ksef_number
+
+    @override
+    def _check_status(self, status: SessionInvoiceStatusResponse) -> None:
+        if status.status.code >= 400:
+            raise exceptions.KSeFInvoiceRejectedError(
+                invoice_reference_number=self.reference_number,
+                status=status,
+            )
+
+    @override
+    def _timeout_error(self, timeout: float) -> BaseException:
+        return exceptions.KSeFInvoiceProcessingTimeoutError(
+            invoice_reference_number=self.reference_number,
+            timeout=timeout,
+        )
+
+    @override
+    async def _finish(
+        self, status: SessionInvoiceStatusResponse
+    ) -> SessionInvoiceStatusResponse:
+        return status
+
+    async def wait(
+        self,
+        *,
+        timeout: float = 60.0,
+        poll_interval: float = 2.0,
+    ) -> SessionInvoiceStatusResponse:
+        """Poll until KSeF assigns the invoice a final processing result.
+
+        Args:
+            timeout: Maximum number of seconds to wait before giving up.
+            poll_interval: Delay in seconds between invoice status checks.
+
+        Returns:
+            The final processing status, including the invoice's KSeF number once accepted.
+
+        Raises:
+            KSeFInvoiceRejectedError: If invoice processing reaches a failed
+                terminal status. It subclasses ``KSeFSessionError`` and keeps the
+                status ``details`` and ``extensions``.
+            KSeFInvoiceProcessingTimeoutError: If polling exceeds ``timeout``.
+        """
+        return await self._wait(timeout, poll_interval)
+
+    async def download_upo(self) -> bytes:
+        """Download the UPO of this invoice.
+
+        Call it after ``wait()`` returned: KSeF issues the UPO once the invoice is accepted.
+
+        Returns:
+            The UPO as XML bytes.
+        """
+        return await self._session._download_invoice_upo(  # pyright: ignore[reportPrivateUsage]
+            reference_number=self.reference_number
+        )
+
+
+@final
 class AsyncOnlineSessionClient:
     """Async client bound to a single online invoice session.
+
+    Send invoices with ``send_invoice()``, close the session by leaving the
+    ``async with`` block, then call ``wait()`` for the terminal session status and
+    ``download_upo()`` for the session UPO.
 
     Catch ``KSeFException`` for SDK-classified failures raised by this session
     branch, and ``httpx.HTTPError`` for transport failures.
@@ -44,32 +170,49 @@ class AsyncOnlineSessionClient:
         httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
     """
 
-    def __init__(self, transport: AsyncMiddleware, state: OnlineSessionResumeState):
+    def __init__(
+        self,
+        transport: AsyncMiddleware,
+        state: OnlineSessionResumeState,
+        *,
+        resumed: bool = False,
+    ):
         """Create the session client.
 
         Args:
             transport: Middleware chain used for authenticated requests.
             state: Resume state describing the open session and its encryption keys.
+            resumed: Whether the client was rebuilt from saved state. A resumed client cannot tell whether the session is still open, so ``wait()`` does not refuse to run on it.
         """
         self._transport = transport
         self._state = state
         self._invoice_eps = AsyncInvoicesEndpoints(transport)
         self._session_eps = AsyncSessionEndpoints(transport)
         self._closed = False
+        self._resumed = resumed
 
     def _ensure_open(self) -> None:
         """Reject operations after the session client has been closed."""
         if self._closed:
             raise exceptions.KSeFClientClosedError("Session client is closed.")
 
-    async def send_invoice(self, *, invoice_xml: bytes) -> invoices.SendInvoiceResponse:
+    @property
+    def reference_number(self) -> str:
+        """Get the online session reference number.
+
+        Returns:
+            The KSeF reference number of the session.
+        """
+        return self._state.reference_number
+
+    async def send_invoice(self, invoice_xml: bytes | str) -> AsyncInvoiceSubmission:
         """Encrypt and submit one invoice into the open session.
 
         Args:
-            invoice_xml: Invoice XML bytes, valid against the session's schema.
+            invoice_xml: Invoice XML, valid against the session's schema. A ``str`` is encoded as UTF-8.
 
         Returns:
-            The reference number KSeF assigned to the submission. Poll ``get_invoice_status()`` or use ``send_invoice_and_wait()`` for the processing result.
+            A handle exposing the submission's ``reference_number``. Call its ``wait()`` for the processing result and ``download_upo()`` for the invoice UPO.
 
         Raises:
             KSeFEncryptionError: If invoice encryption fails.
@@ -77,21 +220,23 @@ class AsyncOnlineSessionClient:
         Example:
             ```python
             async with auth.online_session(form_code=FormSchema.FA3) as session:
-                sent = await session.send_invoice(invoice_xml=xml_bytes)
-                status = await session.wait_for_invoice_ready(
-                    invoice_reference_number=sent.reference_number,
-                )
+                submission = await session.send_invoice(xml)
+                result = await submission.wait(timeout=60)
+                print(result.ksef_number)
             ```
         """
         self._ensure_open()
+        xml_bytes = (
+            invoice_xml.encode("utf-8") if isinstance(invoice_xml, str) else invoice_xml
+        )
         encrypted = encrypt_invoice(
-            xml_bytes=invoice_xml,
+            xml_bytes=xml_bytes,
             key=self._state.get_aes_key_bytes(),
             iv=self._state.get_iv_bytes(),
         )
         request_body = invoice_to_spec(
             SendInvoicePayload(
-                xml_bytes=invoice_xml,
+                xml_bytes=xml_bytes,
                 encrypted_bytes=encrypted,
             )
         )
@@ -100,16 +245,23 @@ class AsyncOnlineSessionClient:
             reference_number=self._state.reference_number,
             body=request_body,
         )
-        return invoice_from_spec(response_dto)
+        return AsyncInvoiceSubmission(self, invoice_from_spec(response_dto))
 
-    async def send_invoice_and_wait(
+    @deprecated(
+        "`send_invoice_and_wait()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `send_invoice().wait()` instead."
+    )
+    def send_invoice_and_wait(
         self,
         *,
         invoice_xml: bytes,
         timeout: float = 60.0,
         poll_interval: float = 2.0,
-    ) -> SessionInvoiceStatusResponse:
-        """Submit an invoice and poll until KSeF assigns a final processing result.
+    ) -> Coroutine[None, None, SessionInvoiceStatusResponse]:
+        """Deprecated: submit an invoice and poll until KSeF assigns a final result.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``send_invoice().wait()`` instead.
 
         Args:
             invoice_xml: Invoice XML bytes, valid against the session's schema.
@@ -125,21 +277,20 @@ class AsyncOnlineSessionClient:
                 terminal status. It subclasses ``KSeFSessionError`` and keeps the
                 status ``details`` and ``extensions``.
             KSeFInvoiceProcessingTimeoutError: If polling exceeds ``timeout``.
-
-        Example:
-            ```python
-            async with auth.online_session(form_code=FormSchema.FA3) as session:
-                status = await session.send_invoice_and_wait(invoice_xml=xml_bytes)
-                print(status.ksef_number)
-            ```
         """
-        self._ensure_open()
-        result = await self.send_invoice(invoice_xml=invoice_xml)
-        return await self.wait_for_invoice_ready(
-            invoice_reference_number=result.reference_number,
-            timeout=timeout,
-            poll_interval=poll_interval,
+        return self._send_invoice_and_wait(
+            invoice_xml=invoice_xml, timeout=timeout, poll_interval=poll_interval
         )
+
+    async def _send_invoice_and_wait(
+        self,
+        *,
+        invoice_xml: bytes,
+        timeout: float = 60.0,
+        poll_interval: float = 2.0,
+    ) -> SessionInvoiceStatusResponse:
+        submission = await self.send_invoice(invoice_xml)
+        return await submission.wait(timeout=timeout, poll_interval=poll_interval)
 
     async def get_status(self) -> SessionStatusResponse:
         """Fetch the current state of the online session.
@@ -148,6 +299,9 @@ class AsyncOnlineSessionClient:
             The session status, including invoice counters.
         """
         self._ensure_open()
+        return await self._session_status()
+
+    async def _session_status(self) -> SessionStatusResponse:
         return session_from_spec(
             await self._invoice_eps.get_session_status(
                 reference_number=self._state.reference_number,
@@ -184,12 +338,19 @@ class AsyncOnlineSessionClient:
         """Fetch processing status for one invoice sent in this session.
 
         Args:
-            invoice_reference_number: Reference number of the invoice within the session, as returned by ``send_invoice()``.
+            invoice_reference_number: Reference number of the invoice within the session, as exposed by the handle ``send_invoice()`` returned.
 
         Returns:
             The processing status of the invoice.
         """
         self._ensure_open()
+        return await self._invoice_status(
+            invoice_reference_number=invoice_reference_number
+        )
+
+    async def _invoice_status(
+        self, *, invoice_reference_number: str
+    ) -> SessionInvoiceStatusResponse:
         return session_from_spec(
             await self._invoice_eps.get_session_invoice_status(
                 reference_number=self._state.reference_number,
@@ -197,17 +358,24 @@ class AsyncOnlineSessionClient:
             )
         )
 
-    async def wait_for_invoice_ready(
+    @deprecated(
+        "`wait_for_invoice_ready()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `send_invoice().wait()` instead."
+    )
+    def wait_for_invoice_ready(
         self,
         *,
         invoice_reference_number: str,
         timeout: float = 60.0,
         poll_interval: float = 2.0,
-    ) -> SessionInvoiceStatusResponse:
-        """Poll invoice status until it succeeds, fails, or times out.
+    ) -> Coroutine[None, None, SessionInvoiceStatusResponse]:
+        """Deprecated: poll invoice status until it succeeds, fails, or times out.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``send_invoice().wait()`` instead.
 
         Args:
-            invoice_reference_number: Reference number of the invoice within the session, as returned by ``send_invoice()``.
+            invoice_reference_number: Reference number of the invoice within the session.
             timeout: Maximum number of seconds to wait before giving up.
             poll_interval: Delay in seconds between invoice status checks.
 
@@ -220,29 +388,25 @@ class AsyncOnlineSessionClient:
                 status ``details`` and ``extensions``.
             KSeFInvoiceProcessingTimeoutError: If polling exceeds ``timeout``.
         """
-        self._ensure_open()
-
-        async def _poll() -> SessionInvoiceStatusResponse:
-            status = await self.get_invoice_status(
-                invoice_reference_number=invoice_reference_number
-            )
-            if status.status.code >= 400:
-                raise exceptions.KSeFInvoiceRejectedError(
-                    invoice_reference_number=invoice_reference_number,
-                    status=status,
-                )
-            return status
-
-        return await async_poll_until(
-            operation=_poll,
-            retry_predicate=lambda status: not status.ksef_number,
+        return self._wait_for_invoice_ready(
+            invoice_reference_number=invoice_reference_number,
+            timeout=timeout,
             poll_interval=poll_interval,
-            timeout_seconds=timeout,
-            timeout_error_factory=lambda: exceptions.KSeFInvoiceProcessingTimeoutError(
-                invoice_reference_number=invoice_reference_number,
-                timeout=timeout,
-            ),
         )
+
+    async def _wait_for_invoice_ready(
+        self,
+        *,
+        invoice_reference_number: str,
+        timeout: float = 60.0,
+        poll_interval: float = 2.0,
+    ) -> SessionInvoiceStatusResponse:
+        self._ensure_open()
+        submission = AsyncInvoiceSubmission(
+            self,
+            invoices.SendInvoiceResponse(reference_number=invoice_reference_number),
+        )
+        return await submission.wait(timeout=timeout, poll_interval=poll_interval)
 
     async def list_failed_invoices(
         self,
@@ -268,8 +432,54 @@ class AsyncOnlineSessionClient:
             )
         )
 
-    async def get_invoice_upo_by_ksef_number(self, *, ksef_number: str) -> bytes:
-        """Download the invoice UPO by KSeF number.
+    async def download_invoice_upo(
+        self,
+        *,
+        ksef_number: str | None = None,
+        reference_number: str | None = None,
+    ) -> bytes:
+        """Download the UPO of one invoice accepted in this session.
+
+        Args:
+            ksef_number: KSeF number of the invoice. Pass this or ``reference_number``.
+            reference_number: Reference number of the invoice within the session, as exposed by the handle ``send_invoice()`` returned. Pass this or ``ksef_number``.
+
+        Returns:
+            The UPO as XML bytes.
+
+        Raises:
+            KSeFValidationError: If both or neither of ``ksef_number`` and ``reference_number`` are given.
+        """
+        self._ensure_open()
+        if (ksef_number is None) == (reference_number is None):
+            raise exceptions.KSeFValidationError(
+                "Pass exactly one of ksef_number or reference_number."
+            )
+        if ksef_number is not None:
+            return await self._invoice_eps.get_invoice_upo_by_ksef(
+                reference_number=self._state.reference_number,
+                ksef_number=ksef_number,
+            )
+        assert reference_number is not None
+        return await self._download_invoice_upo(reference_number=reference_number)
+
+    async def _download_invoice_upo(self, *, reference_number: str) -> bytes:
+        return await self._invoice_eps.get_invoice_upo_by_reference(
+            reference_number=self._state.reference_number,
+            invoice_reference_number=reference_number,
+        )
+
+    @deprecated(
+        "`get_invoice_upo_by_ksef_number()` is deprecated and will be removed in "
+        "ksef2 1.10.0; use `download_invoice_upo(ksef_number=...)` instead."
+    )
+    def get_invoice_upo_by_ksef_number(
+        self, *, ksef_number: str
+    ) -> Coroutine[None, None, bytes]:
+        """Deprecated: download the invoice UPO by KSeF number.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``download_invoice_upo(ksef_number=...)`` instead.
 
         Args:
             ksef_number: KSeF number of an invoice accepted in this session.
@@ -277,30 +487,105 @@ class AsyncOnlineSessionClient:
         Returns:
             The UPO as XML bytes.
         """
-        self._ensure_open()
-        return await self._invoice_eps.get_invoice_upo_by_ksef(
-            reference_number=self._state.reference_number,
-            ksef_number=ksef_number,
-        )
+        return self.download_invoice_upo(ksef_number=ksef_number)
 
-    async def get_invoice_upo_by_reference(
+    @deprecated(
+        "`get_invoice_upo_by_reference()` is deprecated and will be removed in "
+        "ksef2 1.10.0; use `download_invoice_upo(reference_number=...)` instead."
+    )
+    def get_invoice_upo_by_reference(
         self,
         *,
         invoice_reference_number: str,
-    ) -> bytes:
-        """Download the invoice UPO by session invoice reference number.
+    ) -> Coroutine[None, None, bytes]:
+        """Deprecated: download the invoice UPO by session invoice reference number.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``download_invoice_upo(reference_number=...)`` instead.
 
         Args:
-            invoice_reference_number: Reference number of the invoice within the session, as returned by ``send_invoice()``.
+            invoice_reference_number: Reference number of the invoice within the session.
 
         Returns:
             The UPO as XML bytes.
         """
-        self._ensure_open()
-        return await self._invoice_eps.get_invoice_upo_by_reference(
-            reference_number=self._state.reference_number,
-            invoice_reference_number=invoice_reference_number,
+        return self.download_invoice_upo(reference_number=invoice_reference_number)
+
+    async def wait(
+        self,
+        *,
+        timeout: float = 120.0,
+        poll_interval: float = 2.0,
+    ) -> SessionStatusResponse:
+        """Poll until KSeF reports a terminal status for the closed session.
+
+        KSeF processes the session only after it is closed, so call this after
+        leaving the ``with`` block or calling ``aclose()``.
+
+        Args:
+            timeout: Maximum number of seconds to wait before giving up.
+            poll_interval: Delay in seconds between session status checks.
+
+        Returns:
+            The final successful session status, including the session UPO references.
+
+        Raises:
+            KSeFSessionError: If the session is still open, or if KSeF reports a failed terminal status.
+            KSeFOnlineSessionTimeoutError: If polling exceeds ``timeout``.
+        """
+        if not self._closed and not self._resumed:
+            raise exceptions.KSeFSessionError(
+                f"Online session {self.reference_number} is still open. "
+                "Close the session before calling `wait()`: leave the `with` block or "
+                "close the session client."
+            )
+
+        async def _poll() -> SessionStatusResponse:
+            status = await self._session_status()
+            if status.status.code >= 400:
+                raise exceptions.KSeFSessionError(
+                    "Online session processing failed: "
+                    f"{self.reference_number} ({status.status.code}: {status.status.description})"
+                )
+            return status
+
+        return await async_poll_until(
+            operation=_poll,
+            retry_predicate=lambda status: status.status.code < 200,
+            poll_interval=poll_interval,
+            timeout_seconds=timeout,
+            timeout_error_factory=lambda: exceptions.KSeFOnlineSessionTimeoutError(
+                reference_number=self.reference_number,
+                timeout=timeout,
+            ),
         )
+
+    async def download_upo(self) -> list[bytes]:
+        """Download every page of the session UPO.
+
+        Resolves the UPO page references from the session status, so you do not
+        look them up yourself. Call it after ``wait()``.
+
+        Returns:
+            The XML bytes of each UPO page, in order; empty if KSeF issued no UPO because no invoice was accepted.
+
+        Raises:
+            KSeFSessionError: If KSeF has not finished processing the session yet.
+        """
+        status = await self._session_status()
+        if status.status.code < 200:
+            raise exceptions.KSeFSessionError(
+                f"Online session {self.reference_number} is not processed yet. "
+                "Call `wait()` first."
+            )
+        pages = status.upo.pages if status.upo else []
+        return [
+            await self._session_eps.get_session_upo(
+                reference_number=self._state.reference_number,
+                upo_reference_number=page.reference_number,
+            )
+            for page in pages
+        ]
 
     async def aclose(self) -> None:
         """Terminate the online session if it is still open.
@@ -327,14 +612,14 @@ class AsyncOnlineSessionClient:
         return self._state
 
     @deprecated(
-        "`get_state()` is deprecated and will be removed in ksef2 2.0; "
+        "`get_state()` is deprecated and will be removed in ksef2 1.10.0; "
         "use `resume_state()` instead."
     )
     def get_state(self) -> OnlineSessionResumeState:
         """Deprecated compatibility wrapper for ``resume_state()``.
 
         Deprecated:
-            Will be removed in ksef2 2.0. Use ``resume_state()`` instead.
+            Will be removed in ksef2 1.10.0. Use ``resume_state()`` instead.
 
         Returns:
             The same state as ``resume_state()``.

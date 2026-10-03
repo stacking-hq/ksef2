@@ -129,6 +129,7 @@ pollingu, zdalny workflow KSeF może nadal zakończyć się później.
 | Przetwarzanie faktury online | `KSeFInvoiceProcessingTimeoutError` | `invoice_reference_number` |
 | Gotowość paczki eksportu | `KSeFExportTimeoutError` | `reference_number` |
 | Zakończenie sesji batch | `KSeFBatchSessionTimeoutError` | `reference_number` |
+| Zakończenie sesji online | `KSeFOnlineSessionTimeoutError` | `reference_number` |
 
 Po timeoutcie wznów polling zapisanymi identyfikatorami. Nie traktuj lokalnego
 deadline'u jako dowodu, że zdalna operacja się nie udała.

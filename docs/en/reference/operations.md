@@ -129,6 +129,7 @@ the remote KSeF workflow may still finish later.
 | Online invoice processing | `KSeFInvoiceProcessingTimeoutError` | `invoice_reference_number` |
 | Export package readiness | `KSeFExportTimeoutError` | `reference_number` |
 | Batch session completion | `KSeFBatchSessionTimeoutError` | `reference_number` |
+| Online session completion | `KSeFOnlineSessionTimeoutError` | `reference_number` |
 
 Resume polling with stored identifiers after a timeout. Do not infer that the
 remote operation failed only because the local wait deadline expired.

@@ -21,6 +21,7 @@ from ksef2._domain.models.encryption import PublicKeyCertificate
 from ksef2._domain.models.session import FormSchema, OnlineSessionResumeState
 from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import AsyncFakeTransport
+from tests.unit.helpers import legacy_api
 
 
 def _build_client(
@@ -96,6 +97,7 @@ class TestAsyncOnlineSessionClient:
         with pytest.raises(KSeFClientClosedError, match="Session client is closed"):
             asyncio.run(client.get_status())
 
+    @legacy_api
     def test_wait_for_invoice_ready_returns_processed_status(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -142,6 +144,7 @@ class TestAsyncOnlineSessionClient:
             for call in async_fake_transport.calls
         )
 
+    @legacy_api
     def test_wait_for_invoice_ready_raises_on_terminal_failure(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -169,6 +172,7 @@ class TestAsyncOnlineSessionClient:
 
         assert len(async_fake_transport.calls) == 1
 
+    @legacy_api
     def test_wait_for_invoice_ready_keeps_duplicate_extensions(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -210,6 +214,7 @@ class TestAsyncOnlineSessionClient:
         assert error.context["invoice_status_code"] == 440
         assert error.context["description"] == "Duplikat faktury"
 
+    @legacy_api
     def test_wait_for_invoice_ready_keeps_rejection_details(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -243,6 +248,7 @@ class TestAsyncOnlineSessionClient:
         assert raised.value.details == details
         assert raised.value.extensions == {}
 
+    @legacy_api
     def test_wait_for_invoice_ready_raises_on_timeout(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -269,6 +275,7 @@ class TestAsyncOnlineSessionClient:
                 )
             )
 
+    @legacy_api
     def test_send_invoice_and_wait(
         self,
         async_fake_transport: AsyncFakeTransport,
