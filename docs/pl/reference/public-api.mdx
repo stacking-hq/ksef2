@@ -57,25 +57,26 @@ from ksef2.raw import spec
 from ksef2.raw.mappers import auth as auth_mapper
 ```
 
-Nie importuj wygenerowanych modeli OpenAPI z `ksef2.infra.schema.api`. Używaj
-`ksef2.raw.spec` i `ksef2.raw.supp`, żeby kod aplikacyjny pozostał na wspieranej
-powierzchni.
+Nie importuj wygenerowanych modeli OpenAPI z prywatnego pakietu schem SDK.
+Używaj `ksef2.raw.spec` i `ksef2.raw.supp`, żeby kod aplikacyjny pozostał na
+wspieranej powierzchni.
 
-## Ścieżki internal
+## Ścieżki prywatne
 
-Unikaj tych ścieżek w kodzie aplikacyjnym:
+Zasada jest prosta: **ścieżka modułu bez podkreślenia jest publiczna, a każda
+ze znakiem podkreślenia jest prywatna.** `ksef2._core`, `ksef2._clients.base` i
+`ksef2.raw._facade` są prywatne, podobnie jak każdy moduł poniżej nich.
 
-- `ksef2.infra.*`: wygenerowane schemy i wewnętrzne mappery;
-- `ksef2.endpoints.*`: implementacja endpointów i transportu;
-- `ksef2.core.*`: wewnętrzne moduły protokołu, transportu, middleware i helperów;
-- `ksef2.domain.*`: wewnętrzne moduły implementacji modeli; te same modele
-  importuj z `ksef2.models` (albo z `ksef2.fa3` dla modeli buildera FA(3));
-- `ksef2.services.*`: implementacja workflow komponowana przez klienta; cztery
-  udokumentowane typy usług importuj z `ksef2.clients` albo używaj modułów klienta;
-- `scripts/*`: narzędzia repozytorium, nie API pakietu.
+Moduły prywatne mogą się zmienić lub zniknąć w dowolnym wydaniu, także
+poprawkowym, i nie należą do kontraktu kompatybilności. Pakiety, które wcześniejsze
+wersje przedpremierowe udostępniały bez podkreślenia (`core`, `domain`, `infra`,
+`endpoints`, `services`, moduły implementacji klientów, `config` i `logging`),
+nie istnieją już pod tymi nazwami; ich import zgłasza `ImportError`. Te same
+nazwy importuj z publicznych ścieżek powyżej, na przykład modele z
+`ksef2.models`, klientów i typy usług workflow z `ksef2.clients`, a konfigurację
+i wyjątki z `ksef2`.
 
-Część ścieżek internal może być importowalna dla implementacji SDK albo testów,
-ale nie jest kontraktem kompatybilności dla kodu aplikacyjnego.
+`scripts/*` to narzędzia repozytorium, nie API pakietu.
 
 ## Sekrety i serializacja
 

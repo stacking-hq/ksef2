@@ -60,16 +60,17 @@ modułów wysokiego poziomu.
 
 Nie buduj kodu aplikacji na tych ścieżkach:
 
-- `ksef2.infra.*`;
-- `ksef2.core.*`;
-- `ksef2.endpoints.*`;
-- `ksef2.services.*`;
-- repozytoryjne `scripts/*`;
-- moduły z podkreśleniem i zdeprecjonowane moduły kompatybilności;
-- internale wygenerowanych schem poza `ksef2.raw.spec` i `ksef2.raw.supp`.
+- każdej ścieżki modułu z komponentem poprzedzonym podkreśleniem, na przykład
+  `ksef2._core` lub `ksef2._clients.base` (ścieżka modułu bez podkreślenia jest
+  publiczna, a każda ze znakiem podkreślenia jest prywatna);
+- repozytoryjnych `scripts/*`;
+- internali wygenerowanych schem poza `ksef2.raw.spec` i `ksef2.raw.supp`.
 
-Te ścieżki mogą nadal być importowalne dla implementacji SDK, testów i
-narzędzi, ale mogą zmieniać się bez wydania 2.0.
+Dawne pakiety wewnętrzne (`ksef2.core`, `ksef2.domain`, `ksef2.infra`,
+`ksef2.endpoints`, `ksef2.services`, moduły implementacji klientów,
+`ksef2.config` i `ksef2.logging`) mają teraz prefiks podkreślenia, bez aliasów
+kompatybilności: import starych ścieżek zgłasza `ImportError`. Moduły prywatne
+mogą zmieniać się bez wydania 2.0.
 
 ## Powiązane strony
 
