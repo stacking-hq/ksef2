@@ -2,9 +2,11 @@
 
 The pipeline has three steps, each in one place:
 
-1. ``_normalize`` reads a response in any of its shapes (``application/problem+json``,
-   the legacy ``ExceptionResponse`` / ``TooManyRequestsResponse``, other JSON, text or
-   an empty body) into one ``_ErrorRecord``.
+1. ``_normalize`` reads a response in any of its shapes into one ``_ErrorRecord``,
+   choosing the parser by ``Content-Type``: ``application/problem+json`` uses the
+   status-specific problem model, ``application/json`` the legacy
+   ``ExceptionResponse`` / ``TooManyRequestsResponse`` as a fallback, and anything
+   else, including an empty body, becomes a snippet.
 2. ``_classify`` looks the record up in ``_RULES``, the one table that maps a status
    and a KSeF code to an exception class and an optional hint.
 3. ``_build`` formats the single message and constructs the exception.
@@ -68,9 +70,8 @@ _NOT_READY_INVOICE_HINT = (
     "`download()` with a `timeout` so the SDK keeps polling until it is."
 )
 _NOT_READY_UPO_HINT = (
-    "KSeF has not issued the UPO yet. Wait for processing to finish and request it "
-    "again: `download_upo()` on a session or an invoice submission waits for "
-    "processing first."
+    "KSeF has not issued the UPO yet. Call `wait()` on the invoice submission or the "
+    "session first, then call `download_upo()` again."
 )
 _UNAUTHORIZED_HINT = (
     "KSeF rejected the credentials or the access token. Authenticate again with "
@@ -154,22 +155,33 @@ def _try_parse[T: BaseModel](text: str, model: type[T]) -> T | None:
         return None
 
 
-def _parse_body(status: int, text: str) -> tuple[BaseModel | None, _Fields | None]:
-    """Parse a body into a spec model and the fields read from it."""
+def _media_type(response: httpx.Response) -> str:
+    content_type = cast(str, response.headers.get("Content-Type", ""))
+    return content_type.split(";", 1)[0].strip().lower()
+
+
+def _parse_body(
+    response: httpx.Response,
+) -> tuple[BaseModel | None, _Fields | None]:
+    """Parse a body by its ``Content-Type`` into a spec model and the fields read from it."""
+    text = response.text
     if not text.strip():
         return None, None
-    problem_model = _PROBLEM_MODELS.get(status)
-    if problem_model is not None and (model := _try_parse(text, problem_model)):
-        return model, _problem_fields(model)
-    legacy_model = (
-        spec.TooManyRequestsResponse if status == 429 else spec.ExceptionResponse
-    )
-    if model := _try_parse(text, legacy_model):
-        fields = _legacy_fields(model)
-        if fields is None:
-            fields = _generic_problem_fields(text)
-        return model, fields
-    return None, _generic_problem_fields(text)
+    media_type = _media_type(response)
+    status = response.status_code
+    if media_type == "application/problem+json":
+        problem_model = _PROBLEM_MODELS.get(status)
+        if problem_model is not None and (model := _try_parse(text, problem_model)):
+            return model, _problem_fields(model)
+        return None, _generic_problem_fields(text)
+    if media_type == "application/json":
+        legacy_model = (
+            spec.TooManyRequestsResponse if status == 429 else spec.ExceptionResponse
+        )
+        model = _try_parse(text, legacy_model)
+        if model is not None and (fields := _legacy_fields(model)):
+            return model, fields
+    return None, None
 
 
 def _generic_problem_fields(text: str) -> _Fields | None:
@@ -204,7 +216,7 @@ def _retry_after_seconds(value: str | None) -> int | None:
 
 def _normalize(response: httpx.Response, method: str, path: str) -> _ErrorRecord:
     text = response.text
-    body, fields = _parse_body(response.status_code, text)
+    body, fields = _parse_body(response)
     description = fields.description if fields else None
     if not description:
         description = _snippet(text) or response.reason_phrase or "no description"

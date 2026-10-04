@@ -92,10 +92,13 @@ invoice_upo = submission.download_upo()
 session_upo_pages = session.download_upo()  # every page, references resolved
 ```
 
-`download_upo()` waits for KSeF to finish first when it is called too early, so
-you do not need to call `wait()` before it. It takes the same `timeout` and
-`poll_interval` as `wait()`. When the invoice or session is already processed it
-makes no extra status requests.
+`download_upo()` never waits. Call `submission.wait()` first for an invoice UPO,
+or `session.wait()` (after the session is closed) for session UPO pages. Asked
+too early, `submission.download_upo()` raises `KSeFNotReadyError`, and the session
+variants raise it while KSeF is still processing the closed session. A session that is
+still open raises `KSeFSessionError`. Both carry a `hint` that names `wait()`.
+`submission.download_upo()` makes exactly one request; the session variants read
+the session status once and then download each UPO page.
 
 Status responses can also expose UPO page data such as
 `download_url_expiration_date`. Use references for SDK calls and store the

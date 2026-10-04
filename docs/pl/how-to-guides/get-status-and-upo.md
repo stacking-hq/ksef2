@@ -39,9 +39,9 @@ with auth.online_session(form_code=FormSchema.FA3) as session:
     Path("upo.xml").write_bytes(upo_xml)
 ```
 
-`download_upo()` samo czeka na przetworzenie, więc wywołanie tuż po
-`send_invoice()` też działa. Przekaż `timeout` i `poll_interval`, aby sterować
-czasem oczekiwania.
+`download_upo()` to jedno zapytanie i nigdy nie czeka, więc najpierw wywołaj
+`submission.wait()`, jak powyżej. Wywołane za wcześnie rzuca `KSeFNotReadyError`
+ze wskazówką, by wywołać `wait()`.
 
 W tym samym bloku sesji, jeśli masz już numer KSeF, możesz pobrać UPO faktury
 po numerze KSeF:
@@ -111,6 +111,8 @@ final_status = session.wait(timeout=300.0, poll_interval=2.0)
 #     ]
 #   }
 # }
+
+session.wait(timeout=120.0)  # sesja jest zamknięta; poczekaj, aż KSeF skończy
 
 for number, upo_xml in enumerate(session.download_upo(), start=1):
     Path(f"batch-upo-{number}.xml").write_bytes(upo_xml)

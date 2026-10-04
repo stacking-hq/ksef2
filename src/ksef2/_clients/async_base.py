@@ -21,6 +21,9 @@ from ksef2._core.middlewares.async_lifecycle import (
     AsyncClientLifecycleMiddleware,
     AsyncClientLifecycleState,
 )
+from ksef2._core.middlewares.async_error_format import (
+    AsyncErrorFormatMiddleware,
+)
 from ksef2._core.middlewares.async_retry import AsyncRetryMiddleware
 from ksef2._domain.models.auth import AuthenticationResumeState, AuthTokens
 from ksef2.raw._async_facade import AsyncRawClient
@@ -85,7 +88,7 @@ class AsyncClient:
         self._transfer_transport = lifecycle_transport
         self._transport = AsyncKSeFExceptionMiddleware(
             AsyncRetryMiddleware(
-                lifecycle_transport,
+                AsyncErrorFormatMiddleware(lifecycle_transport),
                 self._transport_config.retry,
             )
         )

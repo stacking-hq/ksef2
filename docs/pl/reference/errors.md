@@ -127,7 +127,9 @@ strukturalnych diagnostyk, gdy `response` nie jest `None`.
 
 Każdy błąd API KSeF ma ten sam format, niezależnie od kształtu odpowiedzi
 (`application/problem+json`, starszy payload `exception`, inne JSON-y, tekst albo
-pusta odpowiedź):
+pusta odpowiedź). SDK wybiera parser po nagłówku `Content-Type` odpowiedzi:
+`application/problem+json` jest czytany jako Problem Details, `application/json`
+jako starszy payload, a wszystko inne staje się krótkim fragmentem:
 
 ```text
 KSeF rejected <METODA> <ścieżka> (HTTP <status>, KSeF code <kod>): <opis>
@@ -137,7 +139,11 @@ Hint: <wskazówka>
 ```
 
 Fragment `KSeF code` jest pomijany, gdy odpowiedź nie ma kodu, a linie `Details`,
-`Trace ID` i `Hint` pojawiają się tylko wtedy, gdy jest co pokazać. Treść
+`Trace ID` i `Hint` pojawiają się tylko wtedy, gdy jest co pokazać. SDK wysyła
+`X-Error-Format: problem-details` w każdym żądaniu do API KSeF, więc KSeF zwraca
+błędy 400 i 429 jako `application/problem+json`, a `trace_id` jest ustawiony w
+każdym błędzie API zwróconym w tym formacie. (401, 403 i 410 zawsze są Problem
+Details.) Nagłówek nie jest wysyłany do presigned URL-i storage. Treść
 odpowiedzi nie wchodzi do komunikatu; zostaje w `response`. Gdy treść nie jest
 rozpoznawalnym błędem, opisem jest krótki, skrócony fragment tej treści.
 
@@ -146,7 +152,8 @@ Przykład: pobranie UPO faktury, którego KSeF jeszcze nie wystawił:
 ```text
 KSeF rejected GET /sessions/online/S1/invoices/I1/upo (HTTP 400, KSeF code 21178): Nie znaleziono UPO dla podanych kryteriów.
 Details: UPO o numerze referencyjnym I1 nie zostało znalezione.
-Hint: KSeF has not issued the UPO yet. Wait for processing to finish and request it again: `download_upo()` on a session or an invoice submission waits for processing first.
+Trace ID: 0b1f6a7c-4d2e-4a53-9a6e-3f2b9d1c8e11
+Hint: KSeF has not issued the UPO yet. Call `wait()` on the invoice submission or the session first, then call `download_upo()` again.
 ```
 
 Opis i szczegóły pochodzą z KSeF, a `Hint` z SDK, które pisze wskazówki po
@@ -166,7 +173,7 @@ kodzie KSeF:
 | Status HTTP | Kod KSeF | Klasa | Wskazówka |
 | --- | --- | --- | --- |
 | dowolny | 21165 | `KSeFNotReadyError` | KSeF has processed the invoice but has not made it available yet. Call `download()` with a `timeout` so the SDK keeps polling until it is. |
-| dowolny | 21178 | `KSeFNotReadyError` | KSeF has not issued the UPO yet. Wait for processing to finish and request it again: `download_upo()` on a session or an invoice submission waits for processing first. |
+| dowolny | 21178 | `KSeFNotReadyError` | KSeF has not issued the UPO yet. Call `wait()` on the invoice submission or the session first, then call `download_upo()` again. |
 | 401 | dowolny | `KSeFAuthError` | KSeF rejected the credentials or the access token. Authenticate again with `client.authentication.with_token()` or `client.authentication.with_xades()`, and check that the token or certificate is valid for this context. |
 | 403 | dowolny | `KSeFAuthError` | The authenticated identity is not allowed to do this in the current context. Check the reason in `details`, and grant the missing permission with the permissions client, for example `grant_person()`. |
 
@@ -295,11 +302,10 @@ Zapisz właściwą referencję przed pollingiem, aby inny proces mógł wznowić
 sprawdzanie statusu. Każdy błąd timeoutu niesie `hint`, który mówi, jak czekać
 dalej albo wznowić pracę.
 
-`download_upo()` na handle faktury, sesji interaktywnej i sesji batch czeka, aż
-KSeF zakończy przetwarzanie, i dopiero potem pobiera, więc nie kończy się
-`KSeFNotReadyError` ani błędem sesji tylko dlatego, że zostało wywołane za
-wcześnie. Przyjmuje `timeout` i `poll_interval` jak `wait()` i rzuca te same
-błędy timeoutu i niepowodzenia.
+`download_upo()` na handle faktury, sesji interaktywnej i sesji batch nigdy nie
+czeka i nie ma `timeout`. Najpierw wywołaj `wait()` na handle albo sesji.
+Wywołane za wcześnie rzuca `KSeFNotReadyError` ze wskazówką wskazującą `wait()`;
+sesja, która jest nadal otwarta, rzuca `KSeFSessionError`.
 
 ## Atrybuty rate limitu
 

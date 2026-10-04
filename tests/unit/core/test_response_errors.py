@@ -186,6 +186,80 @@ class TestMessageFormat:
         assert isinstance(error.response, spec.ExceptionResponse)
 
 
+class TestParserDispatchByContentType:
+    """The parser comes from ``Content-Type``; a body is never tried against another one."""
+
+    def test_problem_json_uses_the_status_specific_model(self) -> None:
+        error = _raise(
+            400,
+            json=_bad_request({"code": 21405, "description": "Invalid."}),
+            headers=PROBLEM,
+        )
+
+        assert isinstance(error.response, spec.BadRequestProblemDetails)
+        assert (error.ksef_code, error.trace_id) == (21405, "trace-1")
+
+    def test_content_type_parameters_and_case_are_ignored(self) -> None:
+        error = _raise(
+            400,
+            json=_bad_request({"code": 21405, "description": "Invalid."}),
+            headers={"content-type": "Application/Problem+JSON; charset=utf-8"},
+        )
+
+        assert isinstance(error.response, spec.BadRequestProblemDetails)
+
+    def test_legacy_json_is_the_fallback_for_application_json(self) -> None:
+        error = _raise(400, json=_legacy(21405, "Invalid."))
+
+        assert isinstance(error.response, spec.ExceptionResponse)
+        assert error.ksef_code == 21405
+        assert error.trace_id is None
+
+    def test_legacy_429_uses_the_rate_limit_model(self) -> None:
+        error = _raise(
+            429, json={"status": {"code": 429, "description": "Slow.", "details": []}}
+        )
+
+        assert isinstance(error.response, spec.TooManyRequestsResponse)
+
+    def test_a_legacy_body_labelled_problem_json_is_not_parsed_as_legacy(self) -> None:
+        error = _raise(400, json=_legacy(21405, "Invalid."), headers=PROBLEM)
+
+        assert error.response is None
+        assert error.ksef_code is None
+
+    def test_a_problem_body_labelled_application_json_is_not_parsed_as_problem(
+        self,
+    ) -> None:
+        error = _raise(400, json=_bad_request({"code": 21405, "description": "x"}))
+
+        assert error.response is None
+        assert error.ksef_code is None
+        assert error.trace_id is None
+
+    def test_text_becomes_a_snippet(self) -> None:
+        error = _raise(
+            502,
+            content=b"<html>Bad gateway</html>",
+            headers={"content-type": "text/html"},
+        )
+
+        assert error.response is None
+        assert "<html>Bad gateway</html>" in str(error)
+
+    def test_a_body_without_a_content_type_becomes_a_snippet(self) -> None:
+        error = _raise(400, content=b"plain failure")
+
+        assert error.response is None
+        assert str(error).endswith("plain failure")
+
+    def test_an_empty_body_falls_back_to_the_reason_phrase(self) -> None:
+        error = _raise(400, headers=PROBLEM)
+
+        assert error.response is None
+        assert str(error).endswith("Bad Request")
+
+
 class TestCodesAndTraceIds:
     def test_known_code_fills_both_the_raw_code_and_the_enum(self) -> None:
         error = _raise(400, json=_legacy(21405, "Validation error."))

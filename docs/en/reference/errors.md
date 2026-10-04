@@ -126,7 +126,9 @@ diagnostics when `response` is not `None`.
 
 Every KSeF API error is formatted the same way, whatever shape the response had
 (`application/problem+json`, the older `exception` payload, another JSON body,
-text or nothing):
+text or nothing). The SDK picks the parser from the response `Content-Type`:
+`application/problem+json` is read as Problem Details, `application/json` as the
+older payload, and anything else becomes a short snippet:
 
 ```text
 KSeF rejected <METHOD> <path> (HTTP <status>, KSeF code <code>): <description>
@@ -137,7 +139,11 @@ Hint: <hint>
 
 The `KSeF code` part is left out when the response has no code, and the
 `Details`, `Trace ID` and `Hint` lines appear only when there is something to
-show. KSeF sends a trace ID with `application/problem+json` responses. The response body is not part of the message; it stays on `response`. When
+show. The SDK sends `X-Error-Format: problem-details` on every request to the KSeF
+API, so KSeF returns its 400 and 429 errors as `application/problem+json`, and
+`trace_id` is set on every API error KSeF returns in that format. (401, 403 and 410
+are always Problem Details.) The header is not sent to presigned storage URLs. The
+response body is not part of the message; it stays on `response`. When
 the body is not a recognizable error, the description is a short, truncated
 snippet of it.
 
@@ -147,7 +153,8 @@ description and details are KSeF's own words, which are Polish):
 ```text
 KSeF rejected GET /sessions/online/S1/invoices/I1/upo (HTTP 400, KSeF code 21178): Nie znaleziono UPO dla podanych kryteriów.
 Details: UPO o numerze referencyjnym I1 nie zostało znalezione.
-Hint: KSeF has not issued the UPO yet. Wait for processing to finish and request it again: `download_upo()` on a session or an invoice submission waits for processing first.
+Trace ID: 0b1f6a7c-4d2e-4a53-9a6e-3f2b9d1c8e11
+Hint: KSeF has not issued the UPO yet. Call `wait()` on the invoice submission or the session first, then call `download_upo()` again.
 ```
 
 ## Hints
@@ -162,7 +169,7 @@ Hints on API errors come from one table, looked up by HTTP status and KSeF code:
 | HTTP status | KSeF code | Class | Hint |
 | --- | --- | --- | --- |
 | any | 21165 | `KSeFNotReadyError` | KSeF has processed the invoice but has not made it available yet. Call `download()` with a `timeout` so the SDK keeps polling until it is. |
-| any | 21178 | `KSeFNotReadyError` | KSeF has not issued the UPO yet. Wait for processing to finish and request it again: `download_upo()` on a session or an invoice submission waits for processing first. |
+| any | 21178 | `KSeFNotReadyError` | KSeF has not issued the UPO yet. Call `wait()` on the invoice submission or the session first, then call `download_upo()` again. |
 | 401 | any | `KSeFAuthError` | KSeF rejected the credentials or the access token. Authenticate again with `client.authentication.with_token()` or `client.authentication.with_xades()`, and check that the token or certificate is valid for this context. |
 | 403 | any | `KSeFAuthError` | The authenticated identity is not allowed to do this in the current context. Check the reason in `details`, and grant the missing permission with the permissions client, for example `grant_person()`. |
 
@@ -292,10 +299,9 @@ status check. Every timeout error carries a `hint` that says how to keep waiting
 or resume.
 
 `download_upo()` on an invoice submission, an online session and a batch session
-waits for KSeF to finish processing before it downloads, so it does not fail with
-`KSeFNotReadyError` or a session error because it was called too early. It takes
-`timeout` and `poll_interval` like `wait()` and raises the same timeout and
-failure errors.
+never waits and has no `timeout`. Call `wait()` on the submission or the session
+first. Asked too early it raises `KSeFNotReadyError`, with a hint that names
+`wait()`; a session that is still open raises `KSeFSessionError`.
 
 ## Rate limit attributes
 
