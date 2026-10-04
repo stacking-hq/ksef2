@@ -92,8 +92,11 @@ przed `access_token_valid_until` oraz raz po odpowiedzi `401`, ponawiając
 nieudany request jednokrotnie. Współbieżne requesty współdzielą jedno
 odświeżenie.
 
-Dotyczy to także `client.authentication.resume(state)`: stan z wygasłym access
-tokenem działa, dopóki jego refresh token jest ważny. `auth.resume_state()` i
+Dotyczy to każdego sposobu uzyskania klienta uwierzytelnionego: metod logowania
+`with_*` oraz `client.authentication.resume(state)`, które przyjmuje obiekt
+stanu albo jego ciąg JSON. Stan z wygasłym access tokenem działa, dopóki jego
+refresh token jest ważny. Uchwyty sesji wznowione przez `state=` używają tego
+samego klienta, więc też się odświeżają. `auth.resume_state()` i
 `auth.auth_tokens` zwracają bieżące tokeny, więc po długo trwającej pracy zapisz
 stan ponownie.
 

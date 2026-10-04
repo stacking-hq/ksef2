@@ -16,12 +16,19 @@ from ksef2._core.token_manager import (
     ACCESS_TOKEN_REFRESH_MARGIN,
     TokenManager,
 )
+from pydantic import SecretStr
+
+from ksef2._clients.authenticated import AuthenticatedClient
 from ksef2._core.exceptions import (
+    KSeFApiError,
     KSeFAuthenticationExpiredError,
     KSeFAuthError,
 )
 from ksef2._core.middlewares.auth import BearerTokenMiddleware
 from ksef2._core.middlewares.exceptions import KSeFExceptionMiddleware
+from ksef2._domain.models.batch import BatchSessionResumeState
+from ksef2._domain.models.invoices import ExportResumeState
+from ksef2._domain.models.session import FormSchema, OnlineSessionResumeState
 from ksef2._domain.models.auth import (
     AuthenticationResumeState,
     AuthTokens,
@@ -400,3 +407,122 @@ class TestResumedClient:
 
         assert all("/auth/token/refresh" not in r.url.path for r in requests)
         assert auth.access_token == "access-1"
+
+
+AES_KEY = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+IV = "MDEyMzQ1Njc4OWFiY2RlZg=="
+REFERENCE = "20250625-SO-2C3E6C8000-B675CF5D68-07"
+
+
+def _expired_auth(
+    requests: list[httpx.Request],
+) -> tuple[Client, AuthenticatedClient]:
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path.endswith("/auth/token/refresh"):
+            return httpx.Response(
+                200,
+                json={
+                    "accessToken": {
+                        "token": "access-new",
+                        "validUntil": (
+                            datetime.now(UTC) + timedelta(hours=1)
+                        ).isoformat(),
+                    }
+                },
+            )
+        return httpx.Response(404, json={})
+
+    client = _mock_client(handler)
+    auth = client.authentication.resume(_resume_state(access_in=timedelta(minutes=-5)))
+    return client, auth
+
+
+def _assert_refreshed_then_sent(requests: list[httpx.Request]) -> None:
+    assert requests[0].url.path.endswith("/auth/token/refresh")
+    assert requests[0].headers["Authorization"] == "Bearer refresh-1"
+    assert all(r.headers["Authorization"] == "Bearer access-new" for r in requests[1:])
+    assert len(requests) >= 2
+
+
+class TestEveryWayToGetAnAuthenticatedClient:
+    def test_login_paths_build_clients_that_refresh(self) -> None:
+        requests: list[httpx.Request] = []
+        client, _ = _expired_auth(requests)
+        # with_token(), with_xades() and resume() all end in _build_authenticated_client.
+        built = client.authentication._build_authenticated_client(
+            auth_tokens=_tokens(access_in=timedelta(minutes=-5), now=datetime.now(UTC))
+        )
+
+        with pytest.raises(KSeFApiError):
+            built.sessions.terminate_current()
+
+        _assert_refreshed_then_sent(requests)
+
+    def test_resume_from_a_state_object(self) -> None:
+        requests: list[httpx.Request] = []
+        _, auth = _expired_auth(requests)
+
+        with pytest.raises(KSeFApiError):
+            auth.sessions.terminate_current()
+
+        _assert_refreshed_then_sent(requests)
+
+    def test_resume_from_a_json_string(self) -> None:
+        requests: list[httpx.Request] = []
+        client, _ = _expired_auth(requests)
+        saved = _resume_state(access_in=timedelta(minutes=-5)).to_json()
+        auth = client.authentication.resume(saved)
+
+        with pytest.raises(KSeFApiError):
+            auth.sessions.terminate_current()
+
+        _assert_refreshed_then_sent(requests)
+
+    def test_online_session_state_shares_the_refresh(self) -> None:
+        requests: list[httpx.Request] = []
+        _, auth = _expired_auth(requests)
+        state = OnlineSessionResumeState(
+            reference_number=REFERENCE,
+            aes_key=SecretStr(AES_KEY),
+            iv=SecretStr(IV),
+            valid_until=datetime.now(UTC) + timedelta(hours=1),
+            form_code=FormSchema.FA3,
+        )
+
+        session = auth.online_session(state=state.to_json())
+        with pytest.raises(KSeFApiError):
+            session.get_status()
+
+        _assert_refreshed_then_sent(requests)
+        assert auth.access_token == "access-new"
+
+    def test_batch_session_state_shares_the_refresh(self) -> None:
+        requests: list[httpx.Request] = []
+        _, auth = _expired_auth(requests)
+        state = BatchSessionResumeState(
+            reference_number=REFERENCE,
+            aes_key=SecretStr(AES_KEY),
+            iv=SecretStr(IV),
+            form_code=FormSchema.FA3,
+            part_upload_requests=[],
+        )
+
+        session = auth.batch_session(state=state)
+        with pytest.raises(KSeFApiError):
+            session.get_status()
+
+        _assert_refreshed_then_sent(requests)
+
+    def test_export_state_shares_the_refresh(self) -> None:
+        requests: list[httpx.Request] = []
+        _, auth = _expired_auth(requests)
+        state = ExportResumeState(
+            reference_number=REFERENCE, aes_key=SecretStr(AES_KEY), iv=SecretStr(IV)
+        )
+
+        job = auth.invoices.export(state=state.to_json())
+        with pytest.raises(KSeFApiError):
+            job.get_status()
+
+        _assert_refreshed_then_sent(requests)

@@ -34,14 +34,6 @@ i są dostępne przez różne gałęzie SDK.
 Pierwsze dwie rodziny są przepływami wysyłki faktur. Sesje uwierzytelniania i
 historia sesji faktur służą do inspekcji albo administracji.
 
-Sesje są otwierane access tokenem klienta uwierzytelnionego. Długie uploady i
-eksporty mogą go przeżyć, więc klient odświeża token w tle (zobacz
-[Access tokeny odświeżają się same](authentication-methods.md#access-tokeny-odświeżają-się-same)).
-Sesja faktur pozostaje ważna po odświeżeniu, a wznowiony uchwyt sesji używa tego
-samego klienta i jego bieżących tokenów. Jeśli wygasł także refresh token,
-wywołanie rzuca `KSeFAuthenticationExpiredError`: uwierzytelnij się ponownie i
-wznów sesję z zapisanego stanu.
-
 ## Sesje online
 
 Sesja online jest interaktywną ścieżką wysyłki. Otwiera się ją dla schematu
@@ -99,6 +91,15 @@ sesji nic nie robi: wznowiony klient najpierw pyta KSeF, więc nie wysyła drugi
 a potem `session.wait()` i `session.download_upo()`. `resume_online_session()` i
 `resume_batch_session()` są wycofanymi aliasami. Stan sesji zawiera klucze
 szyfrowania: nigdy go nie loguj.
+
+Wznowione uchwyty sesji, joby `invoices.export(state=...)` i reszta klienta
+uwierzytelnionego współdzielą jeden transport, więc wszystkie używają bieżącego
+access tokenu klienta i odświeżają go w razie potrzeby (zobacz
+[Access tokeny odświeżają się same](authentication-methods.md#access-tokeny-odświeżają-się-same)).
+Wznowiony klient z wygasłym access tokenem działa, dopóki jego refresh token jest
+ważny. Jeśli wygasł także refresh token, wywołanie rzuca
+`KSeFAuthenticationExpiredError`: uwierzytelnij się ponownie, a potem wznów sesję
+z zapisanego stanu.
 
 ## Sesje batch
 

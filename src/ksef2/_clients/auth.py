@@ -94,12 +94,12 @@ class AuthClient:
     def resume(self, state: AuthenticationResumeState | str) -> AuthenticatedClient:
         """Rehydrate an authenticated client from saved authentication state.
 
-        Args:
-            state: State previously exported from an authenticated client, or its JSON string.
-
         The client refreshes its access token automatically unless
         ``TransportConfig.auto_refresh_tokens`` is ``False``, so a state whose
         access token has expired still works while its refresh token is valid.
+
+        Args:
+            state: State previously exported from an authenticated client, or its JSON string.
 
         Returns:
             An authenticated client bound to the saved tokens.

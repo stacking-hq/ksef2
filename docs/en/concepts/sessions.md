@@ -34,14 +34,6 @@ live on different SDK branches.
 The first two are invoice-sending workflows. Authentication sessions and invoice
 session history are inspection/administration surfaces.
 
-Sessions are opened with the authenticated client's access token. Long uploads
-and exports can outlive it, so the client refreshes the token in the background
-(see [Access tokens refresh themselves](authentication-methods.md#access-tokens-refresh-themselves)).
-An invoice session stays valid across a refresh, and a resumed session handle
-uses the same client and its current tokens. If the refresh token has expired
-too, the call raises `KSeFAuthenticationExpiredError`: authenticate again and
-resume the session from its saved state.
-
 ## Online sessions
 
 An online session is the interactive sending path. It is opened for a form
@@ -98,6 +90,15 @@ sends a second close request. Batch sessions work the same way with
 `auth.batch_session(state=saved)`, then `session.wait()` and `session.download_upo()`.
 Both `resume_online_session()` and `resume_batch_session()` are deprecated
 aliases. Session state holds encryption keys: never log it.
+
+Resumed session handles, `invoices.export(state=...)` jobs and the rest of the
+authenticated client share one transport, so they all use the client's current
+access token and refresh it as needed (see
+[Access tokens refresh themselves](authentication-methods.md#access-tokens-refresh-themselves)).
+A resumed client whose access token has expired still works while its refresh
+token is valid. If the refresh token has expired too, the call raises
+`KSeFAuthenticationExpiredError`: authenticate again, then resume the session
+from its saved state.
 
 ## Batch sessions
 

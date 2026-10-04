@@ -92,8 +92,11 @@ your code doing anything: shortly before `access_token_valid_until`, and once
 after a `401` response, retrying the failed request a single time. Concurrent
 requests share one refresh.
 
-This also covers `client.authentication.resume(state)`: a state whose access
-token has expired works as long as its refresh token is still valid.
+This covers every way of getting an authenticated client: the `with_*` login
+methods and `client.authentication.resume(state)`, which accepts the state
+object or its JSON string. A state whose access token has expired works as long
+as its refresh token is still valid. Session handles resumed with `state=` use
+the same client, so they refresh too.
 `auth.resume_state()` and `auth.auth_tokens` return the current tokens, so save
 the state again after long-running work.
 
