@@ -661,21 +661,27 @@ class TestAsyncAuthenticatedOnlineSession:
         async_fake_transport: AsyncFakeTransport,
         domain_auth_tokens: BaseFactory[AuthTokens],
         domain_online_session_state: BaseFactory[OnlineSessionResumeState],
+        inv_session_status_resp: BaseFactory[spec.SessionStatusResponse],
     ) -> None:
         client = _build_authenticated_client(
             async_fake_transport,
             domain_auth_tokens.build(),
         )
         state = domain_online_session_state.build()
+        async_fake_transport.enqueue(
+            inv_session_status_resp.build(
+                status=spec.StatusInfo(code=100, description="open"), upo=None
+            ).model_dump(mode="json")
+        )
         async_fake_transport.enqueue({})
 
         async def _run() -> None:
-            async with client.resume_online_session(state=state) as session:
+            async with client.online_session(state=state) as session:
                 assert session.resume_state() == state
 
         asyncio.run(_run())
 
-        assert async_fake_transport.calls[0].path == (
+        assert async_fake_transport.calls[1].path == (
             SessionRoutes.TERMINATE_ONLINE.format(
                 referenceNumber=state.reference_number
             )

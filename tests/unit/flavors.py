@@ -5,11 +5,14 @@ import inspect
 from collections.abc import Iterable
 from typing import Any
 
+from ksef2._clients.async_authenticated import AsyncAuthenticatedClient
 from ksef2._clients.async_batch import AsyncBatchSessionClient
 from ksef2._clients.async_online import AsyncOnlineSessionClient
+from ksef2._clients.authenticated import AuthenticatedClient
 from ksef2._clients.batch import BatchSessionClient
 from ksef2._clients.online import OnlineSessionClient
 from ksef2._core.stores import CertificateStore
+from ksef2._domain.models.auth import AuthTokens
 from ksef2._domain.models.batch import BatchSessionResumeState, PreparedBatch
 from ksef2._domain.models.session import OnlineSessionResumeState
 from ksef2._services.async_batch import AsyncBatchService
@@ -72,6 +75,14 @@ class Flavor:
             state,
             prepared_batch=prepared_batch,
             resumed=resumed,
+        )
+
+    def authenticated(self, tokens: AuthTokens) -> Any:
+        cls = AsyncAuthenticatedClient if self.is_async else AuthenticatedClient
+        return cls(
+            transport=self.transport,  # pyright: ignore[reportArgumentType]
+            auth_tokens=tokens,
+            certificate_store=CertificateStore(),
         )
 
     def invoices_service(self) -> Any:

@@ -205,6 +205,22 @@ class AsyncOnlineSessionClient:
         """
         return self._state.reference_number
 
+    def submission(self, reference_number: str) -> AsyncInvoiceSubmission:
+        """Get the handle of an invoice sent earlier in this session.
+
+        Use it after a restart or on a resumed session to ``wait()`` for the
+        invoice or ``download_upo()``. No request is made until you call one.
+
+        Args:
+            reference_number: Invoice reference number, as exposed by the handle ``send_invoice()`` returned.
+
+        Returns:
+            The invoice submission handle.
+        """
+        return AsyncInvoiceSubmission(
+            self, invoices.SendInvoiceResponse(reference_number=reference_number)
+        )
+
     async def send_invoice(self, invoice_xml: bytes | str) -> AsyncInvoiceSubmission:
         """Encrypt and submit one invoice into the open session.
 
@@ -590,12 +606,19 @@ class AsyncOnlineSessionClient:
     async def aclose(self) -> None:
         """Terminate the online session if it is still open.
 
+        Closing an already-closed session is a no-op. A client rebuilt from saved
+        state first asks KSeF whether the session was already closed.
+
         Raises:
             KSeFApiError: If KSeF rejects the session termination request.
             httpx.HTTPError: If the HTTP transport fails before KSeF returns a
                 response.
         """
         if self._closed:
+            return
+
+        if self._resumed and (await self._session_status()).status.code != 100:
+            self._closed = True
             return
 
         await self._session_eps.terminate_online(

@@ -515,16 +515,22 @@ class TestEncryptionAndSessions:
         fake_transport: FakeTransport,
         domain_auth_tokens: BaseFactory[AuthTokens],
         domain_online_session_state: BaseFactory[OnlineSessionResumeState],
+        inv_session_status_resp: BaseFactory[spec.SessionStatusResponse],
     ) -> None:
         client = _build_client(fake_transport, domain_auth_tokens.build())
         state = domain_online_session_state.build()
+        fake_transport.enqueue(
+            inv_session_status_resp.build(
+                status=spec.StatusInfo(code=100, description="open"), upo=None
+            ).model_dump(mode="json")
+        )
         fake_transport.enqueue({})
 
-        with client.resume_online_session(state) as resumed:
+        with client.online_session(state=state) as resumed:
             assert isinstance(resumed, OnlineSessionClient)
             assert resumed.resume_state() == state
 
-        assert fake_transport.calls[0].path == SessionRoutes.TERMINATE_ONLINE.format(
+        assert fake_transport.calls[1].path == SessionRoutes.TERMINATE_ONLINE.format(
             referenceNumber=state.reference_number
         )
 
@@ -533,15 +539,21 @@ class TestEncryptionAndSessions:
         fake_transport: FakeTransport,
         domain_auth_tokens: BaseFactory[AuthTokens],
         domain_batch_session_state: BaseFactory[BatchSessionResumeState],
+        inv_session_status_resp: BaseFactory[spec.SessionStatusResponse],
     ) -> None:
         client = _build_client(fake_transport, domain_auth_tokens.build())
         state = domain_batch_session_state.build()
+        fake_transport.enqueue(
+            inv_session_status_resp.build(
+                status=spec.StatusInfo(code=100, description="open"), upo=None
+            ).model_dump(mode="json")
+        )
         fake_transport.enqueue({})
 
-        with client.resume_batch_session(state) as resumed:
+        with client.batch_session(state=state) as resumed:
             assert isinstance(resumed, BatchSessionClient)
             assert resumed.resume_state() == state
 
-        assert fake_transport.calls[0].path == SessionRoutes.CLOSE_BATCH.format(
+        assert fake_transport.calls[1].path == SessionRoutes.CLOSE_BATCH.format(
             referenceNumber=state.reference_number
         )

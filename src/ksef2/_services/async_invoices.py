@@ -9,7 +9,7 @@ from collections.abc import (
     Coroutine,
 )
 from pathlib import Path
-from typing import final, override
+from typing import final, overload, override
 
 from typing_extensions import deprecated
 
@@ -26,6 +26,7 @@ from ksef2._core.stores import CertificateStoreProtocol
 from ksef2._domain.models.compression import CompressionType
 from ksef2._domain.models.invoices import (
     ExportHandle,
+    ExportResumeState,
     InvoiceExportStatusResponse,
     InvoiceMetadata,
     InvoicePackage,
@@ -59,7 +60,7 @@ class AsyncExportJob(
 
     def __init__(
         self,
-        reference_number: str,
+        state: ExportResumeState,
         *,
         get_status: Callable[[], Awaitable[InvoiceExportStatusResponse]],
         download_parts: Callable[[InvoicePackage], Awaitable[list[bytes]]],
@@ -67,13 +68,26 @@ class AsyncExportJob(
         """Create the handle.
 
         Args:
-            reference_number: Reference number of the export.
+            state: Reference number and key material of the export.
             get_status: Coroutine function returning the current export status.
             download_parts: Coroutine function that downloads and decrypts every part of a package, in order.
         """
-        super().__init__(reference_number)
+        super().__init__(state.reference_number)
+        self._state = state
         self._get_status = get_status
         self._download_parts = download_parts
+
+    def resume_state(self) -> ExportResumeState:
+        """Return the sensitive state needed to resume the export later.
+
+        Persist it with ``to_json()`` before waiting, and pass it to
+        ``auth.invoices.export(state=...)`` after a restart to get the job back.
+        It holds the key that decrypts the package, so store it as a credential.
+
+        Returns:
+            The export's reference number and AES key material.
+        """
+        return self._state
 
     @override
     async def get_status(self) -> InvoiceExportStatusResponse:
@@ -262,17 +276,34 @@ class AsyncInvoicesService:
             poll_interval=poll_interval,
         )
 
+    @overload
     async def export(
         self,
         filters: InvoicesFilter,
         *,
         only_metadata: bool = False,
         compression_type: CompressionType | str | None = None,
+    ) -> AsyncExportJob: ...
+
+    @overload
+    async def export(self, *, state: ExportResumeState | str) -> AsyncExportJob: ...
+
+    async def export(
+        self,
+        filters: InvoicesFilter | None = None,
+        *,
+        state: ExportResumeState | str | None = None,
+        only_metadata: bool = False,
+        compression_type: CompressionType | str | None = None,
     ) -> AsyncExportJob:
-        """Schedule an encrypted invoice export.
+        """Schedule an encrypted invoice export, or resume one scheduled earlier.
+
+        Pass exactly one of ``filters`` (schedule a new export) or ``state``
+        (resume the export described by a saved ``ExportResumeState``).
 
         Args:
             filters: Criteria selecting the invoices to export.
+            state: State from ``ExportJob.resume_state()``, or its JSON string, to resume an export after a restart. Cannot be combined with the other arguments.
             only_metadata: Export only invoice metadata instead of full invoice XML.
             compression_type: Compression applied to the package; ``None`` for the server default.
 
@@ -280,28 +311,54 @@ class AsyncInvoicesService:
             A handle to the export. Call its ``wait()`` to download the decrypted package.
 
         Raises:
+            TypeError: If neither or both of ``filters`` and ``state`` are given, or ``state`` is combined with scheduling options.
             NoCertificateAvailableError: If no valid symmetric-key certificate is
                 available.
             KSeFEncryptionError: If export key encryption fails.
+            KSeFValidationError: If ``state`` is not valid export resume state.
 
         Example:
             ```python
             job = await auth.invoices.export(filters)
+            saved = job.resume_state().to_json()  # persist before waiting
+
+            job = await auth.invoices.export(state=saved)  # after a restart
             package = await job.wait()
             package.save("out/")
             ```
         """
-        handle = await self._schedule_export(
-            filters=filters,
-            only_metadata=only_metadata,
-            compression_type=compression_type,
-        )
+        if (filters is None) == (state is None):
+            raise TypeError(
+                "export() takes either filters (to schedule a new export) or "
+                "state (to resume one), not both and not neither."
+            )
+        if state is not None:
+            if only_metadata or compression_type is not None:
+                raise TypeError(
+                    "export(state=...) resumes an existing export; "
+                    "only_metadata and compression_type apply only to filters."
+                )
+            resume = (
+                ExportResumeState.from_json(state) if isinstance(state, str) else state
+            )
+        else:
+            assert filters is not None
+            handle = await self._schedule_export(
+                filters=filters,
+                only_metadata=only_metadata,
+                compression_type=compression_type,
+            )
+            resume = ExportResumeState.from_handle(handle)
+        return self._export_job(resume)
+
+    def _export_job(self, state: ExportResumeState) -> AsyncExportJob:
+        handle = state.to_handle()
 
         async def _download_parts(package: InvoicePackage) -> list[bytes]:
             return await self._download_package_parts(package=package, export=handle)
 
         return AsyncExportJob(
-            handle.reference_number,
+            state,
             get_status=lambda: self._client.get_export_status(
                 reference_number=handle.reference_number
             ),

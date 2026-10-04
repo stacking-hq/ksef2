@@ -152,7 +152,7 @@ def test_sync_upload_marks_lost_response_ambiguous_and_exposes_recovery(
         authenticated = client.authentication.resume(
             AuthenticationResumeState.from_tokens(domain_auth_tokens.build())
         )
-        session = authenticated.resume_batch_session(state)
+        session = authenticated.batch_session(state=state)
         try:
             with pytest.raises(KSeFBatchUploadError) as exc_info:
                 authenticated.batch.upload_parts(
@@ -242,7 +242,7 @@ def test_async_upload_marks_lost_response_ambiguous_and_exposes_recovery(
             authenticated = client.authentication.resume(
                 AuthenticationResumeState.from_tokens(domain_auth_tokens.build())
             )
-            session = authenticated.resume_batch_session(state)
+            session = await authenticated.batch_session(state=state)
             try:
                 with pytest.raises(KSeFBatchUploadError) as exc_info:
                     await authenticated.batch.upload_parts(

@@ -88,16 +88,21 @@ class AuthClient:
         self._certificates = EncryptionClient(transport)
         self._auth_ep = AuthEndpoints(transport)
 
-    def resume(self, state: AuthenticationResumeState) -> AuthenticatedClient:
+    def resume(self, state: AuthenticationResumeState | str) -> AuthenticatedClient:
         """Rehydrate an authenticated client from saved authentication state.
 
         Args:
-            state: State previously exported from an authenticated client.
+            state: State previously exported from an authenticated client, or its JSON string.
 
         Returns:
             An authenticated client bound to the saved tokens.
         """
-        return self._build_authenticated_client(auth_tokens=state.to_tokens())
+        resume = (
+            AuthenticationResumeState.from_json(state)
+            if isinstance(state, str)
+            else state
+        )
+        return self._build_authenticated_client(auth_tokens=resume.to_tokens())
 
     def with_token(
         self,

@@ -376,9 +376,15 @@ class AsyncBatchSessionClient:
         """Close the batch session and start processing.
 
         This triggers processing of the invoice batch and generation of UPO
-        for valid invoices and a collective UPO for the session.
+        for valid invoices and a collective UPO for the session. Closing an
+        already-closed session is a no-op; a client rebuilt from saved state first
+        asks KSeF whether the session was already closed.
         """
         if self._closed:
+            return
+
+        if self._resumed and (await self.get_status()).status.code != 100:
+            self._closed = True
             return
 
         await self._session_eps.close_batch(
