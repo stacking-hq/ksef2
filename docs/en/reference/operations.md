@@ -85,8 +85,8 @@ Retry delay is exponential:
 min(initial_delay * backoff_multiplier ** (attempt - 1), max_delay)
 ```
 
-If KSeF sends `Retry-After`, the retry middleware uses that value, capped at
-`max_delay`.
+If KSeF sends `Retry-After`, as seconds or as an HTTP date, the retry middleware
+uses that value, capped at `max_delay`.
 
 ## Retryable requests
 
@@ -182,7 +182,7 @@ exposes:
 
 | Attribute | Meaning |
 | --- | --- |
-| `retry_after` | Seconds from `Retry-After` when KSeF returned the header; otherwise `None`. |
+| `retry_after` | Seconds from `Retry-After` (seconds or HTTP-date form) when KSeF returned the header; otherwise `None`. |
 | `status_code` | Always `429`. |
 | `response` | Parsed KSeF error payload when available. |
 
@@ -212,7 +212,8 @@ Useful production log fields:
 | `ksef_number` | Final KSeF invoice number after acceptance. |
 | `operation_reference_number` | Token, permission, certificate, auth, or export operation reference. |
 | `sdk_error_code` | `KSeFException.context["code"]` when present. |
-| `exception_code` | KSeF exception code from `KSeFApiError.exception_code` when present. |
+| `ksef_code` | Raw KSeF error code from `KSeFApiError.ksef_code` when present. |
+| `trace_id` | KSeF trace ID from `KSeFApiError.trace_id`; quote it when contacting KSeF support. |
 
 ## Resumable workflow state
 

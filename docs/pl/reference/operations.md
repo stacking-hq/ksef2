@@ -85,8 +85,8 @@ Opóźnienie retry jest wykładnicze:
 min(initial_delay * backoff_multiplier ** (attempt - 1), max_delay)
 ```
 
-Jeżeli KSeF wyśle `Retry-After`, middleware retry użyje tej wartości, ale nie
-większej niż `max_delay`.
+Jeżeli KSeF wyśle `Retry-After`, jako sekundy albo datę HTTP, middleware retry
+użyje tej wartości, ale nie większej niż `max_delay`.
 
 ## Ponawialne requesty
 
@@ -183,7 +183,7 @@ udostępnia:
 
 | Atrybut | Znaczenie |
 | --- | --- |
-| `retry_after` | Liczba sekund z `Retry-After`, jeśli KSeF zwrócił nagłówek; inaczej `None`. |
+| `retry_after` | Liczba sekund z `Retry-After` (forma sekundowa albo data HTTP), jeśli KSeF zwrócił nagłówek; inaczej `None`. |
 | `status_code` | Zawsze `429`. |
 | `response` | Sparsowany payload błędu KSeF, jeśli jest dostępny. |
 
@@ -213,7 +213,8 @@ Przydatne pola logów produkcyjnych:
 | `ksef_number` | Finalny numer KSeF po przyjęciu faktury. |
 | `operation_reference_number` | Referencja operacji tokenu, uprawnienia, certyfikatu, auth albo eksportu. |
 | `sdk_error_code` | `KSeFException.context["code"]`, gdy istnieje. |
-| `exception_code` | Kod wyjątku KSeF z `KSeFApiError.exception_code`, gdy istnieje. |
+| `ksef_code` | Surowy kod błędu KSeF z `KSeFApiError.ksef_code`, gdy istnieje. |
+| `trace_id` | Identyfikator śledzenia KSeF z `KSeFApiError.trace_id`; podaj go, kontaktując się z pomocą KSeF. |
 
 ## Wznawialny stan workflow
 
