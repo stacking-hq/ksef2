@@ -223,7 +223,7 @@ class AuthenticatedClient:
             A session client that can be used as a context manager and closes the session on exit.
 
         Raises:
-            TypeError: If neither or both of ``form_code`` and ``state`` are given.
+            KSeFArgumentError: If neither or both of ``form_code`` and ``state`` are given.
             NoCertificateAvailableError: If no valid symmetric-key certificate is
                 available.
             KSeFEncryptionError: If symmetric-key encryption fails.
@@ -242,7 +242,7 @@ class AuthenticatedClient:
             ```
         """
         if (form_code is None) == (state is None):
-            raise TypeError(
+            raise exceptions.KSeFArgumentError(
                 "online_session() takes either form_code (to open a new session) "
                 "or state (to resume one), not both and not neither."
             )
@@ -340,7 +340,7 @@ class AuthenticatedClient:
             A bound batch session client exposing presigned upload instructions.
 
         Raises:
-            TypeError: If not exactly one of ``prepared_batch``, ``batch_file`` and ``state`` is given, or ``form_code`` or ``offline_mode`` is combined with ``prepared_batch`` or ``state``.
+            KSeFArgumentError: If not exactly one of ``prepared_batch``, ``batch_file`` and ``state`` is given, or ``form_code`` or ``offline_mode`` is combined with ``prepared_batch`` or ``state``.
             NoCertificateAvailableError: If certificate-backed encryption material is
                 needed but no valid certificate is available.
             KSeFEncryptionError: If symmetric-key encryption fails.
@@ -371,12 +371,12 @@ class AuthenticatedClient:
             if value is not None
         ]
         if len(given) != 1:
-            raise TypeError(
+            raise exceptions.KSeFArgumentError(
                 "batch_session() takes exactly one of prepared_batch, batch_file "
                 f"or state; got {', '.join(given) if given else 'none'}."
             )
         if batch_file is None and (form_code is not None or offline_mode is not None):
-            raise TypeError(
+            raise exceptions.KSeFArgumentError(
                 "form_code and offline_mode apply only with batch_file; a "
                 "prepared batch or saved state already carries them."
             )

@@ -87,6 +87,22 @@ class KSeFValidationError(KSeFException):
         self.context["code"] = self.code
 
 
+class KSeFArgumentError(KSeFValidationError, TypeError):
+    """Raised when a call combines arguments the SDK does not allow.
+
+    It is raised for "exactly one of" violations, such as passing both or neither
+    of ``form_code`` and ``state`` to ``online_session()``. It subclasses
+    ``KSeFValidationError`` so existing handlers keep catching it, and
+    ``TypeError`` because the call itself is wrong.
+
+    Args:
+        message: Human-readable error message.
+        **context: Additional structured details, stored in ``context``.
+    """
+
+    code: str = "ARGUMENT_ERROR"
+
+
 class KSeFInvoiceRenderingError(KSeFException):
     """Raised when invoice rendering fails."""
 

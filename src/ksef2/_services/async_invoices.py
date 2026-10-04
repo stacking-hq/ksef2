@@ -311,7 +311,7 @@ class AsyncInvoicesService:
             A handle to the export. Call its ``wait()`` to download the decrypted package.
 
         Raises:
-            TypeError: If neither or both of ``filters`` and ``state`` are given, or ``state`` is combined with scheduling options.
+            KSeFArgumentError: If neither or both of ``filters`` and ``state`` are given, or ``state`` is combined with scheduling options.
             NoCertificateAvailableError: If no valid symmetric-key certificate is
                 available.
             KSeFEncryptionError: If export key encryption fails.
@@ -328,13 +328,13 @@ class AsyncInvoicesService:
             ```
         """
         if (filters is None) == (state is None):
-            raise TypeError(
+            raise exceptions.KSeFArgumentError(
                 "export() takes either filters (to schedule a new export) or "
                 "state (to resume one), not both and not neither."
             )
         if state is not None:
             if only_metadata or compression_type is not None:
-                raise TypeError(
+                raise exceptions.KSeFArgumentError(
                     "export(state=...) resumes an existing export; "
                     "only_metadata and compression_type apply only to filters."
                 )

@@ -44,6 +44,7 @@ except httpx.HTTPError as exc:
 | `KSeFClientClosedError` | `CLIENT_CLOSED` | Root client or session client used after close. |
 | `KSeFUnsupportedEnvironmentError` | `UNSUPPORTED_ENVIRONMENT` | TEST-only branch or flow used outside `Environment.TEST`. |
 | `KSeFValidationError` | `VALIDATION_ERROR` | Invalid SDK input, invalid response payload, invalid profile config, or invalid session/batch arguments. |
+| `KSeFArgumentError` | `ARGUMENT_ERROR` | A call combined arguments the SDK does not allow, such as both or neither of `form_code` and `state`. Subclass of both `KSeFValidationError` and `TypeError`. |
 | `KSeFInvoiceRenderingError` | `INVOICE_RENDERING_ERROR` | Optional XSLT/PDF rendering failures. |
 | `KSeFEncryptionError` | `ENCRYPTION_ERROR` | Token, symmetric-key, invoice encryption, or decryption failure. |
 | `KSeFSessionError` | `SESSION_ERROR` | Session-state violation, such as using a closed session. Base class of `KSeFInvoiceRejectedError`. |

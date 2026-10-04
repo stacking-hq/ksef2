@@ -386,3 +386,39 @@ class TestExportResume:
     def test_invalid_json_state_raises_a_validation_error(self, flavor: Flavor) -> None:
         with pytest.raises(ValueError):
             flavor.run(flavor.invoices_service().export(state="{}"))
+
+
+class TestArgumentError:
+    def test_is_both_a_type_error_and_a_validation_error(self) -> None:
+        from ksef2 import KSeFArgumentError
+        from ksef2._core.exceptions import KSeFValidationError
+
+        error = KSeFArgumentError("bad call")
+
+        assert isinstance(error, TypeError)
+        assert isinstance(error, KSeFValidationError)
+        assert error.context["code"] == "ARGUMENT_ERROR"
+
+    def test_every_exactly_one_violation_raises_it(
+        self,
+        flavor: Flavor,
+        domain_auth_tokens: BaseFactory[AuthTokens],
+        domain_batch_file_info: BaseFactory[BatchFileInfo],
+    ) -> None:
+        from ksef2 import KSeFArgumentError
+        from ksef2._core.exceptions import KSeFValidationError
+
+        auth = _auth(flavor, domain_auth_tokens)
+        calls = [
+            lambda: auth.online_session(),
+            lambda: auth.batch_session(),
+            lambda: auth.batch_session(
+                prepared_batch=MagicMock(spec=PreparedBatch),
+                batch_file=domain_batch_file_info.build(),
+            ),
+            lambda: flavor.run(flavor.invoices_service().export()),
+        ]
+        for call in calls:
+            for expected in (KSeFArgumentError, TypeError, KSeFValidationError):
+                with pytest.raises(expected):
+                    call()

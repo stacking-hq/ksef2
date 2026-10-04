@@ -54,6 +54,7 @@ from ksef2._config import (
 from ksef2._core.exceptions import (
     ExceptionCode,
     KSeFApiError,
+    KSeFArgumentError,
     KSeFAuthError,
     KSeFAuthPollingTimeoutError,
     KSeFAuthTokenRedemptionError,
@@ -91,6 +92,7 @@ __all__ = [
     "ExceptionCode",
     "FormSchema",
     "KSeFApiError",
+    "KSeFArgumentError",
     "KSeFAuthError",
     "KSeFAuthPollingTimeoutError",
     "KSeFAuthTokenRedemptionError",
