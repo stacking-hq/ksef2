@@ -17,6 +17,7 @@ from tests.unit.factories.collective_identifiers import (
     CollectiveIdentifiersQueryResponseFactory,
 )
 from tests.unit.fakes.transport import AsyncFakeTransport
+from tests.unit.helpers import legacy_api
 
 _KSEF_NUMBER = "1234567890-20250625-ABC123-DEF456-07"
 _SECOND_KSEF_NUMBER = "1234567890-20250625-ABC123-DEF457-08"
@@ -66,6 +67,7 @@ class TestAsyncCollectiveIdentifiersClient:
             ]
         }
 
+    @legacy_api
     def test_query_all_follows_continuation_token(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -94,6 +96,7 @@ class TestAsyncCollectiveIdentifiersClient:
             "x-continuation-token": "next-page"
         }
 
+    @legacy_api
     def test_query_by_ksef_and_list_invoices_map_responses(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -114,16 +117,14 @@ class TestAsyncCollectiveIdentifiersClient:
 
         identifiers = asyncio.run(client.query_by_ksef_number(ksef_number=_KSEF_NUMBER))
         invoices = asyncio.run(
-            client.list_invoices(
-                collective_identifier_numbers=[_COLLECTIVE_IDENTIFIER_NUMBER]
-            )
+            client.list_invoices([_COLLECTIVE_IDENTIFIER_NUMBER]).first_page()
         )
 
         assert (
             identifiers.collective_identifiers[0].collective_identifier_number
             == _COLLECTIVE_IDENTIFIER_NUMBER
         )
-        assert invoices.invoices[0].ksef_number == _KSEF_NUMBER
+        assert invoices[0].ksef_number == _KSEF_NUMBER
         assert [(call.method, call.path) for call in async_fake_transport.calls] == [
             (
                 "GET",
@@ -137,6 +138,7 @@ class TestAsyncCollectiveIdentifiersClient:
             "collectiveIdentifierNumbers": [_COLLECTIVE_IDENTIFIER_NUMBER]
         }
 
+    @legacy_api
     def test_list_all_invoices_follows_continuation_token(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -188,9 +190,7 @@ class TestAsyncCollectiveIdentifiersClient:
 
         with pytest.raises(ValidationError, match="collective_identifier_numbers"):
             _ = asyncio.run(
-                client.list_invoices(
-                    collective_identifier_numbers=collective_identifier_numbers
-                )
+                client.list_invoices(collective_identifier_numbers).first_page()
             )
 
         assert async_fake_transport.calls == []
