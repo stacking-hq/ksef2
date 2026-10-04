@@ -8,6 +8,7 @@ from ksef2._config import RetryConfig
 from ksef2._core import routes
 from ksef2._core.async_protocols import AsyncMiddleware
 from ksef2._core.middlewares.async_base import AsyncBaseMiddleware
+from ksef2._core.retry_after import parse_retry_after
 from ksef2._core.types import Headers, JsonObject, QueryParamsInput
 
 AsyncSleep = Callable[[float], Awaitable[object]]
@@ -32,16 +33,10 @@ class AsyncRetryMiddleware(AsyncBaseMiddleware):
         return status_code in self._config.retryable_status_codes
 
     def _parse_retry_after(self, response: httpx.Response) -> float | None:
-        value = cast(str | None, response.headers.get("Retry-After"))
-        if value is None:
+        delay = parse_retry_after(cast(str | None, response.headers.get("Retry-After")))
+        if delay is None:
             return None
-
-        try:
-            delay = float(value)
-        except (TypeError, ValueError):
-            return None
-
-        return max(0.0, min(delay, self._config.max_delay))
+        return min(delay, self._config.max_delay)
 
     def _backoff_delay(self, attempt: int) -> float:
         delay = self._config.initial_delay * (

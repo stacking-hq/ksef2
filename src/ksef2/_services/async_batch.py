@@ -695,7 +695,8 @@ class AsyncBatchService:
             if status.status.code >= 400:
                 raise exceptions.KSeFSessionError(
                     "Batch session processing failed: "
-                    f"{reference_number} ({status.status.code}: {status.status.description})"
+                    f"{reference_number} ({status.status.code}: {status.status.description})",
+                    hint="See why invoices failed with `list_failed_invoices()`.",
                 )
             return status
 

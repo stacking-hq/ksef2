@@ -126,7 +126,11 @@ class AsyncTokenManager:
             refreshed = await self._refresh(self._tokens.refresh_token.token)
         except exceptions.KSeFAuthError as exc:
             raise exceptions.KSeFAuthenticationExpiredError(
-                status_code=exc.status_code, response=exc.response
+                status_code=exc.status_code,
+                response=exc.response,
+                ksef_code=exc.ksef_code,
+                trace_id=exc.trace_id,
+                details=exc.details,
             ) from exc
         self._tokens = self._tokens.model_copy(
             update={"access_token": refreshed.access_token}

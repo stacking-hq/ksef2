@@ -1,6 +1,6 @@
 """Public exception hierarchy raised by the KSeF SDK."""
 
-from typing import Any, Literal
+from typing import Any, Literal, override
 from pydantic import BaseModel
 from enum import IntEnum
 
@@ -43,21 +43,44 @@ class ExceptionCode(IntEnum):
 class KSeFException(Exception):
     """Base exception for all KSeF SDK errors.
 
+    Branch on the exception class, or on ``ksef_code`` for API errors, and never
+    on the message text: messages are meant for people and can change.
+
     Args:
         message: Human-readable error message.
+        hint: Next step for this occurrence; overrides the class default.
         **context: Additional structured details, stored in ``context``.
 
     Attributes:
         code: Stable machine-readable error code of the exception class.
-        context: Structured details about the failure; always contains ``code``.
+        hint: What to do next, or ``None`` when the SDK does not know the cause. Shown as a ``Hint:`` line in ``str(exc)``.
+        context: Structured details about the failure; always contains ``code``, and ``hint`` when there is one.
     """
 
     code: str = "SDK_ERROR"
+    hint: str | None = None
 
-    def __init__(self, message: str, **context: Any):
+    def __init__(
+        self,
+        message: str,
+        *,
+        hint: str | None = None,
+        **context: Any,  # pyright: ignore[reportAny, reportExplicitAny]
+    ):
         super().__init__(message)
+        if hint is not None:
+            self.hint = hint
         self.context: dict[str, Any] = context
         self.context["code"] = self.code
+        if self.hint is not None:
+            self.context["hint"] = self.hint
+
+    @override
+    def __str__(self) -> str:
+        message = super().__str__()
+        if self.hint is None:
+            return message
+        return f"{message}\nHint: {self.hint}"
 
 
 class KSeFClientClosedError(KSeFException):
@@ -77,14 +100,11 @@ class KSeFValidationError(KSeFException):
 
     Args:
         message: Human-readable error message.
+        hint: Next step for this occurrence; overrides the class default.
         **context: Additional structured details, stored in ``context``.
     """
 
     code: str = "VALIDATION_ERROR"
-
-    def __init__(self, message: str, **context: Any):
-        super().__init__(message, **context)
-        self.context["code"] = self.code
 
 
 class KSeFArgumentError(KSeFValidationError, TypeError):  # pyright: ignore[reportUnsafeMultipleInheritance]
@@ -97,10 +117,14 @@ class KSeFArgumentError(KSeFValidationError, TypeError):  # pyright: ignore[repo
 
     Args:
         message: Human-readable error message.
+        hint: Next step for this occurrence; overrides the class default.
         **context: Additional structured details, stored in ``context``.
     """
 
     code: str = "ARGUMENT_ERROR"
+    hint: str | None = (
+        "Pass exactly one of the mutually exclusive arguments named in the message."
+    )
 
 
 class KSeFInvoiceRenderingError(KSeFException):
@@ -112,15 +136,28 @@ class KSeFInvoiceRenderingError(KSeFException):
 class KSeFApiError(KSeFException):
     """Raised on 4xx/5xx responses from the KSeF API.
 
+    ``str(exc)`` reads ``KSeF rejected <METHOD path> (HTTP <status>, KSeF code
+    <code>): <description>``, followed by ``Details:``, ``Trace ID:`` and
+    ``Hint:`` lines when KSeF or the SDK supplied them. The full response body is
+    on ``response``, not in the message. Branch on the exception class or on
+    ``ksef_code``, never on the message text.
+
     Args:
         status_code: HTTP status code of the response.
-        exception_code: KSeF exception code parsed from the response.
+        exception_code: KSeF exception code parsed from the response, ``ExceptionCode.UNKNOWN_ERROR`` when it is absent or not listed.
         message: Human-readable error message.
         response: Parsed error response body, if available.
+        ksef_code: Raw KSeF error code from the response, if there was one.
+        trace_id: KSeF trace ID of the failed request, if KSeF returned one.
+        details: Detail messages KSeF attached to the error.
+        hint: Next step for this occurrence; overrides the class default.
 
     Attributes:
         status_code: HTTP status code of the response.
-        exception_code: KSeF exception code parsed from the response.
+        exception_code: KSeF exception code as the ``ExceptionCode`` enum; ``UNKNOWN_ERROR`` for codes the enum does not list.
+        ksef_code: Raw KSeF error code, or ``None`` when the response carried none. It is the source of truth; prefer it over ``exception_code``.
+        trace_id: KSeF trace ID to quote when contacting KSeF support, or ``None``.
+        details: Detail messages KSeF attached to the error; empty when there are none.
         response: Parsed error response body, or ``None``.
     """
 
@@ -132,17 +169,41 @@ class KSeFApiError(KSeFException):
         exception_code: ExceptionCode,
         message: str,
         response: BaseModel | None = None,
+        *,
+        ksef_code: int | None = None,
+        trace_id: str | None = None,
+        details: list[str] | None = None,
+        hint: str | None = None,
     ) -> None:
         self.status_code = status_code
         self.response = response
         self.exception_code = exception_code
-
-        msg = (
-            f"{self.code}/{status_code}: {message}\n"
-            f"Response: {response.model_dump_json(indent=2) if response else '<none>'}"
+        self.ksef_code = ksef_code
+        self.trace_id = trace_id
+        self.details: list[str] = list(details or [])
+        super().__init__(
+            message,
+            hint=hint,
+            status_code=status_code,
+            ksef_code=ksef_code,
+            trace_id=trace_id,
+            details=self.details,
         )
 
-        super().__init__(msg)
+
+class KSeFNotReadyError(KSeFApiError):
+    """Raised when KSeF has not made a processed resource available yet.
+
+    KSeF reports codes 21165 (the invoice is processed but not yet available for
+    download) and 21178 (no UPO found yet). The resource usually appears shortly,
+    so waiting and asking again is the normal recovery. It subclasses
+    ``KSeFApiError``, so existing handlers keep working.
+    """
+
+    code: str = "NOT_READY"
+    hint: str | None = (
+        "KSeF has not finished preparing this resource. Wait and request it again."
+    )
 
 
 class KSeFAuthError(KSeFApiError):
@@ -152,6 +213,10 @@ class KSeFAuthError(KSeFApiError):
         status_code: HTTP status code of the response, ``401`` or ``403``.
         message: Human-readable error message.
         response: Parsed error response body, if available.
+        ksef_code: Raw KSeF error code from the response, if there was one.
+        trace_id: KSeF trace ID of the failed request, if KSeF returned one.
+        details: Detail messages KSeF attached to the error.
+        hint: Next step for this occurrence; overrides the class default.
     """
 
     code: str = "AUTH_ERROR"
@@ -161,8 +226,22 @@ class KSeFAuthError(KSeFApiError):
         status_code: int,
         message: str,
         response: BaseModel | None = None,
+        *,
+        ksef_code: int | None = None,
+        trace_id: str | None = None,
+        details: list[str] | None = None,
+        hint: str | None = None,
     ) -> None:
-        super().__init__(status_code, ExceptionCode.UNKNOWN_ERROR, message, response)
+        super().__init__(
+            status_code,
+            ExceptionCode.from_code(ksef_code),
+            message,
+            response,
+            ksef_code=ksef_code,
+            trace_id=trace_id,
+            details=details,
+            hint=hint,
+        )
 
 
 class KSeFAuthenticationExpiredError(KSeFAuthError):
@@ -173,32 +252,58 @@ class KSeFAuthenticationExpiredError(KSeFAuthError):
     handlers for authentication failures keep working.
 
     Args:
-        message: Human-readable error message; defaults to a request to authenticate again.
+        message: Human-readable error message; defaults to a statement that the access token can no longer be renewed.
         status_code: HTTP status code of the rejected response, ``401`` or ``403``.
         response: Parsed error response body, if available.
+        ksef_code: Raw KSeF error code from the rejected response, if there was one.
+        trace_id: KSeF trace ID of the rejected request, if KSeF returned one.
+        details: Detail messages KSeF attached to the rejection.
+        hint: Next step for this occurrence; overrides the class default.
     """
 
     code: str = "AUTHENTICATION_EXPIRED"
+    hint: str | None = (
+        "Authenticate again with `client.authentication.with_token()` or "
+        "`client.authentication.with_xades()`, or restore tokens that are still "
+        "valid with `client.authentication.resume()`."
+    )
 
     def __init__(
         self,
         message: str = (
             "The refresh token is expired or was rejected, so the access token "
-            "can no longer be renewed. Authenticate again."
+            "can no longer be renewed."
         ),
         status_code: int = 401,
         response: BaseModel | None = None,
+        *,
+        ksef_code: int | None = None,
+        trace_id: str | None = None,
+        details: list[str] | None = None,
+        hint: str | None = None,
     ) -> None:
-        super().__init__(status_code, message, response)
+        super().__init__(
+            status_code,
+            message,
+            response,
+            ksef_code=ksef_code,
+            trace_id=trace_id,
+            details=details,
+            hint=hint,
+        )
 
 
 class KSeFRateLimitError(KSeFApiError):
     """Raised on 429 responses. Check ``retry_after`` for seconds to wait.
 
     Args:
-        retry_after: Seconds to wait before retrying, from the ``Retry-After`` header; ``None`` if absent.
+        retry_after: Seconds to wait before retrying, from the ``Retry-After`` header in either its seconds or HTTP-date form; ``None`` if absent.
         message: Human-readable error message.
         response: Parsed error response body, if available.
+        ksef_code: Raw KSeF error code from the response, if there was one.
+        trace_id: KSeF trace ID of the failed request, if KSeF returned one.
+        details: Detail messages KSeF attached to the error.
+        hint: Next step for this occurrence; defaults to waiting ``retry_after`` seconds.
 
     Attributes:
         retry_after: Seconds to wait before retrying, or ``None``.
@@ -211,10 +316,30 @@ class KSeFRateLimitError(KSeFApiError):
         retry_after: int | None,
         message: str,
         response: BaseModel | None = None,
+        *,
+        ksef_code: int | None = None,
+        trace_id: str | None = None,
+        details: list[str] | None = None,
+        hint: str | None = None,
     ) -> None:
         self.retry_after = retry_after
-        self.response = response
-        super().__init__(429, ExceptionCode.UNKNOWN_ERROR, message, response)
+        if hint is None:
+            hint = (
+                f"Wait {retry_after} seconds before retrying."
+                if retry_after is not None
+                else "Wait a little before retrying, and send fewer requests."
+            )
+        super().__init__(
+            429,
+            ExceptionCode.from_code(ksef_code),
+            message,
+            response,
+            ksef_code=ksef_code,
+            trace_id=trace_id,
+            details=details,
+            hint=hint,
+        )
+        self.context["retry_after"] = retry_after
 
 
 class KSeFExternalTransferError(KSeFException):
@@ -337,6 +462,7 @@ class KSeFSessionError(KSeFException):
 
     Args:
         message: Description of the session-state violation.
+        hint: Next step for this occurrence.
     """
 
     code: str = "SESSION_ERROR"
@@ -344,8 +470,16 @@ class KSeFSessionError(KSeFException):
     def __init__(
         self,
         message: str,
+        *,
+        hint: str | None = None,
     ) -> None:
-        super().__init__(f"{self.code}: {message}")
+        super().__init__(f"{self.code}: {message}", hint=hint)
+
+
+_DUPLICATE_INVOICE_HINT = (
+    "KSeF already holds this invoice (status 440). `extensions` carries "
+    "`originalKsefNumber`: fetch it with `download()` and compare it with what you sent."
+)
 
 
 class KSeFInvoiceRejectedError(KSeFSessionError):
@@ -375,6 +509,10 @@ class KSeFInvoiceRejectedError(KSeFSessionError):
     """
 
     code: str = "INVOICE_REJECTED"
+    hint: str | None = (
+        "Read `description` and `details` for the reason, fix the invoice and send it "
+        "again with `send_invoice()`."
+    )
 
     def __init__(
         self,
@@ -395,7 +533,10 @@ class KSeFInvoiceRejectedError(KSeFSessionError):
         )
         if self.details:
             message += f" - {'; '.join(self.details)}"
-        super().__init__(message)
+        super().__init__(
+            message,
+            hint=_DUPLICATE_INVOICE_HINT if self.invoice_status_code == 440 else None,
+        )
         self.context.update(
             invoice_reference_number=invoice_reference_number,
             invoice_status_code=self.invoice_status_code,
@@ -434,6 +575,11 @@ class KSeFExportTimeoutError(KSeFException):
     """
 
     code: str = "EXPORT_TIMEOUT"
+    hint: str | None = (
+        "The export may still finish. Call `wait()` on the export again with a larger "
+        "`timeout`. After a restart, get the job back with `export(state=...)` using the "
+        "state saved from `resume_state()`."
+    )
 
     def __init__(
         self,
@@ -470,6 +616,10 @@ class KSeFExportFailedError(KSeFException):
     """
 
     code: str = "EXPORT_FAILED"
+    hint: str | None = (
+        "Read `description` and `details` for the reason, then start a new export with "
+        "`export()`."
+    )
 
     def __init__(
         self,
@@ -512,6 +662,10 @@ class KSeFPermissionOperationFailedError(KSeFException):
     """
 
     code: str = "PERMISSION_OPERATION_FAILED"
+    hint: str | None = (
+        "Read `description` for the reason, fix the request and grant or revoke "
+        "again. `get_operation_status()` shows the operation's final state."
+    )
 
     def __init__(
         self,
@@ -544,6 +698,10 @@ class KSeFPermissionOperationTimeoutError(KSeFException):
     """
 
     code: str = "PERMISSION_OPERATION_TIMEOUT"
+    hint: str | None = (
+        "The operation may still be applied. Call `wait()` on the operation again "
+        "with a larger `timeout`, or check it with `get_operation_status()`."
+    )
 
     def __init__(
         self,
@@ -580,6 +738,11 @@ class KSeFCertificateEnrollmentFailedError(KSeFException):
     """
 
     code: str = "CERTIFICATE_ENROLLMENT_FAILED"
+    hint: str | None = (
+        "Read `description` and `details` for the reason, then submit a corrected "
+        "request with `enroll()`. `get_limits()` shows how many enrollments and "
+        "certificates are still allowed."
+    )
 
     def __init__(
         self,
@@ -620,6 +783,10 @@ class KSeFCertificateEnrollmentTimeoutError(KSeFException):
     """
 
     code: str = "CERTIFICATE_ENROLLMENT_TIMEOUT"
+    hint: str | None = (
+        "KSeF may still issue the certificate. Call `wait()` on the enrollment "
+        "again with a larger `timeout`, or check it with `get_enrollment_status()`."
+    )
 
     def __init__(
         self,
@@ -648,6 +815,11 @@ class KSeFAuthPollingTimeoutError(KSeFException):
     """
 
     code: str = "AUTH_POLLING_TIMEOUT"
+    hint: str | None = (
+        "KSeF has not finished authenticating yet. Authenticate again with a larger "
+        "`timeout` in `client.authentication.with_xades()` or "
+        "`client.authentication.with_token()`."
+    )
 
     def __init__(
         self,
@@ -694,6 +866,10 @@ class KSeFTokenStatusTimeoutError(KSeFException):
     """
 
     code: str = "TOKEN_STATUS_TIMEOUT"
+    hint: str | None = (
+        "KSeF may still be activating the token. Call `wait()` on the token again with "
+        "a larger `timeout`, or check it with `get_status()`."
+    )
 
     def __init__(
         self,
@@ -720,6 +896,10 @@ class KSeFInvoiceQueryTimeoutError(KSeFException):
     """
 
     code: str = "INVOICE_QUERY_TIMEOUT"
+    hint: str | None = (
+        "No invoice matched before the deadline. Call `wait()` again with a larger "
+        "`timeout`, or check the filters passed to `search()`."
+    )
 
     def __init__(self, timeout: float) -> None:
         self.timeout = timeout
@@ -748,6 +928,10 @@ class KSeFInvoiceDownloadTimeoutError(KSeFException):
     """
 
     code: str = "INVOICE_DOWNLOAD_TIMEOUT"
+    hint: str | None = (
+        "KSeF has not made the invoice available yet. Call `download()` again "
+        "with a larger `timeout`."
+    )
 
     def __init__(self, ksef_number: str, timeout: float) -> None:
         self.ksef_number = ksef_number
@@ -772,6 +956,12 @@ class KSeFInvoiceProcessingTimeoutError(KSeFException):
     """
 
     code: str = "INVOICE_PROCESSING_TIMEOUT"
+    hint: str | None = (
+        "KSeF may still accept the invoice. Keep waiting with "
+        "`submission(reference_number).wait()` on the session, with a larger `timeout`. "
+        "After a restart, rebuild the session from the state saved with `resume_state()` "
+        "using `online_session(state=...)`."
+    )
 
     def __init__(self, invoice_reference_number: str, timeout: float) -> None:
         self.invoice_reference_number = invoice_reference_number
@@ -796,6 +986,11 @@ class KSeFOnlineSessionTimeoutError(KSeFException):
     """
 
     code: str = "ONLINE_SESSION_TIMEOUT"
+    hint: str | None = (
+        "KSeF may still be processing the session. Call `wait()` on the session "
+        "again with a larger `timeout`. After a restart, rebuild the session from the "
+        "state saved with `resume_state()` using `online_session(state=...)`."
+    )
 
     def __init__(self, reference_number: str, timeout: float) -> None:
         self.reference_number = reference_number
@@ -820,6 +1015,11 @@ class KSeFBatchSessionTimeoutError(KSeFException):
     """
 
     code: str = "BATCH_SESSION_TIMEOUT"
+    hint: str | None = (
+        "KSeF may still be processing the batch. Call `wait()` on the batch session "
+        "again with a larger `timeout`. After a restart, rebuild the session from the "
+        "state saved with `resume_state()` using `batch_session(state=...)`."
+    )
 
     def __init__(self, reference_number: str, timeout: float) -> None:
         self.reference_number = reference_number
