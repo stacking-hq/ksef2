@@ -114,7 +114,18 @@ with auth.online_session(form_code=FormSchema.FA3) as session:
 
 # Store session_state_json and invoice_reference_number in secure storage.
 # Do not log session_state_json because it contains session encryption data.
+
+# Later, in the same or another process:
+with auth.online_session(state=session_state_json) as session:
+    submission = session.submission(invoice_reference_number)
+    status = submission.wait(timeout=120.0)
+    upo_xml = submission.download_upo()
 ```
+
+`online_session(state=...)` takes the resume-state object or its JSON string.
+`session.submission(reference_number)` returns the `InvoiceSubmission` handle for
+an invoice sent earlier. Leaving the block closes the session; closing one that
+is already closed does nothing.
 
 ## Send a batch
 

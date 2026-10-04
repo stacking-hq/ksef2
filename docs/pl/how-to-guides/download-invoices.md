@@ -86,6 +86,25 @@ written = package.save(Path("downloads"))
 `save()` rozpakowuje archiwum i odrzuca każdy wpis, którego ścieżka wychodziłaby
 poza katalog docelowy. Surowe bajty ZIP są dostępne jako `package.archive`.
 
+### Wznowienie po restarcie
+
+`job.resume_state()` zwraca `ExportResumeState` z numerem referencyjnym i kluczem
+odszyfrowującym paczkę. Zapisz jego JSON, a `export(state=...)` zwróci z powrotem
+`ExportJob`, więc `wait()` nadal działa.
+
+```python
+job = auth.invoices.export(filters)
+saved = job.resume_state().to_json()   # przechowuj jak poświadczenie, nie loguj
+
+# po restarcie
+job = auth.invoices.export(state=saved)
+package = job.wait(timeout=300.0)
+```
+
+Podaj dokładnie jedno z `filters` albo `state`. `to_dict()`, `from_json()` i
+`from_dict()` działają jak w stanach sesji; `model_dump()` i `repr()` ukrywają
+klucz.
+
 :::note[SDK odszyfrowuje części paczki]
 KSeF zwraca zaszyfrowane adresy części paczki. `export()` ładuje poprawny
 certyfikat szyfrowania KSeF i planuje eksport z lokalnym materiałem AES, a

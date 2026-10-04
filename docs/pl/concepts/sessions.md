@@ -67,6 +67,31 @@ odtworzyć; referencje KSeF są tym, co pozwala innemu workerowi wznowić
 inspekcję.
 :::
 
+## Wznawianie sesji
+
+`online_session()` i `batch_session()` otwierają sesję albo ją wznawiają, tą samą
+metodą. Podaj dokładnie jedną formę: `form_code=` (albo `prepared_batch=` /
+`batch_file=`), by otworzyć, lub `state=`, by wznowić. `state=` przyjmuje obiekt
+stanu albo jego JSON, a wszystko (kod formularza, klucze, ważność, żądania
+uploadu) pochodzi ze stanu.
+
+```python
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    saved = session.resume_state().to_json()      # przechowuj jak poświadczenie
+    reference = session.send_invoice(xml).reference_number
+
+# później, możliwe że w innym procesie
+with auth.online_session(state=saved) as session:
+    status = session.submission(reference).wait()  # uchwyt wcześniej wysłanej faktury
+```
+
+Wyjście z bloku `with` zamyka sesję w obu przypadkach. Zamknięcie już zamkniętej
+sesji nic nie robi: wznowiony klient najpierw pyta KSeF, więc nie wysyła drugiego
+żądania zamknięcia. Sesje batch działają tak samo z `auth.batch_session(state=saved)`,
+a potem `session.wait()` i `session.download_upo()`. `resume_online_session()` i
+`resume_batch_session()` są wycofanymi aliasami. Stan sesji zawiera klucze
+szyfrowania: nigdy go nie loguj.
+
 ## Sesje batch
 
 Sesja batch jest ścieżką wysyłki masowej. Jednostką wysyłaną do KSeF nie jest

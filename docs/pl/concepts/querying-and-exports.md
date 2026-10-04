@@ -64,7 +64,8 @@ InvoicesFilter
 
 :::caution[Traktuj uchwyty eksportu jak dane wrażliwe]
 `ExportJob` trzyma lokalny materiał klucza AES potrzebny do odszyfrowania
-paczki. Trzymaj go tylko w pamięci i unikaj logowania pełnych obiektów eksportu.
+paczki. Aby przetrwać restart, zapisz `job.resume_state().to_json()` jak
+poświadczenie i przekaż do `auth.invoices.export(state=...)`; nigdy go nie loguj.
 :::
 
 ## HWM jest granicą synchronizacji

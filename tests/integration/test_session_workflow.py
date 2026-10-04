@@ -204,9 +204,16 @@ def test_resume_session_from_resume_state(workflow_context):
     state_json = state.to_json()
     restored_state = OnlineSessionResumeState.from_json(state_json)
 
-    resumed = auth.resume_online_session(state=restored_state)
+    resumed = auth.online_session(state=state_json)
 
     assert isinstance(resumed, OnlineSessionClient)
+    assert resumed.resume_state() == restored_state
+
+    # The handle of an invoice sent before the "restart" comes back on the resumed session.
+    status_of_sent = resumed.submission(workflow_context["invoice_ref"]).wait(
+        timeout=90.0
+    )
+    assert status_of_sent.ksef_number
 
     # The resumed session should be able to query status
     status = resumed.get_status()
@@ -276,9 +283,13 @@ def test_get_session_upo_by_reference(ksef_credentials: KSeFCredentials):
         assert all(isinstance(page, bytes) and page for page in upo_pages)
 
         # A resumed session client waits without having closed the session itself.
-        resumed = auth.resume_online_session(state=state)
+        resumed = auth.online_session(state=state.to_json())
         assert resumed.wait(timeout=90.0).status.code == 200
         upo_xml = resumed.download_upo()[0]
+
+        # Leaving a with block on an already-closed resumed session is a no-op.
+        with auth.online_session(state=state):
+            pass
 
         assert isinstance(upo_xml, bytes)
         assert len(upo_xml) > 0

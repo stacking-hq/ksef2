@@ -64,7 +64,8 @@ InvoicesFilter
 
 :::caution[Treat export handles as sensitive]
 The `ExportJob` holds the local AES key material needed to decrypt the
-package. Keep it in memory, and avoid logging full export objects.
+package. To survive a restart, persist `job.resume_state().to_json()` as a
+credential and pass it to `auth.invoices.export(state=...)`; never log it.
 :::
 
 ## HWM is the sync boundary

@@ -6,7 +6,7 @@ Prerequisites:
 What it demonstrates:
 - temporary test subject and person setup
 - permission grants for invoice work
-- serializing and restoring online session state
+- serializing online session state and resuming it with `online_session(state=...)`
 """
 
 from dataclasses import dataclass
@@ -61,11 +61,10 @@ def run(config: ExampleConfig) -> None:
         print(f"  Reference: {state.reference_number}")
         print(f"  Valid until: {state.valid_until}")
 
-        print("Resuming session from saved state...")
-        restored_state = OnlineSessionResumeState.from_json(state_json)
+        print("Resuming session from saved state (the JSON string works as is)...")
 
         print("Terminating resumed session...")
-        with auth.resume_online_session(state=restored_state):
+        with auth.online_session(state=state_json):
             pass
         print("Session terminated.")
 

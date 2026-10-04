@@ -154,6 +154,7 @@ wskazują miejsca użycia, i zostanie usunięte w ksef2 1.10.0. Python ukrywa
 | `auth.batch.submit_batch()`, `submit_prepared_batch()` i `open_session()` | `auth.batch.submit()` albo `auth.batch_session(...)` | 1.10.0 |
 | `auth.batch.get_status()`, `list_invoices()`, `list_failed_invoices()`, `get_upo()` i `wait_for_completion()` (z `session=`) | Te same operacje na kliencie sesji, z `wait()` i `download_upo()` | 1.10.0 |
 | `auth.open_batch_session(aes_key=..., iv=..., ...)` | `auth.raw` | 1.10.0 |
+| `auth.resume_online_session(state)` i `auth.resume_batch_session(state)` | `auth.online_session(state=...)` i `auth.batch_session(state=...)` | 1.10.0 |
 | `auth.invoices.query_metadata()`, `query_metadata_pages()`, `all_metadata()` i `wait_for_invoices()` | `auth.invoices.search(...)` z `.pages()`, `.first_page()` i `.wait()` | 1.10.0 |
 | `auth.invoices.download_invoice()` i `wait_for_invoice_download()` | `auth.invoices.download(...)` | 1.10.0 |
 | `auth.invoices.schedule_export()`, `get_export_status()`, `wait_for_export_package()`, `fetch_package()`, `fetch_package_bytes()` i `export_and_download()` | `auth.invoices.export(...)`, potem `ExportJob.wait()` | 1.10.0 |

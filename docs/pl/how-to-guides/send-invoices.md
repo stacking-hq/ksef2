@@ -113,7 +113,18 @@ with auth.online_session(form_code=FormSchema.FA3) as session:
 
 # Zapisz session_state_json i invoice_reference_number w bezpiecznym magazynie.
 # Nie loguj session_state_json, bo zawiera dane szyfrowania sesji.
+
+# Później, w tym samym lub innym procesie:
+with auth.online_session(state=session_state_json) as session:
+    submission = session.submission(invoice_reference_number)
+    status = submission.wait(timeout=120.0)
+    upo_xml = submission.download_upo()
 ```
+
+`online_session(state=...)` przyjmuje obiekt stanu albo jego JSON.
+`session.submission(reference_number)` zwraca uchwyt `InvoiceSubmission`
+wcześniej wysłanej faktury. Wyjście z bloku zamyka sesję; zamknięcie już
+zamkniętej nic nie robi.
 
 ## Wyślij batch
 

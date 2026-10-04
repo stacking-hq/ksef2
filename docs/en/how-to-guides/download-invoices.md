@@ -85,6 +85,25 @@ written = package.save(Path("downloads"))
 `save()` extracts the archive and refuses any entry whose path would escape the
 target directory. The raw ZIP bytes are available as `package.archive`.
 
+### Resume after a restart
+
+`job.resume_state()` returns an `ExportResumeState` with the reference number and
+the key that decrypts the package. Save its JSON, and `export(state=...)` gives
+the `ExportJob` back, so `wait()` still works.
+
+```python
+job = auth.invoices.export(filters)
+saved = job.resume_state().to_json()   # store as a credential, never log it
+
+# after a restart
+job = auth.invoices.export(state=saved)
+package = job.wait(timeout=300.0)
+```
+
+Pass exactly one of `filters` or `state`. `to_dict()`, `from_json()` and
+`from_dict()` work like the session states; `model_dump()` and `repr()` redact the
+key.
+
 :::note[The SDK decrypts package parts]
 KSeF returns encrypted package part URLs. `export()` loads a valid KSeF
 encryption certificate, schedules the export with local AES material, and
