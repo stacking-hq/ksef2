@@ -19,9 +19,14 @@ invoice queries); nothing else is removed. Read
 - `model_dump()` and `model_dump_json()` redact secrets by default and are not a
   persistence format. Use `to_dict()` / `to_json()` / `from_dict()` on resume
   states and `to_sensitive_dict()` to persist.
-- Deprecations are now visible to type checkers and IDEs (PEP 702 `@deprecated`),
-  with one stated policy: deprecate in a minor release with `@deprecated` and a
-  changelog entry, remove only in the next major.
+- The invoice and admin workflows have their final 1.x shape: operations that
+  start asynchronous KSeF work return a handle with `.wait()`, every collection
+  returns one `Pager`, and access tokens refresh automatically (#162, #163, #165).
+  See the [1.0.0 release notes](https://docs.stacking.me/sdk/reference/release-notes-1-0-0/)
+  for a before/after.
+- Deprecations are visible to type checkers and IDEs (PEP 702 `@deprecated`) and
+  follow one stated policy: a deprecated API is removed in a named 1.x release.
+  Everything deprecated today is removed in **1.10.0**.
 
 ### Breaking changes
 
@@ -59,13 +64,16 @@ invoice queries); nothing else is removed. Read
   )
 
   # after (1.0.0)
-  page = auth.collective_identifiers.list_invoices(collective_identifier_numbers=[cid])
-  everything = auth.collective_identifiers.list_all_invoices(
+  for invoice in auth.collective_identifiers.list_invoices(
       collective_identifier_numbers=[cid]
-  )
+  ):
+      ...
   ```
 
-  The high-level client validates 1 to 10 identifiers before sending. The raw
+  `list_invoices` now returns a `Pager` (iterate items, `.pages()`, `.first_page()`)
+  and no longer takes `continuation_token`; `list_all_invoices` remains as a
+  deprecated alias that still returns pages (#163). The high-level client
+  validates 1 to 10 identifiers before sending. The raw
   endpoint takes a request body instead of a path parameter:
 
   ```python
@@ -82,23 +90,63 @@ invoice queries); nothing else is removed. Read
 
 ### Deprecated
 
-Deprecated APIs stay through 1.x and are removed in ksef2 2.0. Each warns once
-per call and is flagged by type checkers (PEP 702).
+Every replaced name stays as a `@deprecated` alias that keeps its old behavior and
+return type, warns once per call, and is removed in **ksef2 1.10.0**. That
+includes the seven APIs deprecated in 0.19.0, whose removal moves from 2.0 to
+1.10.0. See the
+[deprecated APIs table](https://docs.stacking.me/sdk/reference/public-api/#deprecated-apis)
+on the public API page for every alias and its replacement.
 
-| Deprecated | Use instead |
-| --- | --- |
-| `Client.authenticated(tokens)`, `AsyncClient.authenticated(tokens)` | `client.authentication.resume(AuthenticationResumeState.from_tokens(tokens))` |
-| `get_state()` on online and batch session clients | `resume_state()` |
-| `BatchSessionClient.access_token` | `AuthenticatedClient.access_token` of the parent client |
-| `dump_state()`, `model_dump_sensitive()` on session resume state | `to_dict()` |
-| `model_dump_sensitive_json()` | `to_json()` |
-| `from_state()` | `from_dict()` |
-| `BaseSessionState`, `OnlineSessionState`, `BatchSessionState` | `BaseSessionResumeState`, `OnlineSessionResumeState`, `BatchSessionResumeState` |
-| `access_token=` argument of `from_encoded()` and the `access_token` key in stored resume state (ignored; old files still load) | Persist `AuthenticationResumeState` separately |
-| `auth_timeout` in a profile written by ksef2-cli 0.0.2 (now mapped to `max_poll_attempts`) | `max_poll_attempts` and optionally `poll_interval` |
+- The invoice, batch and export workflows (#162): `send_invoice_and_wait`,
+  `wait_for_invoice_ready`, the `auth.batch.*` `prepare_batch` / `submit_batch` /
+  `wait_for_completion` family, `query_metadata` / `all_metadata` /
+  `wait_for_invoices`, `download_invoice`, `schedule_export` /
+  `wait_for_export_package` / `fetch_package` and related names.
+  `auth.resume_online_session()` and `auth.resume_batch_session()` give way to
+  `online_session(state=...)` and `batch_session(state=...)`.
+- The token, certificate, PEPPOL, session, collective-identifier and permission
+  `query` / `all` / `list_page` / `query_*` methods give way to `list()` /
+  `list_*()` (#163).
+- `InvoicesClient` and `AsyncInvoicesClient` imported from `ksef2.clients`; use
+  `auth.invoices` (#163).
+- The 0.19.0 deprecations (`Client.authenticated()`, `get_state()`,
+  `*SessionState` aliases, `dump_state()` / `model_dump_sensitive()` /
+  `from_state()`, `BatchSessionClient.access_token`, `from_encoded(access_token=...)`,
+  the stored `access_token` key) and the legacy `auth_timeout` profile key
+  (#150, #162).
 
 ### Added
 
+- Handles with `.wait()` for operations KSeF finishes asynchronously, each exposing
+  the fields of the response it replaces: `InvoiceSubmission` from
+  `session.send_invoice(xml)` (also `get_status()`, `download_upo()`), `ExportJob`,
+  `GeneratedToken` from `tokens.generate()`, `PermissionOperation` from
+  `permissions.grant_*()` / `revoke()`, `CertificateEnrollment` from
+  `certificates.enroll()`, and the generic `OperationHandle` (#162, #163).
+- `auth.invoices.search(filters)`, returning a `Pager`; `auth.invoices.download(ksef_number)`;
+  and `auth.invoices.export(filters)`, whose `ExportJob.wait()` returns
+  `ExportedInvoices` (`.invoices()`, `.metadata`, `.archive`, `.save()`) (#162).
+- `auth.batch.prepare()` and `auth.batch.submit()`, which opens, uploads and closes
+  the batch and returns the closed `BatchSessionClient` (#162).
+- One `Pager` for every collection (tokens, certificates, PEPPOL, sessions,
+  collective identifiers and all `permissions.list_*()`): iterate items, `.pages()`,
+  `.first_page()` (#162, #163).
+- Resume through the method that starts the work, with `state=` (the resume-state
+  object or its JSON): `auth.online_session(state=...)`,
+  `auth.batch_session(state=...)`, `auth.invoices.export(state=...)`. Exports are
+  resumable through `ExportJob.resume_state()` and the new `ExportResumeState`, and
+  `session.submission(reference_number)` returns the handle for an invoice sent
+  earlier (#162).
+- Automatic access-token refresh: shortly before expiry and once after a 401, shared
+  by concurrent requests. Disable with `TransportConfig(auto_refresh_tokens=False)`
+  (#165).
+- New exceptions: `KSeFArgumentError`, `KSeFAuthenticationExpiredError`,
+  `KSeFExportFailedError`, `KSeFOnlineSessionTimeoutError`,
+  `KSeFPermissionOperationFailedError`, `KSeFPermissionOperationTimeoutError`,
+  `KSeFCertificateEnrollmentFailedError` and
+  `KSeFCertificateEnrollmentTimeoutError` (#162, #163, #165).
+- `tokens.get_status()`, `sessions.terminate(reference_number)` and
+  `permissions.revoke()` (#163).
 - `ksef2.testdata` with `generate_nip()` and `generate_pesel()` for TEST-environment
   data (#148).
 - `CertUsageEnum` is exported from `ksef2.models` (#148).
@@ -122,6 +170,19 @@ per call and is flagged by type checkers (PEP 702).
   maps it to `max_poll_attempts` and warns, instead of silently using the 60-second
   default (#150).
 - `typing-extensions` is now a direct dependency, for `@deprecated` (#150).
+
+### Changed
+
+- Deprecation policy: a deprecated API is removed in a stated 1.x release, not
+  only in the next major. The seven APIs deprecated in 0.19.0 move from 2.0 to
+  1.10.0 (#162).
+- `session.send_invoice()` keeps its name but now returns an `InvoiceSubmission`
+  handle (#162).
+- Argument errors from `batch_session()`, `online_session()` and `export()` are
+  now `KSeFArgumentError`, which subclasses `KSeFValidationError` (and
+  `TypeError`), so existing handlers still catch them (#162).
+- `PermissionOperation.wait()` raises `KSeFPermissionOperationFailedError` when
+  KSeF rejects a grant, for example with status 440 on TEST (#163).
 
 ### KSeF API
 

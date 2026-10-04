@@ -33,6 +33,36 @@ module in the repository.
 
 For the exact compatibility boundary, use the public API contract page.
 
+## Invoice workflows in 1.0
+
+Operations that start asynchronous KSeF work return a handle with `.wait()`,
+and every collection returns one `Pager`. The old names remain as deprecated
+aliases.
+
+```python
+# before (0.22.x)
+sent = session.send_invoice(invoice_xml=xml)
+status = session.wait_for_invoice_ready(invoice_reference_number=sent.reference_number)
+for m in auth.invoices.all_metadata(filters=f): ...
+
+# after (1.0)
+submission = session.send_invoice(xml)
+status = submission.wait(timeout=60)
+upo = submission.download_upo()
+for m in auth.invoices.search(f): ...
+package = auth.invoices.export(f).wait()
+package.save("out/")
+```
+
+Access tokens refresh automatically, and a session or export can be resumed
+through the method that starts it: `auth.online_session(state=saved)`.
+
+## Deprecation policy
+
+A deprecated API is removed in a stated 1.x release. Every deprecation shipped
+with 1.0.0 is removed in **ksef2 1.10.0**, including the seven deprecated in
+0.19.0. See the [deprecated APIs](public-api.md#deprecated-apis) table.
+
 ## Public but lower level
 
 `ksef2.raw` and `ksef2.raw.mappers` are public advanced APIs. Their import paths

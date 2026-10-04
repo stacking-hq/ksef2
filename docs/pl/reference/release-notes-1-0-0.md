@@ -33,6 +33,36 @@ moduł, który da się zaimportować z repozytorium.
 
 Dokładną granicę kompatybilności opisuje strona interfejsu publicznego.
 
+## Przepływy faktur w 1.0
+
+Operacje, które uruchamiają asynchroniczną pracę KSeF, zwracają uchwyt z metodą
+`.wait()`, a każda kolekcja zwraca jeden `Pager`. Stare nazwy zostają jako
+przestarzałe aliasy.
+
+```python
+# przed (0.22.x)
+sent = session.send_invoice(invoice_xml=xml)
+status = session.wait_for_invoice_ready(invoice_reference_number=sent.reference_number)
+for m in auth.invoices.all_metadata(filters=f): ...
+
+# po (1.0)
+submission = session.send_invoice(xml)
+status = submission.wait(timeout=60)
+upo = submission.download_upo()
+for m in auth.invoices.search(f): ...
+package = auth.invoices.export(f).wait()
+package.save("out/")
+```
+
+Tokeny dostępu odświeżają się automatycznie, a sesję lub eksport można wznowić
+metodą, która je uruchamia: `auth.online_session(state=saved)`.
+
+## Polityka wycofywania
+
+Przestarzałe API jest usuwane w wskazanym wydaniu 1.x. Każde wycofanie dostarczone
+z 1.0.0 zostanie usunięte w **ksef2 1.10.0**, razem z siedmioma wycofanymi
+w 0.19.0. Zobacz tabelę [wycofywanych API](public-api.md#wycofywane-api).
+
 ## Publiczne, ale niższopoziomowe
 
 `ksef2.raw` i `ksef2.raw.mappers` są publicznymi API dla zaawansowanych
