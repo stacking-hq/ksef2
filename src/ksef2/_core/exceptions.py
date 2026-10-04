@@ -87,7 +87,7 @@ class KSeFValidationError(KSeFException):
         self.context["code"] = self.code
 
 
-class KSeFArgumentError(KSeFValidationError, TypeError):
+class KSeFArgumentError(KSeFValidationError, TypeError):  # pyright: ignore[reportUnsafeMultipleInheritance]
     """Raised when a call combines arguments the SDK does not allow.
 
     It is raised for "exactly one of" violations, such as passing both or neither
