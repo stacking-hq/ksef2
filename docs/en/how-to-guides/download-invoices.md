@@ -15,24 +15,16 @@ from pathlib import Path
 
 ksef_number = "1234567890-20260625-..."
 
-xml_bytes = auth.invoices.download_invoice(ksef_number=ksef_number)
+xml_bytes = auth.invoices.download(ksef_number)
 Path("invoice.xml").write_bytes(xml_bytes)
 ```
 
 If the invoice was just sent, KSeF may need time before the processed XML is
-downloadable. Use the waiting helper when your workflow should block until the
-document is available.
+downloadable. Pass `timeout` and `download()` polls until the document is
+available.
 
 ```python
-from pathlib import Path
-
-ksef_number = "1234567890-20260625-..."
-
-xml_bytes = auth.invoices.wait_for_invoice_download(
-    ksef_number=ksef_number,
-    timeout=120.0,
-    poll_interval=2.0,
-)
+xml_bytes = auth.invoices.download(ksef_number, timeout=120.0, poll_interval=2.0)
 Path("invoice.xml").write_bytes(xml_bytes)
 ```
 
@@ -64,88 +56,64 @@ the next sync window.
 
 ## Export many invoices
 
-Schedule the export, wait for the package, then fetch the decrypted ZIP parts.
+`export()` schedules the export and returns an `ExportJob`. Its `wait()` polls
+until the package is ready, downloads and decrypts the parts, joins them and
+returns an `ExportedInvoices` object.
+
+```python
+job = auth.invoices.export(filters)
+package = job.wait(timeout=300.0)
+
+for ksef_number, xml in package.invoices():
+    print(ksef_number, len(xml))
+
+# Parsed _metadata.json (list of InvoiceMetadata), or None if absent.
+metadata = package.metadata
+
+# Package details for incremental sync.
+print(package.package.is_truncated, package.package.permanent_storage_hwm_date)
+```
 
 ### Save files
 
 ```python
 from pathlib import Path
 
-export = auth.invoices.schedule_export(filters=filters)
-
-# ExportHandle(reference_number="...")
-# Keep this object private. Its hidden aes_key and iv fields contain
-# decryption material.
-
-package = auth.invoices.wait_for_export_package(
-    reference_number=export.reference_number,
-    timeout=300.0,
-)
-
-# InvoicePackage
-# {
-#   "invoice_count": 3,
-#   "size": 14820,
-#   "is_truncated": false,
-#   "last_permanent_storage_date": "2026-06-25T09:58:21Z",
-#   "permanent_storage_hwm_date": "2026-06-25T10:00:00Z",
-#   "parts": [
-#     {
-#       "ordinal_number": 1,
-#       "part_name": "package-1.zip",
-#       "expiration_date": "2026-06-26T10:00:00Z"
-#     }
-#   ]
-# }
-
-saved_paths = auth.invoices.fetch_package(
-    package=package,
-    export=export,
-    target_directory=Path("downloads"),
-)
-
-for path in saved_paths:
-    print(path)
+written = package.save(Path("downloads"))
 ```
 
-### In memory
+`save()` extracts the archive and refuses any entry whose path would escape the
+target directory. The raw ZIP bytes are available as `package.archive`.
+
+### Resume after a restart
+
+`job.resume_state()` returns an `ExportResumeState` with the reference number and
+the key that decrypts the package. Save its JSON, and `export(state=...)` gives
+the `ExportJob` back, so `wait()` still works.
 
 ```python
-export = auth.invoices.schedule_export(filters=filters)
-package = auth.invoices.wait_for_export_package(
-    reference_number=export.reference_number,
-    timeout=300.0,
-)
+job = auth.invoices.export(filters)
+saved = job.resume_state().to_json()   # store as a credential, never log it
 
-zip_parts = auth.invoices.fetch_package_bytes(package=package, export=export)
-
-for zip_part in zip_parts:
-    print(len(zip_part))
+# after a restart
+job = auth.invoices.export(state=saved)
+package = job.wait(timeout=300.0)
 ```
 
-### One call
-
-```python
-zip_parts = auth.invoices.export_and_download(
-    filters=filters,
-    timeout=300.0,
-    poll_interval=2.0,
-)
-
-for zip_part in zip_parts:
-    print(len(zip_part))
-```
+Pass exactly one of `filters` or `state`. `to_dict()`, `from_json()` and
+`from_dict()` work like the session states; `model_dump()` and `repr()` redact the
+key.
 
 :::note[The SDK decrypts package parts]
-KSeF returns encrypted package part URLs. The high-level export helpers load a
-valid KSeF encryption certificate, schedule the export with local AES
-material, download the package parts, and decrypt them before returning paths
-or bytes.
+KSeF returns encrypted package part URLs. `export()` loads a valid KSeF
+encryption certificate, schedules the export with local AES material, and
+`wait()` downloads the parts and decrypts them before returning.
 :::
 
 :::caution[Package parts are temporary]
-Package URLs expire. Store the decrypted ZIP parts or extracted invoice XML in
-your own storage, and keep `_metadata.json` when the package includes it.
+Package URLs expire. Store the extracted invoice XML in your own storage, and
+keep `_metadata.json` when the package includes it. If KSeF fails the export or
+it expires, `wait()` raises `KSeFExportFailedError`.
 :::
 
 ## After sending invoices

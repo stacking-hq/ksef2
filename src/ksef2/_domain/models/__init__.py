@@ -38,6 +38,7 @@ from ksef2._domain.models.batch import (
 from ksef2._domain.models.invoices import (
     BuyerIdentifierType,
     ExportHandle,
+    ExportResumeState,
     ExportInvoicesPayload,
     ExportInvoicesResponse,
     ExportStatusInfo,
@@ -277,6 +278,7 @@ __all__ = [
     "PreparedBatch",
     # invoices
     "ExportHandle",
+    "ExportResumeState",
     "BuyerIdentifierType",
     "ExportInvoicesPayload",
     "ExportInvoicesResponse",

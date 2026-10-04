@@ -26,7 +26,7 @@ from ksef2._domain.models.session import FormSchema, SessionEncryptionMaterial
 from ksef2._infra.schema.api import spec
 from ksef2._services.batch import BatchService, BatchSessionOpener
 from tests.unit.fakes.transport import FakeTransport
-from tests.unit.helpers import VALID_PUBLIC_KEY_ID
+from tests.unit.helpers import VALID_PUBLIC_KEY_ID, legacy_api
 
 
 def _build_service(
@@ -76,6 +76,7 @@ def _unused_open_batch_session(
 
 
 class TestBatchService:
+    @legacy_api
     def test_prepare_batch_builds_zip_metadata_and_encrypted_part(
         self,
         fake_transport: FakeTransport,
@@ -115,6 +116,7 @@ class TestBatchService:
             prepared.parts[0].content
         )
 
+    @legacy_api
     def test_prepare_batch_rejects_duplicate_file_names(
         self,
         fake_transport: FakeTransport,
@@ -190,6 +192,7 @@ class TestBatchService:
             "x-ms-blob-type": "BlockBlob",
         }
 
+    @legacy_api
     def test_submit_prepared_batch_uploads_parts_and_closes_session(
         self,
         fake_transport: FakeTransport,
@@ -273,6 +276,7 @@ class TestBatchService:
         assert fake_transport.calls[0].method == "PUT"
         assert fake_transport.calls[1].method == "POST"
 
+    @legacy_api
     def test_wait_for_completion_returns_terminal_success(
         self,
         fake_transport: FakeTransport,
@@ -302,6 +306,7 @@ class TestBatchService:
         assert status.status.code == 200
         assert len(fake_transport.calls) == 2
 
+    @legacy_api
     def test_wait_for_completion_raises_on_terminal_failure(
         self,
         fake_transport: FakeTransport,
@@ -324,6 +329,7 @@ class TestBatchService:
                 poll_interval=0.0,
             )
 
+    @legacy_api
     def test_wait_for_completion_raises_on_timeout(
         self,
         fake_transport: FakeTransport,

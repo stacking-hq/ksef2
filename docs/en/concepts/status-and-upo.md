@@ -87,14 +87,9 @@ UPO is not available at send time:
 The SDK exposes the common UPO paths through session clients:
 
 ```python
-invoice_upo = session.get_invoice_upo_by_reference(
-    invoice_reference_number=sent.reference_number,
-)
+invoice_upo = submission.download_upo()
 
-batch_upo = auth.batch.get_upo(
-    session=batch_state.reference_number,
-    upo_reference_number="upo-reference-from-session-status",
-)
+session_upo_pages = session.download_upo()  # every page, references resolved
 ```
 
 Status responses can also expose UPO page data such as
@@ -121,9 +116,9 @@ Choose polling settings based on the workflow:
 
 | Workflow | Typical wait helper |
 | --- | --- |
-| Online invoice acceptance | `session.wait_for_invoice_ready()` or `send_invoice_and_wait()` |
-| Batch processing | `auth.batch.wait_for_completion()` |
-| Export package readiness | `auth.invoices.wait_for_export_package()` |
+| Online invoice acceptance | `submission.wait()` |
+| Batch processing | `session.wait()` |
+| Export package readiness | `auth.invoices.export(...).wait()` |
 | Token activation or inspection | `auth.tokens.wait_for_activation()` or `auth.tokens.status()` |
 
 ## What to persist

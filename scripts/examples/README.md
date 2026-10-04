@@ -14,6 +14,7 @@ uv run -m scripts.examples.quickstart
 uv run -m scripts.examples.invoices.send_invoice
 uv run -m scripts.examples.invoices.send_batch
 uv run -m scripts.examples.invoices.submit_batch
+uv run -m scripts.examples.invoices.export_resume
 uv run --extra pdf -m scripts.examples.invoices.batch_export_to_pdf
 ```
 

@@ -1,4 +1,4 @@
-"""Every deprecated API warns exactly once with the 2.0 message and still works."""
+"""Every deprecated API warns exactly once with the 1.10.0 message and still works."""
 
 import asyncio
 import os
@@ -26,11 +26,11 @@ from tests.unit.fakes.transport import AsyncFakeTransport, FakeTransport
 
 AES_KEY = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
 IV = "MDEyMzQ1Njc4OWFiY2RlZg=="
-SUFFIX = "will be removed in ksef2 2.0; use `{new}` instead."
+SUFFIX = "will be removed in ksef2 1.10.0; use `{new}` instead."
 
 
 def _call_once[T](call: Callable[[], T], old: str, new: str) -> T:
-    """Run ``call``, assert exactly one DeprecationWarning with the 2.0 message."""
+    """Run ``call``, assert exactly one DeprecationWarning with the 1.10.0 message."""
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         result = call()
@@ -218,7 +218,7 @@ class TestIgnoredLegacyInputs:
             warnings.simplefilter("always")
             restored = OnlineSessionResumeState.from_dict(legacy)
         assert len(caught) == 1
-        assert "will be removed in ksef2 2.0" in str(caught[0].message)
+        assert "will be removed in ksef2 1.10.0" in str(caught[0].message)
         assert restored == state
 
     def test_from_encoded_access_token_argument_warns_once(self) -> None:
@@ -233,5 +233,5 @@ class TestIgnoredLegacyInputs:
                 access_token="secret",
             )
         assert len(caught) == 1
-        assert "will be removed in ksef2 2.0" in str(caught[0].message)
+        assert "will be removed in ksef2 1.10.0" in str(caught[0].message)
         assert state.reference_number == "ref"

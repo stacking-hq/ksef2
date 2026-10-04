@@ -80,18 +80,14 @@ def run(config: ExampleConfig) -> None:
     # waiting for each invoice to be processed is what makes a duplicate visible
     # instead of silent.
     with auth.online_session(form_code=FormSchema.FA3) as session:
-        result = session.send_invoice(invoice_xml=build_invoice(seller_nip))
-        status = session.wait_for_invoice_ready(
-            invoice_reference_number=result.reference_number
-        )
+        submission = session.send_invoice(build_invoice(seller_nip))
+        status = submission.wait()
         print(status.ksef_number)
 
     session = auth.online_session(form_code=FormSchema.FA3)
     try:
-        result = session.send_invoice(invoice_xml=build_invoice(seller_nip))
-        status = session.wait_for_invoice_ready(
-            invoice_reference_number=result.reference_number
-        )
+        submission = session.send_invoice(build_invoice(seller_nip))
+        status = submission.wait()
         print(status.ksef_number)
     finally:
         session.close()

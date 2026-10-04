@@ -24,6 +24,7 @@ from ksef2._domain.models.batch import (
     PreparedBatch,
 )
 from ksef2._domain.models.invoices import ExportHandle, InvoicePackage, PackagePart
+from tests.unit.helpers import legacy_api
 
 
 _SIGNED_DOWNLOAD_URL = "https://storage.example/export/part-1?sig=secret"
@@ -89,6 +90,7 @@ def _prepared_batch() -> PreparedBatch:
     )
 
 
+@legacy_api
 def test_sync_download_uses_unauthed_non_ksef_transfer_transport(
     domain_auth_tokens: BaseFactory[AuthTokens],
 ) -> None:
@@ -150,7 +152,7 @@ def test_sync_upload_marks_lost_response_ambiguous_and_exposes_recovery(
         authenticated = client.authentication.resume(
             AuthenticationResumeState.from_tokens(domain_auth_tokens.build())
         )
-        session = authenticated.resume_batch_session(state)
+        session = authenticated.batch_session(state=state)
         try:
             with pytest.raises(KSeFBatchUploadError) as exc_info:
                 authenticated.batch.upload_parts(
@@ -169,6 +171,7 @@ def test_sync_upload_marks_lost_response_ambiguous_and_exposes_recovery(
     assert "Authorization" not in requests[0].headers
 
 
+@legacy_api
 def test_async_download_uses_unauthed_non_ksef_transfer_transport(
     domain_auth_tokens: BaseFactory[AuthTokens],
 ) -> None:
@@ -239,7 +242,7 @@ def test_async_upload_marks_lost_response_ambiguous_and_exposes_recovery(
             authenticated = client.authentication.resume(
                 AuthenticationResumeState.from_tokens(domain_auth_tokens.build())
             )
-            session = authenticated.resume_batch_session(state)
+            session = await authenticated.batch_session(state=state)
             try:
                 with pytest.raises(KSeFBatchUploadError) as exc_info:
                     await authenticated.batch.upload_parts(

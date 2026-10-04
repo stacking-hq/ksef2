@@ -85,8 +85,8 @@ the same encryption fields as sessions:
 | `filters` | `spec.InvoiceQueryFilters`. |
 | `compressionType` | `spec.CompressionType`, usually ZIP. |
 
-Use high-level `auth.invoices.fetch_package_bytes(...)` only when you still
-have the AES key and IV required to decrypt package parts.
+Use high-level `auth.invoices.export(...).wait()` unless you need to decrypt
+package parts yourself with the AES key and IV you generated.
 
 ## Batch package handoff
 

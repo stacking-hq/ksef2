@@ -66,6 +66,31 @@ queue handoff, or process exit. The Python object is replaceable; the KSeF
 references are what let another worker resume inspection.
 :::
 
+## Resume a session
+
+`online_session()` and `batch_session()` start a session or resume one, with the
+same method. Pass exactly one form: `form_code=` (or `prepared_batch=` /
+`batch_file=`) to open, or `state=` to resume. `state=` takes the resume-state
+object or its JSON string, and everything (form code, keys, expiry, upload
+requests) comes from the state.
+
+```python
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    saved = session.resume_state().to_json()      # store as a credential
+    reference = session.send_invoice(xml).reference_number
+
+# later, possibly in another process
+with auth.online_session(state=saved) as session:
+    status = session.submission(reference).wait()  # handle for an earlier invoice
+```
+
+Leaving the `with` block closes the session in both cases. Closing a session
+that is already closed is a no-op: a resumed client first asks KSeF, so it never
+sends a second close request. Batch sessions work the same way with
+`auth.batch_session(state=saved)`, then `session.wait()` and `session.download_upo()`.
+Both `resume_online_session()` and `resume_batch_session()` are deprecated
+aliases. Session state holds encryption keys: never log it.
+
 ## Batch sessions
 
 A batch session is the bulk sending path. The unit sent to KSeF is not one XML
@@ -85,12 +110,10 @@ The high-level `auth.batch` service owns the normal workflow:
 5. Upload all parts, close the session, then poll status.
 
 ```python
-prepared = auth.batch.prepare_batch_from_paths(
-    invoice_paths=["invoice-1.xml", "invoice-2.xml"],
-)
+prepared = auth.batch.prepare([Path("invoice-1.xml"), Path("invoice-2.xml")])
 
-state = auth.batch.submit_prepared_batch(prepared_batch=prepared)
-print(state.reference_number)
+session = auth.batch.submit(prepared)
+print(session.reference_number)
 ```
 
 For batch workflows, keep the mapping between local source files and the
@@ -113,7 +136,7 @@ print it or store it in logs. Status and history responses are the safe objects
 to persist for audit and support.
 
 ```python
-status = auth.batch.get_status(session=state.reference_number)
+status = session.get_status()
 print(
     status.status.code,
     status.invoice_count,

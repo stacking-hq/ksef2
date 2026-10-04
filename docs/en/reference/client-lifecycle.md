@@ -72,11 +72,11 @@ token pair.
 | `access_token` | `str` | Bearer access-token string. Treat as a secret. |
 | `refresh_token` | `str` | Refresh-token string. Treat as a secret. |
 | `resume_state()` | `AuthenticationResumeState` | Serializable authentication state containing access and refresh tokens. |
-| `online_session(form_code=...)` | Online session client | Opens one online invoice session. Async returns an awaitable async context-manager wrapper. |
-| `resume_online_session(state)` | Online session client | Rebinds serialized `OnlineSessionResumeState` to the current authenticated transport. |
-| `batch_session(...)` | Batch session client | Opens a batch session from a prepared batch or declared batch file. |
+| `online_session(form_code=... \| state=...)` | Online session client | Opens one online invoice session, or resumes one from saved state (object or JSON). Async returns an awaitable async context-manager wrapper. |
+| `resume_online_session(state)` | Online session client | Deprecated; use `online_session(state=...)`. |
+| `batch_session(prepared_batch= \| batch_file= \| state=)` | Batch session client | Opens a batch session from a prepared batch or declared batch file, or resumes one from saved state. |
 | `open_batch_session(...)` | Batch session client | Opens a batch session when caller owns encryption metadata. |
-| `resume_batch_session(state)` | Batch session client | Rebinds serialized `BatchSessionResumeState` to the current authenticated transport. |
+| `resume_batch_session(state)` | Batch session client | Deprecated; use `batch_session(state=...)`. |
 | `invoices` | `InvoicesService` | Metadata, direct download, export, package download, and waiting helpers. |
 | `batch` | `BatchService` | High-level batch package preparation, upload, close, status, and UPO workflow. |
 | `limits` | `LimitsClient` | Context, subject, and API rate-limit endpoints. |

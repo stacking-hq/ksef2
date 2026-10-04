@@ -49,9 +49,8 @@ nadpisań limitów w zwykłym kodzie przetwarzania faktur.
 ## Deadline pollingu
 
 Wiele przepływów KSeF jest asynchronicznych. SDK udostępnia helpery takie jak
-`send_invoice_and_wait()`, `wait_for_invoice_ready()`,
-`wait_for_export_package()`, `wait_for_invoice_download()` i polling aktywacji
-tokenu.
+`.wait()` na wysyłkach faktur, sesjach, zadaniach eksportu i wynikach `search()`,
+`download(..., timeout=...)` oraz polling aktywacji tokenu.
 
 Timeouty tych helperów są limitami oczekiwania na przepływ. Nie są tym samym co
 timeouty socketów HTTP. Timeout pollingu oznacza, że oczekiwany stan KSeF nie

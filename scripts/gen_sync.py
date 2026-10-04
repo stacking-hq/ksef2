@@ -108,6 +108,14 @@ GENERATED_PAIRS: tuple[GeneratedPair, ...] = (
     ),
     # clients/
     GeneratedPair(
+        Path("src/ksef2/_clients/_async_handles.py"),
+        Path("src/ksef2/_clients/_handles.py"),
+    ),
+    GeneratedPair(
+        Path("src/ksef2/_clients/_async_pager.py"),
+        Path("src/ksef2/_clients/_pager.py"),
+    ),
+    GeneratedPair(
         Path("src/ksef2/_clients/async_auth.py"), Path("src/ksef2/_clients/auth.py")
     ),
     GeneratedPair(
@@ -242,6 +250,7 @@ DOCSTRING_REPLACEMENTS = (
     ("Async testdata", "Testdata"),
     ("Async authentication", "Authentication"),
     ("async with", "with"),
+    ("aclose()", "close()"),
     (" async ", " "),
     ("await ", ""),
     ("async context manager", "context manager"),

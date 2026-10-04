@@ -44,10 +44,12 @@ except httpx.HTTPError as exc:
 | `KSeFClientClosedError` | `CLIENT_CLOSED` | Root client or session client used after close. |
 | `KSeFUnsupportedEnvironmentError` | `UNSUPPORTED_ENVIRONMENT` | TEST-only branch or flow used outside `Environment.TEST`. |
 | `KSeFValidationError` | `VALIDATION_ERROR` | Invalid SDK input, invalid response payload, invalid profile config, or invalid session/batch arguments. |
+| `KSeFArgumentError` | `ARGUMENT_ERROR` | A call combined arguments the SDK does not allow, such as both or neither of `form_code` and `state`. Subclass of both `KSeFValidationError` and `TypeError`. |
 | `KSeFInvoiceRenderingError` | `INVOICE_RENDERING_ERROR` | Optional XSLT/PDF rendering failures. |
 | `KSeFEncryptionError` | `ENCRYPTION_ERROR` | Token, symmetric-key, invoice encryption, or decryption failure. |
 | `KSeFSessionError` | `SESSION_ERROR` | Session-state violation, such as using a closed session. Base class of `KSeFInvoiceRejectedError`. |
-| `KSeFInvoiceRejectedError` | `INVOICE_REJECTED` | KSeF finished processing an online-session invoice and rejected it (`wait_for_invoice_ready()`, `send_invoice_and_wait()`). |
+| `KSeFInvoiceRejectedError` | `INVOICE_REJECTED` | KSeF finished processing an online-session invoice and rejected it (`InvoiceSubmission.wait()`). |
+| `KSeFExportFailedError` | `EXPORT_FAILED` | KSeF finished an invoice export without a package: it failed, was cancelled by the system or expired (`ExportJob.wait()`). |
 | `KSeFAuthTokenRedemptionError` | `AUTH_TOKEN_REDEMPTION_ERROR` | A one-shot authentication redemption lost its response and may have succeeded. |
 | `KSeFExternalTransferError` | `EXTERNAL_TRANSFER_ERROR` | A presigned external-storage upload or download was rejected or lost its response. |
 | `KSeFBatchUploadError` | `BATCH_UPLOAD_ERROR` | A batch-part upload failed while protected recovery state remains available. |
@@ -124,6 +126,7 @@ themselves prove the remote KSeF workflow failed.
 | `KSeFInvoiceProcessingTimeoutError` | `INVOICE_PROCESSING_TIMEOUT` | `invoice_reference_number`, `timeout` |
 | `KSeFExportTimeoutError` | `EXPORT_TIMEOUT` | `reference_number`, `timeout` |
 | `KSeFBatchSessionTimeoutError` | `BATCH_SESSION_TIMEOUT` | `reference_number`, `timeout` |
+| `KSeFOnlineSessionTimeoutError` | `ONLINE_SESSION_TIMEOUT` | `reference_number`, `timeout` |
 
 Store the relevant reference before polling so another process can resume the
 status check.
