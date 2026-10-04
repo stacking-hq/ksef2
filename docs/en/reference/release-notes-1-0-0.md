@@ -63,6 +63,28 @@ A deprecated API is removed in a stated 1.x release. Every deprecation shipped
 with 1.0.0 is removed in **ksef2 1.10.0**, including the seven deprecated in
 0.19.0. See the [deprecated APIs](public-api.md#deprecated-apis) table.
 
+## Errors
+
+Every API error reads the same way, carries the raw KSeF code and trace ID, and
+says what to do next. The response body is no longer dumped into the message; it
+stays on `e.response`. Branch on the exception class or `ksef_code`, never on
+message text.
+
+```text
+# before
+API_ERROR/400: KSeF API error: 400
+[UPO_NOT_FOUND:21178] Nie znaleziono UPO dla podanych kryteriów.
+Response: { "exception": { "exceptionDetailList": [ ... ] } }
+
+# after (KSeFNotReadyError)
+KSeF rejected GET /sessions/online/S1/invoices/I1/upo (HTTP 400, KSeF code 21178): Nie znaleziono UPO dla podanych kryteriów.
+Details: UPO o numerze referencyjnym 20260101-EE-ABC nie zostało znalezione.
+Hint: KSeF has not issued the UPO yet. Wait for processing to finish and request it again.
+```
+
+`download_upo()` on a submission or session now waits for processing instead of
+failing early.
+
 ## Public but lower level
 
 `ksef2.raw` and `ksef2.raw.mappers` are public advanced APIs. Their import paths

@@ -63,6 +63,28 @@ Przestarzałe API jest usuwane w wskazanym wydaniu 1.x. Każde wycofanie dostarc
 z 1.0.0 zostanie usunięte w **ksef2 1.10.0**, razem z siedmioma wycofanymi
 w 0.19.0. Zobacz tabelę [wycofywanych API](public-api.md#wycofywane-api).
 
+## Błędy
+
+Każdy błąd API ma ten sam format, niesie surowy kod KSeF i identyfikator śladu
+oraz podpowiada, co zrobić dalej. Treść odpowiedzi nie jest już zrzucana do
+komunikatu; pozostaje w `e.response`. Rozgałęziaj kod po klasie wyjątku lub
+`ksef_code`, nigdy po treści komunikatu.
+
+```text
+# przed
+API_ERROR/400: KSeF API error: 400
+[UPO_NOT_FOUND:21178] Nie znaleziono UPO dla podanych kryteriów.
+Response: { "exception": { "exceptionDetailList": [ ... ] } }
+
+# po (KSeFNotReadyError)
+KSeF rejected GET /sessions/online/S1/invoices/I1/upo (HTTP 400, KSeF code 21178): Nie znaleziono UPO dla podanych kryteriów.
+Details: UPO o numerze referencyjnym 20260101-EE-ABC nie zostało znalezione.
+Hint: KSeF has not issued the UPO yet. Wait for processing to finish and request it again.
+```
+
+`download_upo()` na zgłoszeniu lub sesji czeka teraz na zakończenie przetwarzania
+zamiast kończyć się zbyt wcześnie.
+
 ## Publiczne, ale niższopoziomowe
 
 `ksef2.raw` i `ksef2.raw.mappers` są publicznymi API dla zaawansowanych

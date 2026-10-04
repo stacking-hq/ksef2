@@ -24,6 +24,8 @@ invoice queries); nothing else is removed. Read
   returns one `Pager`, and access tokens refresh automatically (#162, #163, #165).
   See the [1.0.0 release notes](https://docs.stacking.me/sdk/reference/release-notes-1-0-0/)
   for a before/after.
+- KSeF errors come from one pipeline with one message format, carry `ksef_code`,
+  `trace_id` and `details`, and say what to do next in `hint` (#167).
 - Deprecations are visible to type checkers and IDEs (PEP 702 `@deprecated`) and
   follow one stated policy: a deprecated API is removed in a named 1.x release.
   Everything deprecated today is removed in **1.10.0**.
@@ -147,6 +149,12 @@ on the public API page for every alias and its replacement.
   `KSeFCertificateEnrollmentTimeoutError` (#162, #163, #165).
 - `tokens.get_status()`, `sessions.terminate(reference_number)` and
   `permissions.revoke()` (#163).
+- `KSeFApiError.ksef_code` (the raw KSeF code, also for codes the SDK does not
+  list), `trace_id` and `details`; `KSeFException.hint`, which says what to do next;
+  and `KSeFNotReadyError` for KSeF codes 21165 and 21178 (#167).
+- `timeout` and `poll_interval` on `download_upo()` (#167).
+- `Retry-After` is read in its HTTP-date form as well as in seconds, in errors and
+  in the retry middleware (#167).
 - `ksef2.testdata` with `generate_nip()` and `generate_pesel()` for TEST-environment
   data (#148).
 - `CertUsageEnum` is exported from `ksef2.models` (#148).
@@ -183,6 +191,16 @@ on the public API page for every alias and its replacement.
   `TypeError`), so existing handlers still catch them (#162).
 - `PermissionOperation.wait()` raises `KSeFPermissionOperationFailedError` when
   KSeF rejects a grant, for example with status 440 on TEST (#163).
+
+- API error messages have one format: `KSeF rejected <METHOD path> (HTTP ..., KSeF
+  code ...): <description>`, followed by `Details`, `Trace ID` and `Hint` lines. The
+  response body is no longer dumped into the message; it stays on `e.response`.
+  Messages are for people: branch on the exception class or `ksef_code`, never on
+  message text (#167).
+- `download_upo()` on a submission, an online session or a batch session waits for
+  processing first instead of failing too early (#167).
+- `KSeFAuthError.exception_code` now reflects the KSeF code instead of always
+  being `UNKNOWN_ERROR` (#167).
 
 ### KSeF API
 
