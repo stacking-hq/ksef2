@@ -92,6 +92,15 @@ a potem `session.wait()` i `session.download_upo()`. `resume_online_session()` i
 `resume_batch_session()` są wycofanymi aliasami. Stan sesji zawiera klucze
 szyfrowania: nigdy go nie loguj.
 
+Wznowione uchwyty sesji, joby `invoices.export(state=...)` i reszta klienta
+uwierzytelnionego współdzielą jeden transport, więc wszystkie używają bieżącego
+access tokenu klienta i odświeżają go w razie potrzeby (zobacz
+[Access tokeny odświeżają się same](authentication-methods.md#access-tokeny-odświeżają-się-same)).
+Wznowiony klient z wygasłym access tokenem działa, dopóki jego refresh token jest
+ważny. Jeśli wygasł także refresh token, wywołanie rzuca
+`KSeFAuthenticationExpiredError`: uwierzytelnij się ponownie, a potem wznów sesję
+z zapisanego stanu.
+
 ## Sesje batch
 
 Sesja batch jest ścieżką wysyłki masowej. Jednostką wysyłaną do KSeF nie jest

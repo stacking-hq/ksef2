@@ -15,6 +15,7 @@ described below instead of KSeF API/authentication classification.
 | `KSeFException` | `Exception` | `SDK_ERROR` | `context` |
 | `KSeFApiError` | `KSeFException` | `API_ERROR` | `status_code`, `exception_code`, `response` |
 | `KSeFAuthError` | `KSeFApiError` | `AUTH_ERROR` | `status_code`, `exception_code`, `response` |
+| `KSeFAuthenticationExpiredError` | `KSeFAuthError` | `AUTHENTICATION_EXPIRED` | `status_code`, `exception_code`, `response` |
 | `KSeFRateLimitError` | `KSeFApiError` | `RATE_LIMIT_ERROR` | `retry_after`, `status_code`, `response` |
 | `KSeFExternalTransferError` | `KSeFException` | `EXTERNAL_TRANSFER_ERROR` | `operation`, `host`, `reference_number`, `part_ordinal`, `status_code`, `outcome_ambiguous` |
 | `KSeFBatchUploadError` | `KSeFExternalTransferError` | `BATCH_UPLOAD_ERROR` | External-transfer attributes plus `recovery_state()` |

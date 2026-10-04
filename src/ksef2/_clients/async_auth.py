@@ -70,6 +70,7 @@ class AsyncAuthClient:
         certificate_store: CertificateStoreProtocol,
         environment: Environment = Environment.PRODUCTION,
         transfer_transport: AsyncMiddleware | None = None,
+        auto_refresh_tokens: bool = True,
     ) -> None:
         """Create the client.
 
@@ -78,11 +79,13 @@ class AsyncAuthClient:
             certificate_store: Store holding the KSeF public-key certificates used to encrypt tokens.
             environment: KSeF environment the client talks to.
             transfer_transport: Middleware used for transfers outside the KSeF API such as batch part uploads; defaults to ``transport``.
+            auto_refresh_tokens: Whether authenticated clients refresh their access token automatically.
         """
         self._transport = transport
         self._transfer_transport = transfer_transport or transport
         self._certificate_store = certificate_store
         self._environment = environment
+        self._auto_refresh_tokens = auto_refresh_tokens
         self._certificates = AsyncEncryptionClient(transport)
         self._auth_ep = AsyncAuthEndpoints(transport)
 
@@ -90,6 +93,10 @@ class AsyncAuthClient:
         self, state: AuthenticationResumeState | str
     ) -> AsyncAuthenticatedClient:
         """Rehydrate an authenticated client from saved authentication state.
+
+        The client refreshes its access token automatically unless
+        ``TransportConfig.auto_refresh_tokens`` is ``False``, so a state whose
+        access token has expired still works while its refresh token is valid.
 
         Args:
             state: State previously exported from an authenticated client, or its JSON string.
@@ -426,7 +433,14 @@ class AsyncAuthClient:
             certificate_store=self._certificate_store,
             environment=self._environment,
             transfer_transport=self._transfer_transport,
+            refresh_access_token=(
+                self._refresh_access_token if self._auto_refresh_tokens else None
+            ),
         )
+
+    async def _refresh_access_token(self, refresh_token: str) -> RefreshedToken:
+        """Refresh an access token for an authenticated client, outside its bearer middleware."""
+        return await self.refresh(refresh_token=refresh_token)
 
     async def _ensure_certificates(self) -> None:
         """Populate the certificate store when token authentication needs it."""

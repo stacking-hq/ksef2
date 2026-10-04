@@ -49,6 +49,7 @@ def test_root_error_surface_import() -> None:
     assert ksef2.KSeFValidationError.__name__ == "KSeFValidationError"
     assert ksef2.KSeFRateLimitError.__name__ == "KSeFRateLimitError"
     assert ksef2.KSeFAuthPollingTimeoutError.__name__ == "KSeFAuthPollingTimeoutError"
+    assert issubclass(ksef2.KSeFAuthenticationExpiredError, ksef2.KSeFAuthError)
     assert ksef2.KSeFAuthTokenRedemptionError.__name__ == "KSeFAuthTokenRedemptionError"
     assert ksef2.KSeFTokenStatusTimeoutError.__name__ == "KSeFTokenStatusTimeoutError"
     assert ksef2.ExceptionCode.UNKNOWN_ERROR == 10000

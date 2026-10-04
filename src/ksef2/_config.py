@@ -97,3 +97,5 @@ class TransportConfig:
     """Whether ``httpx`` honors proxy and certificate environment variables."""
     http2: bool = True
     """Whether to use HTTP/2 when the server supports it."""
+    auto_refresh_tokens: bool = True
+    """Whether authenticated clients refresh their access token automatically, shortly before it expires and once after a 401 response. Set to ``False`` to manage refreshing yourself."""

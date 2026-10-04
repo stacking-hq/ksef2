@@ -125,6 +125,7 @@ class AsyncClient:
             certificate_store=self._certificate_store,
             environment=self._environment,
             transfer_transport=self._transfer_transport,
+            auto_refresh_tokens=self._transport_config.auto_refresh_tokens,
         )
 
     @cached_property

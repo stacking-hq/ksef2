@@ -28,6 +28,7 @@ from ksef2._core.crypto import encrypt_symmetric_key, generate_session_key
 from ksef2._core.middlewares.auth import BearerTokenMiddleware
 from ksef2._core.protocols import Middleware
 from ksef2._core.stores import CertificateStoreProtocol
+from ksef2._core.token_manager import Refresh, TokenManager
 from ksef2._domain.models import (
     BatchFileInfo,
     BatchSessionResumeState,
@@ -71,6 +72,7 @@ class AuthenticatedClient:
         certificate_store: CertificateStoreProtocol,
         environment: Environment = Environment.PRODUCTION,
         transfer_transport: Middleware | None = None,
+        refresh_access_token: Refresh | None = None,
     ) -> None:
         """Create the client.
 
@@ -80,15 +82,14 @@ class AuthenticatedClient:
             certificate_store: Store holding the KSeF public-key certificates used to encrypt session keys.
             environment: KSeF environment the client talks to.
             transfer_transport: Middleware used for transfers outside the KSeF API such as batch part uploads; defaults to ``transport``.
+            refresh_access_token: Callable exchanging a refresh token for a new access token. When given, the client refreshes its access token shortly before it expires and once after a 401 response; ``None`` disables automatic refresh.
         """
         self._transport = transport
         self._transfer_transport = transfer_transport or transport
-        self._auth_tokens = auth_tokens
+        self._token_manager = TokenManager(auth_tokens, refresh_access_token)
         self._certificate_store = certificate_store
         self._environment = environment
-        self._authed_transport = BearerTokenMiddleware(
-            transport, auth_tokens.access_token.token
-        )
+        self._authed_transport = BearerTokenMiddleware(transport, self._token_manager)
         self._encryption_client = EncryptionClient(transport)
         self._session_eps = SessionEndpoints(self._authed_transport)
 
@@ -96,10 +97,13 @@ class AuthenticatedClient:
     def auth_tokens(self) -> AuthTokens:
         """Return the authenticated token pair used by this client branch.
 
+        Reflects automatic refreshes: after the access token is renewed, this
+        holds the new access token alongside the original refresh token.
+
         Returns:
-            The authenticated token pair used by this client branch.
+            The current authenticated token pair of this client branch.
         """
-        return self._auth_tokens
+        return self._token_manager.tokens
 
     @property
     def access_token(self) -> str:
@@ -108,7 +112,7 @@ class AuthenticatedClient:
         Returns:
             The bearer access token string used for authenticated calls.
         """
-        return self._auth_tokens.access_token.token
+        return self._token_manager.tokens.access_token.token
 
     @property
     def refresh_token(self) -> str:
@@ -117,15 +121,18 @@ class AuthenticatedClient:
         Returns:
             The refresh token string paired with the access token.
         """
-        return self._auth_tokens.refresh_token.token
+        return self._token_manager.tokens.refresh_token.token
 
     def resume_state(self) -> AuthenticationResumeState:
         """Return the authentication state needed to rehydrate this branch later.
 
+        The state holds the current tokens, so it includes any access token
+        obtained through automatic refresh.
+
         Returns:
             The authentication state needed to rehydrate this branch later.
         """
-        return AuthenticationResumeState.from_tokens(self._auth_tokens)
+        return AuthenticationResumeState.from_tokens(self._token_manager.tokens)
 
     def _ensure_encryption_certificates_loaded(self) -> None:
         """Load public encryption certificates when the cache needs refresh."""

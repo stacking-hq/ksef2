@@ -91,6 +91,15 @@ sends a second close request. Batch sessions work the same way with
 Both `resume_online_session()` and `resume_batch_session()` are deprecated
 aliases. Session state holds encryption keys: never log it.
 
+Resumed session handles, `invoices.export(state=...)` jobs and the rest of the
+authenticated client share one transport, so they all use the client's current
+access token and refresh it as needed (see
+[Access tokens refresh themselves](authentication-methods.md#access-tokens-refresh-themselves)).
+A resumed client whose access token has expired still works while its refresh
+token is valid. If the refresh token has expired too, the call raises
+`KSeFAuthenticationExpiredError`: authenticate again, then resume the session
+from its saved state.
+
 ## Batch sessions
 
 A batch session is the bulk sending path. The unit sent to KSeF is not one XML

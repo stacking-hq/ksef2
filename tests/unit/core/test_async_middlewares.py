@@ -29,6 +29,7 @@ from ksef2._core.exceptions import (
     KSeFRateLimitError,
 )
 from tests.unit.fakes.transport import AsyncFakeTransport
+from tests.unit.helpers import static_token_manager as _manager
 
 
 # ---------------------------------------------------------------------------
@@ -44,7 +45,7 @@ class TestAsyncBearerTokenMiddleware:
         fake = AsyncFakeTransport()
         fake.enqueue(json_body={"ok": True})
 
-        middleware = AsyncBearerTokenMiddleware(fake, "test-token")
+        middleware = AsyncBearerTokenMiddleware(fake, _manager("test-token"))
         await middleware.request("GET", "/test")
 
         assert len(fake.calls) == 1
@@ -56,7 +57,7 @@ class TestAsyncBearerTokenMiddleware:
         fake = AsyncFakeTransport()
         fake.enqueue(json_body={"ok": True})
 
-        middleware = AsyncBearerTokenMiddleware(fake, "test-token")
+        middleware = AsyncBearerTokenMiddleware(fake, _manager("test-token"))
         await middleware.request("GET", "/test", headers={"X-Custom": "value"})
 
         assert len(fake.calls) == 1
@@ -69,7 +70,7 @@ class TestAsyncBearerTokenMiddleware:
         fake = AsyncFakeTransport()
         fake.enqueue(json_body={"ok": True})
 
-        middleware = AsyncBearerTokenMiddleware(fake, "test-token")
+        middleware = AsyncBearerTokenMiddleware(fake, _manager("test-token"))
         response = await middleware.request("GET", "/test")
 
         assert response.status_code == 200
@@ -80,7 +81,7 @@ class TestAsyncBearerTokenMiddleware:
         fake = AsyncFakeTransport()
         fake.enqueue(json_body={"ok": True})
 
-        middleware = AsyncBearerTokenMiddleware(fake, "token-123")
+        middleware = AsyncBearerTokenMiddleware(fake, _manager("token-123"))
         await middleware.get("/path")
 
         assert len(fake.calls) == 1
@@ -92,7 +93,7 @@ class TestAsyncBearerTokenMiddleware:
         fake = AsyncFakeTransport()
         fake.enqueue(json_body={"ok": True})
 
-        middleware = AsyncBearerTokenMiddleware(fake, "token-123")
+        middleware = AsyncBearerTokenMiddleware(fake, _manager("token-123"))
         await middleware.post("/path", json={"data": 1})
 
         assert len(fake.calls) == 1
@@ -105,7 +106,7 @@ class TestAsyncBearerTokenMiddleware:
         fake = AsyncFakeTransport()
         fake.enqueue(json_body={"ok": True})
 
-        middleware = AsyncBearerTokenMiddleware(fake, "token-123")
+        middleware = AsyncBearerTokenMiddleware(fake, _manager("token-123"))
         await middleware.delete("/path")
 
         assert len(fake.calls) == 1
@@ -461,7 +462,7 @@ class TestAsyncMiddlewareChain:
         )
 
         # Wrap with bearer
-        bearer = AsyncBearerTokenMiddleware(chain, "my-token")
+        bearer = AsyncBearerTokenMiddleware(chain, _manager("my-token"))
         response = await bearer.request("GET", "/test")
 
         assert response.status_code == 200
@@ -480,7 +481,7 @@ class TestAsyncMiddlewareChain:
                 config,
             )
         )
-        bearer = AsyncBearerTokenMiddleware(chain, "my-token")
+        bearer = AsyncBearerTokenMiddleware(chain, _manager("my-token"))
 
         with pytest.raises(KSeFClientClosedError):
             await bearer.request("GET", "/test")
@@ -501,7 +502,7 @@ class TestAsyncMiddlewareChain:
                 config,
             )
         )
-        bearer = AsyncBearerTokenMiddleware(chain, "my-token")
+        bearer = AsyncBearerTokenMiddleware(chain, _manager("my-token"))
         response = await bearer.request("GET", "/test", _sleep_fn=mock_sleep)
 
         assert response.status_code == 200
@@ -533,7 +534,7 @@ class TestAsyncMiddlewareChain:
                 config,
             )
         )
-        bearer = AsyncBearerTokenMiddleware(chain, "my-token")
+        bearer = AsyncBearerTokenMiddleware(chain, _manager("my-token"))
 
         with pytest.raises(KSeFApiError):
             await bearer.request("POST", "/test")
@@ -554,7 +555,7 @@ class TestAsyncMiddlewareChain:
                 config,
             )
         )
-        bearer = AsyncBearerTokenMiddleware(chain, "my-token")
+        bearer = AsyncBearerTokenMiddleware(chain, _manager("my-token"))
         await bearer.request("GET", "/test", _sleep_fn=mock_sleep)
 
         # Both calls should have the bearer token
