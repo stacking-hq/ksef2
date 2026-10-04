@@ -218,42 +218,10 @@
         ],
         "./src/ksef2/_core/exceptions.py": [
             {
-                "code": "reportAny",
-                "range": {
-                    "startColumn": 39,
-                    "endColumn": 46,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportExplicitAny",
-                "range": {
-                    "startColumn": 48,
-                    "endColumn": 51,
-                    "lineCount": 1
-                }
-            },
-            {
                 "code": "reportExplicitAny",
                 "range": {
                     "startColumn": 32,
                     "endColumn": 35,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportAny",
-                "range": {
-                    "startColumn": 39,
-                    "endColumn": 46,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportExplicitAny",
-                "range": {
-                    "startColumn": 48,
-                    "endColumn": 51,
                     "lineCount": 1
                 }
             }
@@ -754,16 +722,6 @@
                 "range": {
                     "startColumn": 20,
                     "endColumn": 26,
-                    "lineCount": 1
-                }
-            }
-        ],
-        "./src/ksef2/_infra/mappers/exceptions.py": [
-            {
-                "code": "reportUnusedParameter",
-                "range": {
-                    "startColumn": 4,
-                    "endColumn": 15,
                     "lineCount": 1
                 }
             }

@@ -139,14 +139,43 @@ class InvoiceSubmission(
         """
         return self._wait(timeout, poll_interval)
 
-    def download_upo(self) -> bytes:
-        """Download the UPO of this invoice.
+    def download_upo(
+        self,
+        *,
+        timeout: float = 60.0,
+        poll_interval: float = 2.0,
+    ) -> bytes:
+        """Download the UPO of this invoice, waiting for KSeF to process it first.
 
-        Call it after ``wait()`` returned: KSeF issues the UPO once the invoice is accepted.
+        KSeF issues the UPO once the invoice is accepted. When the invoice is
+        already processed this makes a single request. Otherwise it waits like
+        ``wait()`` and then downloads, so no "too early" error reaches you.
+
+        Args:
+            timeout: Maximum number of seconds to wait for processing before giving up.
+            poll_interval: Delay in seconds between invoice status checks while waiting.
 
         Returns:
             The UPO as XML bytes.
+
+        Raises:
+            KSeFInvoiceRejectedError: If invoice processing reaches a failed terminal status, so no UPO exists.
+            KSeFInvoiceProcessingTimeoutError: If processing does not finish within ``timeout``.
+            KSeFNotReadyError: If KSeF still reports no UPO although the invoice is processed.
         """
+        try:
+            return self._download()
+        except exceptions.KSeFApiError as exc:
+            if not (
+                isinstance(exc, exceptions.KSeFNotReadyError) or exc.status_code == 404
+            ):
+                raise
+            if not self._is_pending(self.get_status()):
+                raise
+        _ = self.wait(timeout=timeout, poll_interval=poll_interval)
+        return self._download()
+
+    def _download(self) -> bytes:
         return self._session._download_invoice_upo(  # pyright: ignore[reportPrivateUsage]
             reference_number=self.reference_number
         )
@@ -549,9 +578,11 @@ class OnlineSessionClient:
         """
         if not self._closed and not self._resumed:
             raise exceptions.KSeFSessionError(
-                f"Online session {self.reference_number} is still open. "
-                "Close the session before calling `wait()`: leave the `with` block or "
-                "close the session client."
+                f"Online session {self.reference_number} is still open.",
+                hint=(
+                    "KSeF processes a session only after it is closed. Close the "
+                    "session by leaving its `with` block, then call `wait()`."
+                ),
             )
 
         def _poll() -> SessionStatusResponse:
@@ -559,7 +590,8 @@ class OnlineSessionClient:
             if status.status.code >= 400:
                 raise exceptions.KSeFSessionError(
                     "Online session processing failed: "
-                    f"{self.reference_number} ({status.status.code}: {status.status.description})"
+                    f"{self.reference_number} ({status.status.code}: {status.status.description})",
+                    hint="See why invoices failed with `list_failed_invoices()`.",
                 )
             return status
 
@@ -574,24 +606,32 @@ class OnlineSessionClient:
             ),
         )
 
-    def download_upo(self) -> list[bytes]:
-        """Download every page of the session UPO.
+    def download_upo(
+        self,
+        *,
+        timeout: float = 120.0,
+        poll_interval: float = 2.0,
+    ) -> list[bytes]:
+        """Download every page of the session UPO, waiting for KSeF to finish first.
 
         Resolves the UPO page references from the session status, so you do not
-        look them up yourself. Call it after ``wait()``.
+        look them up yourself. When KSeF already finished processing the session
+        this needs no extra waiting; otherwise it waits like ``wait()`` first.
+
+        Args:
+            timeout: Maximum number of seconds to wait for processing before giving up.
+            poll_interval: Delay in seconds between session status checks while waiting.
 
         Returns:
             The XML bytes of each UPO page, in order; empty if KSeF issued no UPO because no invoice was accepted.
 
         Raises:
-            KSeFSessionError: If KSeF has not finished processing the session yet.
+            KSeFSessionError: If the session is still open, or if KSeF reports a failed terminal status.
+            KSeFOnlineSessionTimeoutError: If processing does not finish within ``timeout``.
         """
         status = self._session_status()
         if status.status.code < 200:
-            raise exceptions.KSeFSessionError(
-                f"Online session {self.reference_number} is not processed yet. "
-                "Call `wait()` first."
-            )
+            status = self.wait(timeout=timeout, poll_interval=poll_interval)
         pages = status.upo.pages if status.upo else []
         return [
             self._session_eps.get_session_upo(

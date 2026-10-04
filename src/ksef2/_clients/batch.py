@@ -263,9 +263,12 @@ class BatchSessionClient:
         """
         if not self._closed and not self._resumed:
             raise exceptions.KSeFSessionError(
-                f"Batch session {self.reference_number} is still open. "
-                "Close the session before calling `wait()`: upload the parts and "
-                "leave the `with` block, or use `auth.batch.submit()`."
+                f"Batch session {self.reference_number} is still open.",
+                hint=(
+                    "KSeF processes a batch only after the session is closed. Upload "
+                    "the parts and leave the `with` block, or use `submit()`, then "
+                    "call `wait()`."
+                ),
             )
 
         def _poll() -> SessionStatusResponse:
@@ -273,7 +276,8 @@ class BatchSessionClient:
             if status.status.code >= 400:
                 raise exceptions.KSeFSessionError(
                     "Batch session processing failed: "
-                    f"{self.reference_number} ({status.status.code}: {status.status.description})"
+                    f"{self.reference_number} ({status.status.code}: {status.status.description})",
+                    hint="See why invoices failed with `list_failed_invoices()`.",
                 )
             return status
 
@@ -288,24 +292,32 @@ class BatchSessionClient:
             ),
         )
 
-    def download_upo(self) -> list[bytes]:
-        """Download every page of the collective UPO for the batch session.
+    def download_upo(
+        self,
+        *,
+        timeout: float = 120.0,
+        poll_interval: float = 2.0,
+    ) -> list[bytes]:
+        """Download every page of the collective UPO, waiting for KSeF to finish first.
 
         Resolves the UPO page references from the session status, so you do not
-        look them up yourself. Call it after ``wait()``.
+        look them up yourself. When KSeF already finished processing the batch
+        this needs no extra waiting; otherwise it waits like ``wait()`` first.
+
+        Args:
+            timeout: Maximum number of seconds to wait for processing before giving up.
+            poll_interval: Delay in seconds between session status checks while waiting.
 
         Returns:
             The XML bytes of each UPO page, in order; empty if KSeF issued no UPO because no invoice was accepted.
 
         Raises:
-            KSeFSessionError: If KSeF has not finished processing the session yet.
+            KSeFSessionError: If the session is still open, or if batch processing reaches a failed terminal status.
+            KSeFBatchSessionTimeoutError: If processing does not finish within ``timeout``.
         """
         status = self.get_status()
         if status.status.code < 200:
-            raise exceptions.KSeFSessionError(
-                f"Batch session {self.reference_number} is not processed yet. "
-                "Call `wait()` first."
-            )
+            status = self.wait(timeout=timeout, poll_interval=poll_interval)
         pages = status.upo.pages if status.upo else []
         return [
             self._session_eps.get_session_upo(

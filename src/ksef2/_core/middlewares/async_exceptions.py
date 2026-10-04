@@ -13,8 +13,10 @@ class AsyncKSeFExceptionMiddleware(AsyncBaseMiddleware):
     def __init__(self, transport: AsyncMiddleware) -> None:
         self._next = transport
 
-    def _handle(self, response: httpx.Response) -> httpx.Response:
-        raise_for_ksef_status(response)
+    def _handle(
+        self, response: httpx.Response, method: str, path: str
+    ) -> httpx.Response:
+        raise_for_ksef_status(response, method=method, path=path)
         return response
 
     @override
@@ -38,5 +40,7 @@ class AsyncKSeFExceptionMiddleware(AsyncBaseMiddleware):
                 json=json,
                 content=content,
                 **kwargs,
-            )
+            ),
+            method,
+            path,
         )

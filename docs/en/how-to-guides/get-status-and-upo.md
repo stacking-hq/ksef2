@@ -39,6 +39,10 @@ with auth.online_session(form_code=FormSchema.FA3) as session:
     Path("upo.xml").write_bytes(upo_xml)
 ```
 
+`download_upo()` waits for processing itself, so calling it right after
+`send_invoice()` works too. Pass `timeout` and `poll_interval` to control how long
+it waits.
+
 Inside the same session block, if you already have the KSeF number, you can
 download invoice UPO by KSeF number instead:
 

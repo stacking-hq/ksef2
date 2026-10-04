@@ -8,6 +8,7 @@ Covers validation contract assertions:
 - VAL-CORE-008: Full async middleware chain composes correctly
 """
 
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import httpx
@@ -21,6 +22,7 @@ from ksef2._core.middlewares.async_lifecycle import (
     AsyncClientLifecycleState,
 )
 from ksef2._config import RetryConfig
+from ksef2._core import retry_after
 from ksef2._core.routes import AuthRoutes
 from ksef2._core.exceptions import (
     KSeFApiError,
@@ -203,6 +205,30 @@ class TestAsyncRetryMiddleware:
 
         assert len(sleep_calls) == 1
         assert sleep_calls[0] == 2.0
+
+    async def test_respects_retry_after_header_in_http_date_form(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Waits until the HTTP-date in Retry-After, capped at max_delay."""
+        monkeypatch.setattr(
+            retry_after, "_now", lambda: datetime(2026, 5, 1, 12, 0, 0, tzinfo=UTC)
+        )
+        fake = AsyncFakeTransport()
+        fake.enqueue(
+            json_body={"error": "rate limited"},
+            status_code=503,
+            headers={"Retry-After": "Fri, 01 May 2026 12:00:04 GMT"},
+        )
+        fake.enqueue(json_body={"ok": True}, status_code=200)
+
+        config = RetryConfig(max_attempts=3, initial_delay=0.5, max_delay=10.0)
+        sleep_calls: list[float] = []
+        mock_sleep = AsyncMock(side_effect=lambda s: sleep_calls.append(s))
+
+        middleware = AsyncRetryMiddleware(fake, config)
+        await middleware.request("GET", "/test", _sleep_fn=mock_sleep)
+
+        assert sleep_calls == [4.0]
 
     async def test_post_non_retryable_path_not_retried(self) -> None:
         """POST to non-retryable path is not retried."""

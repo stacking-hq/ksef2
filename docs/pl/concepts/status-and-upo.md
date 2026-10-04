@@ -92,6 +92,11 @@ invoice_upo = submission.download_upo()
 session_upo_pages = session.download_upo()  # wszystkie strony, referencje rozwiązuje SDK
 ```
 
+Wywołane za wcześnie, `download_upo()` czeka, aż KSeF skończy, więc nie musisz
+wołać `wait()` przed nim. Przyjmuje te same `timeout` i `poll_interval` co
+`wait()`. Gdy faktura lub sesja jest już przetworzona, nie wykonuje dodatkowych
+zapytań o status.
+
 Odpowiedzi statusowe mogą też wystawiać dane stron UPO, takie jak
 `download_url_expiration_date`. Do wywołań SDK używaj referencji i zapisuj
 pobrany XML, gdy już go masz.

@@ -92,6 +92,11 @@ invoice_upo = submission.download_upo()
 session_upo_pages = session.download_upo()  # every page, references resolved
 ```
 
+`download_upo()` waits for KSeF to finish first when it is called too early, so
+you do not need to call `wait()` before it. It takes the same `timeout` and
+`poll_interval` as `wait()`. When the invoice or session is already processed it
+makes no extra status requests.
+
 Status responses can also expose UPO page data such as
 `download_url_expiration_date`. Use references for SDK calls and store the
 downloaded XML once you have it.

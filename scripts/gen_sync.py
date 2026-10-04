@@ -211,6 +211,7 @@ EXCLUDED: dict[Path, str] = {
     ),
     Path("src/ksef2/_core/polling.py"): "shared sync and async polling implementations",
     Path("src/ksef2/_core/response_errors.py"): "shared response error mapper",
+    Path("src/ksef2/_core/retry_after.py"): "shared Retry-After header parser",
 }
 
 NAME_MAP = {

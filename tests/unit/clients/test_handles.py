@@ -7,15 +7,23 @@ from polyfactory import BaseFactory
 
 from ksef2._clients._async_handles import AsyncOperationHandle
 from ksef2._clients._handles import OperationHandle
+from ksef2._clients.async_online import AsyncOnlineSessionClient
+from ksef2._clients.online import OnlineSessionClient
 from ksef2._clients.online import InvoiceSubmission
 from ksef2._core.exceptions import (
+    KSeFAuthError,
     KSeFBatchSessionTimeoutError,
     KSeFClientClosedError,
     KSeFInvoiceProcessingTimeoutError,
     KSeFInvoiceRejectedError,
+    KSeFNotReadyError,
     KSeFOnlineSessionTimeoutError,
     KSeFSessionError,
     KSeFValidationError,
+)
+from ksef2._core.middlewares import (
+    AsyncKSeFExceptionMiddleware,
+    KSeFExceptionMiddleware,
 )
 from ksef2._core.routes import InvoiceRoutes, SessionRoutes
 from ksef2._domain.models.batch import BatchSessionResumeState
@@ -179,6 +187,183 @@ class TestInvoiceSubmission:
         )
 
 
+def _legacy_error(code: int | None, description: str) -> dict[str, Any]:
+    return {
+        "exception": {
+            "exceptionDetailList": [
+                {"exceptionCode": code, "exceptionDescription": description}
+            ]
+        }
+    }
+
+
+class TestInvoiceSubmissionDownloadUpo:
+    """``download_upo()`` waits for processing instead of failing too early."""
+
+    def _submission(
+        self,
+        flavor: Flavor,
+        state: OnlineSessionResumeState,
+        send_resp: BaseFactory[spec.SendInvoiceResponse],
+    ) -> Any:
+        # The raw fake transport never raises for HTTP errors; the exceptions
+        # middleware does, so put it in front of the fake like a real client has.
+        if flavor.is_async:
+            transport: Any = AsyncKSeFExceptionMiddleware(flavor.transport)  # pyright: ignore[reportArgumentType]
+            session = AsyncOnlineSessionClient(transport, state)
+        else:
+            transport = KSeFExceptionMiddleware(flavor.transport)  # pyright: ignore[reportArgumentType]
+            session = OnlineSessionClient(transport, state)
+        flavor.transport.enqueue(
+            send_resp.build(referenceNumber=INVOICE_REF).model_dump(mode="json")
+        )
+        submission = flavor.run(session.send_invoice(XML))
+        flavor.transport.calls.clear()
+        return submission
+
+    def _paths(self, flavor: Flavor) -> list[str]:
+        return [f"{call.method} {call.path}" for call in flavor.transport.calls]
+
+    def test_one_request_when_the_invoice_is_already_processed(
+        self,
+        flavor: Flavor,
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
+        inv_send_resp: BaseFactory[spec.SendInvoiceResponse],
+    ) -> None:
+        state = domain_online_session_state.build()
+        submission = self._submission(flavor, state, inv_send_resp)
+        flavor.transport.enqueue(content=b"<upo />")
+
+        assert flavor.run(submission.download_upo()) == b"<upo />"
+        assert self._paths(flavor) == [
+            "GET "
+            + InvoiceRoutes.INVOICE_UPO_BY_REFERENCE.format(
+                referenceNumber=state.reference_number,
+                invoiceReferenceNumber=INVOICE_REF,
+            )
+        ]
+
+    def test_waits_for_processing_when_ksef_says_the_upo_is_not_there_yet(
+        self,
+        flavor: Flavor,
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
+        inv_send_resp: BaseFactory[spec.SendInvoiceResponse],
+        inv_session_invoice_status_resp: BaseFactory[spec.SessionInvoiceStatusResponse],
+    ) -> None:
+        state = domain_online_session_state.build()
+        submission = self._submission(flavor, state, inv_send_resp)
+        queue = flavor.transport.enqueue
+        queue(_legacy_error(21178, "No UPO."), status_code=400)
+        queue(invoice_status(inv_session_invoice_status_resp, 150, None))
+        queue(invoice_status(inv_session_invoice_status_resp, 150, None))
+        queue(invoice_status(inv_session_invoice_status_resp, 200, KSEF_NUMBER))
+        queue(content=b"<upo />")
+
+        result = flavor.run(submission.download_upo(timeout=1.0, poll_interval=0.0))
+
+        upo_path = "GET " + InvoiceRoutes.INVOICE_UPO_BY_REFERENCE.format(
+            referenceNumber=state.reference_number, invoiceReferenceNumber=INVOICE_REF
+        )
+        status_path = "GET " + InvoiceRoutes.SESSION_INVOICE_STATUS.format(
+            referenceNumber=state.reference_number,
+            invoiceReferenceNumber=INVOICE_REF,
+        )
+        assert result == b"<upo />"
+        assert self._paths(flavor) == [upo_path, *[status_path] * 3, upo_path]
+
+    def test_a_404_without_a_ksef_code_also_triggers_the_wait(
+        self,
+        flavor: Flavor,
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
+        inv_send_resp: BaseFactory[spec.SendInvoiceResponse],
+        inv_session_invoice_status_resp: BaseFactory[spec.SessionInvoiceStatusResponse],
+    ) -> None:
+        submission = self._submission(
+            flavor, domain_online_session_state.build(), inv_send_resp
+        )
+        queue = flavor.transport.enqueue
+        queue(status_code=404, content=b"")
+        queue(invoice_status(inv_session_invoice_status_resp, 150, None))
+        queue(invoice_status(inv_session_invoice_status_resp, 200, KSEF_NUMBER))
+        queue(content=b"<upo />")
+
+        assert flavor.run(submission.download_upo(poll_interval=0.0)) == b"<upo />"
+
+    def test_a_rejected_invoice_raises_instead_of_waiting_forever(
+        self,
+        flavor: Flavor,
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
+        inv_send_resp: BaseFactory[spec.SendInvoiceResponse],
+        inv_session_invoice_status_resp: BaseFactory[spec.SessionInvoiceStatusResponse],
+    ) -> None:
+        submission = self._submission(
+            flavor, domain_online_session_state.build(), inv_send_resp
+        )
+        queue = flavor.transport.enqueue
+        queue(_legacy_error(21178, "No UPO."), status_code=400)
+        queue(invoice_status(inv_session_invoice_status_resp, 450, None))
+        queue(invoice_status(inv_session_invoice_status_resp, 450, None))
+
+        with pytest.raises(KSeFInvoiceRejectedError):
+            flavor.run(submission.download_upo(timeout=1.0, poll_interval=0.0))
+
+    def test_times_out_like_wait(
+        self,
+        flavor: Flavor,
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
+        inv_send_resp: BaseFactory[spec.SendInvoiceResponse],
+        inv_session_invoice_status_resp: BaseFactory[spec.SessionInvoiceStatusResponse],
+    ) -> None:
+        submission = self._submission(
+            flavor, domain_online_session_state.build(), inv_send_resp
+        )
+        queue = flavor.transport.enqueue
+        queue(_legacy_error(21178, "No UPO."), status_code=400)
+        queue(invoice_status(inv_session_invoice_status_resp, 150, None))
+        queue(invoice_status(inv_session_invoice_status_resp, 150, None))
+
+        with pytest.raises(KSeFInvoiceProcessingTimeoutError):
+            flavor.run(submission.download_upo(timeout=0.0, poll_interval=0.0))
+
+    def test_not_ready_error_surfaces_when_the_invoice_is_processed_but_the_upo_is_missing(
+        self,
+        flavor: Flavor,
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
+        inv_send_resp: BaseFactory[spec.SendInvoiceResponse],
+        inv_session_invoice_status_resp: BaseFactory[spec.SessionInvoiceStatusResponse],
+    ) -> None:
+        submission = self._submission(
+            flavor, domain_online_session_state.build(), inv_send_resp
+        )
+        queue = flavor.transport.enqueue
+        queue(_legacy_error(21178, "No UPO."), status_code=400)
+        queue(invoice_status(inv_session_invoice_status_resp, 200, KSEF_NUMBER))
+
+        with pytest.raises(KSeFNotReadyError) as exc_info:
+            flavor.run(submission.download_upo(timeout=1.0, poll_interval=0.0))
+
+        assert exc_info.value.ksef_code == 21178
+        assert len(flavor.transport.calls) == 2
+
+    def test_other_errors_propagate_without_a_status_check(
+        self,
+        flavor: Flavor,
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
+        inv_send_resp: BaseFactory[spec.SendInvoiceResponse],
+    ) -> None:
+        submission = self._submission(
+            flavor, domain_online_session_state.build(), inv_send_resp
+        )
+        flavor.transport.enqueue(
+            _legacy_error(21301, "No authorization."), status_code=403
+        )
+
+        with pytest.raises(KSeFAuthError):
+            flavor.run(submission.download_upo())
+
+        assert len(flavor.transport.calls) == 1
+
+
 class TestOnlineSessionWait:
     def test_wait_refuses_while_the_session_is_open(
         self,
@@ -286,7 +471,7 @@ class TestOnlineSessionWait:
 
         assert flavor.run(session.download_upo()) == []
 
-    def test_download_upo_requires_a_processed_session(
+    def test_download_upo_on_an_open_session_says_to_close_it(
         self,
         flavor: Flavor,
         domain_online_session_state: BaseFactory[OnlineSessionResumeState],
@@ -295,8 +480,63 @@ class TestOnlineSessionWait:
         session = flavor.online_session(domain_online_session_state.build())
         flavor.transport.enqueue(session_status(inv_session_status_resp, 170))
 
-        with pytest.raises(KSeFSessionError, match="wait"):
+        with pytest.raises(KSeFSessionError, match="still open") as exc_info:
             flavor.run(session.download_upo())
+
+        assert exc_info.value.hint is not None
+        assert "leaving its `with` block" in exc_info.value.hint
+
+    def test_download_upo_waits_until_ksef_finished_the_closed_session(
+        self,
+        flavor: Flavor,
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
+        inv_session_status_resp: BaseFactory[spec.SessionStatusResponse],
+    ) -> None:
+        state = domain_online_session_state.build()
+        session = flavor.online_session(state, resumed=True)
+        for code, pages in ((170, None), (150, None), (200, upo(*UPO_REFS))):
+            flavor.transport.enqueue(
+                session_status(inv_session_status_resp, code, pages)
+            )
+        flavor.transport.enqueue(content=b"<upo-1 />")
+        flavor.transport.enqueue(content=b"<upo-2 />")
+
+        pages = flavor.run(session.download_upo(timeout=1.0, poll_interval=0.0))
+
+        assert pages == [b"<upo-1 />", b"<upo-2 />"]
+        assert [call.path for call in flavor.transport.calls[:3]] == [
+            InvoiceRoutes.SESSION_STATUS.format(referenceNumber=state.reference_number)
+        ] * 3
+
+    def test_download_upo_times_out_like_wait(
+        self,
+        flavor: Flavor,
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
+        inv_session_status_resp: BaseFactory[spec.SessionStatusResponse],
+    ) -> None:
+        session = flavor.online_session(
+            domain_online_session_state.build(), resumed=True
+        )
+        flavor.transport.enqueue(session_status(inv_session_status_resp, 150))
+        flavor.transport.enqueue(session_status(inv_session_status_resp, 150))
+
+        with pytest.raises(KSeFOnlineSessionTimeoutError):
+            flavor.run(session.download_upo(timeout=0.0, poll_interval=0.0))
+
+    def test_download_upo_makes_no_extra_request_when_already_processed(
+        self,
+        flavor: Flavor,
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
+        inv_session_status_resp: BaseFactory[spec.SessionStatusResponse],
+    ) -> None:
+        session = flavor.online_session(domain_online_session_state.build())
+        flavor.transport.enqueue(
+            session_status(inv_session_status_resp, 200, upo(UPO_REFS[0]))
+        )
+        flavor.transport.enqueue(content=b"<upo-1 />")
+
+        assert flavor.run(session.download_upo()) == [b"<upo-1 />"]
+        assert len(flavor.transport.calls) == 2
 
     def test_download_invoice_upo_needs_exactly_one_identifier(
         self,
@@ -423,7 +663,7 @@ class TestBatchSessionWait:
             for ref in UPO_REFS
         ]
 
-    def test_download_upo_requires_a_processed_session(
+    def test_download_upo_on_an_open_session_says_to_close_it(
         self,
         flavor: Flavor,
         domain_batch_session_state: BaseFactory[BatchSessionResumeState],
@@ -432,8 +672,41 @@ class TestBatchSessionWait:
         session = flavor.batch_session(domain_batch_session_state.build())
         flavor.transport.enqueue(session_status(inv_session_status_resp, 150))
 
-        with pytest.raises(KSeFSessionError, match="wait"):
+        with pytest.raises(KSeFSessionError, match="still open") as exc_info:
             flavor.run(session.download_upo())
+
+        assert exc_info.value.hint is not None
+        assert "submit()" in exc_info.value.hint
+
+    def test_download_upo_waits_until_ksef_finished_the_batch(
+        self,
+        flavor: Flavor,
+        domain_batch_session_state: BaseFactory[BatchSessionResumeState],
+        inv_session_status_resp: BaseFactory[spec.SessionStatusResponse],
+    ) -> None:
+        session = flavor.batch_session(domain_batch_session_state.build(), resumed=True)
+        for code, pages in ((150, None), (150, None), (200, upo(UPO_REFS[0]))):
+            flavor.transport.enqueue(
+                session_status(inv_session_status_resp, code, pages)
+            )
+        flavor.transport.enqueue(content=b"<upo-1 />")
+
+        pages = flavor.run(session.download_upo(timeout=1.0, poll_interval=0.0))
+
+        assert pages == [b"<upo-1 />"]
+
+    def test_download_upo_times_out_like_wait(
+        self,
+        flavor: Flavor,
+        domain_batch_session_state: BaseFactory[BatchSessionResumeState],
+        inv_session_status_resp: BaseFactory[spec.SessionStatusResponse],
+    ) -> None:
+        session = flavor.batch_session(domain_batch_session_state.build(), resumed=True)
+        flavor.transport.enqueue(session_status(inv_session_status_resp, 150))
+        flavor.transport.enqueue(session_status(inv_session_status_resp, 150))
+
+        with pytest.raises(KSeFBatchSessionTimeoutError):
+            flavor.run(session.download_upo(timeout=0.0, poll_interval=0.0))
 
 
 def test_submission_is_exported_from_ksef2_clients() -> None:
