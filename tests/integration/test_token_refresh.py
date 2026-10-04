@@ -46,6 +46,10 @@ def test_resumed_client_with_expired_access_token_still_works(authenticated_cont
     limits = resumed.limits.get_context_limits()
 
     assert limits is not None
-    assert resumed.access_token != auth.access_token
+    # KSeF may reissue an identical JWT within the same second, so compare expiry.
+    assert (
+        resumed.auth_tokens.access_token.valid_until
+        > expired_state.access_token_valid_until
+    )
     assert resumed.auth_tokens.access_token.valid_until > datetime.now(timezone.utc)
     assert resumed.resume_state().access_token_valid_until > datetime.now(timezone.utc)
