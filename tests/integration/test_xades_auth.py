@@ -50,7 +50,7 @@ def test_generate_ksef_token(xades_authenticated_context):
             description="Integration test KSeF token",
         )
 
-        assert isinstance(ksef_token_response, GenerateTokenResponse)
+        assert isinstance(ksef_token_response.response, GenerateTokenResponse)
         assert ksef_token_response.token is not None
         assert ksef_token_response.reference_number is not None
     except KSeFApiError as e:

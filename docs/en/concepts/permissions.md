@@ -19,9 +19,10 @@ context. This makes later audits and failure recovery much easier.
 ## Tokens
 
 `auth.tokens` creates, lists, checks, and revokes KSeF tokens. Token generation
-returns the one-time token payload and a reference number immediately. Persist
-the credential before explicitly calling `wait_for_activation()`. This keeps a
-polling timeout or transport failure from discarding the only copy of the token.
+returns a `GeneratedToken` handle that exposes the one-time token and a
+reference number immediately. Persist the credential before explicitly calling
+the handle's `wait()`. This keeps a polling timeout or transport failure from
+discarding the only copy of the token.
 
 A generated token has a fixed permission set. If the permissions should change,
 generate a new token and revoke the old one after migration. Token generation is
@@ -55,7 +56,7 @@ delegation rules:
 | Permission type | Keep finite choices explicit, such as invoice read, invoice write, credential read, credential manage, subunit manage, enforcement operations, or introspection. |
 | Direct and indirect permissions | Query and revoke through the branch that matches how the permission was granted. |
 | Delegation | `can_delegate` is meaningful only where KSeF permits delegation for that permission path. |
-| Operation status | Grant and revoke calls return operation references; poll status before assuming the permission changed. |
+| Operation status | Grant and revoke calls return a `PermissionOperation` handle; call `wait()` before assuming the permission changed. |
 
 ```python
 from ksef2.models import EntityPermission
@@ -67,9 +68,7 @@ operation = auth.permissions.grant_entity(
     entity_name="Accounting Sp. z o.o.",
 )
 
-status = auth.permissions.get_operation_status(
-    reference_number=operation.reference_number,
-)
+status = operation.wait()
 print(status.status.code, status.status.description)
 ```
 

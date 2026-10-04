@@ -30,6 +30,7 @@ from ksef2._infra.schema.api.supp.auth import InitTokenAuthenticationRequest
 from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import FakeTransport
 from tests.unit.helpers import VALID_BASE64
+from tests.unit.helpers import legacy_api
 
 
 def _generate_ec_test_certificate(
@@ -593,6 +594,7 @@ class TestAuthClient:
 
 
 class TestSessionManagementClient:
+    @legacy_api
     def test_query_authentication_page(
         self,
         fake_transport: FakeTransport,
@@ -613,6 +615,7 @@ class TestSessionManagementClient:
         assert call.params is not None
         assert call.params["pageSize"] == "20"
 
+    @legacy_api
     def test_all_authentication_iterates_over_pages(
         self,
         fake_transport: FakeTransport,
@@ -639,6 +642,19 @@ class TestSessionManagementClient:
         assert call.method == "DELETE"
         assert call.path == AuthRoutes.TERMINATE_CURRENT_SESSION
 
+    def test_terminate(self, fake_transport: FakeTransport) -> None:
+        client = SessionManagementClient(fake_transport)
+        fake_transport.enqueue()
+
+        client.terminate("ref-123")
+
+        call = fake_transport.calls[0]
+        assert call.method == "DELETE"
+        assert call.path == AuthRoutes.TERMINATE_AUTH_SESSION.format(
+            referenceNumber="ref-123"
+        )
+
+    @legacy_api
     def test_close(self, fake_transport: FakeTransport) -> None:
         client = SessionManagementClient(fake_transport)
         fake_transport.enqueue()

@@ -119,7 +119,9 @@ Choose polling settings based on the workflow:
 | Online invoice acceptance | `submission.wait()` |
 | Batch processing | `session.wait()` |
 | Export package readiness | `auth.invoices.export(...).wait()` |
-| Token activation or inspection | `auth.tokens.wait_for_activation()` or `auth.tokens.status()` |
+| Token activation or inspection | `auth.tokens.generate(...).wait()` or `auth.tokens.get_status()` |
+| Permission grant or revoke | `operation.wait()` or `auth.permissions.get_operation_status()` |
+| Certificate issuance | `enrollment.wait()` or `auth.certificates.get_enrollment_status()` |
 
 ## What to persist
 

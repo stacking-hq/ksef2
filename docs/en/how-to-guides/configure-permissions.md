@@ -57,10 +57,20 @@ operation = auth.permissions.grant_authorization(
 )
 ```
 
-## Check operation status
+## Wait for the operation
 
-Use the returned `reference_number` until KSeF reports the permission operation
-result.
+Every `grant_*()` and `revoke*()` call returns a `PermissionOperation` handle.
+Wait on it until KSeF reports the permission operation result.
+
+```python
+status = operation.wait(timeout=60.0, poll_interval=1.0)
+```
+
+`wait()` raises `KSeFPermissionOperationFailedError` when KSeF finishes the
+operation without applying it and `KSeFPermissionOperationTimeoutError` when it
+does not finish in time. To check once without waiting, call
+`operation.get_status()`, or `get_operation_status()` when you only stored the
+reference number:
 
 ```python
 status = auth.permissions.get_operation_status(
@@ -77,29 +87,30 @@ status = auth.permissions.get_operation_status(
 ```
 
 :::caution[Do not expose the permission before status settles]
-A grant response means KSeF accepted an operation request. Check the operation
-status before treating the permission as active in your application.
+A grant response means KSeF accepted an operation request. Wait for the
+operation before treating the permission as active in your application.
 :::
 
 ## Query permissions
 
-Query methods have separate shapes because KSeF distinguishes personal,
+The `list_*()` methods have separate shapes because KSeF distinguishes personal,
 person, entity, authorization, EU entity, subordinate entity, and subunit
-permission records.
+permission records. Each returns a `Pager`: iterate it for every record, call
+`.pages()` for page-sized lists, or `.first_page()` for a single request.
 
 ### My permissions
 
 ```python
 from ksef2.models import PersonalPermissionsQuery
 
-page = auth.permissions.query_personal(
-    query=PersonalPermissionsQuery(
+permissions = auth.permissions.list_personal(
+    PersonalPermissionsQuery(
         permission_types=["invoice_read"],
         permission_state="active",
     ),
 )
 
-for permission in page.permissions:
+for permission in permissions:
     print(permission.id, permission.permission_type, permission.permission_state)
 ```
 
@@ -108,11 +119,11 @@ for permission in page.permissions:
 ```python
 from ksef2.models import EntityPermissionsQuery
 
-page = auth.permissions.query_entities(
-    query=EntityPermissionsQuery(context_type="nip", context_value="5261040828"),
+permissions = auth.permissions.list_entities(
+    EntityPermissionsQuery(context_type="nip", context_value="5261040828"),
 )
 
-for permission in page.permissions:
+for permission in permissions:
     print(permission.id, permission.permission_type, permission.can_delegate)
 ```
 
@@ -121,27 +132,25 @@ for permission in page.permissions:
 ```python
 from ksef2.models import AuthorizationPermissionsQuery
 
-page = auth.permissions.query_authorizations(
-    query=AuthorizationPermissionsQuery(
+grants = auth.permissions.list_authorizations(
+    AuthorizationPermissionsQuery(
         query_type="granted",
         permission_types=["self_invoicing"],
     ),
 )
 
-for grant in page.authorization_grants:
+for grant in grants:
     print(grant.id, grant.authorization_scope, grant.authorized_entity_value)
 ```
 
 ## Revoke permissions
 
-Use the permission id returned by a query. Revocation also returns an operation
-reference.
+Use the permission id returned by a listing. Revocation also returns a
+`PermissionOperation` handle.
 
 ```python
-operation = auth.permissions.revoke_common(permission_id="permission-id")
-status = auth.permissions.get_operation_status(
-    reference_number=operation.reference_number,
-)
+operation = auth.permissions.revoke(permission_id="permission-id")
+status = operation.wait()
 print(status.status.code, status.status.description)
 ```
 
@@ -171,12 +180,12 @@ status = auth.permissions.get_attachment_permission_status()
 
 2. Persist the operation `reference_number`.
 
-3. Check operation status before exposing the permission as active.
+3. Wait for the operation before exposing the permission as active.
 
-4. Query permissions to collect ids for audits or revocation.
+4. List permissions to collect ids for audits or revocation.
 
-5. Revoke by permission id when access should end, then check the revoke
-   operation status.
+5. Revoke by permission id when access should end, then wait for the revoke
+   operation.
 
 ## Next workflows
 

@@ -157,24 +157,27 @@ while page.continuation_token is not None:
 Użyj `auth.invoice_sessions`, gdy musisz znaleźć sesje online albo batch po
 zakończeniu pierwotnego procesu wysyłki.
 
+`list()` zwraca `Pager`: iteruj po nim, by dostać każdą sesję, wywołaj
+`.pages()` dla list wielkości strony albo `.first_page()`, by wykonać jedno
+żądanie.
+
 ### Jedna strona
 
 ```python
-page = auth.invoice_sessions.query(
-    session_type="online",
+sessions = auth.invoice_sessions.list(
+    "online",
     statuses=["in_progress", "succeeded"],
-)
+).first_page()
 
-for item in page.sessions:
+for item in sessions:
     print(item.reference_number, item.status.code, item.total_invoice_count)
 ```
 
-### Wszystkie strony
+### Wszystkie sesje
 
 ```python
-for page in auth.invoice_sessions.all(session_type="batch"):
-    for item in page.sessions:
-        print(item.reference_number, item.status.description)
+for item in auth.invoice_sessions.list("batch"):
+    print(item.reference_number, item.status.description)
 ```
 
 ## Zalecany przepływ

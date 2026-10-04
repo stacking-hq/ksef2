@@ -7,6 +7,7 @@ from ksef2._clients.async_invoice_sessions import AsyncInvoiceSessionsClient
 from ksef2._domain.models.session import ListSessionsResponse
 from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import AsyncFakeTransport
+from tests.unit.helpers import legacy_api
 
 
 async def _collect_pages(iterator):
@@ -17,6 +18,7 @@ async def _collect_pages(iterator):
 
 
 class TestAsyncInvoiceSessionsClient:
+    @legacy_api
     def test_query(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -31,6 +33,7 @@ class TestAsyncInvoiceSessionsClient:
         assert isinstance(result, ListSessionsResponse)
         assert async_fake_transport.calls[0].method == "GET"
 
+    @legacy_api
     def test_all(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -50,6 +53,7 @@ class TestAsyncInvoiceSessionsClient:
 
         assert len(results) == 2
 
+    @legacy_api
     def test_query_rejects_invalid_session_type(
         self,
         async_fake_transport: AsyncFakeTransport,

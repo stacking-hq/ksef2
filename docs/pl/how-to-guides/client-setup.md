@@ -98,7 +98,7 @@ Klient bazowy przydaje się przed uwierzytelnieniem:
 
 ```python
 certificates = client.encryption.get_certificates()
-providers = client.peppol.query()
+providers = client.peppol.list().first_page()
 ```
 
 Moduł tylko dla TEST także jest na kliencie bazowym:

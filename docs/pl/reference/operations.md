@@ -128,6 +128,8 @@ pollingu, zdalny workflow KSeF może nadal zakończyć się później.
 | Gotowość pobrania faktury | `KSeFInvoiceDownloadTimeoutError` | `ksef_number` |
 | Przetwarzanie faktury online | `KSeFInvoiceProcessingTimeoutError` | `invoice_reference_number` |
 | Gotowość paczki eksportu | `KSeFExportTimeoutError` | `reference_number` |
+| Nadanie albo cofnięcie uprawnienia | `KSeFPermissionOperationTimeoutError` | `reference_number` |
+| Wydanie certyfikatu | `KSeFCertificateEnrollmentTimeoutError` | `reference_number` |
 | Zakończenie sesji batch | `KSeFBatchSessionTimeoutError` | `reference_number` |
 | Zakończenie sesji online | `KSeFOnlineSessionTimeoutError` | `reference_number` |
 

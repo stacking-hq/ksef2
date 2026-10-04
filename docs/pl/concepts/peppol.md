@@ -21,19 +21,18 @@ przetwarzania sesji. Odczytuje tylko dane dostawców zarejestrowane w KSeF.
 PEPPOL jest wystawiony na kliencie głównym obok innych publicznych gałęzi:
 
 ```python
-page = client.peppol.query()
-
-for provider in page.providers:
+for provider in client.peppol.list():
     print(provider.id, provider.name)
 ```
 
-Odpowiedź jest stronicowana. Użyj `client.peppol.all()`, gdy SDK ma przejść po
-stronach za Ciebie:
+`list()` zwraca `Pager` po stronicowanej odpowiedzi: iteracja sama przechodzi po
+stronach, `.pages()` zwraca po jednej liście na stronę, a `.first_page()`
+wykonuje pojedyncze żądanie.
 
 ```python
 providers_by_id = {
     provider.id: provider.name
-    for provider in client.peppol.all()
+    for provider in client.peppol.list()
 }
 ```
 

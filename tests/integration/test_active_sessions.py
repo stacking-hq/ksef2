@@ -11,11 +11,9 @@ def test_list_active_sessions(
     """List active authentication sessions."""
     client, auth = xades_authenticated_context
 
-    response = auth.sessions.query()
+    sessions = auth.sessions.list().first_page()
 
-    assert response is not None
-    assert hasattr(response, "items")
-    assert hasattr(response, "continuation_token")
+    assert isinstance(sessions, list)
 
 
 @pytest.mark.integration
@@ -23,10 +21,9 @@ def test_list_active_sessions_with_pagination(xades_authenticated_context):
     """List active sessions with pagination."""
     client, auth = xades_authenticated_context
 
-    response = auth.sessions.query(page_size=15)  # must be between 10 and 100
+    sessions = auth.sessions.list(page_size=15).first_page()  # 10 to 100
 
-    assert response is not None
-    assert len(response.items) <= 15
+    assert len(sessions) <= 15
 
 
 @pytest.mark.integration
@@ -42,9 +39,9 @@ def test_terminate_specific_session(xades_authenticated_context):
     """Terminate a specific authentication session by reference number."""
     client, auth = xades_authenticated_context
 
-    sessions_response = auth.sessions.query()
+    sessions = auth.sessions.list().first_page()
 
-    if sessions_response.items:
-        ref_to_delete = sessions_response.items[0].reference_number
+    if sessions:
+        ref_to_delete = sessions[0].reference_number
 
-        auth.sessions.close(reference_number=ref_to_delete)
+        auth.sessions.terminate(ref_to_delete)
