@@ -165,6 +165,33 @@ class KSeFAuthError(KSeFApiError):
         super().__init__(status_code, ExceptionCode.UNKNOWN_ERROR, message, response)
 
 
+class KSeFAuthenticationExpiredError(KSeFAuthError):
+    """Raised when the refresh token is expired or rejected and the session cannot be renewed.
+
+    The client could not refresh its access token, so the only way forward is
+    to authenticate again. Because it subclasses ``KSeFAuthError``, existing
+    handlers for authentication failures keep working.
+
+    Args:
+        message: Human-readable error message; defaults to a request to authenticate again.
+        status_code: HTTP status code of the rejected response, ``401`` or ``403``.
+        response: Parsed error response body, if available.
+    """
+
+    code: str = "AUTHENTICATION_EXPIRED"
+
+    def __init__(
+        self,
+        message: str = (
+            "The refresh token is expired or was rejected, so the access token "
+            "can no longer be renewed. Authenticate again."
+        ),
+        status_code: int = 401,
+        response: BaseModel | None = None,
+    ) -> None:
+        super().__init__(status_code, message, response)
+
+
 class KSeFRateLimitError(KSeFApiError):
     """Raised on 429 responses. Check ``retry_after`` for seconds to wait.
 

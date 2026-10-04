@@ -34,6 +34,14 @@ i są dostępne przez różne gałęzie SDK.
 Pierwsze dwie rodziny są przepływami wysyłki faktur. Sesje uwierzytelniania i
 historia sesji faktur służą do inspekcji albo administracji.
 
+Sesje są otwierane access tokenem klienta uwierzytelnionego. Długie uploady i
+eksporty mogą go przeżyć, więc klient odświeża token w tle (zobacz
+[Access tokeny odświeżają się same](authentication-methods.md#access-tokeny-odświeżają-się-same)).
+Sesja faktur pozostaje ważna po odświeżeniu, a wznowiony uchwyt sesji używa tego
+samego klienta i jego bieżących tokenów. Jeśli wygasł także refresh token,
+wywołanie rzuca `KSeFAuthenticationExpiredError`: uwierzytelnij się ponownie i
+wznów sesję z zapisanego stanu.
+
 ## Sesje online
 
 Sesja online jest interaktywną ścieżką wysyłki. Otwiera się ją dla schematu

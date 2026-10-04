@@ -84,6 +84,26 @@ authentication endpoints and bind the redeemed `AuthTokens` with
 `client.authentication.resume(AuthenticationResumeState.from_tokens(auth_tokens))`.
 :::
 
+## Access tokens refresh themselves
+
+KSeF access tokens are short-lived. The authenticated client therefore keeps
+the refresh token next to the access token and renews the access token without
+your code doing anything: shortly before `access_token_valid_until`, and once
+after a `401` response, retrying the failed request a single time. Concurrent
+requests share one refresh.
+
+This also covers `client.authentication.resume(state)`: a state whose access
+token has expired works as long as its refresh token is still valid.
+`auth.resume_state()` and `auth.auth_tokens` return the current tokens, so save
+the state again after long-running work.
+
+When the refresh token is expired or rejected, the client raises
+`KSeFAuthenticationExpiredError`, which subclasses `KSeFAuthError`. Authenticate
+again to continue. To refresh tokens yourself, pass
+`TransportConfig(auto_refresh_tokens=False)`. See the
+[Operations reference](../reference/operations.md#access-token-refresh) for the
+exact rules.
+
 ## Profiles are local authentication configuration
 
 `with_profile()` is not a separate credential type. It is a configuration layer
