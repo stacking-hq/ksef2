@@ -27,7 +27,7 @@ from ksef2._domain.models.session import FormSchema, SessionEncryptionMaterial
 from ksef2._infra.schema.api import spec
 from ksef2._services.async_batch import AsyncBatchService, AsyncBatchSessionOpener
 from tests.unit.fakes.transport import AsyncFakeTransport
-from tests.unit.helpers import VALID_PUBLIC_KEY_ID
+from tests.unit.helpers import VALID_PUBLIC_KEY_ID, legacy_api
 
 
 def _build_service(
@@ -78,6 +78,7 @@ async def _unused_open_batch_session(
 
 
 class TestAsyncBatchService:
+    @legacy_api
     def test_prepare_batch_builds_zip_metadata_and_encrypted_part(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -112,6 +113,7 @@ class TestAsyncBatchService:
             assert archive.read("invoice-1.xml") == b"<Invoice>1</Invoice>"
             assert archive.read("invoice-2.xml") == b"<Invoice>2</Invoice>"
 
+    @legacy_api
     def test_prepare_batch_rejects_duplicate_file_names(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -191,6 +193,7 @@ class TestAsyncBatchService:
             "x-ms-blob-type": "BlockBlob",
         }
 
+    @legacy_api
     def test_submit_prepared_batch_uploads_parts_and_closes_session(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -276,6 +279,7 @@ class TestAsyncBatchService:
         assert async_fake_transport.calls[0].method == "PUT"
         assert async_fake_transport.calls[1].method == "POST"
 
+    @legacy_api
     def test_open_session_context_manager_opens_and_closes_session(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -349,6 +353,7 @@ class TestAsyncBatchService:
 
         assert async_fake_transport.calls[0].method == "POST"
 
+    @legacy_api
     def test_wait_for_completion_returns_terminal_success(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -380,6 +385,7 @@ class TestAsyncBatchService:
         assert status.status.code == 200
         assert len(async_fake_transport.calls) == 2
 
+    @legacy_api
     def test_wait_for_completion_raises_on_terminal_failure(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -404,6 +410,7 @@ class TestAsyncBatchService:
                 )
             )
 
+    @legacy_api
     def test_wait_for_completion_raises_on_timeout(
         self,
         async_fake_transport: AsyncFakeTransport,

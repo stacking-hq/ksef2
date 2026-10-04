@@ -56,7 +56,7 @@ branch before encrypting payload keys:
 with auth.online_session(form_code=FormSchema.FA3) as session:
     ...
 
-zip_parts = auth.invoices.export_and_download(filters=filters)
+package = auth.invoices.export(filters).wait()
 ```
 
 :::tip[Prefer high-level workflows]

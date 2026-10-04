@@ -21,6 +21,7 @@ TransportConfig(
     proxy_url=None,
     trust_env=True,
     http2=True,
+    auto_refresh_tokens=True,
 )
 ```
 
@@ -33,6 +34,10 @@ TransportConfig(
 | `proxy_url` | `str | None` | `None` | Proxy `httpx` |
 | `trust_env` | `bool` | `True` | Obsługa zmiennych środowiskowych przez `httpx` |
 | `http2` | `bool` | `True` | Flaga HTTP/2 w `httpx` |
+| `auto_refresh_tokens` | `bool` | `True` | Odświeżanie access tokenu przez klientów uwierzytelnionych, zobacz [Odświeżanie access tokenu](#odświeżanie-access-tokenu) |
+
+`auto_refresh_tokens` jest jedynym polem, które nie konfiguruje `httpx`, więc
+działa także wtedy, gdy przekażesz własny `http_client`.
 
 ## TimeoutConfig
 
@@ -114,6 +119,41 @@ zwraca parę access/refresh tylko raz. Utrata odpowiedzi redeem rzuca
 `KSeFAuthTokenRedemptionError` z `outcome_ambiguous=True`; nie powtarzaj tej
 operacji automatycznie.
 
+## Odświeżanie access tokenu
+
+Klienci uwierzytelnieni odświeżają access token samodzielnie, używając refresh
+tokenu z uwierzytelnienia albo z `AuthenticationResumeState`, z którego zostali
+wznowieni.
+
+| Wyzwalacz | Zachowanie |
+| --- | --- |
+| Proaktywny | Request, który zastaje access token na mniej niż 60 sekund przed `access_token_valid_until`, najpierw go odświeża, a potem jest wysyłany z nowym tokenem. |
+| Reaktywny | Odpowiedź `401` wywołuje jedno odświeżenie i jedną ponowną próbę tego samego requestu. Drugi `401` jest zgłaszany jako `KSeFAuthError`. |
+| Współbieżność | Requesty współdzielą jedno odświeżenie: lock w `Client`, `asyncio.Lock` w `AsyncClient`. |
+| Inne statusy | `403` i pozostałe błędy nie powodują odświeżenia. |
+
+`auth.auth_tokens`, `auth.access_token` i `auth.resume_state()` zawsze zwracają
+bieżące tokeny, więc po długo trwającej pracy zapisz `resume_state()` ponownie.
+
+Gdy refresh token wygasł albo KSeF go odrzucił, request rzuca
+`KSeFAuthenticationExpiredError`, podklasę `KSeFAuthError`. Jedynym wyjściem
+jest ponowne uwierzytelnienie. Jeśli refresh token już wygasł, ale access token
+ma jeszcze ważność, requesty nadal używają access tokenu, dopóki KSeF go nie
+odrzuci. Błędy transportu i inne błędy wywołania odświeżenia są propagowane bez
+zmian.
+
+Odświeżanie nigdy nie dotyczy jednorazowego redeem uwierzytelnienia ani
+transferów presigned do zewnętrznego storage (upload części batch, pobieranie
+eksportów). Używają osobnych ścieżek i nie niosą tokenu bearer.
+
+Aby zarządzać tokenami samodzielnie, wyłącz to zachowanie. Wygasłe tokeny
+ujawnią się wtedy jako `KSeFAuthError`, a `client.authentication.refresh()`
+pozostaje dostępne.
+
+```python
+client = Client(Environment.PRODUCTION, transport_config=TransportConfig(auto_refresh_tokens=False))
+```
+
 ## Timeouty pollingu workflow
 
 Helpery pollingowe używają argumentów `timeout` i `poll_interval`. Są to
@@ -128,7 +168,10 @@ pollingu, zdalny workflow KSeF może nadal zakończyć się później.
 | Gotowość pobrania faktury | `KSeFInvoiceDownloadTimeoutError` | `ksef_number` |
 | Przetwarzanie faktury online | `KSeFInvoiceProcessingTimeoutError` | `invoice_reference_number` |
 | Gotowość paczki eksportu | `KSeFExportTimeoutError` | `reference_number` |
+| Nadanie albo cofnięcie uprawnienia | `KSeFPermissionOperationTimeoutError` | `reference_number` |
+| Wydanie certyfikatu | `KSeFCertificateEnrollmentTimeoutError` | `reference_number` |
 | Zakończenie sesji batch | `KSeFBatchSessionTimeoutError` | `reference_number` |
+| Zakończenie sesji online | `KSeFOnlineSessionTimeoutError` | `reference_number` |
 
 Po timeoutcie wznów polling zapisanymi identyfikatorami. Nie traktuj lokalnego
 deadline'u jako dowodu, że zdalna operacja się nie udała.

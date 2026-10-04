@@ -103,10 +103,22 @@ GENERATED_PAIRS: tuple[GeneratedPair, ...] = (
         Path("src/ksef2/_core/async_protocols.py"), Path("src/ksef2/_core/protocols.py")
     ),
     GeneratedPair(
+        Path("src/ksef2/_core/async_token_manager.py"),
+        Path("src/ksef2/_core/token_manager.py"),
+    ),
+    GeneratedPair(
         Path("src/ksef2/_core/async_external_transfer.py"),
         Path("src/ksef2/_core/external_transfer.py"),
     ),
     # clients/
+    GeneratedPair(
+        Path("src/ksef2/_clients/_async_handles.py"),
+        Path("src/ksef2/_clients/_handles.py"),
+    ),
+    GeneratedPair(
+        Path("src/ksef2/_clients/_async_pager.py"),
+        Path("src/ksef2/_clients/_pager.py"),
+    ),
     GeneratedPair(
         Path("src/ksef2/_clients/async_auth.py"), Path("src/ksef2/_clients/auth.py")
     ),
@@ -242,6 +254,7 @@ DOCSTRING_REPLACEMENTS = (
     ("Async testdata", "Testdata"),
     ("Async authentication", "Authentication"),
     ("async with", "with"),
+    ("aclose()", "close()"),
     (" async ", " "),
     ("await ", ""),
     ("async context manager", "context manager"),
@@ -380,6 +393,10 @@ class AsyncToSyncTransformer(cst.CSTTransformer):
         module_name = get_full_name_for_node(updated_node.module)
         if module_name is None:
             return updated_node
+
+        if module_name == "asyncio":
+            # ``from asyncio import Lock`` becomes ``from threading import Lock``.
+            return updated_node.with_changes(module=_module_expr("threading"))
 
         rewritten = _sync_module_name(module_name)
         if rewritten == module_name:

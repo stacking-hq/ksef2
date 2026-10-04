@@ -7,6 +7,8 @@ from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Protocol, final, runtime_checkable
 
+from typing_extensions import deprecated
+
 from ksef2._clients.batch import BatchSessionClient
 from ksef2._core import exceptions
 from ksef2._core.external_transfer import ExternalTransferClient
@@ -30,6 +32,7 @@ from ksef2._infra.mappers.sessions import from_spec as session_from_spec
 from ksef2._services.batch_preparation import (
     MAX_BATCH_PART_SIZE,
     load_batch_invoices,
+    load_batch_items,
     prepare_batch_package,
 )
 
@@ -87,6 +90,120 @@ class BatchService:
         self._get_encryption_key = get_encryption_key
         self._open_batch_session = open_batch_session
 
+    def prepare(
+        self,
+        invoices: Iterable[bytes | str | Path | BatchInvoice],
+        *,
+        form_code: FormSchema = FormSchema.FA3,
+        offline_mode: bool = False,
+        max_part_size: int = MAX_BATCH_PART_SIZE,
+    ) -> PreparedBatch:
+        """Build a ZIP package, split it, and encrypt each upload part.
+
+        Args:
+            invoices: Invoices to include. Each item is invoice XML as ``bytes`` or ``str`` (named ``invoice-<position>.xml``), a ``Path`` to an XML file (keeps its file name) or a ``BatchInvoice`` with an explicit file name.
+            form_code: Invoice schema declared for the batch session.
+            offline_mode: Whether to declare offline invoicing mode for the batch.
+            max_part_size: Maximum size of each ZIP part before encryption.
+
+        Returns:
+            A prepared batch with encrypted part payloads and the metadata required
+            to open a batch session.
+
+        Raises:
+            FileNotFoundError: If an invoice XML path does not exist.
+            NoCertificateAvailableError: If no valid symmetric-key certificate is
+                available.
+            KSeFEncryptionError: If key or part encryption fails.
+            KSeFValidationError: If the invoice list or part size is invalid.
+
+        Example:
+            ```python
+            batch = auth.batch.prepare([xml_1, xml_2])
+            session = auth.batch.submit(batch)
+            ```
+        """
+        loaded = load_batch_items(invoices)
+        return self._prepare(
+            invoices=loaded,
+            form_code=form_code,
+            offline_mode=offline_mode,
+            max_part_size=max_part_size,
+        )
+
+    def _prepare(
+        self,
+        *,
+        invoices: Iterable[BatchInvoice],
+        form_code: FormSchema,
+        offline_mode: bool,
+        max_part_size: int,
+    ) -> PreparedBatch:
+        material = self._get_encryption_key()
+        return prepare_batch_package(
+            invoices=invoices,
+            aes_key=material.aes_key,
+            iv=material.iv,
+            encrypted_key=material.encrypted_key,
+            public_key_id=material.public_key_id,
+            form_code=form_code,
+            offline_mode=offline_mode,
+            max_part_size=max_part_size,
+        )
+
+    def submit(
+        self,
+        batch: PreparedBatch | Iterable[bytes | str | Path | BatchInvoice],
+        *,
+        form_code: FormSchema = FormSchema.FA3,
+        offline_mode: bool = False,
+        max_part_size: int = MAX_BATCH_PART_SIZE,
+    ) -> BatchSessionClient:
+        """Open a batch session, upload the parts and close the session.
+
+        Args:
+            batch: A prepared batch from ``prepare()``, or the invoices themselves, which are prepared first (same item types as ``prepare()``).
+            form_code: Invoice schema declared for the batch session. Ignored for a prepared batch, which carries its own.
+            offline_mode: Whether to declare offline invoicing mode for the batch. Ignored for a prepared batch.
+            max_part_size: Maximum size of each ZIP part before encryption. Ignored for a prepared batch.
+
+        Returns:
+            The closed batch session client. Call its ``wait()`` for the terminal status, ``list_failed_invoices()`` for rejected invoices and ``download_upo()`` for the UPO pages.
+
+        Raises:
+            NoCertificateAvailableError: If no valid symmetric-key certificate is
+                available.
+            KSeFEncryptionError: If key or part encryption fails.
+            KSeFValidationError: If preparation, session opening, or upload validation
+                fails.
+            KSeFBatchUploadError: If external storage rejects an upload or its
+                outcome cannot be determined. Call ``recovery_state()`` on the error
+                to deliberately recover the sensitive batch state.
+
+        Example:
+            ```python
+            session = auth.batch.submit([xml_1, xml_2])
+            final = session.wait()
+            upos = session.download_upo()
+            ```
+        """
+        if isinstance(batch, PreparedBatch):
+            prepared_batch = batch
+        else:
+            prepared_batch = self.prepare(
+                batch,
+                form_code=form_code,
+                offline_mode=offline_mode,
+                max_part_size=max_part_size,
+            )
+        with self._open_session(prepared_batch=prepared_batch) as session:
+            session.upload_parts()
+        return session
+
+    @deprecated(
+        "`prepare_batch()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `prepare()` instead."
+    )
     def prepare_batch(
         self,
         *,
@@ -95,7 +212,10 @@ class BatchService:
         offline_mode: bool = False,
         max_part_size: int = MAX_BATCH_PART_SIZE,
     ) -> PreparedBatch:
-        """Build a ZIP package, split it, and encrypt each upload part.
+        """Deprecated: build a ZIP package, split it, and encrypt each upload part.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``prepare()`` instead.
 
         Args:
             invoices: Invoice XML payloads to include in the batch package.
@@ -113,18 +233,17 @@ class BatchService:
             KSeFEncryptionError: If key or part encryption fails.
             KSeFValidationError: If the invoice list or part size is invalid.
         """
-        material = self._get_encryption_key()
-        return prepare_batch_package(
+        return self._prepare(
             invoices=invoices,
-            aes_key=material.aes_key,
-            iv=material.iv,
-            encrypted_key=material.encrypted_key,
-            public_key_id=material.public_key_id,
             form_code=form_code,
             offline_mode=offline_mode,
             max_part_size=max_part_size,
         )
 
+    @deprecated(
+        "`prepare_batch_from_paths()` is deprecated and will be removed in "
+        "ksef2 1.10.0; use `prepare()` instead."
+    )
     def prepare_batch_from_paths(
         self,
         *,
@@ -133,7 +252,10 @@ class BatchService:
         offline_mode: bool = False,
         max_part_size: int = MAX_BATCH_PART_SIZE,
     ) -> PreparedBatch:
-        """Load invoice XML files from disk and prepare a batch package.
+        """Deprecated: load invoice XML files from disk and prepare a batch package.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``prepare()`` with ``Path`` items instead.
 
         Args:
             invoice_paths: Paths to XML files that should be added to the batch.
@@ -151,23 +273,45 @@ class BatchService:
             KSeFEncryptionError: If key or part encryption fails.
             KSeFValidationError: If the invoice list or part size is invalid.
         """
+        return self._prepare_batch_from_paths(
+            invoice_paths=invoice_paths,
+            form_code=form_code,
+            offline_mode=offline_mode,
+            max_part_size=max_part_size,
+        )
+
+    def _prepare_batch_from_paths(
+        self,
+        *,
+        invoice_paths: Iterable[Path | str],
+        form_code: FormSchema = FormSchema.FA3,
+        offline_mode: bool = False,
+        max_part_size: int = MAX_BATCH_PART_SIZE,
+    ) -> PreparedBatch:
         invoices = load_batch_invoices(invoice_paths)
-        return self.prepare_batch(
+        return self._prepare(
             invoices=invoices,
             form_code=form_code,
             offline_mode=offline_mode,
             max_part_size=max_part_size,
         )
 
+    @deprecated(
+        "`open_session()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `auth.batch_session()` instead."
+    )
     def open_session(
         self,
         *,
         prepared_batch: PreparedBatch,
     ) -> BatchSessionClient:
-        """Open a batch session for an already prepared package.
+        """Deprecated: open a batch session for an already prepared package.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``auth.batch_session(prepared_batch=...)`` instead.
 
         Args:
-            prepared_batch: Prepared batch payload returned by ``prepare_batch()``.
+            prepared_batch: Prepared batch payload returned by ``prepare()``.
 
         Returns:
             A session client exposing the upload instructions returned by KSeF.
@@ -178,6 +322,13 @@ class BatchService:
         return self._open_session(prepared_batch=prepared_batch)
 
     def _open_session(
+        self,
+        *,
+        prepared_batch: PreparedBatch,
+    ) -> BatchSessionClient:
+        return self._open_session_client(prepared_batch=prepared_batch)
+
+    def _open_session_client(
         self,
         *,
         prepared_batch: PreparedBatch,
@@ -251,15 +402,22 @@ class BatchService:
                     recovery_state=session.resume_state(),
                 ) from exc
 
+    @deprecated(
+        "`submit_prepared_batch()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `submit()` instead."
+    )
     def submit_prepared_batch(
         self,
         *,
         prepared_batch: PreparedBatch,
     ) -> BatchSessionResumeState:
-        """Open, upload, and close a batch session for a prepared package.
+        """Deprecated: open, upload, and close a batch session for a prepared package.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``submit()`` instead.
 
         Args:
-            prepared_batch: Prepared batch payload returned by ``prepare_batch()``.
+            prepared_batch: Prepared batch payload returned by ``prepare()``.
 
         Returns:
             Serializable state of the submitted batch session.
@@ -271,11 +429,19 @@ class BatchService:
                 outcome cannot be determined. Call ``recovery_state()`` on the error
                 to deliberately recover the sensitive batch state.
         """
-        with self.open_session(prepared_batch=prepared_batch) as session:
-            state = session.resume_state()
-            session.upload_parts()
-        return state
+        return self._submit_prepared_batch(prepared_batch=prepared_batch)
 
+    def _submit_prepared_batch(
+        self,
+        *,
+        prepared_batch: PreparedBatch,
+    ) -> BatchSessionResumeState:
+        return self.submit(prepared_batch).resume_state()
+
+    @deprecated(
+        "`submit_batch()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `submit()` instead."
+    )
     def submit_batch(
         self,
         *,
@@ -284,7 +450,10 @@ class BatchService:
         offline_mode: bool = False,
         max_part_size: int = MAX_BATCH_PART_SIZE,
     ) -> BatchSessionResumeState:
-        """Prepare and submit a batch in one call.
+        """Deprecated: prepare and submit a batch in one call.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``submit()`` instead.
 
         Args:
             invoices: Invoice XML payloads to include in the batch package.
@@ -304,31 +473,43 @@ class BatchService:
             KSeFBatchUploadError: If external storage rejects an upload or its
                 outcome cannot be determined. Call ``recovery_state()`` on the error
                 to deliberately recover the sensitive batch state.
-
-        Example:
-            ```python
-            from ksef2.models import BatchInvoice
-
-            state = auth.batch.submit_batch(
-                invoices=[BatchInvoice(file_name="invoice-1.xml", content=xml_bytes)],
-            )
-            print(state.reference_number)
-            ```
         """
-        prepared_batch = self.prepare_batch(
+        return self._submit_batch(
             invoices=invoices,
             form_code=form_code,
             offline_mode=offline_mode,
             max_part_size=max_part_size,
         )
-        return self.submit_prepared_batch(prepared_batch=prepared_batch)
 
+    def _submit_batch(
+        self,
+        *,
+        invoices: Iterable[BatchInvoice],
+        form_code: FormSchema = FormSchema.FA3,
+        offline_mode: bool = False,
+        max_part_size: int = MAX_BATCH_PART_SIZE,
+    ) -> BatchSessionResumeState:
+        prepared_batch = self._prepare(
+            invoices=invoices,
+            form_code=form_code,
+            offline_mode=offline_mode,
+            max_part_size=max_part_size,
+        )
+        return self.submit(prepared_batch).resume_state()
+
+    @deprecated(
+        "`get_status()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `BatchSessionClient.get_status()` instead."
+    )
     def get_status(
         self,
         *,
         session: str | BatchSessionResumeState | BatchSessionClient,
     ) -> SessionStatusResponse:
-        """Fetch the current status of a batch session.
+        """Deprecated: fetch the current status of a batch session.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``BatchSessionClient.get_status()`` instead.
 
         Args:
             session: Session reference number, persisted state, or open session client.
@@ -336,12 +517,23 @@ class BatchService:
         Returns:
             Current batch session status as reported by KSeF.
         """
+        return self._get_status(session=session)
+
+    def _get_status(
+        self,
+        *,
+        session: str | BatchSessionResumeState | BatchSessionClient,
+    ) -> SessionStatusResponse:
         return session_from_spec(
             self._invoice_eps.get_session_status(
                 reference_number=self._resolve_reference_number(session),
             )
         )
 
+    @deprecated(
+        "`list_invoices()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `BatchSessionClient.list_invoices()` instead."
+    )
     def list_invoices(
         self,
         *,
@@ -349,7 +541,10 @@ class BatchService:
         page_size: int = 10,
         continuation_token: str | None = None,
     ) -> SessionInvoicesResponse:
-        """Fetch one page of accepted invoices from a batch session.
+        """Deprecated: fetch one page of accepted invoices from a batch session.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``BatchSessionClient.list_invoices()`` instead.
 
         Args:
             session: Session reference number, persisted state, or open session client.
@@ -359,6 +554,17 @@ class BatchService:
         Returns:
             One page of invoices accepted in the session, with a continuation token when more exist.
         """
+        return self._list_invoices(
+            session=session, page_size=page_size, continuation_token=continuation_token
+        )
+
+    def _list_invoices(
+        self,
+        *,
+        session: str | BatchSessionResumeState | BatchSessionClient,
+        page_size: int = 10,
+        continuation_token: str | None = None,
+    ) -> SessionInvoicesResponse:
         return session_from_spec(
             self._invoice_eps.list_session_invoices(
                 reference_number=self._resolve_reference_number(session),
@@ -367,6 +573,10 @@ class BatchService:
             )
         )
 
+    @deprecated(
+        "`list_failed_invoices()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `BatchSessionClient.list_failed_invoices()` instead."
+    )
     def list_failed_invoices(
         self,
         *,
@@ -374,7 +584,10 @@ class BatchService:
         page_size: int = 10,
         continuation_token: str | None = None,
     ) -> SessionInvoicesResponse:
-        """Fetch one page of failed invoices from a batch session.
+        """Deprecated: fetch one page of failed invoices from a batch session.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``BatchSessionClient.list_failed_invoices()`` instead.
 
         Args:
             session: Session reference number, persisted state, or open session client.
@@ -384,6 +597,17 @@ class BatchService:
         Returns:
             One page of invoices that failed processing, with a continuation token when more exist.
         """
+        return self._list_failed_invoices(
+            session=session, page_size=page_size, continuation_token=continuation_token
+        )
+
+    def _list_failed_invoices(
+        self,
+        *,
+        session: str | BatchSessionResumeState | BatchSessionClient,
+        page_size: int = 10,
+        continuation_token: str | None = None,
+    ) -> SessionInvoicesResponse:
         return session_from_spec(
             self._invoice_eps.list_failed_session_invoices(
                 reference_number=self._resolve_reference_number(session),
@@ -392,13 +616,20 @@ class BatchService:
             )
         )
 
+    @deprecated(
+        "`get_upo()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `BatchSessionClient.download_upo()` instead."
+    )
     def get_upo(
         self,
         *,
         session: str | BatchSessionResumeState | BatchSessionClient,
         upo_reference_number: str,
     ) -> bytes:
-        """Download the collective UPO for a batch session.
+        """Deprecated: download the collective UPO for a batch session.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``BatchSessionClient.download_upo()`` instead.
 
         Args:
             session: Session reference number, persisted state, or open session client.
@@ -412,6 +643,10 @@ class BatchService:
             upo_reference_number=upo_reference_number,
         )
 
+    @deprecated(
+        "`wait_for_completion()` is deprecated and will be removed in ksef2 1.10.0; "
+        "use `BatchSessionClient.wait()` instead."
+    )
     def wait_for_completion(
         self,
         *,
@@ -419,7 +654,10 @@ class BatchService:
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> SessionStatusResponse:
-        """Poll a batch session until KSeF reports a terminal status.
+        """Deprecated: poll a batch session until KSeF reports a terminal status.
+
+        Deprecated:
+            Will be removed in ksef2 1.10.0. Use ``BatchSessionClient.wait()`` instead.
 
         Args:
             session: Session reference number, persisted state, or open session client.
@@ -433,10 +671,25 @@ class BatchService:
             KSeFSessionError: If batch processing reaches a failed terminal status.
             KSeFBatchSessionTimeoutError: If polling exceeds ``timeout``.
         """
+        return self._wait_for_completion(
+            session=session, timeout=timeout, poll_interval=poll_interval
+        )
+
+    def _wait_for_completion(
+        self,
+        *,
+        session: str | BatchSessionResumeState | BatchSessionClient,
+        timeout: float = 120.0,
+        poll_interval: float = 2.0,
+    ) -> SessionStatusResponse:
         reference_number = self._resolve_reference_number(session)
 
         def _poll() -> SessionStatusResponse:
-            status = self.get_status(session=reference_number)
+            status = session_from_spec(
+                self._invoice_eps.get_session_status(
+                    reference_number=reference_number,
+                )
+            )
             if status.status.code >= 400:
                 raise exceptions.KSeFSessionError(
                     "Batch session processing failed: "

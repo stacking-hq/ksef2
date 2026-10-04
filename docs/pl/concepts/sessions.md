@@ -67,6 +67,40 @@ odtworzyć; referencje KSeF są tym, co pozwala innemu workerowi wznowić
 inspekcję.
 :::
 
+## Wznawianie sesji
+
+`online_session()` i `batch_session()` otwierają sesję albo ją wznawiają, tą samą
+metodą. Podaj dokładnie jedną formę: `form_code=` (albo `prepared_batch=` /
+`batch_file=`), by otworzyć, lub `state=`, by wznowić. `state=` przyjmuje obiekt
+stanu albo jego JSON, a wszystko (kod formularza, klucze, ważność, żądania
+uploadu) pochodzi ze stanu.
+
+```python
+with auth.online_session(form_code=FormSchema.FA3) as session:
+    saved = session.resume_state().to_json()      # przechowuj jak poświadczenie
+    reference = session.send_invoice(xml).reference_number
+
+# później, możliwe że w innym procesie
+with auth.online_session(state=saved) as session:
+    status = session.submission(reference).wait()  # uchwyt wcześniej wysłanej faktury
+```
+
+Wyjście z bloku `with` zamyka sesję w obu przypadkach. Zamknięcie już zamkniętej
+sesji nic nie robi: wznowiony klient najpierw pyta KSeF, więc nie wysyła drugiego
+żądania zamknięcia. Sesje batch działają tak samo z `auth.batch_session(state=saved)`,
+a potem `session.wait()` i `session.download_upo()`. `resume_online_session()` i
+`resume_batch_session()` są wycofanymi aliasami. Stan sesji zawiera klucze
+szyfrowania: nigdy go nie loguj.
+
+Wznowione uchwyty sesji, joby `invoices.export(state=...)` i reszta klienta
+uwierzytelnionego współdzielą jeden transport, więc wszystkie używają bieżącego
+access tokenu klienta i odświeżają go w razie potrzeby (zobacz
+[Access tokeny odświeżają się same](authentication-methods.md#access-tokeny-odświeżają-się-same)).
+Wznowiony klient z wygasłym access tokenem działa, dopóki jego refresh token jest
+ważny. Jeśli wygasł także refresh token, wywołanie rzuca
+`KSeFAuthenticationExpiredError`: uwierzytelnij się ponownie, a potem wznów sesję
+z zapisanego stanu.
+
 ## Sesje batch
 
 Sesja batch jest ścieżką wysyłki masowej. Jednostką wysyłaną do KSeF nie jest
@@ -86,12 +120,10 @@ Normalny przepływ obsługuje wysokopoziomowy serwis `auth.batch`:
 5. Wgraj wszystkie części, zamknij sesję i polluj status.
 
 ```python
-prepared = auth.batch.prepare_batch_from_paths(
-    invoice_paths=["invoice-1.xml", "invoice-2.xml"],
-)
+prepared = auth.batch.prepare([Path("invoice-1.xml"), Path("invoice-2.xml")])
 
-state = auth.batch.submit_prepared_batch(prepared_batch=prepared)
-print(state.reference_number)
+session = auth.batch.submit(prepared)
+print(session.reference_number)
 ```
 
 Dla przepływów batch zachowaj mapowanie między lokalnymi plikami źródłowymi a
@@ -114,7 +146,7 @@ wypisuj go i nie zapisuj w logach. Do audytu i wsparcia zapisuj odpowiedzi
 statusowe oraz historię sesji.
 
 ```python
-status = auth.batch.get_status(session=state.reference_number)
+status = session.get_status()
 print(
     status.status.code,
     status.invoice_count,

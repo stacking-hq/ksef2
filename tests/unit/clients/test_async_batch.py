@@ -24,6 +24,7 @@ from ksef2._domain.models.batch import (
 from ksef2._domain.models.session import FormSchema
 from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import AsyncFakeTransport
+from tests.unit.helpers import legacy_api
 
 
 def _build_authenticated_client(
@@ -274,6 +275,7 @@ class TestAsyncBatchSessionClient:
             referenceNumber=state.reference_number
         )
 
+    @legacy_api
     def test_get_upo_downloads_collective_session_upo(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -376,20 +378,26 @@ class TestAsyncAuthenticatedBatchSession:
         async_fake_transport: AsyncFakeTransport,
         domain_auth_tokens: BaseFactory[AuthTokens],
         domain_batch_session_state: BaseFactory[BatchSessionResumeState],
+        inv_session_status_resp: BaseFactory[spec.SessionStatusResponse],
     ) -> None:
         client = _build_authenticated_client(
             async_fake_transport,
             domain_auth_tokens.build(),
         )
         state = domain_batch_session_state.build()
+        async_fake_transport.enqueue(
+            inv_session_status_resp.build(
+                status=spec.StatusInfo(code=100, description="open"), upo=None
+            ).model_dump(mode="json")
+        )
         async_fake_transport.enqueue({})
 
         async def _run() -> None:
-            async with client.resume_batch_session(state=state) as session:
+            async with client.batch_session(state=state) as session:
                 assert session.resume_state() == state
 
         asyncio.run(_run())
 
-        assert async_fake_transport.calls[0].path == SessionRoutes.CLOSE_BATCH.format(
+        assert async_fake_transport.calls[1].path == SessionRoutes.CLOSE_BATCH.format(
             referenceNumber=state.reference_number
         )

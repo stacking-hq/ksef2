@@ -116,6 +116,7 @@ class Client:
             certificate_store=self._certificate_store,
             environment=self._environment,
             transfer_transport=self._transfer_transport,
+            auto_refresh_tokens=self._transport_config.auto_refresh_tokens,
         )
 
     @cached_property
@@ -173,7 +174,7 @@ class Client:
         return RawClient(self._transport, self._environment)
 
     @deprecated(
-        "`Client.authenticated()` is deprecated and will be removed in ksef2 2.0; "
+        "`Client.authenticated()` is deprecated and will be removed in ksef2 1.10.0; "
         "use `Client.authentication.resume()` with "
         "`AuthenticationResumeState.from_tokens()` instead."
     )
@@ -181,7 +182,7 @@ class Client:
         """Deprecated compatibility wrapper for ``authentication.resume()``.
 
         Deprecated:
-            Will be removed in ksef2 2.0. Use ``authentication.resume()`` with ``AuthenticationResumeState.from_tokens()`` instead.
+            Will be removed in ksef2 1.10.0. Use ``authentication.resume()`` with ``AuthenticationResumeState.from_tokens()`` instead.
 
         Args:
             auth_tokens: Access and refresh tokens from a previous authentication.

@@ -21,6 +21,7 @@ TransportConfig(
     proxy_url=None,
     trust_env=True,
     http2=True,
+    auto_refresh_tokens=True,
 )
 ```
 
@@ -33,6 +34,10 @@ TransportConfig(
 | `proxy_url` | `str | None` | `None` | `httpx` proxy |
 | `trust_env` | `bool` | `True` | `httpx` environment-variable behavior |
 | `http2` | `bool` | `True` | `httpx` HTTP/2 flag |
+| `auto_refresh_tokens` | `bool` | `True` | Access-token refresh of authenticated clients, see [Access-token refresh](#access-token-refresh) |
+
+`auto_refresh_tokens` is the one field that does not configure `httpx`, so it
+applies even when you pass your own `http_client`.
 
 ## TimeoutConfig
 
@@ -114,6 +119,40 @@ access/refresh pair only once. A lost redemption response raises
 `KSeFAuthTokenRedemptionError` with `outcome_ambiguous=True`; do not repeat the
 redemption automatically.
 
+## Access-token refresh
+
+Authenticated clients refresh their access token themselves, using the refresh
+token from authentication or from the `AuthenticationResumeState` they were
+resumed from.
+
+| Trigger | Behavior |
+| --- | --- |
+| Proactive | A request that finds the access token within 60 seconds of `access_token_valid_until` first refreshes it, then is sent with the new token. |
+| Reactive | A `401` response triggers one refresh and one retry of the same request. A second `401` is raised as `KSeFAuthError`. |
+| Concurrency | Requests share a single refresh: a lock in `Client`, an `asyncio.Lock` in `AsyncClient`. |
+| Other statuses | `403` and every other error are not refreshed. |
+
+`auth.auth_tokens`, `auth.access_token` and `auth.resume_state()` always return
+the current tokens, so persist `resume_state()` again after long-running work.
+
+When the refresh token is expired, or KSeF rejects it, the request raises
+`KSeFAuthenticationExpiredError`, a subclass of `KSeFAuthError`. The only
+remedy is to authenticate again. If the refresh token is already expired but
+the access token still has time left, requests keep using the access token
+until KSeF rejects it. Transport failures and other errors raised by the
+refresh call propagate unchanged.
+
+Refresh never applies to the one-shot authentication redemption or to presigned
+external-storage transfers (batch part uploads, export downloads). They use
+separate paths and carry no bearer token.
+
+To manage tokens yourself, turn the behavior off. Expired tokens then surface
+as `KSeFAuthError` and `client.authentication.refresh()` stays available.
+
+```python
+client = Client(Environment.PRODUCTION, transport_config=TransportConfig(auto_refresh_tokens=False))
+```
+
 ## Workflow polling timeouts
 
 Polling helpers use `timeout` and `poll_interval` arguments. Those values are
@@ -128,7 +167,10 @@ the remote KSeF workflow may still finish later.
 | Direct invoice download readiness | `KSeFInvoiceDownloadTimeoutError` | `ksef_number` |
 | Online invoice processing | `KSeFInvoiceProcessingTimeoutError` | `invoice_reference_number` |
 | Export package readiness | `KSeFExportTimeoutError` | `reference_number` |
+| Permission grant or revoke | `KSeFPermissionOperationTimeoutError` | `reference_number` |
+| Certificate issuance | `KSeFCertificateEnrollmentTimeoutError` | `reference_number` |
 | Batch session completion | `KSeFBatchSessionTimeoutError` | `reference_number` |
+| Online session completion | `KSeFOnlineSessionTimeoutError` | `reference_number` |
 
 Resume polling with stored identifiers after a timeout. Do not infer that the
 remote operation failed only because the local wait deadline expired.

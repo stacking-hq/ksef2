@@ -78,7 +78,7 @@ sesji, żeby SDK zamknęło zdalną sesję po wyjściu z bloku:
 from ksef2 import FormSchema
 
 with auth.online_session(form_code=FormSchema.FA3) as session:
-    status = session.send_invoice_and_wait(invoice_xml=invoice_xml)
+    status = session.send_invoice(invoice_xml).wait()
 ```
 
 Gdy dane uwierzytelniające są zapisane w profilu kompatybilnym z CLI, utwórz
@@ -98,7 +98,7 @@ Klient bazowy przydaje się przed uwierzytelnieniem:
 
 ```python
 certificates = client.encryption.get_certificates()
-providers = client.peppol.query()
+providers = client.peppol.list().first_page()
 ```
 
 Moduł tylko dla TEST także jest na kliencie bazowym:

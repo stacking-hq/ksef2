@@ -87,6 +87,22 @@ class KSeFValidationError(KSeFException):
         self.context["code"] = self.code
 
 
+class KSeFArgumentError(KSeFValidationError, TypeError):  # pyright: ignore[reportUnsafeMultipleInheritance]
+    """Raised when a call combines arguments the SDK does not allow.
+
+    It is raised for "exactly one of" violations, such as passing both or neither
+    of ``form_code`` and ``state`` to ``online_session()``. It subclasses
+    ``KSeFValidationError`` so existing handlers keep catching it, and
+    ``TypeError`` because the call itself is wrong.
+
+    Args:
+        message: Human-readable error message.
+        **context: Additional structured details, stored in ``context``.
+    """
+
+    code: str = "ARGUMENT_ERROR"
+
+
 class KSeFInvoiceRenderingError(KSeFException):
     """Raised when invoice rendering fails."""
 
@@ -147,6 +163,33 @@ class KSeFAuthError(KSeFApiError):
         response: BaseModel | None = None,
     ) -> None:
         super().__init__(status_code, ExceptionCode.UNKNOWN_ERROR, message, response)
+
+
+class KSeFAuthenticationExpiredError(KSeFAuthError):
+    """Raised when the refresh token is expired or rejected and the session cannot be renewed.
+
+    The client could not refresh its access token, so the only way forward is
+    to authenticate again. Because it subclasses ``KSeFAuthError``, existing
+    handlers for authentication failures keep working.
+
+    Args:
+        message: Human-readable error message; defaults to a request to authenticate again.
+        status_code: HTTP status code of the rejected response, ``401`` or ``403``.
+        response: Parsed error response body, if available.
+    """
+
+    code: str = "AUTHENTICATION_EXPIRED"
+
+    def __init__(
+        self,
+        message: str = (
+            "The refresh token is expired or was rejected, so the access token "
+            "can no longer be renewed. Authenticate again."
+        ),
+        status_code: int = 401,
+        response: BaseModel | None = None,
+    ) -> None:
+        super().__init__(status_code, message, response)
 
 
 class KSeFRateLimitError(KSeFApiError):
@@ -308,7 +351,8 @@ class KSeFSessionError(KSeFException):
 class KSeFInvoiceRejectedError(KSeFSessionError):
     """Raised when KSeF finishes processing an invoice and rejects it.
 
-    Raised by ``wait_for_invoice_ready()`` and ``send_invoice_and_wait()``.
+    Raised by ``InvoiceSubmission.wait()``, and by the deprecated
+    ``wait_for_invoice_ready()`` and ``send_invoice_and_wait()``.
     ``invoice_status_code`` is a KSeF invoice status, such as 440 or 450, and is
     not an HTTP status.
 
@@ -400,6 +444,192 @@ class KSeFExportTimeoutError(KSeFException):
         self.timeout = timeout
         super().__init__(
             f"Export package {reference_number} not ready after {timeout}s",
+            reference_number=reference_number,
+            timeout=timeout,
+        )
+
+
+class KSeFExportFailedError(KSeFException):
+    """Raised when KSeF finishes an invoice export without producing a package.
+
+    Raised by ``ExportJob.wait()`` when the export failed, was cancelled by the
+    system or expired before it was downloaded. ``export_status_code`` is a KSeF
+    export status, such as 415 or 550, and is not an HTTP status.
+
+    Args:
+        reference_number: Reference number of the export.
+        status_code: KSeF export status code.
+        description: Description of the status.
+        details: Explanations of the failure, if KSeF gave any.
+
+    Attributes:
+        reference_number: Reference number of the export.
+        export_status_code: KSeF export status code.
+        description: Description of the status.
+        details: Explanations of the failure; empty when none were given.
+    """
+
+    code: str = "EXPORT_FAILED"
+
+    def __init__(
+        self,
+        reference_number: str,
+        status_code: int,
+        description: str,
+        details: list[str] | None = None,
+    ) -> None:
+        self.reference_number = reference_number
+        self.export_status_code = status_code
+        self.description = description
+        self.details = details or []
+        message = f"Export {reference_number} failed ({status_code}: {description})"
+        if self.details:
+            message += f" - {'; '.join(self.details)}"
+        super().__init__(
+            message,
+            reference_number=reference_number,
+            export_status_code=status_code,
+            description=description,
+            details=self.details,
+        )
+
+
+class KSeFPermissionOperationFailedError(KSeFException):
+    """Raised when KSeF finishes a permission grant or revoke without applying it.
+
+    Raised by ``PermissionOperation.wait()``. ``operation_status_code`` is a KSeF
+    operation status, such as 400 or 420, and is not an HTTP status.
+
+    Args:
+        reference_number: Reference number of the permission operation.
+        status_code: KSeF operation status code.
+        description: Description of the status.
+
+    Attributes:
+        reference_number: Reference number of the permission operation.
+        operation_status_code: KSeF operation status code.
+        description: Description of the status.
+    """
+
+    code: str = "PERMISSION_OPERATION_FAILED"
+
+    def __init__(
+        self,
+        reference_number: str,
+        status_code: int,
+        description: str,
+    ) -> None:
+        self.reference_number = reference_number
+        self.operation_status_code = status_code
+        self.description = description
+        super().__init__(
+            f"Permission operation {reference_number} failed "
+            f"({status_code}: {description})",
+            reference_number=reference_number,
+            operation_status_code=status_code,
+            description=description,
+        )
+
+
+class KSeFPermissionOperationTimeoutError(KSeFException):
+    """Raised when polling for a permission operation to finish exceeds the timeout.
+
+    Args:
+        reference_number: Reference number of the permission operation.
+        timeout: Number of seconds waited.
+
+    Attributes:
+        reference_number: Reference number of the permission operation.
+        timeout: Number of seconds waited.
+    """
+
+    code: str = "PERMISSION_OPERATION_TIMEOUT"
+
+    def __init__(
+        self,
+        reference_number: str,
+        timeout: float,
+    ) -> None:
+        self.reference_number = reference_number
+        self.timeout = timeout
+        super().__init__(
+            f"Permission operation {reference_number} not finished after {timeout}s",
+            reference_number=reference_number,
+            timeout=timeout,
+        )
+
+
+class KSeFCertificateEnrollmentFailedError(KSeFException):
+    """Raised when KSeF finishes a certificate enrollment without issuing a certificate.
+
+    Raised by ``CertificateEnrollment.wait()`` when the request was rejected, hit
+    an unknown error or was cancelled by the system. ``enrollment_status_code`` is
+    a KSeF enrollment status, such as 400 or 550, and is not an HTTP status.
+
+    Args:
+        reference_number: Reference number of the enrollment.
+        status_code: KSeF enrollment status code.
+        description: Description of the status.
+        details: Explanations of the failure, if KSeF gave any.
+
+    Attributes:
+        reference_number: Reference number of the enrollment.
+        enrollment_status_code: KSeF enrollment status code.
+        description: Description of the status.
+        details: Explanations of the failure; empty when none were given.
+    """
+
+    code: str = "CERTIFICATE_ENROLLMENT_FAILED"
+
+    def __init__(
+        self,
+        reference_number: str,
+        status_code: int,
+        description: str,
+        details: list[str] | None = None,
+    ) -> None:
+        self.reference_number = reference_number
+        self.enrollment_status_code = status_code
+        self.description = description
+        self.details = details or []
+        message = (
+            f"Certificate enrollment {reference_number} failed "
+            f"({status_code}: {description})"
+        )
+        if self.details:
+            message += f" - {'; '.join(self.details)}"
+        super().__init__(
+            message,
+            reference_number=reference_number,
+            enrollment_status_code=status_code,
+            description=description,
+            details=self.details,
+        )
+
+
+class KSeFCertificateEnrollmentTimeoutError(KSeFException):
+    """Raised when polling for a certificate to be issued exceeds the timeout.
+
+    Args:
+        reference_number: Reference number of the enrollment.
+        timeout: Number of seconds waited.
+
+    Attributes:
+        reference_number: Reference number of the enrollment.
+        timeout: Number of seconds waited.
+    """
+
+    code: str = "CERTIFICATE_ENROLLMENT_TIMEOUT"
+
+    def __init__(
+        self,
+        reference_number: str,
+        timeout: float,
+    ) -> None:
+        self.reference_number = reference_number
+        self.timeout = timeout
+        super().__init__(
+            f"Certificate enrollment {reference_number} not issued after {timeout}s",
             reference_number=reference_number,
             timeout=timeout,
         )
@@ -549,6 +779,30 @@ class KSeFInvoiceProcessingTimeoutError(KSeFException):
         super().__init__(
             f"Invoice {invoice_reference_number} not ready after {timeout}s",
             invoice_reference_number=invoice_reference_number,
+            timeout=timeout,
+        )
+
+
+class KSeFOnlineSessionTimeoutError(KSeFException):
+    """Raised when polling for an online session to finish processing exceeds the timeout.
+
+    Args:
+        reference_number: Reference number of the online session.
+        timeout: Number of seconds waited.
+
+    Attributes:
+        reference_number: Reference number of the online session.
+        timeout: Number of seconds waited.
+    """
+
+    code: str = "ONLINE_SESSION_TIMEOUT"
+
+    def __init__(self, reference_number: str, timeout: float) -> None:
+        self.reference_number = reference_number
+        self.timeout = timeout
+        super().__init__(
+            f"Online session {reference_number} not ready after {timeout}s",
+            reference_number=reference_number,
             timeout=timeout,
         )
 

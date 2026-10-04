@@ -16,6 +16,7 @@ błędów API lub uwierzytelnienia KSeF.
 | `KSeFException` | `Exception` | `SDK_ERROR` | `context` |
 | `KSeFApiError` | `KSeFException` | `API_ERROR` | `status_code`, `exception_code`, `response` |
 | `KSeFAuthError` | `KSeFApiError` | `AUTH_ERROR` | `status_code`, `exception_code`, `response` |
+| `KSeFAuthenticationExpiredError` | `KSeFAuthError` | `AUTHENTICATION_EXPIRED` | `status_code`, `exception_code`, `response` |
 | `KSeFRateLimitError` | `KSeFApiError` | `RATE_LIMIT_ERROR` | `retry_after`, `status_code`, `response` |
 | `KSeFExternalTransferError` | `KSeFException` | `EXTERNAL_TRANSFER_ERROR` | `operation`, `host`, `reference_number`, `part_ordinal`, `status_code`, `outcome_ambiguous` |
 | `KSeFBatchUploadError` | `KSeFExternalTransferError` | `BATCH_UPLOAD_ERROR` | Atrybuty transferu zewnętrznego oraz `recovery_state()` |
@@ -45,10 +46,14 @@ except httpx.HTTPError as exc:
 | `KSeFClientClosedError` | `CLIENT_CLOSED` | Klient główny albo klient sesji użyty po zamknięciu. |
 | `KSeFUnsupportedEnvironmentError` | `UNSUPPORTED_ENVIRONMENT` | Gałąź albo przepływ tylko dla TEST użyty poza `Environment.TEST`. |
 | `KSeFValidationError` | `VALIDATION_ERROR` | Niepoprawne dane wejściowe SDK, błędny payload odpowiedzi, błędny profil albo błędne argumenty sesji/batch. |
+| `KSeFArgumentError` | `ARGUMENT_ERROR` | Wywołanie łączy argumenty niedozwolone przez SDK, na przykład oba albo żaden z `form_code` i `state`. Podklasa `KSeFValidationError` i `TypeError`. |
 | `KSeFInvoiceRenderingError` | `INVOICE_RENDERING_ERROR` | Błędy opcjonalnego renderowania XSLT/PDF. |
 | `KSeFEncryptionError` | `ENCRYPTION_ERROR` | Błąd szyfrowania tokenu, klucza symetrycznego, faktury albo deszyfrowania. |
 | `KSeFSessionError` | `SESSION_ERROR` | Naruszenie stanu sesji, na przykład użycie zamkniętej sesji. Klasa bazowa `KSeFInvoiceRejectedError`. |
-| `KSeFInvoiceRejectedError` | `INVOICE_REJECTED` | KSeF zakończył przetwarzanie faktury z sesji interaktywnej i ją odrzucił (`wait_for_invoice_ready()`, `send_invoice_and_wait()`). |
+| `KSeFInvoiceRejectedError` | `INVOICE_REJECTED` | KSeF zakończył przetwarzanie faktury z sesji interaktywnej i ją odrzucił (`InvoiceSubmission.wait()`). |
+| `KSeFExportFailedError` | `EXPORT_FAILED` | KSeF zakończył eksport faktur bez paczki: eksport się nie powiódł, został anulowany przez system albo wygasł (`ExportJob.wait()`). |
+| `KSeFPermissionOperationFailedError` | `PERMISSION_OPERATION_FAILED` | KSeF zakończył nadanie albo cofnięcie uprawnienia bez jego zastosowania (`PermissionOperation.wait()`). |
+| `KSeFCertificateEnrollmentFailedError` | `CERTIFICATE_ENROLLMENT_FAILED` | KSeF odrzucił, anulował albo nie zrealizował rejestracji certyfikatu (`CertificateEnrollment.wait()`). |
 | `KSeFAuthTokenRedemptionError` | `AUTH_TOKEN_REDEMPTION_ERROR` | Jednorazowy redeem uwierzytelnienia utracił odpowiedź i mógł się powieść. |
 | `KSeFExternalTransferError` | `EXTERNAL_TRANSFER_ERROR` | Upload lub download przez presigned URL został odrzucony albo utracił odpowiedź. |
 | `KSeFBatchUploadError` | `BATCH_UPLOAD_ERROR` | Upload części batch nie powiódł się, ale chroniony stan odzyskiwania pozostaje dostępny. |
@@ -124,7 +129,10 @@ czekania. Same w sobie nie dowodzą, że zdalny workflow KSeF się nie udał.
 | `KSeFInvoiceDownloadTimeoutError` | `INVOICE_DOWNLOAD_TIMEOUT` | `ksef_number`, `timeout` |
 | `KSeFInvoiceProcessingTimeoutError` | `INVOICE_PROCESSING_TIMEOUT` | `invoice_reference_number`, `timeout` |
 | `KSeFExportTimeoutError` | `EXPORT_TIMEOUT` | `reference_number`, `timeout` |
+| `KSeFPermissionOperationTimeoutError` | `PERMISSION_OPERATION_TIMEOUT` | `reference_number`, `timeout` |
+| `KSeFCertificateEnrollmentTimeoutError` | `CERTIFICATE_ENROLLMENT_TIMEOUT` | `reference_number`, `timeout` |
 | `KSeFBatchSessionTimeoutError` | `BATCH_SESSION_TIMEOUT` | `reference_number`, `timeout` |
+| `KSeFOnlineSessionTimeoutError` | `ONLINE_SESSION_TIMEOUT` | `reference_number`, `timeout` |
 
 Zapisz właściwą referencję przed pollingiem, aby inny proces mógł wznowić
 sprawdzanie statusu.

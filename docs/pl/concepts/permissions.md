@@ -19,9 +19,10 @@ kontekst. Ułatwia to późniejszy audyt i odtwarzanie po błędach.
 ## Tokeny
 
 `auth.tokens` tworzy, listuje, sprawdza i cofa tokeny KSeF. Generowanie tokenu
-od razu zwraca jednorazowy payload tokenu i numer referencyjny. Zapisz credential
-przed jawnym wywołaniem `wait_for_activation()`. Dzięki temu timeout albo błąd
-transportu podczas pollingu nie odrzuci jedynej kopii tokenu.
+od razu zwraca uchwyt `GeneratedToken` z jednorazowym tokenem i numerem
+referencyjnym. Zapisz credential przed jawnym wywołaniem `wait()` na uchwycie.
+Dzięki temu timeout albo błąd transportu podczas pollingu nie odrzuci jedynej
+kopii tokenu.
 
 Wygenerowany token ma stały zestaw uprawnień. Jeśli uprawnienia mają się
 zmienić, wygeneruj nowy token i cofnij stary po migracji. Generowanie tokenu
@@ -55,7 +56,7 @@ delegowania:
 | Typ uprawnienia | Trzymaj skończone wybory jawnie, na przykład odczyt faktur, zapis faktur, odczyt credentiali, zarządzanie credentialami, zarządzanie subunit, czynności egzekucyjne albo introspekcja. |
 | Uprawnienia bezpośrednie i pośrednie | Pytaj i cofaj przez gałąź zgodną ze sposobem nadania uprawnienia. |
 | Delegowanie | `can_delegate` ma sens tylko tam, gdzie KSeF pozwala na delegowanie w danej ścieżce uprawnień. |
-| Status operacji | Nadania i cofnięcia zwracają referencje operacji; sprawdź status zanim uznasz, że uprawnienie się zmieniło. |
+| Status operacji | Nadania i cofnięcia zwracają uchwyt `PermissionOperation`; wywołaj `wait()` zanim uznasz, że uprawnienie się zmieniło. |
 
 ```python
 from ksef2.models import EntityPermission
@@ -67,9 +68,7 @@ operation = auth.permissions.grant_entity(
     entity_name="Accounting Sp. z o.o.",
 )
 
-status = auth.permissions.get_operation_status(
-    reference_number=operation.reference_number,
-)
+status = operation.wait()
 print(status.status.code, status.status.description)
 ```
 

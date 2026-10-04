@@ -73,11 +73,11 @@ kontekstem KSeF i jedną parą tokenów.
 | `access_token` | `str` | String bearer access tokenu. Traktuj jako sekret. |
 | `refresh_token` | `str` | String refresh tokenu. Traktuj jako sekret. |
 | `resume_state()` | `AuthenticationResumeState` | Serializowalny stan uwierzytelnienia zawierający access i refresh token. |
-| `online_session(form_code=...)` | Klient sesji online | Otwiera jedną sesję online faktur. Async zwraca awaitable wrapper context managera. |
-| `resume_online_session(state)` | Klient sesji online | Wiąże zapisany `OnlineSessionResumeState` z bieżącym transportem uwierzytelnionym. |
-| `batch_session(...)` | Klient sesji batch | Otwiera sesję batch z przygotowanego batcha albo deklaracji pliku batch. |
+| `online_session(form_code=... \| state=...)` | Klient sesji online | Otwiera jedną sesję online faktur albo wznawia ją z zapisanego stanu (obiekt lub JSON). Async zwraca awaitable wrapper context managera. |
+| `resume_online_session(state)` | Klient sesji online | Wycofane; użyj `online_session(state=...)`. |
+| `batch_session(prepared_batch= \| batch_file= \| state=)` | Klient sesji batch | Otwiera sesję batch z przygotowanego batcha albo deklaracji pliku batch, albo wznawia ją z zapisanego stanu. |
 | `open_batch_session(...)` | Klient sesji batch | Otwiera sesję batch, gdy caller posiada metadane szyfrowania. |
-| `resume_batch_session(state)` | Klient sesji batch | Wiąże zapisany `BatchSessionResumeState` z bieżącym transportem uwierzytelnionym. |
+| `resume_batch_session(state)` | Klient sesji batch | Wycofane; użyj `batch_session(state=...)`. |
 | `invoices` | `InvoicesService` | Metadane, pobrania bezpośrednie, eksporty, pobieranie paczek i wait helpery. |
 | `batch` | `BatchService` | Wysokopoziomowy workflow przygotowania paczki, uploadu, zamknięcia, statusu i UPO. |
 | `limits` | `LimitsClient` | Endpointy limitów kontekstu, podmiotu i API. |

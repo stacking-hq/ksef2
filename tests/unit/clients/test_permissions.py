@@ -23,6 +23,7 @@ from tests.unit.factories.permissions import (
     DomainSubunitPermissionsQueryFactory,
 )
 from tests.unit.fakes.transport import FakeTransport
+from tests.unit.helpers import legacy_api
 
 
 class TestPermissionsClient:
@@ -46,7 +47,7 @@ class TestPermissionsClient:
         )
         expected_request = grant_to_spec(request)
 
-        assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "POST"
         assert str(call.path) == GrantPermissionsRoutes.GRANT_PERSON
@@ -71,7 +72,7 @@ class TestPermissionsClient:
             entity_name=request.entity_name,
         )
 
-        assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "POST"
         assert str(call.path) == GrantPermissionsRoutes.GRANT_ENTITY
@@ -94,7 +95,7 @@ class TestPermissionsClient:
             entity_name=request.entity_name,
         )
 
-        assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "POST"
         assert str(call.path) == GrantPermissionsRoutes.GRANT_AUTHORIZATION
@@ -123,7 +124,7 @@ class TestPermissionsClient:
             request.model_copy(update={"target_value": "1234567890-12345"})
         )
 
-        assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "POST"
         assert str(call.path) == GrantPermissionsRoutes.GRANT_INDIRECT
@@ -152,7 +153,7 @@ class TestPermissionsClient:
             subunit_name=request.subunit_name,
         )
 
-        assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "POST"
         assert str(call.path) == GrantPermissionsRoutes.GRANT_SUBUNITS
@@ -173,7 +174,7 @@ class TestPermissionsClient:
             description=request.description,
         )
 
-        assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "POST"
         assert str(call.path) == GrantPermissionsRoutes.GRANT_EU_ENTITY
@@ -196,11 +197,12 @@ class TestPermissionsClient:
             eu_entity_name=request.eu_entity_name,
         )
 
-        assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "POST"
         assert str(call.path) == GrantPermissionsRoutes.GRANT_ADMINISTERED_EU_ENTITY
 
+    @legacy_api
     def test_query_persons(
         self,
         permissions_client: PermissionsClient,
@@ -221,6 +223,7 @@ class TestPermissionsClient:
         assert call.params["pageOffset"] == "0"
         assert call.params["pageSize"] == "10"
 
+    @legacy_api
     def test_query_authorizations(
         self,
         permissions_client: PermissionsClient,
@@ -242,6 +245,7 @@ class TestPermissionsClient:
         assert call.method == "POST"
         assert str(call.path) == QueryPermissionsRoutes.QUERY_AUTHORIZATIONS_GRANTS
 
+    @legacy_api
     def test_query_entities(
         self,
         permissions_client: PermissionsClient,
@@ -259,6 +263,7 @@ class TestPermissionsClient:
         assert call.method == "POST"
         assert str(call.path) == QueryPermissionsRoutes.QUERY_ENTITIES_GRANTS
 
+    @legacy_api
     def test_query_personal(
         self,
         permissions_client: PermissionsClient,
@@ -276,6 +281,7 @@ class TestPermissionsClient:
         assert call.method == "POST"
         assert str(call.path) == QueryPermissionsRoutes.QUERY_PERSONAL_GRANTS
 
+    @legacy_api
     def test_query_eu_entities(
         self,
         permissions_client: PermissionsClient,
@@ -293,6 +299,7 @@ class TestPermissionsClient:
         assert call.method == "POST"
         assert str(call.path) == QueryPermissionsRoutes.QUERY_EU_ENTITIES_GRANTS
 
+    @legacy_api
     def test_query_subordinate_entities(
         self,
         permissions_client: PermissionsClient,
@@ -314,6 +321,7 @@ class TestPermissionsClient:
         assert call.method == "POST"
         assert str(call.path) == QueryPermissionsRoutes.QUERY_SUBORDINATE_ENTITIES_ROLES
 
+    @legacy_api
     def test_query_subunits(
         self,
         permissions_client: PermissionsClient,
@@ -344,13 +352,14 @@ class TestPermissionsClient:
             permission_id="123e4567-e89b-12d3-a456-426614174000"
         )
 
-        assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "DELETE"
         assert call.path.endswith(
             "/authorizations/grants/123e4567-e89b-12d3-a456-426614174000"
         )
 
+    @legacy_api
     def test_revoke_common(
         self,
         permissions_client: PermissionsClient,
@@ -365,6 +374,24 @@ class TestPermissionsClient:
         )
 
         assert isinstance(result, domain_permissions.GrantPermissionsResponse)
+        call = fake_transport.calls[0]
+        assert call.method == "DELETE"
+        assert call.path.endswith("/common/grants/123e4567-e89b-12d3-a456-426614174000")
+
+    def test_revoke(
+        self,
+        permissions_client: PermissionsClient,
+        fake_transport: FakeTransport,
+        perm_op_resp: BaseFactory[spec.PermissionsOperationResponse],
+    ):
+        expected = perm_op_resp.build()
+        fake_transport.enqueue(expected.model_dump(mode="json"))
+
+        result = permissions_client.revoke(
+            permission_id="123e4567-e89b-12d3-a456-426614174000"
+        )
+
+        assert isinstance(result.response, domain_permissions.GrantPermissionsResponse)
         call = fake_transport.calls[0]
         assert call.method == "DELETE"
         assert call.path.endswith("/common/grants/123e4567-e89b-12d3-a456-426614174000")
@@ -403,6 +430,7 @@ class TestPermissionsClient:
         assert call.method == "GET"
         assert call.path.endswith("/operations/ref-123")
 
+    @legacy_api
     def test_get_entity_roles_with_custom_pagination(
         self,
         permissions_client: PermissionsClient,
@@ -424,6 +452,7 @@ class TestPermissionsClient:
         assert call.params["pageOffset"] == "2"
         assert call.params["pageSize"] == "25"
 
+    @legacy_api
     def test_query_persons_with_custom_pagination(
         self,
         permissions_client: PermissionsClient,

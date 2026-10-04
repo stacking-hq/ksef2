@@ -1,0 +1,133 @@
+"""Holds the current token pair of an authenticated client and refreshes it."""
+
+from asyncio import Lock
+from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime, timedelta
+from typing import final
+
+from ksef2._core import exceptions
+from ksef2._domain.models.auth import AuthTokens, RefreshedToken
+
+ACCESS_TOKEN_REFRESH_MARGIN = timedelta(seconds=60)
+"""How long before ``access_token_valid_until`` the access token is refreshed."""
+
+Clock = Callable[[], datetime]
+AsyncRefresh = Callable[[str], Awaitable[RefreshedToken]]
+
+
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
+def _expired(valid_until: datetime, now: datetime, margin: timedelta) -> bool:
+    if valid_until.tzinfo is None:
+        valid_until = valid_until.replace(tzinfo=UTC)
+    return now >= valid_until - margin
+
+
+@final
+class AsyncTokenManager:
+    """Owns the access and refresh tokens of one authenticated client.
+
+    A single lock serializes refreshes, so concurrent requests that find the
+    access token stale share one call to the refresh endpoint. Refresh requests
+    are sent through the unauthenticated transport and never through the bearer
+    middleware.
+    """
+
+    def __init__(
+        self,
+        tokens: AuthTokens,
+        refresh: AsyncRefresh | None = None,
+        *,
+        clock: Clock = _utc_now,
+        margin: timedelta = ACCESS_TOKEN_REFRESH_MARGIN,
+    ) -> None:
+        """Create the manager.
+
+        Args:
+            tokens: Access and refresh tokens obtained from authentication.
+            refresh: Callable exchanging a refresh token for a new access token; ``None`` disables automatic refresh.
+            clock: Returns the current time; replaced in tests.
+            margin: How long before expiry the access token counts as stale.
+        """
+        self._tokens = tokens
+        self._refresh = refresh
+        self._clock = clock
+        self._margin = margin
+        self._lock = Lock()
+
+    @property
+    def tokens(self) -> AuthTokens:
+        """Return the current token pair, including any refreshed access token."""
+        return self._tokens
+
+    @property
+    def auto_refresh(self) -> bool:
+        """Return whether this manager refreshes the access token automatically."""
+        return self._refresh is not None
+
+    async def get_access_token(self) -> str:
+        """Return an access token that is not about to expire.
+
+        Refreshes first when the access token is within the refresh margin of
+        its expiry. When the refresh token is already expired but the access
+        token is still valid, the access token is returned as is.
+
+        Returns:
+            The bearer access token to send with the next request.
+
+        Raises:
+            KSeFAuthenticationExpiredError: If the access token has expired and cannot be refreshed.
+        """
+        if self._refresh is None or not self._access_is_stale():
+            return self._tokens.access_token.token
+
+        async with self._lock:
+            if self._access_is_stale():
+                await self._refresh_locked(force=False)
+            return self._tokens.access_token.token
+
+    async def refresh_rejected(self, rejected_token: str) -> str:
+        """Refresh after KSeF rejected ``rejected_token`` with a 401.
+
+        Args:
+            rejected_token: The access token the failed request was sent with.
+
+        Returns:
+            The access token to retry the request with.
+
+        Raises:
+            KSeFAuthenticationExpiredError: If the refresh token is expired or rejected.
+        """
+        async with self._lock:
+            # Another request may already have replaced the rejected token.
+            if self._tokens.access_token.token == rejected_token:
+                await self._refresh_locked(force=True)
+            return self._tokens.access_token.token
+
+    def _access_is_stale(self) -> bool:
+        return _expired(
+            self._tokens.access_token.valid_until, self._clock(), self._margin
+        )
+
+    async def _refresh_locked(self, *, force: bool) -> None:
+        assert self._refresh is not None
+        now = self._clock()
+        if _expired(self._tokens.refresh_token.valid_until, now, timedelta()):
+            access_expired = _expired(
+                self._tokens.access_token.valid_until, now, timedelta()
+            )
+            if force or access_expired:
+                raise exceptions.KSeFAuthenticationExpiredError()
+            return
+
+        try:
+            refreshed = await self._refresh(self._tokens.refresh_token.token)
+        except exceptions.KSeFAuthError as exc:
+            raise exceptions.KSeFAuthenticationExpiredError(
+                status_code=exc.status_code, response=exc.response
+            ) from exc
+        self._tokens = self._tokens.model_copy(
+            update={"access_token": refreshed.access_token}
+        )

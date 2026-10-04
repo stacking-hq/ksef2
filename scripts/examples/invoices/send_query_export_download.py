@@ -4,9 +4,9 @@ Prerequisites:
 - set KSEF2_EXAMPLE_SELLER_NIP to the TEST seller NIP
 
 What it demonstrates:
-- invoice submission and status polling
+- invoice submission and waiting for processing
 - seller-side invoice export
-- downloading export packages to disk
+- saving the decrypted export package to disk
 """
 
 from dataclasses import dataclass, field
@@ -42,37 +42,32 @@ def run(config: ExampleConfig) -> None:
     auth = client.authentication.with_test_certificate(nip=seller_nip)
 
     with auth.online_session(form_code=FormSchema.FA3) as session:
-        result = session.send_invoice(invoice_xml=invoice_xml)
-        print(f"Invoice sent: {result.reference_number}")
+        submission = session.send_invoice(invoice_xml)
+        print(f"Invoice sent: {submission.reference_number}")
 
-        status = session.wait_for_invoice_ready(
-            invoice_reference_number=result.reference_number,
+        status = submission.wait(
             timeout=config.status_timeout,
             poll_interval=config.poll_interval,
         )
         print(f"Invoice processed as KSeF number: {status.ksef_number}")
 
-    export = auth.invoices.schedule_export(
-        filters=InvoicesFilter.for_seller(
+    job = auth.invoices.export(
+        InvoicesFilter.for_seller(
             date_from=datetime.now(tz=timezone.utc) - timedelta(days=1),
             date_to=datetime.now(tz=timezone.utc),
         )
     )
-    print(f"Export scheduled: {export.reference_number}")
+    print(f"Export scheduled: {job.reference_number}")
 
-    package = auth.invoices.wait_for_export_package(
-        reference_number=export.reference_number,
+    package = job.wait(
         timeout=config.export_timeout,
         poll_interval=config.poll_interval,
     )
-    print(f"Export package ready with {len(package.parts)} part(s)")
+    for ksef_number, _xml in package.invoices():
+        print(f"Exported invoice: {ksef_number}")
 
-    for path in auth.invoices.fetch_package(
-        package=package,
-        export=export,
-        target_directory=config.download_dir,
-    ):
-        print(f"Downloaded: {path} ({path.stat().st_size} bytes)")
+    for path in package.save(config.download_dir):
+        print(f"Saved: {path} ({path.stat().st_size} bytes)")
 
 
 def main() -> int:

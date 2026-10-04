@@ -12,6 +12,7 @@ from tests.unit.factories.certificates import (
     VALID_CERTIFICATE_SERIAL_NUMBER_3,
 )
 from tests.unit.fakes.transport import FakeTransport
+from tests.unit.helpers import legacy_api
 
 
 class TestCertificatesClient:
@@ -76,7 +77,7 @@ class TestCertificatesClient:
             )
         )
 
-        assert isinstance(result, certificates.CertificateEnrollmentResponse)
+        assert isinstance(result.response, certificates.CertificateEnrollmentResponse)
         assert result.reference_number == expected.referenceNumber
         assert len(fake_transport.calls) == 1
         call = fake_transport.calls[0]
@@ -110,7 +111,7 @@ class TestCertificatesClient:
             )
         )
 
-        assert isinstance(result, certificates.CertificateEnrollmentResponse)
+        assert isinstance(result.response, certificates.CertificateEnrollmentResponse)
         call = fake_transport.calls[0]
         assert call.json is not None
         actual_request = type(expected_request).model_validate(call.json)
@@ -205,6 +206,7 @@ class TestCertificatesClient:
         call = fake_transport.calls[0]
         assert call.json is None
 
+    @legacy_api
     def test_query(
         self,
         certificates_client: CertificatesClient,
@@ -224,6 +226,7 @@ class TestCertificatesClient:
         assert call.method == "POST"
         assert str(call.path) == CertificateRoutes.QUERY
 
+    @legacy_api
     def test_query_with_filters(
         self,
         certificates_client: CertificatesClient,
@@ -254,6 +257,7 @@ class TestCertificatesClient:
         actual_request = type(expected_request).model_validate(call.json)
         assert actual_request == expected_request
 
+    @legacy_api
     def test_all_single_page(
         self,
         certificates_client: CertificatesClient,
@@ -271,6 +275,7 @@ class TestCertificatesClient:
         assert len(items) == 1
         assert len(fake_transport.calls) == 1
 
+    @legacy_api
     def test_all_multiple_pages(
         self,
         certificates_client: CertificatesClient,
@@ -307,6 +312,7 @@ class TestCertificatesClient:
         assert items[2].serial_number == VALID_CERTIFICATE_SERIAL_NUMBER_3
         assert len(fake_transport.calls) == 2
 
+    @legacy_api
     def test_all_empty(
         self,
         certificates_client: CertificatesClient,
@@ -321,6 +327,7 @@ class TestCertificatesClient:
         assert len(items) == 0
         assert len(fake_transport.calls) == 1
 
+    @legacy_api
     def test_all_with_filters(
         self,
         certificates_client: CertificatesClient,

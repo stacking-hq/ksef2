@@ -1,20 +1,26 @@
 """Domain models for invoice metadata, sending, downloading, and export."""
 
+import base64
+import json
+from collections.abc import Mapping
 from dataclasses import field
 from datetime import date, datetime, timezone
 from enum import StrEnum
 from typing import Literal, Self
 from zoneinfo import ZoneInfo
 
-from pydantic import ConfigDict, Field as PydanticField
+from pydantic import ConfigDict, Field as PydanticField, SecretStr
 from pydantic import field_validator, model_validator
 
-from ksef2._domain.models.base import KSeFBaseModel
+from ksef2._domain.models.base import KSeFBaseModel, KSeFPersistedModel
 from ksef2._domain.models.compression import (
     CompressionType,
     normalize_compression_type,
 )
-from ksef2._domain.models.session import FormSchema
+from ksef2._domain.models.session import (
+    FormSchema,
+    _validate_encoded_session_secret,  # pyright: ignore[reportPrivateUsage]
+)
 from ksef2._domain.types import CurrencyCodes, KsefInvoiceTypes
 
 
@@ -440,6 +446,124 @@ class ExportHandle(KSeFBaseModel):
             "aes_key": self.aes_key,
             "iv": self.iv,
         }
+
+
+class ExportResumeState(KSeFPersistedModel):
+    """Serializable state needed to resume an invoice export after a restart.
+
+    ``ExportJob.resume_state()`` returns it and ``auth.invoices.export(state=...)``
+    turns it back into an ``ExportJob``. It holds the AES key and IV that decrypt
+    the package, so treat ``to_json()`` and ``to_dict()`` output as credential
+    material. ``model_dump()`` and ``repr()`` redact the secrets and are not a
+    persistence format.
+    """
+
+    format_version: Literal[1] = 1
+    """Version of the serialized state format; currently always ``1``."""
+    reference_number: str
+    """KSeF reference number of the export operation."""
+    aes_key: SecretStr
+    """AES-256 key that decrypts the package, Base64 encoded."""
+    iv: SecretStr
+    """Initialization vector that decrypts the package, Base64 encoded."""
+
+    @field_validator("aes_key", mode="before")
+    @classmethod
+    def _validate_encoded_aes_key(cls, value: object) -> object:
+        return _validate_encoded_session_secret(
+            value, field_name="aes_key", expected_length=32
+        )
+
+    @field_validator("iv", mode="before")
+    @classmethod
+    def _validate_encoded_iv(cls, value: object) -> object:
+        return _validate_encoded_session_secret(
+            value, field_name="iv", expected_length=16
+        )
+
+    @classmethod
+    def from_handle(cls, handle: ExportHandle) -> Self:
+        """Create state from an export handle.
+
+        Args:
+            handle: Handle returned when the export was scheduled.
+
+        Returns:
+            State holding the reference number and the Base64-encoded key material.
+        """
+        return cls(
+            reference_number=handle.reference_number,
+            aes_key=SecretStr(base64.b64encode(handle.aes_key).decode()),
+            iv=SecretStr(base64.b64encode(handle.iv).decode()),
+        )
+
+    def to_handle(self) -> ExportHandle:
+        """Rebuild the export handle with raw key material.
+
+        Returns:
+            A handle with the reference number and the decoded AES key and IV.
+        """
+        return ExportHandle(
+            reference_number=self.reference_number,
+            aes_key=base64.b64decode(self.aes_key.get_secret_value(), validate=True),
+            iv=base64.b64decode(self.iv.get_secret_value(), validate=True),
+        )
+
+    def to_dict(
+        self,
+        *,
+        mode: Literal["json", "python"] | str = "json",
+    ) -> dict[str, object]:
+        """Export the state with the secrets included.
+
+        Args:
+            mode: Pydantic dump mode, ``"json"`` for JSON-safe values or ``"python"`` for native types.
+
+        Returns:
+            A dictionary with the full state, including the AES key and IV.
+        """
+        data: dict[str, object] = self.model_dump(mode=mode)
+        data["aes_key"] = self.aes_key.get_secret_value()
+        data["iv"] = self.iv.get_secret_value()
+        return data
+
+    def to_json(self, *, indent: int | None = None) -> str:
+        """Export the state as JSON with the secrets included.
+
+        Args:
+            indent: Number of spaces to indent nested values; ``None`` for compact output.
+
+        Returns:
+            JSON text with the full state, including the AES key and IV.
+        """
+        data = self.to_dict(mode="json")
+        if indent is None:
+            return json.dumps(data, separators=(",", ":"))
+        return json.dumps(data, indent=indent)
+
+    @classmethod
+    def from_dict(cls, state: Mapping[str, object]) -> Self:
+        """Restore the state from a dictionary exported by ``to_dict()``.
+
+        Args:
+            state: Mapping produced by ``to_dict()``.
+
+        Returns:
+            The restored state.
+        """
+        return cls.model_validate(state)
+
+    @classmethod
+    def from_json(cls, state: str | bytes | bytearray) -> Self:
+        """Restore the state from JSON exported by ``to_json()``.
+
+        Args:
+            state: JSON text produced by ``to_json()``.
+
+        Returns:
+            The restored state.
+        """
+        return cls.model_validate_json(state)
 
 
 ### Public API ###

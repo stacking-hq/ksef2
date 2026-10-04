@@ -84,6 +84,28 @@ low-level endpointów uwierzytelniania i powiąż pobrane `AuthTokens` przez
 `client.authentication.resume(AuthenticationResumeState.from_tokens(auth_tokens))`.
 :::
 
+## Access tokeny odświeżają się same
+
+Access tokeny KSeF są krótkotrwałe. Klient uwierzytelniony trzyma więc refresh
+token obok access tokenu i odnawia access token bez udziału Twojego kodu: krótko
+przed `access_token_valid_until` oraz raz po odpowiedzi `401`, ponawiając
+nieudany request jednokrotnie. Współbieżne requesty współdzielą jedno
+odświeżenie.
+
+Dotyczy to każdego sposobu uzyskania klienta uwierzytelnionego: metod logowania
+`with_*` oraz `client.authentication.resume(state)`, które przyjmuje obiekt
+stanu albo jego ciąg JSON. Stan z wygasłym access tokenem działa, dopóki jego
+refresh token jest ważny. Uchwyty sesji wznowione przez `state=` używają tego
+samego klienta, więc też się odświeżają. `auth.resume_state()` i
+`auth.auth_tokens` zwracają bieżące tokeny, więc po długo trwającej pracy zapisz
+stan ponownie.
+
+Gdy refresh token wygasł albo został odrzucony, klient rzuca
+`KSeFAuthenticationExpiredError`, podklasę `KSeFAuthError`. Aby kontynuować,
+uwierzytelnij się ponownie. Aby odświeżać tokeny samodzielnie, przekaż
+`TransportConfig(auto_refresh_tokens=False)`. Dokładne reguły opisuje
+[referencja operacji](../reference/operations.md#odświeżanie-access-tokenu).
+
 ## Profile są lokalną konfiguracją uwierzytelniania
 
 `with_profile()` nie jest osobnym typem credentiala. To warstwa konfiguracji

@@ -238,7 +238,7 @@ Profile zapisane przez ksef2-cli 0.0.2 mogą zawierać płaski klucz `auth_timeo
 używa `with_profile()` (`timeout = max_poll_attempts * poll_interval`, czyli
 `max_poll_attempts = ceil(auth_timeout / poll_interval)`, domyślny interwał to
 1 sekunda) i emituje `DeprecationWarning`. Jawnie podane `max_poll_attempts` ma
-pierwszeństwo. `auth_timeout` zostanie usunięty w ksef2 2.0; zastąp go kluczem
+pierwszeństwo. `auth_timeout` zostanie usunięty w ksef2 1.10.0; zastąp go kluczem
 `max_poll_attempts` i opcjonalnie `poll_interval`.
 
 Każdy inny nieznany klucz w profilu jest ignorowany bez ostrzeżenia, więc

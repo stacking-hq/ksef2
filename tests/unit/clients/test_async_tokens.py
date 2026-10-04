@@ -15,6 +15,7 @@ from tests.unit.factories.tokens import (
     TokenStatusResponseFactory,
 )
 from tests.unit.fakes.transport import AsyncFakeTransport
+from tests.unit.helpers import legacy_api
 
 
 async def _collect_async_pages(
@@ -46,13 +47,14 @@ class TestAsyncTokensClient:
             )
         )
 
-        assert isinstance(result, tokens.GenerateTokenResponse)
+        assert isinstance(result.response, tokens.GenerateTokenResponse)
         assert result.reference_number == gen_resp.referenceNumber
         assert result.token == gen_resp.token
         assert len(async_fake_transport.calls) == 1
         assert async_fake_transport.calls[0].method == "POST"
         assert str(async_fake_transport.calls[0].path) == TokenRoutes.GENERATE_TOKEN
 
+    @legacy_api
     def test_wait_for_activation_polls_until_active(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -77,6 +79,7 @@ class TestAsyncTokensClient:
         assert result.status == "active"
         assert len(async_fake_transport.calls) == 2
 
+    @legacy_api
     def test_wait_for_activation_raises_on_failed_status(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -94,6 +97,7 @@ class TestAsyncTokensClient:
                 )
             )
 
+    @legacy_api
     def test_activation_timeout_does_not_discard_generated_token(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -134,6 +138,7 @@ class TestAsyncTokensClient:
         assert len(async_fake_transport.calls) == 2
         assert async_fake_transport.calls[1].method == "GET"
 
+    @legacy_api
     def test_activation_transport_error_does_not_discard_generated_token(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -162,6 +167,7 @@ class TestAsyncTokensClient:
         assert len(async_fake_transport.calls) == 2
         assert async_fake_transport.calls[1].method == "GET"
 
+    @legacy_api
     def test_list_page(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -178,6 +184,7 @@ class TestAsyncTokensClient:
         assert async_fake_transport.calls[0].method == "GET"
         assert str(async_fake_transport.calls[0].path) == TokenRoutes.LIST_TOKENS
 
+    @legacy_api
     def test_list_all_multiple_pages(
         self,
         async_fake_transport: AsyncFakeTransport,

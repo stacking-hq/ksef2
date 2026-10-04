@@ -50,13 +50,13 @@ FA(3) XML
 `send_invoice()` encrypts the XML and submits it into an open online session. It
 returns an invoice `reference_number`.
 
-`send_invoice_and_wait()` does the same submission, then polls the invoice status
-until KSeF assigns a `ksef_number`, reaches a failed terminal status, or the
-local timeout expires.
+`send_invoice()` returns an `InvoiceSubmission` handle. Its `wait()` polls the
+invoice status until KSeF assigns a `ksef_number`, reaches a failed terminal
+status, or the local timeout expires.
 
 ```python
-sent = session.send_invoice(invoice_xml=xml_bytes)
-print(sent.reference_number)
+submission = session.send_invoice(xml_bytes)
+print(submission.reference_number)
 
 status = session.get_invoice_status(
     invoice_reference_number=sent.reference_number,
@@ -102,7 +102,7 @@ Use the surfaces for different jobs:
 | UPO | Give me official confirmation for the accepted invoice or session. |
 
 ```python
-invoice_xml = auth.invoices.download_invoice(ksef_number=status.ksef_number)
+invoice_xml = auth.invoices.download(status.ksef_number)
 print(len(invoice_xml))
 ```
 

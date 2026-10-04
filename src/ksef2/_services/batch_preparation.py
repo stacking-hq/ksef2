@@ -32,6 +32,44 @@ def load_batch_invoices(invoice_paths: Iterable[Path | str]) -> list[BatchInvoic
     ]
 
 
+def load_batch_items(
+    items: Iterable[bytes | str | Path | BatchInvoice],
+) -> list[BatchInvoice]:
+    """Turn mixed invoice inputs into batch invoice payloads.
+
+    Args:
+        items: Invoices to include. ``bytes`` and ``str`` are invoice XML and get the
+            file name ``invoice-<position>.xml``; a ``Path`` is read from disk and
+            keeps its file name; a ``BatchInvoice`` is used as is.
+
+    Returns:
+        One batch invoice payload per item, in order.
+
+    Raises:
+        KSeFValidationError: If a single invoice is passed instead of a list.
+        FileNotFoundError: If a path does not exist.
+        OSError: If a path cannot be read.
+    """
+    if isinstance(items, bytes | str | Path | BatchInvoice):
+        raise exceptions.KSeFValidationError(
+            "Pass the invoices as a list, for example [xml], not a single invoice."
+        )
+    invoices: list[BatchInvoice] = []
+    for position, item in enumerate(items, start=1):
+        if isinstance(item, BatchInvoice):
+            invoices.append(item)
+        elif isinstance(item, Path):
+            invoices.append(
+                BatchInvoice(file_name=item.name, content=item.read_bytes())
+            )
+        else:
+            content = item.encode("utf-8") if isinstance(item, str) else item
+            invoices.append(
+                BatchInvoice(file_name=f"invoice-{position}.xml", content=content)
+            )
+    return invoices
+
+
 def prepare_batch_package(
     *,
     invoices: Iterable[BatchInvoice],

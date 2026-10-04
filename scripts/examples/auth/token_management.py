@@ -47,16 +47,14 @@ def run(config: ExampleConfig) -> None:
         print(f"  Reference: {result.reference_number}")
 
         print("Waiting for token activation...")
-        status = auth.tokens.wait_for_activation(
-            reference_number=result.reference_number
-        )
+        status = result.wait()
         print(f"  Status: {status.status}")
 
         print("Revoking token...")
         auth.tokens.revoke(reference_number=result.reference_number)
 
         print("Verifying revocation...")
-        status = auth.tokens.status(reference_number=result.reference_number)
+        status = auth.tokens.get_status(reference_number=result.reference_number)
         print(f"  Status: {status.status}")
 
     print("Done, test data cleaned up.")

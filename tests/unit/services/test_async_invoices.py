@@ -19,6 +19,7 @@ from ksef2._domain.models import invoices
 from ksef2._infra.schema.api import spec
 from ksef2._services.async_invoices import AsyncInvoicesService
 from tests.unit.fakes.transport import AsyncFakeTransport
+from tests.unit.helpers import legacy_api
 
 
 def _build_service(async_fake_transport: AsyncFakeTransport) -> AsyncInvoicesService:
@@ -84,7 +85,7 @@ def _not_processed_yet_error() -> KSeFApiError:
 
 
 class TestAsyncInvoicesService:
-    def test_wait_for_invoice_download_retries_until_invoice_is_available(
+    def test_download_with_timeout_retries_until_invoice_is_available(
         self,
         async_fake_transport: AsyncFakeTransport,
     ) -> None:
@@ -93,10 +94,10 @@ class TestAsyncInvoicesService:
             side_effect=[_not_processed_yet_error(), b"<Invoice />"]
         )
 
-        with patch.object(service, "download_invoice", download_invoice):
+        with patch.object(service._client, "download_invoice", download_invoice):
             result = asyncio.run(
-                service.wait_for_invoice_download(
-                    ksef_number="ksef-123",
+                service.download(
+                    "ksef-123",
                     timeout=1.0,
                     poll_interval=0.0,
                 )
@@ -105,24 +106,24 @@ class TestAsyncInvoicesService:
         assert result == b"<Invoice />"
         assert download_invoice.call_count == 2
 
-    def test_wait_for_invoice_download_raises_on_timeout(
+    def test_download_with_timeout_raises_on_timeout(
         self,
         async_fake_transport: AsyncFakeTransport,
     ) -> None:
         service = _build_service(async_fake_transport)
         download_invoice = AsyncMock(side_effect=_not_processed_yet_error())
 
-        with patch.object(service, "download_invoice", download_invoice):
+        with patch.object(service._client, "download_invoice", download_invoice):
             with pytest.raises(KSeFInvoiceDownloadTimeoutError):
                 _ = asyncio.run(
-                    service.wait_for_invoice_download(
-                        ksef_number="ksef-123",
+                    service.download(
+                        "ksef-123",
                         timeout=0.0,
                         poll_interval=0.0,
                     )
                 )
 
-    def test_wait_for_invoice_download_propagates_non_transient_errors(
+    def test_download_with_timeout_propagates_non_transient_errors(
         self,
         async_fake_transport: AsyncFakeTransport,
     ) -> None:
@@ -134,11 +135,11 @@ class TestAsyncInvoicesService:
         )
         download_invoice = AsyncMock(side_effect=bad_request)
 
-        with patch.object(service, "download_invoice", download_invoice):
+        with patch.object(service._client, "download_invoice", download_invoice):
             with pytest.raises(KSeFApiError) as exc_info:
                 _ = asyncio.run(
-                    service.wait_for_invoice_download(
-                        ksef_number="ksef-123",
+                    service.download(
+                        "ksef-123",
                         timeout=1.0,
                         poll_interval=0.0,
                     )
@@ -154,6 +155,7 @@ class TestAsyncInvoicesService:
             ("../unsafe\\subdir/part-3.zip.aes", "part-3.zip"),
         ],
     )
+    @legacy_api
     def test_fetch_package_sanitizes_part_name_and_removes_aes_suffix(
         self,
         part_name: str,
@@ -199,6 +201,7 @@ class TestAsyncInvoicesService:
     @pytest.mark.parametrize(
         "part_name", [".", "..", ".aes", ".hidden.zip.aes", "bad\x00.zip.aes"]
     )
+    @legacy_api
     def test_fetch_package_rejects_invalid_part_names(
         self,
         part_name: str,
@@ -230,6 +233,7 @@ class TestAsyncInvoicesService:
                     )
                 )
 
+    @legacy_api
     def test_wait_for_invoices_returns_when_metadata_appears(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -255,6 +259,7 @@ class TestAsyncInvoicesService:
         assert result.invoices
         assert len(async_fake_transport.calls) == 2
 
+    @legacy_api
     def test_wait_for_invoices_raises_on_timeout(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -275,6 +280,7 @@ class TestAsyncInvoicesService:
                 )
             )
 
+    @legacy_api
     def test_wait_for_export_package_returns_when_parts_are_ready(
         self,
         async_fake_transport: AsyncFakeTransport,
@@ -301,6 +307,7 @@ class TestAsyncInvoicesService:
         assert package.parts
         assert len(async_fake_transport.calls) == 2
 
+    @legacy_api
     def test_wait_for_export_package_raises_on_timeout(
         self,
         async_fake_transport: AsyncFakeTransport,

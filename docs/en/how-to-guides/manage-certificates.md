@@ -48,14 +48,26 @@ enrollment = auth.certificates.enroll(
     csr=csr,
 )
 
-# CertificateEnrollmentResponse
+# CertificateEnrollment: exposes every field of the enrollment response
 # {
 #   "reference_number": "20260625-CERT-...",
 #   "timestamp": "2026-06-25T10:00:00Z"
 # }
 ```
 
-Then check the enrollment status:
+`enroll()` returns a `CertificateEnrollment` handle. Wait for KSeF to issue the
+certificate:
+
+```python
+status = enrollment.wait(timeout=60.0, poll_interval=2.0)
+```
+
+`wait()` raises `KSeFCertificateEnrollmentFailedError` when KSeF rejects or
+cancels the request and `KSeFCertificateEnrollmentTimeoutError` when it does not
+finish in time. To check the status once without waiting, call
+`enrollment.get_status()`, or
+`auth.certificates.get_enrollment_status(reference_number=...)` when you only
+stored the reference number:
 
 ```python
 status = auth.certificates.get_enrollment_status(
@@ -81,7 +93,7 @@ KSeF, and store the issued certificate next to its matching key.
 ### Query
 
 ```python
-for certificate in auth.certificates.all(status="active"):
+for certificate in auth.certificates.list(status="active"):
     print(certificate.serial_number, certificate.name, certificate.valid_to)
 ```
 
@@ -115,7 +127,7 @@ auth.certificates.revoke(
 
 4. Submit enrollment and persist the reference number.
 
-5. Poll status, retrieve the certificate, and store it with the private key.
+5. Wait for issuance, retrieve the certificate, and store it with the private key.
 
 6. Revoke certificates that are no longer valid or whose private key may be
    compromised.

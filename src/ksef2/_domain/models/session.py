@@ -368,7 +368,7 @@ class ListSessionsResponse(KSeFBaseModel):
 def deprecation_message(old_name: str, new_name: str) -> str:
     """Build the standard 2.0-removal deprecation message."""
     return (
-        f"`{old_name}` is deprecated and will be removed in ksef2 2.0; "
+        f"`{old_name}` is deprecated and will be removed in ksef2 1.10.0; "
         f"use `{new_name}` instead."
     )
 
@@ -381,7 +381,7 @@ class BaseSessionResumeState(KSeFPersistedModel):
     for accessing the encryption keys.
 
     Deprecated:
-        The alias ``BaseSessionState`` is removed in ksef2 2.0; use ``BaseSessionResumeState``. An ``access_token`` key in restored state is ignored and also deprecated; persist ``AuthenticationResumeState`` separately instead.
+        The alias ``BaseSessionState`` is removed in ksef2 1.10.0; use ``BaseSessionResumeState``. An ``access_token`` key in restored state is ignored and also deprecated; persist ``AuthenticationResumeState`` separately instead.
     """
 
     format_version: Literal[1] = 1
@@ -425,7 +425,7 @@ class BaseSessionResumeState(KSeFPersistedModel):
 
         warnings.warn(
             "The `access_token` key in session resume state is deprecated and "
-            "will be removed in ksef2 2.0; it is ignored, persist "
+            "will be removed in ksef2 1.10.0; it is ignored, persist "
             "`AuthenticationResumeState` separately instead.",
             DeprecationWarning,
             stacklevel=3,
@@ -529,7 +529,7 @@ class BaseSessionResumeState(KSeFPersistedModel):
         return cls.model_validate_json(state)
 
     @deprecated(
-        "`dump_state()` is deprecated and will be removed in ksef2 2.0; "
+        "`dump_state()` is deprecated and will be removed in ksef2 1.10.0; "
         "use `to_dict()` instead."
     )
     def dump_state(
@@ -540,7 +540,7 @@ class BaseSessionResumeState(KSeFPersistedModel):
         """Deprecated compatibility wrapper for ``to_dict()``.
 
         Deprecated:
-            Will be removed in ksef2 2.0. Use ``to_dict()`` instead.
+            Will be removed in ksef2 1.10.0. Use ``to_dict()`` instead.
 
         Args:
             mode: Pydantic dump mode, ``"json"`` for JSON-safe values or ``"python"`` for native types.
@@ -551,7 +551,7 @@ class BaseSessionResumeState(KSeFPersistedModel):
         return self.to_dict(mode=mode)
 
     @deprecated(
-        "`model_dump_sensitive()` is deprecated and will be removed in ksef2 2.0; "
+        "`model_dump_sensitive()` is deprecated and will be removed in ksef2 1.10.0; "
         "use `to_dict()` instead."
     )
     def model_dump_sensitive(
@@ -562,7 +562,7 @@ class BaseSessionResumeState(KSeFPersistedModel):
         """Deprecated compatibility wrapper for ``to_dict()``.
 
         Deprecated:
-            Will be removed in ksef2 2.0. Use ``to_dict()`` instead.
+            Will be removed in ksef2 1.10.0. Use ``to_dict()`` instead.
 
         Args:
             mode: Pydantic dump mode, ``"json"`` for JSON-safe values or ``"python"`` for native types.
@@ -573,14 +573,14 @@ class BaseSessionResumeState(KSeFPersistedModel):
         return self.to_dict(mode=mode)
 
     @deprecated(
-        "`model_dump_sensitive_json()` is deprecated and will be removed in ksef2 2.0; "
+        "`model_dump_sensitive_json()` is deprecated and will be removed in ksef2 1.10.0; "
         "use `to_json()` instead."
     )
     def model_dump_sensitive_json(self, *, indent: int | None = None) -> str:
         """Deprecated compatibility wrapper for ``to_json()``.
 
         Deprecated:
-            Will be removed in ksef2 2.0. Use ``to_json()`` instead.
+            Will be removed in ksef2 1.10.0. Use ``to_json()`` instead.
 
         Args:
             indent: Number of spaces to indent nested values; ``None`` for compact output.
@@ -592,14 +592,14 @@ class BaseSessionResumeState(KSeFPersistedModel):
 
     @classmethod
     @deprecated(
-        "`from_state()` is deprecated and will be removed in ksef2 2.0; "
+        "`from_state()` is deprecated and will be removed in ksef2 1.10.0; "
         "use `from_dict()` instead."
     )
     def from_state(cls, state: Mapping[str, object]) -> Self:
         """Deprecated compatibility wrapper for ``from_dict()``.
 
         Deprecated:
-            Will be removed in ksef2 2.0. Use ``from_dict()`` instead.
+            Will be removed in ksef2 1.10.0. Use ``from_dict()`` instead.
 
         Args:
             state: Mapping produced by ``to_dict()``.
@@ -618,7 +618,7 @@ class OnlineSessionResumeState(BaseSessionResumeState):
     resumable JSON containing credentials.
 
     Deprecated:
-        The alias ``OnlineSessionState`` is removed in ksef2 2.0; use ``OnlineSessionResumeState``.
+        The alias ``OnlineSessionState`` is removed in ksef2 1.10.0; use ``OnlineSessionResumeState``.
     """
 
     valid_until: AwareDatetime
@@ -653,7 +653,7 @@ class OnlineSessionResumeState(BaseSessionResumeState):
             warnings.warn(
                 "The `access_token` argument of "
                 "`OnlineSessionResumeState.from_encoded()` is deprecated and will "
-                "be removed in ksef2 2.0; it is ignored, persist "
+                "be removed in ksef2 1.10.0; it is ignored, persist "
                 "`AuthenticationResumeState` separately instead.",
                 DeprecationWarning,
                 stacklevel=2,
