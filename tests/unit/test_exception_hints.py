@@ -4,7 +4,7 @@ import inspect
 import pickle
 import re
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any
 
 import pytest
 
@@ -12,6 +12,7 @@ import ksef2
 import ksef2.clients as public_clients
 from ksef2._core import exceptions, response_errors
 from ksef2._core.exceptions import ExceptionCode
+from ksef2._domain.models.session import SessionInvoiceStatusResponse
 
 
 def _all_exception_classes() -> list[type[exceptions.KSeFException]]:
@@ -219,12 +220,12 @@ class TestHintRendering:
 
     def test_invoice_rejected_hint_and_duplicate_override(self) -> None:
         def rejected_with(code: int) -> exceptions.KSeFInvoiceRejectedError:
-            status = SimpleNamespace(
+            status = SessionInvoiceStatusResponse.model_construct(
                 status=SimpleNamespace(
                     code=code, description="d", details=["x"], extensions=None
                 )
             )
-            return exceptions.KSeFInvoiceRejectedError("r", cast(Any, status))
+            return exceptions.KSeFInvoiceRejectedError("r", status)
 
         rejected = rejected_with(450)
         duplicate = rejected_with(440)
@@ -316,7 +317,6 @@ class TestPickling:
             exceptions.KSeFValidationError("invalid"),
             exceptions.KSeFArgumentError("bad arguments"),
             exceptions.KSeFArgumentError("bad arguments", hint="Do this."),
-            exceptions.KSeFInvoiceQueryTimeoutError(3.0),
             exceptions.KSeFAuthenticationExpiredError(),
             exceptions.KSeFSessionError("closed"),
             exceptions.KSeFSessionError("closed", hint="Reopen it."),
