@@ -8,31 +8,135 @@ from ksef2._domain.models.session import SessionInvoiceStatusResponse
 
 
 class ExceptionCode(IntEnum):
-    """Enumeration of all possible exception codes.
+    """KSeF error codes the SDK knows, from the KSeF API documentation.
+
+    ``ksef_code`` on an API error is the raw number and the source of truth;
+    ``exception_code`` is the same number as this enum, or ``UNKNOWN_ERROR`` for
+    a code it does not list.
 
     Attributes:
-        UNKNOWN_ERROR: Code used when KSeF returns no code or an unrecognized one.
-        OBJECT_ALREADY_EXISTS: The object being created already exists.
+        UNKNOWN_ERROR: Code used when KSeF returns no code or one this enum does not list.
+        INVALID_DOCUMENT: The signed authentication document is invalid.
+        MISSING_SIGNATURE: The authentication document has no signature.
+        TOO_MANY_SIGNATURES: The authentication document has more signatures than allowed.
+        INVALID_SIGNATURE: The signature of the authentication document is invalid.
+        UNREADABLE_CONTENT: KSeF could not read the request content.
+        INVALID_AUTH_CHALLENGE: The authentication challenge is invalid.
+        INVALID_CERTIFICATE: The certificate is invalid.
+        INVALID_CONTEXT_IDENTIFIER: The subject identifier does not fit the context type.
+        SESSION_INVOICE_LIMIT_EXCEEDED: The session already holds the maximum number of invoices.
+        INVALID_PACKAGE_PART_SIZE: A batch package part has an invalid size.
+        PACKAGE_PART_LIMIT_EXCEEDED: The batch package has more parts than allowed.
+        INVOICE_NOT_FOUND: No invoice exists with the given identifier.
+        NOT_PROCESSED_YET: The invoice is processed but not available for download yet.
+        TECHNICAL_CORRECTION_UNAVAILABLE: A technical correction is not available.
+        TECHNICAL_CORRECTION_NOT_ALLOWED: The invoice status does not allow a technical correction.
+        SESSION_NOT_FOUND: No session exists with the given reference number.
+        QUERY_RESULT_NOT_FOUND: No export or query result exists with the given identifier.
+        UPO_NOT_FOUND: No UPO matches the criteria: not issued yet, or never, for a rejected invoice.
+        SESSION_STATUS_FORBIDS_OPERATION: The session status does not allow the operation.
+        INVALID_EXPORT_REQUEST: The invoice export request is invalid.
+        EXPORT_LIMIT_REACHED: The limit of exports running at once is reached.
+        FILTER_RANGE_OUT_OF_BOUNDS: The filter range reaches outside the data KSeF keeps.
+        SESSION_TEMPORARILY_UNAVAILABLE: The session is temporarily unavailable.
+        EMPTY_PACKAGE: The batch package is empty.
+        UPLOAD_WINDOW_EXCEEDED: The time for upload or close requests ran out.
+        INVALID_CHARACTER_ENCODING: The request uses an invalid character encoding.
+        NO_AUTHORIZATION: The caller is not authorized.
+        NO_AUTHENTICATION: The caller is not authenticated.
+        DECEASED_PERSON_AUTHENTICATION: The authentication method belongs to a deceased person.
+        SCHEMA_VALIDATION_FAILED: The document does not match its XSD schema.
+        INVALID_FILE_SIZE: The file size is invalid.
+        INVALID_FILE_HASH: The file hash is invalid.
         VALIDATION_ERROR: KSeF rejected the request as invalid.
-        UPO_NOT_FOUND: The requested UPO does not exist.
-        NOT_PROCESSED_YET: The resource is not processed yet; retry later.
+        SIGNATURE_AUTH_TYPE_CONFLICT: The signature conflicts with the authentication type.
+        INVALID_CONTINUATION_TOKEN: The continuation token is malformed or invalid.
+        UNKNOWN_KEY_ID: The encryption key identifier is unknown or points to a retired key.
+        CSR_DATA_UNAVAILABLE: CSR data cannot be fetched for the authentication method used.
+        ENROLLMENT_NOT_ALLOWED: A certificate request cannot be submitted with the authentication method used.
+        CSR_DATA_MISMATCH: The CSR data does not match the authentication used.
+        INVALID_CSR: The CSR format or its signature is invalid.
+        ENROLLMENT_NOT_FOUND: No certificate request exists with the given reference number.
+        ENROLLMENT_LIMIT_REACHED: The limit of certificate requests is reached.
+        CERTIFICATE_LIMIT_REACHED: The limit of held certificates is reached.
+        CERTIFICATE_NOT_FOUND: No certificate exists with the given serial number.
+        CERTIFICATE_NOT_REVOCABLE: The certificate is already revoked, blocked or invalid.
+        INVALID_KEY: The key type or length is invalid.
+        INVALID_CSR_SIGNATURE_ALGORITHM: The CSR signature algorithm is invalid.
+        TOKEN_PERMISSIONS_NOT_HELD: A token cannot get permissions the caller does not hold.
+        TOKEN_CONTEXT_NOT_ALLOWED: A token cannot be generated for the current context type.
+        OBJECT_ALREADY_EXISTS: The object being created already exists.
+        COLLECTIVE_INVOICE_NOT_FOUND: No invoice exists with the given identifier.
+        COLLECTIVE_IDENTIFIER_LIMIT_REACHED: The invoice already has the maximum number of collective identifiers.
+        DIFFERENT_SELLERS: The invoices have different sellers.
+        DUPLICATE_KSEF_NUMBER: A KSeF number is repeated in the request.
     """
 
     UNKNOWN_ERROR = 10000
-    OBJECT_ALREADY_EXISTS = 30001
-    VALIDATION_ERROR = 21405
-    UPO_NOT_FOUND = 21178
+    INVALID_DOCUMENT = 9101
+    MISSING_SIGNATURE = 9102
+    TOO_MANY_SIGNATURES = 9103
+    INVALID_SIGNATURE = 9105
+    UNREADABLE_CONTENT = 21001
+    INVALID_AUTH_CHALLENGE = 21111
+    INVALID_CERTIFICATE = 21115
+    INVALID_CONTEXT_IDENTIFIER = 21117
+    SESSION_INVOICE_LIMIT_EXCEEDED = 21155
+    INVALID_PACKAGE_PART_SIZE = 21157
+    PACKAGE_PART_LIMIT_EXCEEDED = 21161
+    INVOICE_NOT_FOUND = 21164
     NOT_PROCESSED_YET = 21165
+    TECHNICAL_CORRECTION_UNAVAILABLE = 21166
+    TECHNICAL_CORRECTION_NOT_ALLOWED = 21167
+    SESSION_NOT_FOUND = 21173
+    QUERY_RESULT_NOT_FOUND = 21175
+    UPO_NOT_FOUND = 21178
+    SESSION_STATUS_FORBIDS_OPERATION = 21180
+    INVALID_EXPORT_REQUEST = 21181
+    EXPORT_LIMIT_REACHED = 21182
+    FILTER_RANGE_OUT_OF_BOUNDS = 21183
+    SESSION_TEMPORARILY_UNAVAILABLE = 21184
+    EMPTY_PACKAGE = 21205
+    UPLOAD_WINDOW_EXCEEDED = 21208
+    INVALID_CHARACTER_ENCODING = 21217
+    NO_AUTHORIZATION = 21301
+    NO_AUTHENTICATION = 21304
+    DECEASED_PERSON_AUTHENTICATION = 21308
+    SCHEMA_VALIDATION_FAILED = 21401
+    INVALID_FILE_SIZE = 21402
+    INVALID_FILE_HASH = 21403
+    VALIDATION_ERROR = 21405
+    SIGNATURE_AUTH_TYPE_CONFLICT = 21406
+    INVALID_CONTINUATION_TOKEN = 21418
+    UNKNOWN_KEY_ID = 21470
+    CSR_DATA_UNAVAILABLE = 25001
+    ENROLLMENT_NOT_ALLOWED = 25002
+    CSR_DATA_MISMATCH = 25003
+    INVALID_CSR = 25004
+    ENROLLMENT_NOT_FOUND = 25005
+    ENROLLMENT_LIMIT_REACHED = 25006
+    CERTIFICATE_LIMIT_REACHED = 25007
+    CERTIFICATE_NOT_FOUND = 25008
+    CERTIFICATE_NOT_REVOCABLE = 25009
+    INVALID_KEY = 25010
+    INVALID_CSR_SIGNATURE_ALGORITHM = 25011
+    TOKEN_PERMISSIONS_NOT_HELD = 26001
+    TOKEN_CONTEXT_NOT_ALLOWED = 26002
+    OBJECT_ALREADY_EXISTS = 30001
+    COLLECTIVE_INVOICE_NOT_FOUND = 71001
+    COLLECTIVE_IDENTIFIER_LIMIT_REACHED = 71002
+    DIFFERENT_SELLERS = 71004
+    DUPLICATE_KSEF_NUMBER = 71005
 
     @staticmethod
     def from_code(code: int | None) -> "ExceptionCode":
-        """Return a known exception code or ``UNKNOWN_ERROR`` for unknown values.
+        """Return the member for a KSeF error code, or ``UNKNOWN_ERROR`` when the enum does not list it.
 
         Args:
             code: Numeric code from a KSeF error response, or ``None``.
 
         Returns:
-            The matching ``ExceptionCode``, or ``UNKNOWN_ERROR`` when ``code`` is ``None`` or not recognized.
+            The matching ``ExceptionCode``, or ``UNKNOWN_ERROR`` when ``code`` is ``None`` or not listed.
         """
         try:
             return ExceptionCode(code)
@@ -195,9 +299,12 @@ class KSeFNotReadyError(KSeFApiError):
     """Raised when KSeF has not made a processed resource available yet.
 
     KSeF reports codes 21165 (the invoice is processed but not yet available for
-    download) and 21178 (no UPO found yet). The resource usually appears shortly,
-    so waiting and asking again is the normal recovery. It subclasses
-    ``KSeFApiError``, so existing handlers keep working.
+    download) and 21178 (no UPO found). The resource usually appears shortly, so
+    waiting and asking again is the normal recovery. For 21178, call ``wait()``
+    on the invoice submission or the session first: KSeF also answers 21178 for
+    an invoice it rejected, which never gets a UPO, and ``wait()`` then raises
+    ``KSeFInvoiceRejectedError``. It subclasses ``KSeFApiError``, so existing
+    handlers keep working.
     """
 
     code: str = "NOT_READY"

@@ -74,7 +74,9 @@ class Client:
         self._transfer_transport = lifecycle_transport
         self._transport = middlewares.KSeFExceptionMiddleware(
             middlewares.RetryMiddleware(
-                lifecycle_transport,
+                middlewares.ErrorFormatMiddleware(
+                    lifecycle_transport, self._transport_config.error_format
+                ),
                 self._transport_config.retry,
             )
         )

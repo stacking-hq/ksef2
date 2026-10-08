@@ -22,6 +22,7 @@ TransportConfig(
     trust_env=True,
     http2=True,
     auto_refresh_tokens=True,
+    error_format="problem-details",
 )
 ```
 
@@ -35,9 +36,10 @@ TransportConfig(
 | `trust_env` | `bool` | `True` | `httpx` environment-variable behavior |
 | `http2` | `bool` | `True` | `httpx` HTTP/2 flag |
 | `auto_refresh_tokens` | `bool` | `True` | Access-token refresh of authenticated clients, see [Access-token refresh](#access-token-refresh) |
+| `error_format` | `Literal["problem-details", "legacy"]` | `"problem-details"` | `X-Error-Format` header on KSeF API requests, see [Error format](errors.md#error-format) |
 
-`auto_refresh_tokens` is the one field that does not configure `httpx`, so it
-applies even when you pass your own `http_client`.
+`auto_refresh_tokens` and `error_format` do not configure `httpx`, so they
+apply even when you pass your own `http_client`.
 
 ## TimeoutConfig
 
