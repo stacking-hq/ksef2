@@ -1,21 +1,16 @@
 """Turn failed KSeF responses into SDK exceptions.
 
-The pipeline has three steps, each in one place:
+``raise_for_ksef_status`` reads the response in four plain steps:
 
-1. ``_normalize`` reads a response in any of its shapes into one ``_ErrorRecord``,
-   choosing the parser by ``Content-Type``: ``application/problem+json`` uses the
-   status-specific problem model, ``application/json`` the legacy
-   ``ExceptionResponse`` / ``TooManyRequestsResponse`` as a fallback, and anything
-   else, including an empty body, becomes a snippet.
-2. ``_classify`` looks the record up in ``_RULES``, the one table that maps a status
-   and a KSeF code to an exception class and an optional hint.
-3. ``_build`` formats the single message and constructs the exception.
+1. ``_MODELS`` picks the spec model from the media type and the status.
+2. ``_fields`` reads the code, description, details and trace ID from that model.
+3. ``_message`` formats the one message every KSeF API error uses.
+4. ``_exception`` picks the exception class and the hint.
 """
 
-import json
 import math
-from collections.abc import Mapping
 from dataclasses import dataclass
+from functools import singledispatch
 from typing import cast
 
 import httpx
@@ -27,52 +22,28 @@ from ksef2._infra.schema.api import spec
 
 _SNIPPET_LENGTH = 200
 
-_PROBLEM_MODELS: dict[int, type[BaseModel]] = {
-    400: spec.BadRequestProblemDetails,
-    401: spec.UnauthorizedProblemDetails,
-    403: spec.ForbiddenProblemDetails,
-    410: spec.GoneProblemDetails,
-    429: spec.TooManyRequestsProblemDetails,
+# Keyed by (media type, status); ``None`` as the status matches any status.
+# Problem Details is what the SDK asks for (``X-Error-Format: problem-details``);
+# ``application/json`` is the legacy format KSeF sends without that header. KSeF
+# sends its 401 as Problem Details labelled ``application/json`` (seen on TEST).
+_MODELS: dict[tuple[str, int | None], type[BaseModel]] = {
+    ("application/problem+json", 400): spec.BadRequestProblemDetails,
+    ("application/problem+json", 401): spec.UnauthorizedProblemDetails,
+    ("application/problem+json", 403): spec.ForbiddenProblemDetails,
+    ("application/problem+json", 410): spec.GoneProblemDetails,
+    ("application/problem+json", 429): spec.TooManyRequestsProblemDetails,
+    ("application/json", 401): spec.UnauthorizedProblemDetails,
+    ("application/json", 429): spec.TooManyRequestsResponse,
+    ("application/json", None): spec.ExceptionResponse,
 }
 
-
-@dataclass(frozen=True, slots=True)
-class _ErrorRecord:
-    """Everything the SDK knows about one failed response, whatever its shape."""
-
-    status: int
-    method: str
-    path: str
-    ksef_code: int | None
-    description: str
-    details: tuple[str, ...]
-    trace_id: str | None
-    retry_after: int | None
-    body: BaseModel | None
-
-
-@dataclass(frozen=True, slots=True)
-class _Fields:
-    ksef_code: int | None
-    description: str | None
-    details: tuple[str, ...] = ()
-    trace_id: str | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class _Rule:
-    exc_type: type[exceptions.KSeFApiError]
-    hint: str | None = None
-
-
-_NOT_READY_INVOICE_HINT = (
-    "KSeF has processed the invoice but has not made it available yet. Call "
-    "`download()` with a `timeout` so the SDK keeps polling until it is."
+_NOT_READY_CODES = frozenset(
+    {
+        exceptions.ExceptionCode.NOT_PROCESSED_YET,
+        exceptions.ExceptionCode.UPO_NOT_FOUND,
+    }
 )
-_NOT_READY_UPO_HINT = (
-    "KSeF has not issued the UPO yet. Call `wait()` on the invoice submission or the "
-    "session first, then call `download_upo()` again."
-)
+
 _UNAUTHORIZED_HINT = (
     "KSeF rejected the credentials or the access token. Authenticate again with "
     "`client.authentication.with_token()` or `client.authentication.with_xades()`, "
@@ -84,122 +55,163 @@ _FORBIDDEN_HINT = (
     "permissions client, for example `grant_person()`."
 )
 
-# Looked up as (status, code), then (None, code), then (status, None), then
-# (None, None). ``None`` matches anything. 429 gets its hint from the exception
-# itself, because it depends on ``retry_after``.
-_RULES: dict[tuple[int | None, int | None], _Rule] = {
-    (None, 21165): _Rule(exceptions.KSeFNotReadyError, _NOT_READY_INVOICE_HINT),
-    (None, 21178): _Rule(exceptions.KSeFNotReadyError, _NOT_READY_UPO_HINT),
-    (401, None): _Rule(exceptions.KSeFAuthError, _UNAUTHORIZED_HINT),
-    (403, None): _Rule(exceptions.KSeFAuthError, _FORBIDDEN_HINT),
-    (429, None): _Rule(exceptions.KSeFRateLimitError),
-    (None, None): _Rule(exceptions.KSeFApiError),
+# Hints for KSeF codes where the SDK knows the next step. A code hint wins over
+# the 401/403 hint. Name only current public methods; a test checks them.
+_CODE_HINTS: dict[int, str] = {
+    21155: (
+        "The session has reached its invoice limit. Close it with `close()` and "
+        "send the remaining invoices in a new session from `online_session()`."
+    ),
+    21165: (
+        "KSeF has processed the invoice but has not made it available yet. Call "
+        "`download()` with a `timeout` so the SDK keeps polling until it is."
+    ),
+    21178: (
+        "KSeF has no UPO for this yet. Call `wait()` on the invoice submission or "
+        "the session first, then call `download_upo()` again. If `wait()` raises "
+        "`KSeFInvoiceRejectedError`, KSeF rejected the invoice and will never "
+        "issue a UPO for it."
+    ),
+    21180: (
+        "The session is already closed or KSeF is processing it, so it accepts "
+        "no more invoices. Send further invoices in a new session from "
+        "`online_session()` or `batch_session()`."
+    ),
+    21182: (
+        "KSeF limits how many exports can run at once. Wait for a running export "
+        "to finish with `wait()`, then call `export()` again."
+    ),
+    21183: (
+        "The date range reaches outside the data KSeF keeps. Narrow the date "
+        "range in the filters passed to `search()`."
+    ),
+    21184: (
+        "KSeF cannot accept invoices in this session at the moment. Retry later, "
+        "or send the invoice in a new session from `online_session()`."
+    ),
+    21208: (
+        "KSeF cancelled the batch session because the parts were not uploaded or "
+        "the session was not closed in time. Send the package again in a new "
+        "session from `batch_session()`."
+    ),
+    21418: (
+        "Continuation tokens come from KSeF and are only valid as returned. "
+        "Iterate the pager the SDK returns, or use its `pages()`, instead of "
+        "building or reusing a token yourself."
+    ),
+    21470: (
+        "KSeF does not know the public key the request was encrypted with, or "
+        "has retired it. The SDK keeps KSeF certificates for 24 hours; create a "
+        "new client so it loads the current ones."
+    ),
+    25006: (
+        "KSeF allows only a limited number of certificate enrollments. "
+        "`get_limits()` shows how many are still allowed."
+    ),
+    25007: (
+        "You hold the maximum number of KSeF certificates. Revoke one you no "
+        "longer use with `revoke()`, and check `get_limits()` for the limit."
+    ),
+    26001: (
+        "A token can only get permissions the authenticated identity holds. "
+        "Request fewer permissions in `generate()`."
+    ),
+    30001: (
+        "The subject or person already exists on KSeF TEST. Reuse it, or remove "
+        "it first with `delete_subject()` or `delete_person()`."
+    ),
 }
 
 
-def _lines(
+@dataclass(frozen=True, slots=True)
+class _Fields:
+    """What an error body says, whatever its shape."""
+
+    ksef_code: int | None = None
+    description: str | None = None
+    details: tuple[str, ...] = ()
+    trace_id: str | None = None
+
+
+def _detail_lines(
     code: int | None, description: str | None, details: list[str] | None
 ) -> list[str]:
-    """Render a secondary error entry as detail lines."""
+    """Render a further error entry as ``[code] description`` plus its details."""
     head = f"[{code}] {description}" if code is not None else description
     return [line for line in (head, *(details or [])) if line]
 
 
-def _problem_fields(model: BaseModel) -> _Fields | None:
-    if isinstance(model, spec.BadRequestProblemDetails):
-        if not model.errors:
-            return _Fields(None, model.detail, trace_id=model.traceId)
-        first, *rest = model.errors
-        details = list(first.details or [])
-        for error in rest:
-            details.extend(_lines(error.code, error.description, error.details))
-        return _Fields(first.code, first.description, tuple(details), model.traceId)
-    if isinstance(model, spec.ForbiddenProblemDetails):
-        return _Fields(
-            None,
-            model.detail,
-            (f"reasonCode: {model.reasonCode}",),
-            model.traceId,
-        )
-    if isinstance(
-        model,
-        spec.UnauthorizedProblemDetails
-        | spec.GoneProblemDetails
-        | spec.TooManyRequestsProblemDetails,
-    ):
-        return _Fields(None, model.detail, trace_id=model.traceId)
-    return None
+@singledispatch
+def _fields(model: BaseModel) -> _Fields:
+    """Read the error fields from a parsed body; unknown models give none."""
+    del model
+    return _Fields()
 
 
-def _legacy_fields(model: BaseModel) -> _Fields | None:
-    if isinstance(model, spec.TooManyRequestsResponse):
-        return _Fields(None, model.status.description, tuple(model.status.details))
-    if isinstance(model, spec.ExceptionResponse):
-        entries = (model.exception.exceptionDetailList or []) if model.exception else []
-        if not entries:
-            return None
-        first, *rest = entries
-        details = list(first.details or [])
-        for entry in rest:
-            details.extend(
-                _lines(entry.exceptionCode, entry.exceptionDescription, entry.details)
+@_fields.register
+def _(model: spec.BadRequestProblemDetails) -> _Fields:
+    if not model.errors:
+        return _Fields(description=model.detail, trace_id=model.traceId)
+    first, *rest = model.errors
+    details = list(first.details or [])
+    for error in rest:
+        details.extend(_detail_lines(error.code, error.description, error.details))
+    return _Fields(first.code, first.description, tuple(details), model.traceId)
+
+
+@_fields.register
+def _(model: spec.ForbiddenProblemDetails) -> _Fields:
+    return _Fields(
+        description=model.detail,
+        details=(f"reasonCode: {model.reasonCode}",),
+        trace_id=model.traceId,
+    )
+
+
+@_fields.register
+def _(
+    model: spec.UnauthorizedProblemDetails
+    | spec.GoneProblemDetails
+    | spec.TooManyRequestsProblemDetails,
+) -> _Fields:
+    return _Fields(description=model.detail, trace_id=model.traceId)
+
+
+@_fields.register
+def _(model: spec.TooManyRequestsResponse) -> _Fields:
+    return _Fields(
+        description=model.status.description, details=tuple(model.status.details)
+    )
+
+
+@_fields.register
+def _(model: spec.ExceptionResponse) -> _Fields:
+    entries = (model.exception.exceptionDetailList or []) if model.exception else []
+    if not entries:
+        return _Fields()
+    first, *rest = entries
+    details = list(first.details or [])
+    for entry in rest:
+        details.extend(
+            _detail_lines(
+                entry.exceptionCode, entry.exceptionDescription, entry.details
             )
-        return _Fields(first.exceptionCode, first.exceptionDescription, tuple(details))
-    return None
+        )
+    return _Fields(first.exceptionCode, first.exceptionDescription, tuple(details))
 
 
-def _try_parse[T: BaseModel](text: str, model: type[T]) -> T | None:
+def _parse(response: httpx.Response) -> BaseModel | None:
+    """Parse the body with the model for its media type and status, if there is one."""
+    content_type = cast(str, response.headers.get("Content-Type", ""))
+    media_type = content_type.split(";", 1)[0].strip().lower()
+    status = response.status_code
+    model_type = _MODELS.get((media_type, status)) or _MODELS.get((media_type, None))
+    if model_type is None or not response.text.strip():
+        return None
     try:
-        return model.model_validate_json(text)
+        return model_type.model_validate_json(response.text)
     except (ValidationError, ValueError):
         return None
-
-
-def _media_type(response: httpx.Response) -> str:
-    content_type = cast(str, response.headers.get("Content-Type", ""))
-    return content_type.split(";", 1)[0].strip().lower()
-
-
-def _parse_body(
-    response: httpx.Response,
-) -> tuple[BaseModel | None, _Fields | None]:
-    """Parse a body by its ``Content-Type`` into a spec model and the fields read from it."""
-    text = response.text
-    if not text.strip():
-        return None, None
-    media_type = _media_type(response)
-    status = response.status_code
-    if media_type == "application/problem+json":
-        problem_model = _PROBLEM_MODELS.get(status)
-        if problem_model is not None and (model := _try_parse(text, problem_model)):
-            return model, _problem_fields(model)
-        return None, _generic_problem_fields(text)
-    if media_type == "application/json":
-        legacy_model = (
-            spec.TooManyRequestsResponse if status == 429 else spec.ExceptionResponse
-        )
-        model = _try_parse(text, legacy_model)
-        if model is not None and (fields := _legacy_fields(model)):
-            return model, fields
-    return None, None
-
-
-def _generic_problem_fields(text: str) -> _Fields | None:
-    """Read ``detail``/``title`` and ``traceId`` from any JSON object body."""
-    try:
-        data = cast(object, json.loads(text))
-    except ValueError:
-        return None
-    if not isinstance(data, dict):
-        return None
-    obj = cast(Mapping[str, object], data)
-    description = obj.get("detail") or obj.get("title")
-    trace_id = obj.get("traceId")
-    if not isinstance(description, str):
-        return None
-    return _Fields(
-        None, description, trace_id=trace_id if isinstance(trace_id, str) else None
-    )
 
 
 def _snippet(text: str) -> str:
@@ -209,87 +221,82 @@ def _snippet(text: str) -> str:
     return collapsed[:_SNIPPET_LENGTH] + "..."
 
 
-def _retry_after_seconds(value: str | None) -> int | None:
-    seconds = parse_retry_after(value)
-    return None if seconds is None else math.ceil(seconds)
-
-
-def _normalize(response: httpx.Response, method: str, path: str) -> _ErrorRecord:
-    text = response.text
-    body, fields = _parse_body(response)
-    description = fields.description if fields else None
-    if not description:
-        description = _snippet(text) or response.reason_phrase or "no description"
-    headers = response.headers
-    return _ErrorRecord(
-        status=response.status_code,
-        method=method,
-        path=path,
-        ksef_code=fields.ksef_code if fields else None,
-        description=description,
-        details=fields.details if fields else (),
-        trace_id=fields.trace_id if fields else None,
-        retry_after=_retry_after_seconds(cast(str | None, headers.get("Retry-After"))),
-        body=body,
+def _message(
+    response: httpx.Response, fields: _Fields, *, method: str, path: str
+) -> str:
+    description = (
+        fields.description
+        or _snippet(response.text)
+        or response.reason_phrase
+        or "no description"
     )
-
-
-def _classify(record: _ErrorRecord) -> _Rule:
-    for key in (
-        (record.status, record.ksef_code),
-        (None, record.ksef_code),
-        (record.status, None),
-    ):
-        if key in _RULES:
-            return _RULES[key]
-    return _RULES[(None, None)]
-
-
-def _build_message(record: _ErrorRecord) -> str:
-    code = f", KSeF code {record.ksef_code}" if record.ksef_code is not None else ""
+    code = f", KSeF code {fields.ksef_code}" if fields.ksef_code is not None else ""
     lines = [
-        f"KSeF rejected {record.method} {record.path} "
-        f"(HTTP {record.status}{code}): {record.description}"
+        f"KSeF rejected {method} {path} "
+        f"(HTTP {response.status_code}{code}): {description}"
     ]
-    if record.details:
-        lines.append(f"Details: {'; '.join(record.details)}")
-    if record.trace_id:
-        lines.append(f"Trace ID: {record.trace_id}")
+    if fields.details:
+        lines.append(f"Details: {'; '.join(fields.details)}")
+    if fields.trace_id:
+        lines.append(f"Trace ID: {fields.trace_id}")
     return "\n".join(lines)
 
 
-def _build(record: _ErrorRecord, rule: _Rule) -> exceptions.KSeFApiError:
-    message = _build_message(record)
-    details = list(record.details)
-    if issubclass(rule.exc_type, exceptions.KSeFRateLimitError):
-        return rule.exc_type(
-            retry_after=record.retry_after,
-            message=message,
-            response=record.body,
-            ksef_code=record.ksef_code,
-            trace_id=record.trace_id,
+def _exception(
+    response: httpx.Response,
+    model: BaseModel | None,
+    fields: _Fields,
+    message: str,
+) -> exceptions.KSeFApiError:
+    """Pick the exception class and hint: the KSeF code first, then the status."""
+    status = response.status_code
+    code = fields.ksef_code
+    details = list(fields.details)
+    hint = _CODE_HINTS.get(code) if code is not None else None
+
+    if code in _NOT_READY_CODES:
+        return exceptions.KSeFNotReadyError(
+            status,
+            exceptions.ExceptionCode.from_code(code),
+            message,
+            model,
+            ksef_code=code,
+            trace_id=fields.trace_id,
             details=details,
-            hint=rule.hint,
+            hint=hint,
         )
-    if issubclass(rule.exc_type, exceptions.KSeFAuthError):
-        return rule.exc_type(
-            status_code=record.status,
-            message=message,
-            response=record.body,
-            ksef_code=record.ksef_code,
-            trace_id=record.trace_id,
+    if status in (401, 403):
+        return exceptions.KSeFAuthError(
+            status,
+            message,
+            model,
+            ksef_code=code,
+            trace_id=fields.trace_id,
             details=details,
-            hint=rule.hint,
+            hint=hint or (_UNAUTHORIZED_HINT if status == 401 else _FORBIDDEN_HINT),
         )
-    return rule.exc_type(
-        status_code=record.status,
-        exception_code=exceptions.ExceptionCode.from_code(record.ksef_code),
-        message=message,
-        response=record.body,
-        ksef_code=record.ksef_code,
-        trace_id=record.trace_id,
+    if status == 429:
+        retry_after = parse_retry_after(
+            cast(str | None, response.headers.get("Retry-After"))
+        )
+        return exceptions.KSeFRateLimitError(
+            None if retry_after is None else math.ceil(retry_after),
+            message,
+            model,
+            ksef_code=code,
+            trace_id=fields.trace_id,
+            details=details,
+            hint=hint,
+        )
+    return exceptions.KSeFApiError(
+        status,
+        exceptions.ExceptionCode.from_code(code),
+        message,
+        model,
+        ksef_code=code,
+        trace_id=fields.trace_id,
         details=details,
-        hint=rule.hint,
+        hint=hint,
     )
 
 
@@ -302,9 +309,15 @@ def raise_for_ksef_status(response: httpx.Response, *, method: str, path: str) -
         path: Request path, quoted in the message.
 
     Raises:
-        KSeFApiError: If the status is not a success, or a subclass chosen by status and KSeF code.
+        KSeFApiError: If the status is not a success, or a subclass chosen by KSeF code and status.
     """
     if response.is_success:
         return
-    record = _normalize(response, method, path)
-    raise _build(record, _classify(record))
+    model = _parse(response)
+    fields = _fields(model) if model is not None else _Fields()
+    if fields.description is None:
+        # A body that parsed but says nothing (an ``application/json`` body of
+        # another shape reads as an empty ExceptionResponse) is not kept.
+        model = None
+    message = _message(response, fields, method=method, path=path)
+    raise _exception(response, model, fields, message)

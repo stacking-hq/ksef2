@@ -169,13 +169,17 @@ class TestMessageFormat:
             "KSeF rejected GET /invoices/ksef/1 (HTTP 503): Service Unavailable"
         )
 
-    def test_problem_json_for_a_status_without_a_model(self) -> None:
+    def test_problem_json_for_a_status_without_a_model_becomes_a_snippet(
+        self,
+    ) -> None:
         body = _problem(500, "Internal Server Error", "Boom.", traceId="t-500")
 
         error = _raise(500, json=body, headers=PROBLEM)
 
-        assert str(error) == (
-            "KSeF rejected GET /invoices/ksef/1 (HTTP 500): Boom.\nTrace ID: t-500"
+        assert error.response is None
+        assert error.trace_id is None
+        assert str(error).startswith(
+            'KSeF rejected GET /invoices/ksef/1 (HTTP 500): {"title":"Internal Server'
         )
 
     def test_message_never_dumps_the_response_body(self) -> None:
@@ -336,11 +340,26 @@ class TestClassMapping:
         assert type(error) is exceptions.KSeFAuthError
         assert error.status_code == status
 
-    def test_legacy_401_maps_to_auth_error_and_keeps_the_code(self) -> None:
-        error = _raise(401, json=_legacy(21301, "No authorization."))
+    def test_401_problem_details_labelled_application_json(self) -> None:
+        # The body and Content-Type KSeF TEST sends for a missing access token.
+        body = {
+            "title": "Unauthorized",
+            "status": 401,
+            "detail": "Wymagane jest uwierzytelnienie.",
+            "instance": "/api/v2/sessions",
+            "traceId": "2ec7035d4bec76cfb84058aa392a22e4",
+            "timestamp": "2026-10-08T22:40:43.5980401+00:00",
+        }
+
+        error = _raise(401, json=body)
 
         assert type(error) is exceptions.KSeFAuthError
-        assert error.ksef_code == 21301
+        assert isinstance(error.response, spec.UnauthorizedProblemDetails)
+        assert error.trace_id == "2ec7035d4bec76cfb84058aa392a22e4"
+        assert str(error).splitlines()[0] == (
+            "KSeF rejected GET /invoices/ksef/1 (HTTP 401): "
+            "Wymagane jest uwierzytelnienie."
+        )
 
     def test_429_maps_to_rate_limit_error(self) -> None:
         error = _raise(
@@ -389,7 +408,7 @@ class TestRetryAfter:
     def _429(self, **headers: str) -> exceptions.KSeFRateLimitError:
         error = _raise(
             429,
-            json=_problem(429, "Too Many Requests", "Slow down."),
+            json=_problem(429, "Too Many Requests", "Slow down.", traceId="t-429"),
             headers={**PROBLEM, **headers},
         )
         assert isinstance(error, exceptions.KSeFRateLimitError)

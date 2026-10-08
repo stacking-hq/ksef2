@@ -95,9 +95,10 @@ def _all_hints() -> list[tuple[str, str]]:
         instance_hint = built.hint if built else None
         if instance_hint and instance_hint != cls.hint:
             hints.append((f"{cls.__name__} (instance)", instance_hint))
-    for (status, code), rule in response_errors._RULES.items():  # pyright: ignore[reportPrivateUsage]
-        if rule.hint:
-            hints.append((f"rule ({status}, {code})", rule.hint))
+    for code, hint in response_errors._CODE_HINTS.items():  # pyright: ignore[reportPrivateUsage]
+        hints.append((f"KSeF code {code}", hint))
+    hints.append(("HTTP 401", response_errors._UNAUTHORIZED_HINT))  # pyright: ignore[reportPrivateUsage]
+    hints.append(("HTTP 403", response_errors._FORBIDDEN_HINT))  # pyright: ignore[reportPrivateUsage]
     return hints
 
 
