@@ -169,13 +169,17 @@ class TestMessageFormat:
             "KSeF rejected GET /invoices/ksef/1 (HTTP 503): Service Unavailable"
         )
 
-    def test_problem_json_for_a_status_without_a_model(self) -> None:
+    def test_problem_json_for_a_status_without_a_model_becomes_a_snippet(
+        self,
+    ) -> None:
         body = _problem(500, "Internal Server Error", "Boom.", traceId="t-500")
 
         error = _raise(500, json=body, headers=PROBLEM)
 
-        assert str(error) == (
-            "KSeF rejected GET /invoices/ksef/1 (HTTP 500): Boom.\nTrace ID: t-500"
+        assert error.response is None
+        assert error.trace_id is None
+        assert str(error).startswith(
+            'KSeF rejected GET /invoices/ksef/1 (HTTP 500): {"title":"Internal Server'
         )
 
     def test_message_never_dumps_the_response_body(self) -> None:
@@ -184,6 +188,80 @@ class TestMessageFormat:
         assert "Response:" not in str(error)
         assert "exceptionDetailList" not in str(error)
         assert isinstance(error.response, spec.ExceptionResponse)
+
+
+class TestParserDispatchByContentType:
+    """The parser comes from ``Content-Type``; a body is never tried against another one."""
+
+    def test_problem_json_uses_the_status_specific_model(self) -> None:
+        error = _raise(
+            400,
+            json=_bad_request({"code": 21405, "description": "Invalid."}),
+            headers=PROBLEM,
+        )
+
+        assert isinstance(error.response, spec.BadRequestProblemDetails)
+        assert (error.ksef_code, error.trace_id) == (21405, "trace-1")
+
+    def test_content_type_parameters_and_case_are_ignored(self) -> None:
+        error = _raise(
+            400,
+            json=_bad_request({"code": 21405, "description": "Invalid."}),
+            headers={"content-type": "Application/Problem+JSON; charset=utf-8"},
+        )
+
+        assert isinstance(error.response, spec.BadRequestProblemDetails)
+
+    def test_legacy_json_is_the_fallback_for_application_json(self) -> None:
+        error = _raise(400, json=_legacy(21405, "Invalid."))
+
+        assert isinstance(error.response, spec.ExceptionResponse)
+        assert error.ksef_code == 21405
+        assert error.trace_id is None
+
+    def test_legacy_429_uses_the_rate_limit_model(self) -> None:
+        error = _raise(
+            429, json={"status": {"code": 429, "description": "Slow.", "details": []}}
+        )
+
+        assert isinstance(error.response, spec.TooManyRequestsResponse)
+
+    def test_a_legacy_body_labelled_problem_json_is_not_parsed_as_legacy(self) -> None:
+        error = _raise(400, json=_legacy(21405, "Invalid."), headers=PROBLEM)
+
+        assert error.response is None
+        assert error.ksef_code is None
+
+    def test_a_problem_body_labelled_application_json_is_not_parsed_as_problem(
+        self,
+    ) -> None:
+        error = _raise(400, json=_bad_request({"code": 21405, "description": "x"}))
+
+        assert error.response is None
+        assert error.ksef_code is None
+        assert error.trace_id is None
+
+    def test_text_becomes_a_snippet(self) -> None:
+        error = _raise(
+            502,
+            content=b"<html>Bad gateway</html>",
+            headers={"content-type": "text/html"},
+        )
+
+        assert error.response is None
+        assert "<html>Bad gateway</html>" in str(error)
+
+    def test_a_body_without_a_content_type_becomes_a_snippet(self) -> None:
+        error = _raise(400, content=b"plain failure")
+
+        assert error.response is None
+        assert str(error).endswith("plain failure")
+
+    def test_an_empty_body_falls_back_to_the_reason_phrase(self) -> None:
+        error = _raise(400, headers=PROBLEM)
+
+        assert error.response is None
+        assert str(error).endswith("Bad Request")
 
 
 class TestCodesAndTraceIds:
@@ -262,11 +340,26 @@ class TestClassMapping:
         assert type(error) is exceptions.KSeFAuthError
         assert error.status_code == status
 
-    def test_legacy_401_maps_to_auth_error_and_keeps_the_code(self) -> None:
-        error = _raise(401, json=_legacy(21301, "No authorization."))
+    def test_401_problem_details_labelled_application_json(self) -> None:
+        # The body and Content-Type KSeF TEST sends for a missing access token.
+        body = {
+            "title": "Unauthorized",
+            "status": 401,
+            "detail": "Wymagane jest uwierzytelnienie.",
+            "instance": "/api/v2/sessions",
+            "traceId": "2ec7035d4bec76cfb84058aa392a22e4",
+            "timestamp": "2026-10-08T22:40:43.5980401+00:00",
+        }
+
+        error = _raise(401, json=body)
 
         assert type(error) is exceptions.KSeFAuthError
-        assert error.ksef_code == 21301
+        assert isinstance(error.response, spec.UnauthorizedProblemDetails)
+        assert error.trace_id == "2ec7035d4bec76cfb84058aa392a22e4"
+        assert str(error).splitlines()[0] == (
+            "KSeF rejected GET /invoices/ksef/1 (HTTP 401): "
+            "Wymagane jest uwierzytelnienie."
+        )
 
     def test_429_maps_to_rate_limit_error(self) -> None:
         error = _raise(
@@ -315,7 +408,7 @@ class TestRetryAfter:
     def _429(self, **headers: str) -> exceptions.KSeFRateLimitError:
         error = _raise(
             429,
-            json=_problem(429, "Too Many Requests", "Slow down."),
+            json=_problem(429, "Too Many Requests", "Slow down.", traceId="t-429"),
             headers={**PROBLEM, **headers},
         )
         assert isinstance(error, exceptions.KSeFRateLimitError)

@@ -127,7 +127,10 @@ strukturalnych diagnostyk, gdy `response` nie jest `None`.
 
 Każdy błąd API KSeF ma ten sam format, niezależnie od kształtu odpowiedzi
 (`application/problem+json`, starszy payload `exception`, inne JSON-y, tekst albo
-pusta odpowiedź):
+pusta odpowiedź). SDK wybiera parser po nagłówku `Content-Type` odpowiedzi:
+`application/problem+json` jest czytany jako Problem Details, `application/json`
+jako starszy payload (poza 401, który KSeF wysyła jako Problem Details oznaczony
+`application/json`), a wszystko inne staje się krótkim fragmentem:
 
 ```text
 KSeF rejected <METODA> <ścieżka> (HTTP <status>, KSeF code <kod>): <opis>
@@ -137,16 +140,44 @@ Hint: <wskazówka>
 ```
 
 Fragment `KSeF code` jest pomijany, gdy odpowiedź nie ma kodu, a linie `Details`,
-`Trace ID` i `Hint` pojawiają się tylko wtedy, gdy jest co pokazać. Treść
-odpowiedzi nie wchodzi do komunikatu; zostaje w `response`. Gdy treść nie jest
-rozpoznawalnym błędem, opisem jest krótki, skrócony fragment tej treści.
+`Trace ID` i `Hint` pojawiają się tylko wtedy, gdy jest co pokazać. Domyślnie
+SDK wysyła `X-Error-Format: problem-details` w każdym żądaniu do API KSeF
+(zobacz [Format błędów](#format-błędów)), więc KSeF zwraca błędy 400 i 429 jako
+`application/problem+json`, a `trace_id` jest ustawiony w każdym błędzie API
+zwróconym w tym formacie. (401, 403 i 410 zawsze są Problem Details.) Nagłówek
+nie jest wysyłany do presigned URL-i storage. Treść odpowiedzi nie wchodzi do
+komunikatu; zostaje w `response`. Gdy treść nie jest rozpoznawalnym błędem,
+opisem jest krótki, skrócony fragment tej treści.
+
+### Format błędów
+
+`TransportConfig.error_format` wybiera format, o który SDK prosi KSeF:
+
+| Wartość | Wysyłany nagłówek | Błędy 400 i 429 |
+| --- | --- | --- |
+| `"problem-details"` (domyślnie) | `X-Error-Format: problem-details` | `application/problem+json`: `trace_id` jest ustawiony, a `response` to `BadRequestProblemDetails` / `TooManyRequestsProblemDetails` |
+| `"legacy"` | brak | `application/json`: bez `trace_id`, a `response` to `ExceptionResponse` / `TooManyRequestsResponse` |
+
+401, 403 i 410 zawsze są Problem Details. SDK czyta oba formaty tak samo, więc
+`ksef_code`, `details`, klasa i wskazówka się nie zmieniają; zmienia się tylko
+`trace_id` i typ `response`. Używaj `"legacy"` tylko wtedy, gdy Twój kod czyta
+`response` i oczekuje starszych modeli:
+
+```python
+client = Client(Environment.PRODUCTION, transport_config=TransportConfig(error_format="legacy"))
+```
+
+Treść Problem Details niezgodna ze swoim modelem w specyfikacji KSeF (albo ze
+statusem, dla którego specyfikacja nie ma modelu, na przykład 500) nie jest
+parsowana: opisem jest fragment treści, a `response` to `None`.
 
 Przykład: pobranie UPO faktury, którego KSeF jeszcze nie wystawił:
 
 ```text
 KSeF rejected GET /sessions/online/S1/invoices/I1/upo (HTTP 400, KSeF code 21178): Nie znaleziono UPO dla podanych kryteriów.
 Details: UPO o numerze referencyjnym I1 nie zostało znalezione.
-Hint: KSeF has not issued the UPO yet. Wait for processing to finish and request it again: `download_upo()` on a session or an invoice submission waits for processing first.
+Trace ID: 0b1f6a7c-4d2e-4a53-9a6e-3f2b9d1c8e11
+Hint: KSeF has no UPO for this yet. Call `wait()` on the invoice submission or the session first, then call `download_upo()` again. If `wait()` raises `KSeFInvoiceRejectedError`, KSeF rejected the invoice and will never issue a UPO for it.
 ```
 
 Opis i szczegóły pochodzą z KSeF, a `Hint` z SDK, które pisze wskazówki po
@@ -160,15 +191,28 @@ angielsku. Linia `Trace ID` pojawia się, gdy KSeF zwrócił identyfikator
 tylko wtedy, gdy SDK zna przyczynę, każda wymieniona w niej metoda jest aktualna,
 a dla jednego wystąpienia można ją zastąpić, przekazując `hint=...` do wyjątku.
 
-Wskazówki do błędów API pochodzą z jednej tabeli, wyszukiwanej po statusie HTTP i
-kodzie KSeF:
+Wskazówki do błędów API zależą najpierw od kodu KSeF, potem od statusu HTTP.
+Kod z własną wskazówką zachowuje ją także przy 401 albo 403, a klasa nadal
+wynika wtedy ze statusu (`KSeFAuthError`):
 
 | Status HTTP | Kod KSeF | Klasa | Wskazówka |
 | --- | --- | --- | --- |
+| dowolny | 21155 | `KSeFApiError` | The session has reached its invoice limit. Close it with `close()` and send the remaining invoices in a new session from `online_session()`. |
 | dowolny | 21165 | `KSeFNotReadyError` | KSeF has processed the invoice but has not made it available yet. Call `download()` with a `timeout` so the SDK keeps polling until it is. |
-| dowolny | 21178 | `KSeFNotReadyError` | KSeF has not issued the UPO yet. Wait for processing to finish and request it again: `download_upo()` on a session or an invoice submission waits for processing first. |
-| 401 | dowolny | `KSeFAuthError` | KSeF rejected the credentials or the access token. Authenticate again with `client.authentication.with_token()` or `client.authentication.with_xades()`, and check that the token or certificate is valid for this context. |
-| 403 | dowolny | `KSeFAuthError` | The authenticated identity is not allowed to do this in the current context. Check the reason in `details`, and grant the missing permission with the permissions client, for example `grant_person()`. |
+| dowolny | 21178 | `KSeFNotReadyError` | KSeF has no UPO for this yet. Call `wait()` on the invoice submission or the session first, then call `download_upo()` again. If `wait()` raises `KSeFInvoiceRejectedError`, KSeF rejected the invoice and will never issue a UPO for it. |
+| dowolny | 21180 | `KSeFApiError` | The session is already closed or KSeF is processing it, so it accepts no more invoices. Send further invoices in a new session from `online_session()` or `batch_session()`. |
+| dowolny | 21182 | `KSeFApiError` | KSeF limits how many exports can run at once. Wait for a running export to finish with `wait()`, then call `export()` again. |
+| dowolny | 21183 | `KSeFApiError` | The date range reaches outside the data KSeF keeps. Narrow the date range in the filters passed to `search()`. |
+| dowolny | 21184 | `KSeFApiError` | KSeF cannot accept invoices in this session at the moment. Retry later, or send the invoice in a new session from `online_session()`. |
+| dowolny | 21208 | `KSeFApiError` | KSeF cancelled the batch session because the parts were not uploaded or the session was not closed in time. Send the package again in a new session from `batch_session()`. |
+| dowolny | 21418 | `KSeFApiError` | Continuation tokens come from KSeF and are only valid as returned. Iterate the pager the SDK returns, or use its `pages()`, instead of building or reusing a token yourself. |
+| dowolny | 21470 | `KSeFApiError` | KSeF does not know the public key the request was encrypted with, or has retired it. The SDK keeps KSeF certificates for 24 hours; create a new client so it loads the current ones. |
+| dowolny | 25006 | `KSeFApiError` | KSeF allows only a limited number of certificate enrollments. `get_limits()` shows how many are still allowed. |
+| dowolny | 25007 | `KSeFApiError` | You hold the maximum number of KSeF certificates. Revoke one you no longer use with `revoke()`, and check `get_limits()` for the limit. |
+| dowolny | 26001 | `KSeFApiError` | A token can only get permissions the authenticated identity holds. Request fewer permissions in `generate()`. |
+| dowolny | 30001 | `KSeFApiError` | The subject or person already exists on KSeF TEST. Reuse it, or remove it first with `delete_subject()` or `delete_person()`. |
+| 401 | inny | `KSeFAuthError` | KSeF rejected the credentials or the access token. Authenticate again with `client.authentication.with_token()` or `client.authentication.with_xades()`, and check that the token or certificate is valid for this context. |
+| 403 | inny | `KSeFAuthError` | The authenticated identity is not allowed to do this in the current context. Check the reason in `details`, and grant the missing permission with the permissions client, for example `grant_person()`. |
 
 `KSeFRateLimitError` buduje wskazówkę z `retry_after`, na przykład
 `Wait 17 seconds before retrying.`
@@ -204,73 +248,83 @@ Odrzucony duplikat (`440`) dostaje własną wskazówkę w `KSeFInvoiceRejectedEr
 
 `ksef_code` to liczba wysłana przez KSeF. SDK nigdy nie gubi nieznanego kodu.
 Tylko `21165` i `21178` mają dedykowaną klasę (`KSeFNotReadyError`); pozostałe to
-zwykły `KSeFApiError` z ustawionym `ksef_code`. Poniższe kody pochodzą z
-dokumentacji API KSeF.
+zwykły `KSeFApiError` z ustawionym `ksef_code` (`KSeFAuthError` przy 401 albo
+403). Poniżej są wszystkie kody, które wymienia dokumentacja API KSeF
+(`openapi.json`), wszystkie w odpowiedziach HTTP 400, i każdy ma swój element
+`ExceptionCode`. Test jednostkowy nie przejdzie, gdy aktualizacja specyfikacji
+doda kod, którego tu nie ma.
 
-| Kod KSeF | Znaczenie |
-| --- | --- |
-| `21001` | Nieczytelna treść. |
-| `21111` | Nieprawidłowe wyzwanie autoryzacyjne. |
-| `21115` | Nieprawidłowy certyfikat. |
-| `21117` | Nieprawidłowy identyfikator podmiotu dla wskazanego typu kontekstu. |
-| `21155` | Przekroczono dozwoloną liczbę faktur w sesji. |
-| `21157` | Nieprawidłowy rozmiar części pakietu. |
-| `21161` | Przekroczono dozwoloną liczbę części pakietu. |
-| `21164` | Faktura o podanym identyfikatorze nie istnieje. |
-| `21165` | Faktura o podanym numerze KSeF nie jest jeszcze dostępna. `KSeFNotReadyError`. |
-| `21166` | Korekta techniczna niedostępna. |
-| `21167` | Status faktury nie pozwala na korektę techniczną. |
-| `21173` | Brak sesji o wskazanym numerze referencyjnym. |
-| `21175` | Wynik zapytania o podanym identyfikatorze nie istnieje. |
-| `21178` | Nie znaleziono UPO dla podanych kryteriów. `KSeFNotReadyError`. |
-| `21180` | Status sesji nie pozwala na wykonanie operacji. |
-| `21181` | Nieprawidłowe żądanie eksportu faktur. |
-| `21182` | Osiągnięto limit trwających eksportów. |
-| `21183` | Zakres filtrowania wykracza poza dostępny zakres danych. |
-| `21184` | Sesja tymczasowo niedostępna. |
-| `21205` | Pakiet nie może być pusty. |
-| `21208` | Czas oczekiwania na requesty upload lub finish został przekroczony. |
-| `21217` | Nieprawidłowe kodowanie znaków. |
-| `21301` | Brak autoryzacji. |
-| `21304` | Brak uwierzytelnienia. |
-| `21308` | Próba wykorzystania metod autoryzacyjnych osoby zmarłej. |
-| `21401` | Dokument nie jest zgodny ze schemą (XSD). |
-| `21402` | Nieprawidłowy rozmiar pliku. |
-| `21403` | Nieprawidłowy skrót pliku. |
-| `21405` | Błąd walidacji danych wejściowych. `ExceptionCode.VALIDATION_ERROR`. |
-| `21406` | Konflikt podpisu i typu uwierzytelnienia. |
-| `21418` | Przekazany token kontynuacji jest nieprawidłowy. |
-| `21470` | Identyfikator klucza jest nieznany lub wskazuje na wycofany klucz. |
-| `25001` | Brak możliwości pobrania danych do CSR dla wykorzystanego sposobu uwierzytelnienia. |
-| `25002` | Brak możliwości złożenia wniosku certyfikacyjnego dla wykorzystanego sposobu uwierzytelnienia. |
-| `25003` | Dane w CSR nie zgadzają się z danymi w użytym wektorze uwierzytelniającym. |
-| `25004` | Niepoprawny format CSR lub niepoprawny podpis CSR. |
-| `25005` | Wniosek certyfikacyjny o podanym numerze referencyjnym nie istnieje. |
-| `25006` | Osiągnięto limit możliwych do złożenia wniosków certyfikacyjnych. |
-| `25007` | Osiągnięto limit dopuszczalnej liczby posiadanych certyfikatów. |
-| `25008` | Certyfikat o podanym numerze seryjnym nie istnieje. |
-| `25009` | Nie można odwołać wskazanego certyfikatu, ponieważ jest już odwołany, zablokowany lub nieważny. |
-| `25010` | Nieprawidłowy typ lub długość klucza. |
-| `25011` | Nieprawidłowy algorytm podpisu CSR. |
-| `26001` | Nie można nadać tokenowi uprawnień, których nie posiadasz. |
-| `26002` | Nie można wygenerować tokena dla obecnego typu kontekstu. |
-| `30001` | Podmiot lub uprawnienie już istnieje. `ExceptionCode.OBJECT_ALREADY_EXISTS`. |
-| `71001` | Faktura o podanym identyfikatorze nie istnieje. |
-| `71002` | Faktura jest już przypisana do maksymalnej liczby identyfikatorów zbiorczych. |
-| `71004` | Faktury mają różnych sprzedawców. |
-| `71005` | Powtórzony numer KSeF w żądaniu. |
+`21178` nie zawsze znaczy „jeszcze nie wystawione”: KSeF zwraca go na stałe także
+dla faktury, którą odrzucił (na przykład duplikatu, status 440). Najpierw wywołaj
+`wait()`; jeśli rzuci `KSeFInvoiceRejectedError`, UPO nie będzie.
+
+| Kod KSeF | `ExceptionCode` | Znaczenie |
+| --- | --- | --- |
+| `9101` | `INVALID_DOCUMENT` | Nieprawidłowy dokument. |
+| `9102` | `MISSING_SIGNATURE` | Brak podpisu. |
+| `9103` | `TOO_MANY_SIGNATURES` | Przekroczona liczba dozwolonych podpisów. |
+| `9105` | `INVALID_SIGNATURE` | Nieprawidłowy podpis. |
+| `21001` | `UNREADABLE_CONTENT` | Nieczytelna treść. |
+| `21111` | `INVALID_AUTH_CHALLENGE` | Nieprawidłowe wyzwanie autoryzacyjne. |
+| `21115` | `INVALID_CERTIFICATE` | Nieprawidłowy certyfikat. |
+| `21117` | `INVALID_CONTEXT_IDENTIFIER` | Nieprawidłowy identyfikator podmiotu dla wskazanego typu kontekstu. |
+| `21155` | `SESSION_INVOICE_LIMIT_EXCEEDED` | Przekroczono dozwoloną liczbę faktur w sesji. |
+| `21157` | `INVALID_PACKAGE_PART_SIZE` | Nieprawidłowy rozmiar części pakietu. |
+| `21161` | `PACKAGE_PART_LIMIT_EXCEEDED` | Przekroczono dozwoloną liczbę części pakietu. |
+| `21164` | `INVOICE_NOT_FOUND` | Faktura o podanym identyfikatorze nie istnieje. |
+| `21165` | `NOT_PROCESSED_YET` | Faktura o podanym numerze KSeF nie jest jeszcze dostępna. `KSeFNotReadyError`. |
+| `21166` | `TECHNICAL_CORRECTION_UNAVAILABLE` | Korekta techniczna niedostępna. |
+| `21167` | `TECHNICAL_CORRECTION_NOT_ALLOWED` | Status faktury nie pozwala na korektę techniczną. |
+| `21173` | `SESSION_NOT_FOUND` | Brak sesji o wskazanym numerze referencyjnym. |
+| `21175` | `QUERY_RESULT_NOT_FOUND` | Wynik zapytania o podanym identyfikatorze nie istnieje. |
+| `21178` | `UPO_NOT_FOUND` | Nie znaleziono UPO dla podanych kryteriów. `KSeFNotReadyError`. |
+| `21180` | `SESSION_STATUS_FORBIDS_OPERATION` | Status sesji nie pozwala na wykonanie operacji. |
+| `21181` | `INVALID_EXPORT_REQUEST` | Nieprawidłowe żądanie eksportu faktur. |
+| `21182` | `EXPORT_LIMIT_REACHED` | Osiągnięto limit trwających eksportów. |
+| `21183` | `FILTER_RANGE_OUT_OF_BOUNDS` | Zakres filtrowania wykracza poza dostępny zakres danych. |
+| `21184` | `SESSION_TEMPORARILY_UNAVAILABLE` | Sesja tymczasowo niedostępna. |
+| `21205` | `EMPTY_PACKAGE` | Pakiet nie może być pusty. |
+| `21208` | `UPLOAD_WINDOW_EXCEEDED` | Czas oczekiwania na requesty upload lub finish został przekroczony. |
+| `21217` | `INVALID_CHARACTER_ENCODING` | Nieprawidłowe kodowanie znaków. |
+| `21301` | `NO_AUTHORIZATION` | Brak autoryzacji. |
+| `21304` | `NO_AUTHENTICATION` | Brak uwierzytelnienia. |
+| `21308` | `DECEASED_PERSON_AUTHENTICATION` | Próba wykorzystania metod autoryzacyjnych osoby zmarłej. |
+| `21401` | `SCHEMA_VALIDATION_FAILED` | Dokument nie jest zgodny ze schemą (XSD). |
+| `21402` | `INVALID_FILE_SIZE` | Nieprawidłowy rozmiar pliku. |
+| `21403` | `INVALID_FILE_HASH` | Nieprawidłowy skrót pliku. |
+| `21405` | `VALIDATION_ERROR` | Błąd walidacji danych wejściowych. |
+| `21406` | `SIGNATURE_AUTH_TYPE_CONFLICT` | Konflikt podpisu i typu uwierzytelnienia. |
+| `21418` | `INVALID_CONTINUATION_TOKEN` | Przekazany token kontynuacji jest nieprawidłowy. |
+| `21470` | `UNKNOWN_KEY_ID` | Identyfikator klucza jest nieznany lub wskazuje na wycofany klucz. |
+| `25001` | `CSR_DATA_UNAVAILABLE` | Brak możliwości pobrania danych do CSR dla wykorzystanego sposobu uwierzytelnienia. |
+| `25002` | `ENROLLMENT_NOT_ALLOWED` | Brak możliwości złożenia wniosku certyfikacyjnego dla wykorzystanego sposobu uwierzytelnienia. |
+| `25003` | `CSR_DATA_MISMATCH` | Dane w CSR nie zgadzają się z danymi w użytym wektorze uwierzytelniającym. |
+| `25004` | `INVALID_CSR` | Niepoprawny format CSR lub niepoprawny podpis CSR. |
+| `25005` | `ENROLLMENT_NOT_FOUND` | Wniosek certyfikacyjny o podanym numerze referencyjnym nie istnieje. |
+| `25006` | `ENROLLMENT_LIMIT_REACHED` | Osiągnięto limit możliwych do złożenia wniosków certyfikacyjnych. |
+| `25007` | `CERTIFICATE_LIMIT_REACHED` | Osiągnięto limit dopuszczalnej liczby posiadanych certyfikatów. |
+| `25008` | `CERTIFICATE_NOT_FOUND` | Certyfikat o podanym numerze seryjnym nie istnieje. |
+| `25009` | `CERTIFICATE_NOT_REVOCABLE` | Nie można odwołać wskazanego certyfikatu, ponieważ jest już odwołany, zablokowany lub nieważny. |
+| `25010` | `INVALID_KEY` | Nieprawidłowy typ lub długość klucza. |
+| `25011` | `INVALID_CSR_SIGNATURE_ALGORITHM` | Nieprawidłowy algorytm podpisu CSR. |
+| `26001` | `TOKEN_PERMISSIONS_NOT_HELD` | Nie można nadać tokenowi uprawnień, których nie posiadasz. |
+| `26002` | `TOKEN_CONTEXT_NOT_ALLOWED` | Nie można wygenerować tokena dla obecnego typu kontekstu. |
+| `30001` | `OBJECT_ALREADY_EXISTS` | Podmiot lub uprawnienie już istnieje. |
+| `71001` | `COLLECTIVE_INVOICE_NOT_FOUND` | Faktura o podanym identyfikatorze nie istnieje. |
+| `71002` | `COLLECTIVE_IDENTIFIER_LIMIT_REACHED` | Faktura jest już przypisana do maksymalnej liczby identyfikatorów zbiorczych. |
+| `71004` | `DIFFERENT_SELLERS` | Faktury mają różnych sprzedawców. |
+| `71005` | `DUPLICATE_KSEF_NUMBER` | Powtórzony numer KSeF w żądaniu. |
 
 ## Wartości ExceptionCode
+
+`ExceptionCode` to `IntEnum`: wartością każdego elementu jest jego kod KSeF, a
+nazwy są w tabeli powyżej. Jeden dodatkowy element nie jest kodem KSeF:
 
 | Nazwa | Wartość |
 | --- | --- |
 | `UNKNOWN_ERROR` | `10000` |
-| `OBJECT_ALREADY_EXISTS` | `30001` |
-| `VALIDATION_ERROR` | `21405` |
-| `UPO_NOT_FOUND` | `21178` |
-| `NOT_PROCESSED_YET` | `21165` |
 
-Nieznane numeryczne kody KSeF mapują się do `ExceptionCode.UNKNOWN_ERROR`, ale
+Kody, których enum nie zna, mapują się do `ExceptionCode.UNKNOWN_ERROR`, ale
 surowa liczba zostaje w `ksef_code`. W nowym kodzie preferuj `ksef_code`.
 
 ## Klasy timeoutów pollingu
@@ -295,11 +349,10 @@ Zapisz właściwą referencję przed pollingiem, aby inny proces mógł wznowić
 sprawdzanie statusu. Każdy błąd timeoutu niesie `hint`, który mówi, jak czekać
 dalej albo wznowić pracę.
 
-`download_upo()` na handle faktury, sesji interaktywnej i sesji batch czeka, aż
-KSeF zakończy przetwarzanie, i dopiero potem pobiera, więc nie kończy się
-`KSeFNotReadyError` ani błędem sesji tylko dlatego, że zostało wywołane za
-wcześnie. Przyjmuje `timeout` i `poll_interval` jak `wait()` i rzuca te same
-błędy timeoutu i niepowodzenia.
+`download_upo()` na handle faktury, sesji interaktywnej i sesji batch nigdy nie
+czeka i nie ma `timeout`. Najpierw wywołaj `wait()` na handle albo sesji.
+Wywołane za wcześnie rzuca `KSeFNotReadyError` ze wskazówką wskazującą `wait()`;
+sesja, która jest nadal otwarta, rzuca `KSeFSessionError`.
 
 ## Atrybuty rate limitu
 

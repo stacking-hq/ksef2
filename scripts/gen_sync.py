@@ -92,6 +92,10 @@ GENERATED_PAIRS: tuple[GeneratedPair, ...] = (
         Path("src/ksef2/_core/middlewares/lifecycle.py"),
     ),
     GeneratedPair(
+        Path("src/ksef2/_core/middlewares/async_error_format.py"),
+        Path("src/ksef2/_core/middlewares/error_format.py"),
+    ),
+    GeneratedPair(
         Path("src/ksef2/_core/middlewares/async_retry.py"),
         Path("src/ksef2/_core/middlewares/retry.py"),
     ),
