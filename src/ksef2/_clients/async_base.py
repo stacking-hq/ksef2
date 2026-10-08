@@ -88,7 +88,9 @@ class AsyncClient:
         self._transfer_transport = lifecycle_transport
         self._transport = AsyncKSeFExceptionMiddleware(
             AsyncRetryMiddleware(
-                AsyncErrorFormatMiddleware(lifecycle_transport),
+                AsyncErrorFormatMiddleware(
+                    lifecycle_transport, self._transport_config.error_format
+                ),
                 self._transport_config.retry,
             )
         )

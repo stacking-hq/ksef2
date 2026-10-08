@@ -3,9 +3,10 @@
 from typing import Any
 
 import httpx
+import pytest
 
 from ksef2 import AsyncClient, Client
-from ksef2._config import Environment
+from ksef2._config import Environment, TransportConfig
 from ksef2._core.middlewares.async_base import AsyncBaseMiddleware
 from ksef2._core.middlewares import (
     AsyncErrorFormatMiddleware,
@@ -49,6 +50,14 @@ class TestErrorFormatMiddleware:
         _ = ErrorFormatMiddleware(fake).get("/x", headers={HEADER: "legacy"})
 
         assert fake.calls[0].headers == {HEADER: "legacy"}
+
+    def test_legacy_sends_no_header(self) -> None:
+        fake = FakeTransport()
+        fake.enqueue(content=b"ok")
+
+        _ = ErrorFormatMiddleware(fake, "legacy").get("/x", headers={"X-Other": "1"})
+
+        assert fake.calls[0].headers == {"X-Other": "1"}
 
     async def test_async_adds_the_header(self) -> None:
         fake = FakeTransport()
@@ -107,4 +116,57 @@ class TestClientWiring:
         )
 
         assert recorder.sent("/limits/context").headers[HEADER] == "problem-details"
+        assert HEADER not in recorder.sent("storage.example.net").headers
+
+    @pytest.mark.parametrize(
+        ("config", "expected"),
+        [
+            (None, "problem-details"),
+            (TransportConfig(), "problem-details"),
+            (TransportConfig(error_format="legacy"), None),
+        ],
+        ids=["default", "problem-details", "legacy"],
+    )
+    def test_error_format_option(
+        self, config: TransportConfig | None, expected: str | None
+    ) -> None:
+        recorder = _Recorder()
+        client = Client(
+            environment=Environment.TEST,
+            transport_config=config,
+            http_client=httpx.Client(
+                base_url=Environment.TEST.base_url,
+                transport=httpx.MockTransport(recorder.handle),
+            ),
+        )
+
+        _ = client._transport.get("/limits/context")  # pyright: ignore[reportPrivateUsage]
+        _ = client._transfer_transport.put(  # pyright: ignore[reportPrivateUsage]
+            STORAGE_URL, content=b"part"
+        )
+
+        assert recorder.sent("/limits/context").headers.get(HEADER) == expected
+        assert HEADER not in recorder.sent("storage.example.net").headers
+
+    async def test_async_legacy_sends_no_header(self) -> None:
+        recorder = _Recorder()
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            return recorder.handle(request)
+
+        client = AsyncClient(
+            environment=Environment.TEST,
+            transport_config=TransportConfig(error_format="legacy"),
+            http_client=httpx.AsyncClient(
+                base_url=Environment.TEST.base_url,
+                transport=httpx.MockTransport(handler),
+            ),
+        )
+
+        _ = await client._transport.get("/limits/context")  # pyright: ignore[reportPrivateUsage]
+        _ = await client._transfer_transport.put(  # pyright: ignore[reportPrivateUsage]
+            STORAGE_URL, content=b"part"
+        )
+
+        assert HEADER not in recorder.sent("/limits/context").headers
         assert HEADER not in recorder.sent("storage.example.net").headers

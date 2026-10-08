@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Literal
 
 
 class Environment(Enum):
@@ -99,3 +100,5 @@ class TransportConfig:
     """Whether to use HTTP/2 when the server supports it."""
     auto_refresh_tokens: bool = True
     """Whether authenticated clients refresh their access token automatically, shortly before it expires and once after a 401 response. Set to ``False`` to manage refreshing yourself."""
+    error_format: Literal["problem-details", "legacy"] = "problem-details"
+    """Error format requested from KSeF. ``"problem-details"`` sends ``X-Error-Format: problem-details``, so 400 and 429 errors carry ``trace_id`` and ``exc.response`` is a Problem Details model. ``"legacy"`` sends no header, so those errors come in the older format, without ``trace_id``. 401, 403 and 410 are always Problem Details."""

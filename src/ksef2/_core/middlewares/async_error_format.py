@@ -1,4 +1,4 @@
-from typing import final, override
+from typing import Literal, final, override
 
 import httpx
 
@@ -13,11 +13,20 @@ class AsyncErrorFormatMiddleware(AsyncBaseMiddleware):
     """Ask KSeF to return 400 and 429 errors as ``application/problem+json``.
 
     It sits on the KSeF API path only. Presigned storage URLs are reached through
-    the transfer transport, which does not pass through it.
+    the transfer transport, which does not pass through it. With
+    ``error_format="legacy"`` it sends no header, and KSeF answers in its older
+    format.
     """
 
-    def __init__(self, transport: AsyncMiddleware) -> None:
+    def __init__(
+        self,
+        transport: AsyncMiddleware,
+        error_format: Literal["problem-details", "legacy"] = "problem-details",
+    ) -> None:
         self._next = transport
+        self._headers = (
+            KSeFHeaders.problem_details() if error_format == "problem-details" else {}
+        )
 
     @override
     async def request(
@@ -34,7 +43,7 @@ class AsyncErrorFormatMiddleware(AsyncBaseMiddleware):
         return await self._next.request(
             method,
             path,
-            headers=KSeFHeaders.problem_details() | (headers or {}),
+            headers=self._headers | (headers or {}),
             params=params,
             json=json,
             content=content,
