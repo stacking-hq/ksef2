@@ -564,7 +564,11 @@ class AnnotationsBuilder[TParent]:
         )
 
     def _is_empty(self) -> bool:
-        return self._state == _default_state()
+        return (
+            self._state == _default_state()
+            and not self._new_transport_items
+            and self._article_42_5_required is None
+        )
 
     def done(self) -> TParent:
         """Attach the built annotation details to the parent builder and return it.

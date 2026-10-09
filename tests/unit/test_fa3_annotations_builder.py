@@ -301,17 +301,39 @@ def test_reopening_the_annotations_builder_keeps_the_previous_state() -> None:
     assert draft.body.annotations.split_payment is True
 
 
-def test_transport_only_annotations_cannot_be_attached() -> None:
-    """Known limitation: ``done()`` only looks at flags, margin and exemption.
+def test_transport_only_annotations_can_be_attached() -> None:
+    builder, body = started_standard_body()
 
-    A new-means-of-transport annotation carries none of them, so the builder
-    still counts as empty and the items are dropped. Tracked in the coverage
-    report rather than papered over here.
-    """
+    _ = (
+        body.annotations()
+        .add_new_transport_item(available_from=date(2026, 4, 1), row_number=1)
+        .done()
+    )
+
+    with_one_line(body)
+    draft = builder.dump_state()
+    assert draft.body is not None
+    assert draft.body.annotations is not None
+    supply = draft.body.annotations.new_transport_supply
+    assert supply is not None
+    assert [item.row_number for item in supply.items] == [1]
+
+
+def test_the_article_42_5_marker_alone_counts_as_annotation_details() -> None:
+    """The marker is state, so ``done()`` proceeds and the missing items surface."""
     _, body = started_standard_body()
-    annotations = body.annotations().add_new_transport_item(
-        available_from=date(2026, 4, 1),
-        row_number=1,
+    annotations = body.annotations().new_transport_supply(article_42_5_required=True)
+
+    with pytest.raises(ValidationError, match="at least 1 item"):
+        annotations.done()
+
+
+def test_cleared_transport_items_leave_the_annotations_empty() -> None:
+    _, body = started_standard_body()
+    annotations = (
+        body.annotations()
+        .add_new_transport_item(available_from=date(2026, 4, 1), row_number=1)
+        .clear_new_transport_items()
     )
 
     with pytest.raises(ValueError, match="Annotation details are empty"):
