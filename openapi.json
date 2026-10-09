@@ -2,7 +2,7 @@
   "openapi": "3.0.4",
   "info": {
     "title": "KSeF API TE",
-    "description": "**Wersja API:** 2.8.1 (build 2.8.1-te-20260922.2+5329bb414170efdc518fd9f580bfcc2b530eec40)<br>\n**Klucze publiczne** Ministerstwa Finansów (dla danego środowiska): [Pobierz klucze](#tag/Certyfikaty-klucza-publicznego)<br>\n**Historia zmian:** [Changelog](https://github.com/CIRFMF/ksef-api/blob/main/api-changelog.md)<br>\n**Rozszerzona dokumentacja API:** [ksef-docs](https://github.com/CIRFMF/ksef-api/tree/main)\n\n**Adres serwera API:**\n- Środowisko TEST: `https://api-test.ksef.mf.gov.pl/v2`\n",
+    "description": "**Wersja API:** 2.8.1 (build 2.8.1-te-20261007.1+33b3a4825d8449c8514335d9ba1c1bddcc622d0d)<br>\n**Klucze publiczne** Ministerstwa Finansów (dla danego środowiska): [Pobierz klucze](#tag/Certyfikaty-klucza-publicznego)<br>\n**Historia zmian:** [Changelog](https://github.com/CIRFMF/ksef-api/blob/main/api-changelog.md)<br>\n**Rozszerzona dokumentacja API:** [ksef-docs](https://github.com/CIRFMF/ksef-api/tree/main)\n\n**Adres serwera API:**\n- Środowisko TEST: `https://api-test.ksef.mf.gov.pl/v2`\n",
     "version": "v2"
   },
   "servers": [
@@ -3237,7 +3237,7 @@
                     "perHour": -1
                   },
                   "global": {
-                    "perSecond": -1,
+                    "perSecond": 75,
                     "perMinute": -1,
                     "perHour": -1
                   }
