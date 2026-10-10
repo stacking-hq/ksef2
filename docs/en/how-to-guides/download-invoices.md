@@ -129,6 +129,37 @@ Keep sending, processing, and retrieval as separate phases.
 4. Download one processed XML document by `ksef_number`, or build an export
    filter for a larger time window.
 
+## Download a batch under rate limits
+
+You do not need a fixed sleep between `download()` calls, and you do not need
+to log in again after a `401`. The SDK honors KSeF's `Retry-After` up to
+`RetryConfig.max_retry_after` (default 120 seconds), retries transient
+failures, and refreshes the access token once after a `401`.
+
+The one case the SDK hands back to you: KSeF asked to wait longer than the
+ceiling. Then `download()` raises `KSeFRateLimitError` immediately, without
+sleeping, and `error.retry_after` carries the true header value.
+
+```python
+from pathlib import Path
+
+from ksef2 import KSeFRateLimitError
+
+downloads = Path("downloads")
+try:
+    for ksef_number in ksef_numbers:
+        xml_bytes = auth.invoices.download(ksef_number)
+        downloads.joinpath(f"{ksef_number}.xml").write_bytes(xml_bytes)
+except KSeFRateLimitError as error:
+    # KSeF asked to wait more than RetryConfig.max_retry_after seconds.
+    # The SDK did not sleep. Schedule the remaining numbers for
+    # error.retry_after seconds from now instead of retrying in a loop.
+    print(f"slow down, resume in {error.retry_after} seconds")
+```
+
+See [Operations](../reference/operations.md) for the full `429` and `401`
+behavior and what stays the app's job.
+
 ## Next workflows
 
 - [Query invoices](query-invoices.md): Find KSeF numbers and metadata before downloading invoice content.

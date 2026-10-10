@@ -63,7 +63,15 @@ class RetryConfig:
     initial_delay: float = 0.5
     """Seconds to wait before the first retry."""
     max_delay: float = 4.0
-    """Upper bound in seconds for the delay between retries."""
+    """Upper bound in seconds for the exponential backoff delay between retries."""
+    max_retry_after: float = 120.0
+    """Upper bound in seconds for a ``Retry-After`` value the SDK is willing to sleep.
+
+    When a retryable response carries ``Retry-After`` at or below this ceiling, the
+    SDK sleeps that exact value (not ``max_delay``) and retries. When it exceeds the
+    ceiling, the SDK does not sleep or retry: the request fails immediately with
+    ``KSeFRateLimitError`` carrying the true header value so callers can reschedule.
+    """
     backoff_multiplier: float = 2.0
     """Factor by which the delay grows after each retry."""
     retryable_status_codes: tuple[int, ...] = (429, 502, 503, 504)

@@ -78,6 +78,7 @@ ponawialne odpowiedzi HTTP dla ponawialnych typów requestów.
 | `max_attempts` | `3` |
 | `initial_delay` | `0.5` |
 | `max_delay` | `4.0` |
+| `max_retry_after` | `120.0` |
 | `backoff_multiplier` | `2.0` |
 | `retryable_status_codes` | `(429, 502, 503, 504)` |
 
@@ -87,8 +88,12 @@ Opóźnienie retry jest wykładnicze:
 min(initial_delay * backoff_multiplier ** (attempt - 1), max_delay)
 ```
 
-Jeżeli KSeF wyśle `Retry-After`, jako sekundy albo datę HTTP, middleware retry
-użyje tej wartości, ale nie większej niż `max_delay`.
+`max_delay` ogranicza tylko eksponencjalne backoffy. Nagłówek `Retry-After`
+(sekundy albo data HTTP) jest stosowany dokładnie, gdy mieści się w
+`max_retry_after`. Gdy go przekracza, SDK nie śpi i nie ponawia: poddaje się
+natychmiast i rzuca `KSeFRateLimitError` z prawdziwą wartością z nagłówka, żeby
+aplikacja mogła przełożyć pracę. Sufit chroni proces przed wiecznym
+oczekiwaniem na `Retry-After` rzędu wielu godzin.
 
 ## Ponawialne requesty
 
@@ -133,6 +138,11 @@ wznowieni.
 | Reaktywny | Odpowiedź `401` wywołuje jedno odświeżenie i jedną ponowną próbę tego samego requestu. Drugi `401` jest zgłaszany jako `KSeFAuthError`. |
 | Współbieżność | Requesty współdzielą jedno odświeżenie: lock w `Client`, `asyncio.Lock` w `AsyncClient`. |
 | Inne statusy | `403` i pozostałe błędy nie powodują odświeżenia. |
+
+Jedno odświeżenie to nie pełne ponowne uwierzytelnienie: SDK powtarza
+oryginalny request raz z odświeżonym tokenem. Jeżeli ten powtórzony request
+dostanie znowu `401`, `KSeFAuthError` trafia do aplikacji i to ona decyduje,
+czy uwierzytelnić się ponownie, czy zgłosić błąd.
 
 `auth.auth_tokens`, `auth.access_token` i `auth.resume_state()` zawsze zwracają
 bieżące tokeny, więc po długo trwającej pracy zapisz `resume_state()` ponownie.
@@ -189,8 +199,16 @@ udostępnia:
 | `status_code` | Zawsze `429`. |
 | `response` | Sparsowany payload błędu KSeF, jeśli jest dostępny. |
 
-Używaj `retry_after` do planowania pracy w tle. W request handlerach lepiej
-zwrócić albo zakolejkować pracę do ponowienia niż usypiać request.
+Dla `429` middleware retry stosuje dokładnie wartość `Retry-After`, gdy mieści
+się ona w `max_retry_after`, śpi i ponawia do `max_attempts` razy. Gdy nagłówek
+przekracza sufit, middleware poddaje się natychmiast: bez spania, bez ponawiania,
+a request kończy się `KSeFRateLimitError` z prawdziwą wartością nagłówka w
+`retry_after`.
+
+Co nadal należy do aplikacji: `KSeFRateLimitError` oznacza, że SDK już się
+poddał, więc zaplanuj pracę na później zamiast ponawiać na oślep. Używaj
+`retry_after` do planowania pracy w tle. W request handlerach lepiej zwrócić
+albo zakolejkować pracę do ponowienia niż usypiać request.
 
 ## Granice sekretów i logowania
 
