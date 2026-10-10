@@ -3,12 +3,6 @@ title: Notatki wydania 1.0.0
 description: Granica stabilności i udokumentowana publiczna powierzchnia pierwszego stabilnego wydania SDK.
 ---
 
-:::caution[Draft do czasu tagu 1.0.0]
-Te notatki opisują planowany kontrakt publiczny 1.0.0. Po oznaczeniu
-`v1.0.0` traktuj changelog pakietu i finalny GitHub release jako źródło
-rozstrzygające.
-:::
-
 ksef2 1.0.0 to pierwsze wydanie, które traktuje udokumentowane, aplikacyjne
 ścieżki importu jako kontrakt kompatybilności dla linii 1.x.
 SDK obecnie celuje w wersję OpenAPI KSeF `2.8.1`.
@@ -38,6 +32,58 @@ moduł, który da się zaimportować z repozytorium.
 | `ksef2.renderers` | Opcjonalne lokalne pomocniki renderowania faktur XSLT/PDF po instalacji dodatku `pdf`. |
 
 Dokładną granicę kompatybilności opisuje strona interfejsu publicznego.
+
+## Przepływy faktur w 1.0
+
+Operacje, które uruchamiają asynchroniczną pracę KSeF, zwracają uchwyt z metodą
+`.wait()`, a każda kolekcja zwraca jeden `Pager`. Stare nazwy zostają jako
+przestarzałe aliasy.
+
+```python
+# przed (0.22.x)
+sent = session.send_invoice(invoice_xml=xml)
+status = session.wait_for_invoice_ready(invoice_reference_number=sent.reference_number)
+for m in auth.invoices.all_metadata(filters=f): ...
+
+# po (1.0)
+submission = session.send_invoice(xml)
+status = submission.wait(timeout=60)
+upo = submission.download_upo()
+for m in auth.invoices.search(f): ...
+package = auth.invoices.export(f).wait()
+package.save("out/")
+```
+
+Tokeny dostępu odświeżają się automatycznie, a sesję lub eksport można wznowić
+metodą, która je uruchamia: `auth.online_session(state=saved)`.
+
+## Polityka wycofywania
+
+Przestarzałe API jest usuwane w wskazanym wydaniu 1.x. Każde wycofanie dostarczone
+z 1.0.0 zostanie usunięte w **ksef2 1.10.0**, razem z siedmioma wycofanymi
+w 0.19.0. Zobacz tabelę [wycofywanych API](public-api.md#wycofywane-api).
+
+## Błędy
+
+Każdy błąd API ma ten sam format, niesie surowy kod KSeF i identyfikator śladu
+oraz podpowiada, co zrobić dalej. Treść odpowiedzi nie jest już zrzucana do
+komunikatu; pozostaje w `e.response`. Rozgałęziaj kod po klasie wyjątku lub
+`ksef_code`, nigdy po treści komunikatu.
+
+```text
+# przed
+API_ERROR/400: KSeF API error: 400
+[UPO_NOT_FOUND:21178] Nie znaleziono UPO dla podanych kryteriów.
+Response: { "exception": { "exceptionDetailList": [ ... ] } }
+
+# po (KSeFNotReadyError)
+KSeF rejected GET /sessions/online/S1/invoices/I1/upo (HTTP 400, KSeF code 21178): Nie znaleziono UPO dla podanych kryteriów.
+Details: UPO o numerze referencyjnym 20260101-EE-ABC nie zostało znalezione.
+Hint: KSeF has not issued the UPO yet. Wait for processing to finish and request it again.
+```
+
+`download_upo()` na zgłoszeniu lub sesji czeka teraz na zakończenie przetwarzania
+zamiast kończyć się zbyt wcześnie.
 
 ## Publiczne, ale niższopoziomowe
 
