@@ -588,3 +588,122 @@ class TestAsyncMiddlewareChain:
         for call in fake.calls:
             assert call.headers is not None
             assert call.headers["Authorization"] == "Bearer my-token"
+
+
+_RATE_LIMIT_BODY = {"status": {"code": 429, "description": "Slow down.", "details": []}}
+_UNAUTHORIZED_BODY = {
+    "status": {"code": 401, "description": "Expired token.", "details": []}
+}
+
+
+class TestAsyncRetryAfterCeiling:
+    """Retry-After honors its own ceiling (`max_retry_after`), not `max_delay`."""
+
+    async def test_retry_after_under_ceiling_is_honored_exactly(self) -> None:
+        fake = AsyncFakeTransport()
+        fake.enqueue(
+            json_body=_RATE_LIMIT_BODY,
+            status_code=429,
+            headers={"Retry-After": "30"},
+        )
+        fake.enqueue(json_body={"ok": True}, status_code=200)
+
+        config = RetryConfig(max_attempts=3, max_delay=4.0)
+        sleep_calls: list[float] = []
+        mock_sleep = AsyncMock(side_effect=lambda s: sleep_calls.append(s))
+
+        middleware = AsyncRetryMiddleware(fake, config)
+        response = await middleware.request("GET", "/test", _sleep_fn=mock_sleep)
+
+        assert response.status_code == 200
+        assert len(fake.calls) == 2
+        assert sleep_calls == [30.0]
+
+    async def test_retry_after_equal_to_ceiling_is_honored(self) -> None:
+        fake = AsyncFakeTransport()
+        fake.enqueue(
+            json_body=_RATE_LIMIT_BODY,
+            status_code=429,
+            headers={"Retry-After": "120"},
+        )
+        fake.enqueue(json_body={"ok": True}, status_code=200)
+
+        sleep_calls: list[float] = []
+        mock_sleep = AsyncMock(side_effect=lambda s: sleep_calls.append(s))
+
+        middleware = AsyncRetryMiddleware(fake, RetryConfig(max_attempts=3))
+        response = await middleware.request("GET", "/test", _sleep_fn=mock_sleep)
+
+        assert response.status_code == 200
+        assert sleep_calls == [120.0]
+
+    async def test_retry_after_over_ceiling_does_not_sleep_or_retry(self) -> None:
+        fake = AsyncFakeTransport()
+        fake.enqueue(
+            json_body=_RATE_LIMIT_BODY,
+            status_code=429,
+            headers={"Retry-After": "600"},
+        )
+        fake.enqueue(json_body={"ok": True}, status_code=200)
+
+        mock_sleep = AsyncMock()
+
+        middleware = AsyncRetryMiddleware(fake, RetryConfig(max_attempts=3))
+        response = await middleware.request("GET", "/test", _sleep_fn=mock_sleep)
+
+        assert response.status_code == 429
+        assert len(fake.calls) == 1
+        mock_sleep.assert_not_awaited()
+
+    async def test_retry_after_over_ceiling_raises_with_true_value(self) -> None:
+        fake = AsyncFakeTransport()
+        fake.enqueue(
+            json_body=_RATE_LIMIT_BODY,
+            status_code=429,
+            headers={"Retry-After": "600"},
+        )
+        fake.enqueue(json_body={"ok": True}, status_code=200)
+
+        # Low ceiling keeps the test fast even if the give-up path regressed.
+        config = RetryConfig(max_attempts=3, max_retry_after=1.0)
+        chain = AsyncKSeFExceptionMiddleware(AsyncRetryMiddleware(fake, config))
+
+        with pytest.raises(KSeFRateLimitError) as exc_info:
+            await chain.request("GET", "/test")
+
+        assert exc_info.value.retry_after == 600
+        assert len(fake.calls) == 1
+
+    async def test_exponential_backoff_still_capped_by_max_delay(self) -> None:
+        fake = AsyncFakeTransport()
+        for _ in range(5):
+            fake.enqueue(json_body={"error": "unavailable"}, status_code=503)
+
+        config = RetryConfig(
+            max_attempts=5, initial_delay=0.5, backoff_multiplier=2.0, max_delay=4.0
+        )
+        sleep_calls: list[float] = []
+        mock_sleep = AsyncMock(side_effect=lambda s: sleep_calls.append(s))
+
+        middleware = AsyncRetryMiddleware(fake, config)
+        response = await middleware.request("GET", "/test", _sleep_fn=mock_sleep)
+
+        assert response.status_code == 503
+        assert sleep_calls == [0.5, 1.0, 2.0, 4.0]
+
+    async def test_401_is_not_retried_and_raises_auth_error(self) -> None:
+        fake = AsyncFakeTransport()
+        fake.enqueue(json_body=_UNAUTHORIZED_BODY, status_code=401)
+        fake.enqueue(json_body={"ok": True}, status_code=200)
+
+        mock_sleep = AsyncMock()
+        chain = AsyncKSeFExceptionMiddleware(
+            AsyncRetryMiddleware(fake, RetryConfig(max_attempts=3))
+        )
+
+        with pytest.raises(KSeFAuthError) as exc_info:
+            await chain.request("GET", "/test", _sleep_fn=mock_sleep)
+
+        assert exc_info.value.status_code == 401
+        assert len(fake.calls) == 1
+        mock_sleep.assert_not_awaited()

@@ -5,6 +5,8 @@ import httpx
 import pytest
 
 from ksef2._config import RetryConfig
+from ksef2._core.exceptions import KSeFAuthError, KSeFRateLimitError
+from ksef2._core.middlewares.exceptions import KSeFExceptionMiddleware
 from ksef2._core.middlewares.retry import RetryMiddleware
 from ksef2._core.routes import AuthRoutes, CollectiveIdentifierRoutes
 from tests.unit.fakes.transport import FakeTransport
@@ -169,3 +171,135 @@ class TestRetryMiddleware:
         assert response.status_code == 200
         assert len(transport.calls) == 1
         sleep_mock.assert_called_once()
+
+
+_RATE_LIMIT_BODY = {"status": {"code": 429, "description": "Slow down.", "details": []}}
+_UNAUTHORIZED_BODY = {
+    "status": {"code": 401, "description": "Expired token.", "details": []}
+}
+
+
+class TestRetryAfterCeiling:
+    """Retry-After honors its own ceiling (`max_retry_after`), not `max_delay`."""
+
+    @patch("ksef2._core.middlewares.retry.time.sleep")
+    def test_retry_after_under_ceiling_is_honored_exactly(
+        self,
+        sleep_mock,
+    ) -> None:
+        transport = FakeTransport()
+        transport.enqueue(
+            status_code=429,
+            json_body=_RATE_LIMIT_BODY,
+            headers={"Retry-After": "30"},
+        )
+        transport.enqueue(status_code=200, json_body={"ok": True})
+        middleware = RetryMiddleware(
+            transport, RetryConfig(max_attempts=3, max_delay=4.0)
+        )
+
+        response = middleware.get("/resource")
+
+        assert response.status_code == 200
+        assert len(transport.calls) == 2
+        sleep_mock.assert_called_once_with(30.0)
+
+    @patch("ksef2._core.middlewares.retry.time.sleep")
+    def test_retry_after_equal_to_ceiling_is_honored(self, sleep_mock) -> None:
+        transport = FakeTransport()
+        transport.enqueue(
+            status_code=429,
+            json_body=_RATE_LIMIT_BODY,
+            headers={"Retry-After": "120"},
+        )
+        transport.enqueue(status_code=200, json_body={"ok": True})
+        middleware = RetryMiddleware(transport, RetryConfig(max_attempts=3))
+
+        response = middleware.get("/resource")
+
+        assert response.status_code == 200
+        sleep_mock.assert_called_once_with(120.0)
+
+    @patch("ksef2._core.middlewares.retry.time.sleep")
+    def test_retry_after_over_ceiling_raises_immediately_with_true_value(
+        self,
+        sleep_mock,
+    ) -> None:
+        transport = FakeTransport()
+        transport.enqueue(
+            status_code=429,
+            json_body=_RATE_LIMIT_BODY,
+            headers={"Retry-After": "600"},
+        )
+        transport.enqueue(status_code=200, json_body={"ok": True})
+        middleware = KSeFExceptionMiddleware(
+            RetryMiddleware(transport, RetryConfig(max_attempts=3))
+        )
+
+        with pytest.raises(KSeFRateLimitError) as exc_info:
+            _ = middleware.get("/resource")
+
+        assert exc_info.value.retry_after == 600
+        assert len(transport.calls) == 1
+        sleep_mock.assert_not_called()
+
+    @patch("ksef2._core.middlewares.retry.time.sleep")
+    def test_over_ceiling_gives_up_even_with_attempts_remaining(
+        self,
+        sleep_mock,
+    ) -> None:
+        transport = FakeTransport()
+        transport.enqueue(
+            status_code=429,
+            json_body=_RATE_LIMIT_BODY,
+            headers={"Retry-After": "18000"},
+        )
+        middleware = RetryMiddleware(transport, RetryConfig(max_attempts=5))
+
+        response = middleware.get("/resource")
+
+        assert response.status_code == 429
+        assert len(transport.calls) == 1
+        sleep_mock.assert_not_called()
+
+    @patch("ksef2._core.middlewares.retry.time.sleep")
+    def test_exponential_backoff_still_capped_by_max_delay(
+        self,
+        sleep_mock,
+    ) -> None:
+        transport = FakeTransport()
+        for _ in range(5):
+            transport.enqueue(status_code=503, json_body={"message": "busy"})
+        middleware = RetryMiddleware(
+            transport,
+            RetryConfig(
+                max_attempts=5, initial_delay=0.5, backoff_multiplier=2.0, max_delay=4.0
+            ),
+        )
+
+        response = middleware.get("/resource")
+
+        assert response.status_code == 503
+        assert len(transport.calls) == 5
+        assert [call.args[0] for call in sleep_mock.call_args_list] == [
+            0.5,
+            1.0,
+            2.0,
+            4.0,
+        ]
+
+    @patch("ksef2._core.middlewares.retry.time.sleep")
+    def test_401_is_not_retried_and_raises_auth_error(self, sleep_mock) -> None:
+        transport = FakeTransport()
+        transport.enqueue(status_code=401, json_body=_UNAUTHORIZED_BODY, content=None)
+        transport.enqueue(status_code=200, json_body={"ok": True})
+        middleware = KSeFExceptionMiddleware(
+            RetryMiddleware(transport, RetryConfig(max_attempts=3))
+        )
+
+        with pytest.raises(KSeFAuthError) as exc_info:
+            _ = middleware.get("/resource")
+
+        assert exc_info.value.status_code == 401
+        assert len(transport.calls) == 1
+        sleep_mock.assert_not_called()

@@ -130,6 +130,37 @@ Trzymaj wysyłkę, przetwarzanie i pobieranie jako osobne fazy.
 4. Pobierz jeden przetworzony dokument XML po `ksef_number` albo zbuduj filtr
    eksportu dla większego okna czasu.
 
+## Pobieranie partii przy limitach zapytań
+
+Nie potrzebujesz stałego `sleep` między wywołaniami `download()` ani ponownego
+logowania po `401`. SDK stosuje dokładnie nagłówek `Retry-After` do wartości
+`RetryConfig.max_retry_after` (domyślnie 120 sekund), ponawia błędy przemijające
+i odświeża access token raz po `401`.
+
+Jeden przypadek SDK oddaje z powrotem aplikacji: gdy KSeF każe czekać dłużej niż
+sufit. Wtedy `download()` rzuca `KSeFRateLimitError` natychmiast, bez spania, a
+`error.retry_after` niesie prawdziwą wartość z nagłówka.
+
+```python
+from pathlib import Path
+
+from ksef2 import KSeFRateLimitError
+
+downloads = Path("downloads")
+try:
+    for ksef_number in ksef_numbers:
+        xml_bytes = auth.invoices.download(ksef_number)
+        downloads.joinpath(f"{ksef_number}.xml").write_bytes(xml_bytes)
+except KSeFRateLimitError as error:
+    # KSeF kazał czekać dłużej niż RetryConfig.max_retry_after sekund.
+    # SDK nie spał. Zaplanuj pozostałe numery za error.retry_after sekund,
+    # zamiast ponawiać w pętli.
+    print(f"zwolnij, wróć za {error.retry_after} sekund")
+```
+
+Pełne zachowanie dla `429` i `401` oraz listę rzeczy należących do aplikacji
+opisuje [Operacje](../reference/operations.md).
+
 ## Następne przepływy
 
 - [Wyszukaj faktury](query-invoices.md): Znajdź numery KSeF i metadane przed pobraniem treści faktury.

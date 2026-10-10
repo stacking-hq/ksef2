@@ -36,7 +36,11 @@ class AsyncRetryMiddleware(AsyncBaseMiddleware):
         delay = parse_retry_after(cast(str | None, response.headers.get("Retry-After")))
         if delay is None:
             return None
-        return min(delay, self._config.max_delay)
+        return min(delay, self._config.max_retry_after)
+
+    def _retry_after_over_ceiling(self, response: httpx.Response) -> bool:
+        delay = parse_retry_after(cast(str | None, response.headers.get("Retry-After")))
+        return delay is not None and delay > self._config.max_retry_after
 
     def _backoff_delay(self, attempt: int) -> float:
         delay = self._config.initial_delay * (
@@ -109,6 +113,13 @@ class AsyncRetryMiddleware(AsyncBaseMiddleware):
                 or not self._is_retryable_status(response.status_code)
                 or attempt >= self._config.max_attempts
             ):
+                return response
+
+            if self._retry_after_over_ceiling(response):
+                # Retry-After exceeds the ceiling: do not park this process waiting.
+                # Return the response so the exception middleware raises
+                # KSeFRateLimitError with the true header value for the caller to
+                # reschedule around.
                 return response
 
             await self._sleep_for(attempt, response, _sleep_fn=_sleep_fn)
