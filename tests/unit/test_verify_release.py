@@ -1,6 +1,8 @@
 import zipfile
 from pathlib import Path
 
+import pytest
+
 from scripts.verify_release import verify_release
 
 
@@ -42,3 +44,41 @@ def test_verify_release_reports_tag_and_wheel_mismatches(tmp_path: Path) -> None
 
     assert "tag 'v0.19.0' does not match project version 'v1.0.0'" in errors
     assert "wheel metadata declares '0.19.0', expected '1.0.0'" in errors
+
+
+@pytest.mark.parametrize(
+    ("heading", "expected_error"),
+    [
+        (
+            "## v1.0.0 (unreleased)",
+            "CHANGELOG.md release heading must contain a YYYY-MM-DD date",
+        ),
+        (
+            "## v1.0.0 (YYYY-MM-DD)",
+            "CHANGELOG.md release heading must contain a YYYY-MM-DD date",
+        ),
+        (
+            "## v1.0.0 (2026-02-30)",
+            "CHANGELOG.md release heading contains an invalid date",
+        ),
+        (
+            "## v1.0.0 (2026-7-10)",
+            "CHANGELOG.md release heading must contain a YYYY-MM-DD date",
+        ),
+        (
+            "## v1.0.0 (2026-07-10) draft",
+            "CHANGELOG.md release heading must contain a YYYY-MM-DD date",
+        ),
+    ],
+)
+def test_verify_release_rejects_unfinished_or_invalid_release_date(
+    tmp_path: Path, heading: str, expected_error: str
+) -> None:
+    dist_directory = write_release_fixture(
+        tmp_path, version="1.0.0", wheel_version="1.0.0"
+    )
+    (tmp_path / "CHANGELOG.md").write_text(heading + "\n")
+
+    errors = verify_release(tag="v1.0.0", root=tmp_path, dist_directory=dist_directory)
+
+    assert errors == [expected_error]

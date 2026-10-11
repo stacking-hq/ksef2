@@ -35,14 +35,41 @@ just bump patch        # or minor, or major
 just changelog-seed    # commits since the previous tag, one bullet per line
 ```
 
-1. Edit `CHANGELOG.md`. Start the new section with `## vX.Y.Z (YYYY-MM-DD)` at the
-   top of the file and rewrite the seeded bullets for people who upgrade.
-   `scripts/verify_release.py` fails the publish run when that heading is absent.
+1. Edit `CHANGELOG.md` and rewrite the seeded bullets for people who upgrade.
+   During preparation, use `## vX.Y.Z (unreleased)` at the top of the file.
+   Set the actual release date as `## vX.Y.Z (YYYY-MM-DD)` only when the release
+   is ready. `scripts/verify_release.py` rejects an unreleased heading, an
+   invalid calendar date, or a heading for another version before publishing.
 2. Run `just release-check`.
 3. Open a PR targeting `main`. A release changes `pyproject.toml`, `uv.lock`, and
    `CHANGELOG.md`. Review it like any other change, then merge.
 
 Merging publishes nothing.
+
+## 1.0.0 release gates
+
+PR [#147](https://github.com/stacking-hq/ksef2/pull/147) prepares the release;
+it does not authorize tagging, publishing, or documentation deployment.
+
+- [ ] Land [#171](https://github.com/stacking-hq/ksef2/issues/171) and verify that
+  old imports and method names still work through 1.x, with migration examples
+  in English and Polish. Reconcile the public API table, warning messages and
+  visibility tests with removal no earlier than 2.0. This blocks 1.0.0.
+- [ ] Review the separately owned [#172](https://github.com/stacking-hq/ksef2/issues/172),
+  [#174](https://github.com/stacking-hq/ksef2/issues/174) and
+  [#103](https://github.com/stacking-hq/ksef2/issues/103). Record each as included
+  or deferred before finalizing the release notes; do not describe unfinished
+  work as shipped.
+- [ ] Incorporate the final merged changes into #147 and rerun `just release-check`
+  on that commit. Confirm Python 3.12, 3.13 and 3.14 CI, coverage, docs validation
+  and the live KSeF TEST integration gate pass for the updated PR.
+- [ ] Confirm the PyPI trusted publisher and `pypi` environment setup, the
+  ksef2-cli prerequisite release, and the ksef2-docs deployment credentials.
+- [ ] Replace `(unreleased)` with the actual release date, remove preparation
+  notices from both release-notes pages, and run
+  `uv run python scripts/verify_release.py --tag v1.0.0` against freshly built
+  distributions. The verifier cannot establish that a valid date is the actual
+  release date; the maintainer must confirm that.
 
 ## Publish
 
