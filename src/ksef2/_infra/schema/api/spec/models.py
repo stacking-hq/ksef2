@@ -1454,6 +1454,17 @@ class OpenOnlineSessionRequest(BaseModel):
     """
 
 
+class OwnerPermissionScope(StrEnum):
+    CredentialsManage = "CredentialsManage"
+    CredentialsRead = "CredentialsRead"
+    InvoiceWrite = "InvoiceWrite"
+    InvoiceRead = "InvoiceRead"
+    Introspection = "Introspection"
+    SubunitManage = "SubunitManage"
+    EnforcementOperations = "EnforcementOperations"
+    CollectiveIdentifierManage = "CollectiveIdentifierManage"
+
+
 class PartUploadRequest(BaseModel):
     ordinalNumber: Annotated[int, Field(ge=1)]
     """
@@ -4973,6 +4984,10 @@ class QueryPersonalPermissionsResponse(BaseModel):
     permissions: list[PersonalPermission]
     """
     Lista odczytanych uprawnień.
+    """
+    ownerPermissions: list[OwnerPermissionScope] | None = None
+    """
+    Lista uprawnień właścicielskich.
     """
     hasMore: bool
     """
