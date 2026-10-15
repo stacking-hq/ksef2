@@ -2,7 +2,7 @@
   "openapi": "3.0.4",
   "info": {
     "title": "KSeF API TE",
-    "description": "**Wersja API:** 2.8.1 (build 2.8.1-te-20261007.1+33b3a4825d8449c8514335d9ba1c1bddcc622d0d)<br>\n**Klucze publiczne** Ministerstwa Finansów (dla danego środowiska): [Pobierz klucze](#tag/Certyfikaty-klucza-publicznego)<br>\n**Historia zmian:** [Changelog](https://github.com/CIRFMF/ksef-api/blob/main/api-changelog.md)<br>\n**Rozszerzona dokumentacja API:** [ksef-docs](https://github.com/CIRFMF/ksef-api/tree/main)\n\n**Adres serwera API:**\n- Środowisko TEST: `https://api-test.ksef.mf.gov.pl/v2`\n",
+    "description": "**Wersja API:** 2.9.0 (build 2.9.0-te-20261014.1+9ffc823fec7307d6f1ad739ae3b7b022beab9431)<br>\n**Klucze publiczne** Ministerstwa Finansów (dla danego środowiska): [Pobierz klucze](#tag/Certyfikaty-klucza-publicznego)<br>\n**Historia zmian:** [Changelog](https://github.com/CIRFMF/ksef-api/blob/main/api-changelog.md)<br>\n**Rozszerzona dokumentacja API:** [ksef-docs](https://github.com/CIRFMF/ksef-api/tree/main)\n\n**Adres serwera API:**\n- Środowisko TEST: `https://api-test.ksef.mf.gov.pl/v2`\n",
     "version": "v2"
   },
   "servers": [
@@ -82,7 +82,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21418               | Przekazany token kontynuacji ma nieprawidłowy format. |   |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21001               | Nieczytelna treść.                                  | {szczegółowy opis błędu}                                    |\n| 21418               | Przekazany token kontynuacji ma nieprawidłowy format. |                                                           |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -607,7 +607,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 25002               | Brak możliwości złożenia wniosku certyfikacyjnego dla wykorzystanego sposobu uwierzytelnienia. |         |\n| 25003               | Dane w CSR nie zgadzają się z danymi w użytym wektorze uwierzytelniającym.                     |         |\n| 25004               | Niepoprawny format CSR lub niepoprawny podpis CSR.                                             |         |\n| 25006               | Osiągnięto limit możliwych do złożenia wniosków certyfikacyjnych.                              |         |\n| 25007               | Osiągnięto limit dopuszczalnej liczby posiadanych certyfikatów.                                |         |\n| 25010               | Nieprawidłowy typ lub długość klucza.                                                          |         |\n| 25011               | Nieprawidłowy algorytm podpisu CSR.                                                            |         |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 25002               | Brak możliwości złożenia wniosku certyfikacyjnego dla wykorzystanego sposobu uwierzytelnienia. |         |\n| 25003               | Dane w CSR nie zgadzają się z danymi w użytym wektorze uwierzytelniającym.                     |         |\n| 25004               | Niepoprawny format CSR lub niepoprawny podpis CSR.                                             |         |\n| 25006               | Osiągnięto limit możliwych do złożenia wniosków certyfikacyjnych.                              |         |\n| 25007               | Osiągnięto limit dopuszczalnej liczby posiadanych certyfikatów.                                |         |\n| 25010               | Nieprawidłowy typ lub długość klucza.                                                          |         |\n| 25011               | Nieprawidłowy algorytm podpisu CSR.                                                            |         |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -870,7 +870,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription | Details |\n|-|-|-|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -988,7 +988,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 25008               | Certyfikat o podanym numerze seryjnym nie istnieje.                                            |         |\n| 25009               | Nie można odwołać wskazanego certyfikatu, ponieważ jest już odwołany, zablokowany lub nieważny.|         |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 25008               | Certyfikat o podanym numerze seryjnym nie istnieje.                                            |         |\n| 25009               | Nie można odwołać wskazanego certyfikatu, ponieważ jest już odwołany, zablokowany lub nieważny.|         |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -1148,7 +1148,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription | Details |\n|-|-|-|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -2353,7 +2353,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                                         | Details                                                | \n|---------------------|------------------------------------------------------------------------------|--------------------------------------------------------|\n| 71001               | Faktura o podanym identyfikatorze nie istnieje.                        | Faktura o numerze KSeF {ksefNumber} nie została znaleziona. |\n| 71002               | Faktura jest już przypisana do maksymalnej liczby Identyfikatorów Zbiorczych.            | Faktura o numerze KSeF {ksefNumber} jest już przypisana do maksymalnej liczby Identyfikatorów Zbiorczych. |\n| 71004               | Faktury mają różnych sprzedawców.                       | Faktura o numerze KSeF {ksefNumber} ma innego sprzedawcę.   |\n| 71005               | Powtórzony numer KSeF w żądaniu.                       | Powtórzony numer KSeF {ksefNumber}. |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                         | Details                                                | \n|---------------------|------------------------------------------------------------------------------|--------------------------------------------------------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}                            |\n| 71001               | Faktura o podanym identyfikatorze nie istnieje.                        | Faktura o numerze KSeF {ksefNumber} nie została znaleziona. |\n| 71002               | Faktura jest już przypisana do maksymalnej liczby Identyfikatorów Zbiorczych.            | Faktura o numerze KSeF {ksefNumber} jest już przypisana do maksymalnej liczby Identyfikatorów Zbiorczych. |\n| 71004               | Faktury mają różnych sprzedawców.                       | Faktura o numerze KSeF {ksefNumber} ma innego sprzedawcę.   |\n| 71005               | Powtórzony numer KSeF w żądaniu.                       | Powtórzony numer KSeF {ksefNumber}. |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -2511,7 +2511,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21418               | Przesłany token kontynuacji jest nieprawidłowy.     |  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}                            |\n| 21418               | Przesłany token kontynuacji jest nieprawidłowy.     |  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -2683,7 +2683,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21418               | Przesłany token kontynuacji jest nieprawidłowy.     |  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}                            |\n| 21418               | Przesłany token kontynuacji jest nieprawidłowy.     |  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -2830,7 +2830,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21418               | Przesłany token kontynuacji jest nieprawidłowy.     |  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}                            |\n| 21418               | Przesłany token kontynuacji jest nieprawidłowy.     |  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -4056,7 +4056,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription | Details |\n|-|-|-|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -4198,7 +4198,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription | Details |\n|-|-|-|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -4331,7 +4331,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription | Details |\n|-|-|-|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -4475,7 +4475,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription | Details |\n|-|-|-|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -4616,7 +4616,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription | Details |\n|-|-|-|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -4767,7 +4767,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription | Details |\n|-|-|-|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -4911,7 +4911,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription | Details |\n|-|-|-|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -5755,7 +5755,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription                                      | Details                                                                                                                        | \n|---------------|-----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|\n| 21183         | Zakres filtrowania wykracza poza dostępny zakres danych.  | Parametr dateRange.from jest późniejszy niż PermanentStorageHwmDate przy włączonym restrictToPermanentStorageHwmDate. |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode | ExceptionDescription                                      | Details                                                                                                                        | \n|---------------|-----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}                            |\n| 21183         | Zakres filtrowania wykracza poza dostępny zakres danych.  | Parametr dateRange.from jest późniejszy niż PermanentStorageHwmDate przy włączonym restrictToPermanentStorageHwmDate. |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -5906,7 +5906,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                       | \n|---------------------|-----------------------------------------------------|---------------------------------------------------------------|\n| 21181               | Nieprawidłowe żądanie eksportu faktur.              | Nie można wyeksportować paczki faktur dla wybranego podmiotu ({subjecttype}) i zalogowanego identyfikatora kontekstu ({type}). |\n| 21182               | Osiągnięto limit trwających eksportów.              | Dla uwierzytelnionego podmiotu w bieżącym kontekście osiągnięto maksymalny limit {count} równoczesnych eksportów faktur. Spróbuj ponownie później. |\n| 21470               | Przesłany identyfikator klucza jest nieznany lub wskazuje na wycofany klucz. | Klucz o identyfikatorze {keyId} nie jest wspierany. |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                       | \n|---------------------|-----------------------------------------------------|---------------------------------------------------------------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}                            |\n| 21181               | Nieprawidłowe żądanie eksportu faktur.              | Nie można wyeksportować paczki faktur dla wybranego podmiotu ({subjecttype}) i zalogowanego identyfikatora kontekstu ({type}). |\n| 21182               | Osiągnięto limit trwających eksportów.              | Dla uwierzytelnionego podmiotu w bieżącym kontekście osiągnięto maksymalny limit {count} równoczesnych eksportów faktur. Spróbuj ponownie później. |\n| 21470               | Przesłany identyfikator klucza jest nieznany lub wskazuje na wycofany klucz. | Klucz o identyfikatorze {keyId} nie jest wspierany. |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -6322,7 +6322,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21418               | Przekazany token kontynuacji ma nieprawidłowy format. |   |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}                            |\n| 21418               | Przekazany token kontynuacji ma nieprawidłowy format. |   |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -6633,7 +6633,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21173               | Brak sesji o wskazanym numerze referencyjnym.       | Sesja o numerze referencyjnym {referenceNumber} nie została znaleziona.   |\n| 21418               | Przekazany token kontynuacji ma nieprawidłowy format. |   |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}                            |\n| 21173               | Brak sesji o wskazanym numerze referencyjnym.       | Sesja o numerze referencyjnym {referenceNumber} nie została znaleziona.   |\n| 21418               | Przekazany token kontynuacji ma nieprawidłowy format. |   |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -6929,7 +6929,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21173               | Brak sesji o wskazanym numerze referencyjnym.       | Sesja o numerze referencyjnym {referenceNumber} nie została znaleziona.   |\n| 21418               | Przekazany token kontynuacji ma nieprawidłowy format. |   |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}                            |\n| 21173               | Brak sesji o wskazanym numerze referencyjnym.       | Sesja o numerze referencyjnym {referenceNumber} nie została znaleziona.   |\n| 21418               | Przekazany token kontynuacji ma nieprawidłowy format. |   |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -7447,7 +7447,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                       | Details |\n|---------------------|------------------------------------------------------------|---------|\n| 26001               | Nie można nadać tokenowi uprawnień których nie posiadasz.  | Informacja o brakujących uprawnieniach. |\n| 26002               | Nie można wygenerować tokena dla obecnego typu kontekstu.  | Informacja o aktualnym i dozwolonych typach kontekstu. |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                       | Details |\n|---------------------|------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}                            |\n| 26001               | Nie można nadać tokenowi uprawnień których nie posiadasz.  | Informacja o brakujących uprawnieniach. |\n| 26002               | Nie można wygenerować tokena dla obecnego typu kontekstu.  | Informacja o aktualnym i dozwolonych typach kontekstu. |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -7629,7 +7629,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21418               | Przekazany token kontynuacji ma nieprawidłowy format. |   |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                     | \n|---------------------|-----------------------------------------------------|-------------------------------------------------------------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}                            |\n| 21418               | Przekazany token kontynuacji ma nieprawidłowy format. |   |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -7994,7 +7994,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription | Details |\n|-|-|-|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -8282,7 +8282,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                                         | Details                                             | \n|---------------------|------------------------------------------------------------------------------|-----------------------------------------------------|\n| 21111               | Nieprawidłowe wyzwanie autoryzacyjne.                                        |                                                     |\n| 21470               | Przesłany identyfikator klucza jest nieznany lub wskazuje na wycofany klucz. | Klucz o identyfikatorze {keyId} nie jest wspierany. |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                         | Details                                             | \n|---------------------|------------------------------------------------------------------------------|-----------------------------------------------------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}                            |\n| 21111               | Nieprawidłowe wyzwanie autoryzacyjne.                                        |                                                     |\n| 21470               | Przesłany identyfikator klucza jest nieznany lub wskazuje na wycofany klucz. | Klucz o identyfikatorze {keyId} nie jest wspierany. |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -8812,7 +8812,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                                         | Details                                                | \n|---------------------|------------------------------------------------------------------------------|--------------------------------------------------------|\n| 21470               | Przesłany identyfikator klucza jest nieznany lub wskazuje na wycofany klucz. | Klucz o identyfikatorze {keyId} nie jest wspierany.    |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                         | Details                                                | \n|---------------------|------------------------------------------------------------------------------|--------------------------------------------------------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}                            |\n| 21470               | Przesłany identyfikator klucza jest nieznany lub wskazuje na wycofany klucz. | Klucz o identyfikatorze {keyId} nie jest wspierany.    |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -8957,7 +8957,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                                                                    | \n|---------------------|-----------------------------------------------------|------------------------------------------------------------------------------------------------------------|\n| 21155               | Przekroczono dozwoloną liczbę faktur w sesji.       | Sesja o numerze referencyjnym {referenceNumber} osiągnęła dozwolony limit liczby faktur {invoiceLimit}.    |\n| 21166               | Korekta techniczna niedostępna.                     | Faktura posiada już przetworzoną prawidłowo korektę techniczną.                                            |\n| 21167               | Status faktury nie pozwala na korektę techniczną.   | Nie można wysłać korekty technicznej do prawidłowo przetworzonej faktury.                                  |\n| 21173               | Brak sesji o wskazanym numerze referencyjnym.       | Sesja o numerze referencyjnym {referenceNumber} nie została odnaleziona.                                   |\n| 21180               | Status sesji nie pozwala na wykonanie operacji.     | Status sesji {code} uniemożliwia wysyłkę faktur.                                                           |\n| 21184               | Sesja tymczasowo niedostępna.                       | Trwają prace serwisowe i sesja {referenceNumber} jest tymczasowo niedostępna. Spróbuj ponownie później lub otwórz nową sesję, aby wysłać kolejne faktury. |\n| 21402               | Nieprawidłowy rozmiar pliku.                        | Długość treści nie zgadza się z rozmiarem pliku.                                                           |\n| 21403               | Nieprawidłowy skrót pliku.                          | Skrót treści nie zgadza się ze skrótem pliku.                                                              |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                                                                    | \n|---------------------|-----------------------------------------------------|------------------------------------------------------------------------------------------------------------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}                            |\n| 21155               | Przekroczono dozwoloną liczbę faktur w sesji.       | Sesja o numerze referencyjnym {referenceNumber} osiągnęła dozwolony limit liczby faktur {invoiceLimit}.    |\n| 21166               | Korekta techniczna niedostępna.                     | Faktura posiada już przetworzoną prawidłowo korektę techniczną.                                            |\n| 21167               | Status faktury nie pozwala na korektę techniczną.   | Nie można wysłać korekty technicznej do prawidłowo przetworzonej faktury.                                  |\n| 21173               | Brak sesji o wskazanym numerze referencyjnym.       | Sesja o numerze referencyjnym {referenceNumber} nie została odnaleziona.                                   |\n| 21180               | Status sesji nie pozwala na wykonanie operacji.     | Status sesji {code} uniemożliwia wysyłkę faktur.                                                           |\n| 21184               | Sesja tymczasowo niedostępna.                       | Trwają prace serwisowe i sesja {referenceNumber} jest tymczasowo niedostępna. Spróbuj ponownie później lub otwórz nową sesję, aby wysłać kolejne faktury. |\n| 21402               | Nieprawidłowy rozmiar pliku.                        | Długość treści nie zgadza się z rozmiarem pliku.                                                           |\n| 21403               | Nieprawidłowy skrót pliku.                          | Skrót treści nie zgadza się ze skrótem pliku.                                                              |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -9220,7 +9220,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode       | ExceptionDescription                                                         | Details                                             | \n|---------------------|------------------------------------------------------------------------------|-----------------------------------------------------|\n| 21157               | Nieprawidłowy rozmiar części pakietu.                                        | {treść błędu walidacji}                             | \n| 21161               | Przekroczono dozwoloną liczbę części pakietu.                                | {treść błędu walidacji}                             |\n| 21470               | Przesłany identyfikator klucza jest nieznany lub wskazuje na wycofany klucz. | Klucz o identyfikatorze {keyId} nie jest wspierany. |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                         | Details                                             | \n|---------------------|------------------------------------------------------------------------------|-----------------------------------------------------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}                            |\n| 21157               | Nieprawidłowy rozmiar części pakietu.                                        | {treść błędu walidacji}                             | \n| 21161               | Przekroczono dozwoloną liczbę części pakietu.                                | {treść błędu walidacji}                             |\n| 21470               | Przesłany identyfikator klucza jest nieznany lub wskazuje na wycofany klucz. | Klucz o identyfikatorze {keyId} nie jest wspierany. |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -9495,7 +9495,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription | Details |\n|-|-|-|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -9681,7 +9681,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription | Details |\n|-|-|-|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -9860,7 +9860,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription | Details |\n|-|-|-|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -10032,7 +10032,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription | Details |\n|-|-|-|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -10178,7 +10178,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription | Details |\n|-|-|-|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -10347,7 +10347,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription | Details |\n|-|-|-|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -10535,7 +10535,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription | Details |\n|-|-|-|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -10710,7 +10710,7 @@
             }
           },
           "400": {
-            "description": "| ExceptionCode | ExceptionDescription | Details |\n|-|-|-|\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
+            "description": "| ExceptionCode       | ExceptionDescription                                                                           | Details |\n|---------------------|------------------------------------------------------------------------------------------------|---------|\n| 21001               | Nieczytelna treść.                                                           | {szczegółowy opis błędu}  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
               "application/json": {
                 "schema": {
@@ -15782,6 +15782,19 @@
           }
         }
       },
+      "OwnerPermissionScope": {
+        "enum": [
+          "CredentialsManage",
+          "CredentialsRead",
+          "InvoiceWrite",
+          "InvoiceRead",
+          "Introspection",
+          "SubunitManage",
+          "EnforcementOperations",
+          "CollectiveIdentifierManage"
+        ],
+        "type": "string"
+      },
       "PartUploadRequest": {
         "required": [
           "headers",
@@ -17402,6 +17415,14 @@
               "$ref": "#/components/schemas/PersonalPermission"
             },
             "description": "Lista odczytanych uprawnień."
+          },
+          "ownerPermissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OwnerPermissionScope"
+            },
+            "description": "Lista uprawnień właścicielskich.",
+            "nullable": true
           },
           "hasMore": {
             "type": "boolean",
