@@ -142,6 +142,27 @@ class TestMessageFormat:
         assert error.trace_id == "t-403"
         assert "Details: reasonCode: missing-permissions" in str(error)
 
+    def test_forbidden_problem_lists_its_security_data(self) -> None:
+        body = _problem(
+            403,
+            "Forbidden",
+            "Missing permissions.",
+            reasonCode="missing-permissions",
+            security={
+                "requiredAnyOfPermissions": ["InvoiceWrite", "InvoiceRead"],
+                "presentPermissions": [],
+                "clientIp": None,
+            },
+        )
+
+        error = _raise(403, json=body, headers=PROBLEM)
+
+        assert error.details == [
+            "reasonCode: missing-permissions",
+            "requiredAnyOfPermissions: InvoiceWrite, InvoiceRead",
+            "presentPermissions: none",
+        ]
+
     def test_non_json_body_includes_a_truncated_snippet(self) -> None:
         error = _raise(502, content=b"<html>" + b"x" * 500 + b"</html>")
 
@@ -169,17 +190,14 @@ class TestMessageFormat:
             "KSeF rejected GET /invoices/ksef/1 (HTTP 503): Service Unavailable"
         )
 
-    def test_problem_json_for_a_status_without_a_model_becomes_a_snippet(
-        self,
-    ) -> None:
+    def test_problem_json_for_a_status_without_a_model_is_still_read(self) -> None:
         body = _problem(500, "Internal Server Error", "Boom.", traceId="t-500")
 
         error = _raise(500, json=body, headers=PROBLEM)
 
         assert error.response is None
-        assert error.trace_id is None
-        assert str(error).startswith(
-            'KSeF rejected GET /invoices/ksef/1 (HTTP 500): {"title":"Internal Server'
+        assert str(error) == (
+            "KSeF rejected GET /invoices/ksef/1 (HTTP 500): Boom.\nTrace ID: t-500"
         )
 
     def test_message_never_dumps_the_response_body(self) -> None:
@@ -264,6 +282,66 @@ class TestParserDispatchByContentType:
         assert str(error).endswith("Bad Request")
 
 
+class TestBodiesTheirModelRejects:
+    """A body its model rejects is read loosely, so its code still picks the class."""
+
+    def test_problem_json_missing_required_fields_keeps_its_code(self) -> None:
+        body = _bad_request({"code": 21165, "description": "Not yet."})
+        del body["instance"], body["timestamp"]
+
+        error = _raise(400, json=body, headers=PROBLEM)
+
+        assert isinstance(error, exceptions.KSeFNotReadyError)
+        assert (error.ksef_code, error.trace_id) == (21165, "trace-1")
+        assert error.response is None
+        assert str(error).startswith(
+            "KSeF rejected GET /invoices/ksef/1 (HTTP 400, KSeF code 21165): Not yet."
+        )
+
+    def test_an_error_entry_without_a_description_falls_back_to_detail(
+        self,
+    ) -> None:
+        error = _raise(400, json=_bad_request({"code": 21405}), headers=PROBLEM)
+
+        assert error.ksef_code == 21405
+        assert "(HTTP 400, KSeF code 21405): general problem" in str(error)
+
+    def test_legacy_body_outside_the_spec_limits_keeps_its_code(self) -> None:
+        body = _legacy(21178, "No UPO.")
+        body["exception"]["referenceNumber"] = "too-short"
+
+        error = _raise(400, json=body)
+
+        assert isinstance(error, exceptions.KSeFNotReadyError)
+        assert error.ksef_code == 21178
+        assert error.response is None
+
+    def test_legacy_401_missing_required_fields_keeps_its_detail(self) -> None:
+        error = _raise(401, json={"detail": "Token expired.", "traceId": "t-401"})
+
+        assert isinstance(error, exceptions.KSeFAuthError)
+        assert error.trace_id == "t-401"
+        assert "(HTTP 401): Token expired." in str(error)
+
+    def test_legacy_429_missing_required_fields_keeps_its_description(
+        self,
+    ) -> None:
+        error = _raise(429, json={"status": {"description": "Slow down."}})
+
+        assert isinstance(error, exceptions.KSeFRateLimitError)
+        assert "(HTTP 429): Slow down." in str(error)
+
+    def test_problem_json_with_only_a_title_uses_it(self) -> None:
+        body = {"title": "Resource missing", "status": 404}
+
+        error = _raise(404, json=body, headers=PROBLEM)
+
+        assert isinstance(error, exceptions.KSeFNotFoundError)
+        assert str(error) == (
+            "KSeF rejected GET /invoices/ksef/1 (HTTP 404): Resource missing"
+        )
+
+
 class TestCodesAndTraceIds:
     def test_known_code_fills_both_the_raw_code_and_the_enum(self) -> None:
         error = _raise(400, json=_legacy(21405, "Validation error."))
@@ -297,6 +375,25 @@ class TestCodesAndTraceIds:
         assert error.trace_id == "abc-9"
         assert error.context["trace_id"] == "abc-9"
         assert "Trace ID: abc-9" in str(error)
+
+    def test_legacy_trace_id_comes_from_the_service_code(self) -> None:
+        body = _legacy(21405, "x")
+        body["exception"]["serviceCode"] = (
+            "00-c02cc3747020c605be02159bf3324f0e-eee7647dc67aa74a-00"
+        )
+
+        error = _raise(400, json=body)
+
+        assert error.trace_id == "c02cc3747020c605be02159bf3324f0e"
+        assert "Trace ID: c02cc3747020c605be02159bf3324f0e" in str(error)
+
+    def test_a_service_code_in_another_form_is_kept_as_it_is(self) -> None:
+        body = _legacy(21405, "x")
+        body["exception"]["serviceCode"] = "srv-123"
+
+        error = _raise(400, json=body)
+
+        assert error.trace_id == "srv-123"
 
     def test_responses_without_a_code_or_trace_id_leave_them_none(self) -> None:
         error = _raise(500, content=b"nope")
@@ -340,6 +437,55 @@ class TestClassMapping:
         assert type(error) is exceptions.KSeFAuthError
         assert error.status_code == status
 
+    @pytest.mark.parametrize("shape", ["legacy", "problem"])
+    @pytest.mark.parametrize(
+        ("code", "expected"),
+        [
+            (21301, exceptions.KSeFAuthError),
+            (21304, exceptions.KSeFAuthError),
+            (21308, exceptions.KSeFAuthError),
+            (21164, exceptions.KSeFNotFoundError),
+            (21173, exceptions.KSeFNotFoundError),
+            (21175, exceptions.KSeFNotFoundError),
+            (25005, exceptions.KSeFNotFoundError),
+            (25008, exceptions.KSeFNotFoundError),
+            (71001, exceptions.KSeFNotFoundError),
+            (21184, exceptions.KSeFServerError),
+        ],
+    )
+    def test_codes_classify_http_400(
+        self, shape: str, code: int, expected: type[exceptions.KSeFApiError]
+    ) -> None:
+        body = (
+            _legacy(code, "Failure.", "detail")
+            if shape == "legacy"
+            else _bad_request(
+                {"code": code, "description": "Failure.", "details": ["detail"]}
+            )
+        )
+        error = _raise(400, json=body, headers=PROBLEM if shape == "problem" else None)
+        assert type(error) is expected
+        assert error.ksef_code == code
+        assert error.exception_code.value == code
+        assert error.details == ["detail"]
+        if expected is exceptions.KSeFAuthError:
+            assert error.hint == response_errors._UNAUTHORIZED_HINT  # pyright: ignore[reportPrivateUsage]
+
+    @pytest.mark.parametrize(
+        ("status", "expected"),
+        [
+            (404, exceptions.KSeFNotFoundError),
+            (410, exceptions.KSeFNotFoundError),
+            (500, exceptions.KSeFServerError),
+            (503, exceptions.KSeFServerError),
+            (599, exceptions.KSeFServerError),
+        ],
+    )
+    def test_status_classifies_without_a_code(
+        self, status: int, expected: type[exceptions.KSeFApiError]
+    ) -> None:
+        assert type(_raise(status)) is expected
+
     def test_401_problem_details_labelled_application_json(self) -> None:
         # The body and Content-Type KSeF TEST sends for a missing access token.
         body = {
@@ -369,7 +515,7 @@ class TestClassMapping:
         assert type(error) is exceptions.KSeFRateLimitError
         assert error.status_code == 429
 
-    @pytest.mark.parametrize("status", [400, 404, 410, 500, 503])
+    @pytest.mark.parametrize("status", [400, 409, 422])
     def test_everything_else_is_a_plain_api_error(self, status: int) -> None:
         error = _raise(status, json=_legacy(21405, "Validation error."))
 

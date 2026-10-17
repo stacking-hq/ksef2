@@ -269,7 +269,7 @@ class ProfileStore:
             The parsed config; empty when the file does not exist.
 
         Raises:
-            KSeFValidationError: If the file is not valid TOML or does not match the profile schema.
+            KSeFProfileConfigError: If the file is not valid TOML or does not match the profile schema.
         """
         return load_profile_config(self.path)
 
@@ -293,11 +293,11 @@ class ProfileStore:
             The stored profile.
 
         Raises:
-            KSeFValidationError: If the profile exists and ``overwrite`` is false, or the file cannot be read or written.
+            KSeFProfileConfigError: If the profile exists and ``overwrite`` is false, or the file cannot be read or written.
         """
         config = self.load()
         if name in config.profiles and not overwrite:
-            raise exceptions.KSeFValidationError(
+            raise exceptions.KSeFProfileConfigError(
                 f"ksef2-cli profile {name!r} already exists.",
                 config_path=str(self.path),
                 profile_name=name,
@@ -319,12 +319,12 @@ class ProfileStore:
             The profile.
 
         Raises:
-            KSeFValidationError: If the profile is not defined.
+            KSeFProfileConfigError: If the profile is not defined.
         """
         config = self.load()
         profile = config.profiles.get(name)
         if profile is None:
-            raise exceptions.KSeFValidationError(
+            raise exceptions.KSeFProfileConfigError(
                 f"ksef2-cli profile {name!r} is not defined in {self.path}.",
                 config_path=str(self.path),
                 profile_name=name,
@@ -360,12 +360,12 @@ class ProfileStore:
             The newly active profile.
 
         Raises:
-            KSeFValidationError: If the profile is not defined.
+            KSeFProfileConfigError: If the profile is not defined.
         """
         config = self.load()
         profile = config.profiles.get(name)
         if profile is None:
-            raise exceptions.KSeFValidationError(
+            raise exceptions.KSeFProfileConfigError(
                 f"ksef2-cli profile {name!r} is not defined in {self.path}.",
                 config_path=str(self.path),
                 profile_name=name,
@@ -387,12 +387,12 @@ class ProfileStore:
             The removed profile.
 
         Raises:
-            KSeFValidationError: If the profile is not defined.
+            KSeFProfileConfigError: If the profile is not defined.
         """
         config = self.load()
         profile = config.profiles.pop(name, None)
         if profile is None:
-            raise exceptions.KSeFValidationError(
+            raise exceptions.KSeFProfileConfigError(
                 f"ksef2-cli profile {name!r} is not defined in {self.path}.",
                 config_path=str(self.path),
                 profile_name=name,
@@ -438,7 +438,7 @@ def load_profile_config(path: str | Path | None = None) -> CliProfileConfig:
         The parsed config; empty when the file does not exist.
 
     Raises:
-        KSeFValidationError: If the file is not valid TOML or does not match the profile schema.
+        KSeFProfileConfigError: If the file is not valid TOML or does not match the profile schema.
     """
     config_path = _resolve_profile_config_path(path)
     if not config_path.exists():
@@ -448,12 +448,12 @@ def load_profile_config(path: str | Path | None = None) -> CliProfileConfig:
         payload = tomllib.loads(config_path.read_text(encoding="utf-8"))
         return CliProfileConfig.model_validate(payload)
     except tomllib.TOMLDecodeError as exc:
-        raise exceptions.KSeFValidationError(
+        raise exceptions.KSeFProfileConfigError(
             f"Invalid ksef2-cli profile config at {config_path}: {exc}",
             config_path=str(config_path),
         ) from exc
     except ValidationError as exc:
-        raise exceptions.KSeFValidationError(
+        raise exceptions.KSeFProfileConfigError(
             f"Invalid ksef2-cli profile config at {config_path}: {exc}",
             config_path=str(config_path),
         ) from exc
@@ -467,7 +467,7 @@ def write_profile_config(path: str | Path, config: CliProfileConfig) -> None:
         config: Config to write.
 
     Raises:
-        KSeFValidationError: If the file cannot be written.
+        KSeFProfileConfigError: If the file cannot be written.
     """
     config_path = Path(path).expanduser()
     try:
@@ -475,7 +475,7 @@ def write_profile_config(path: str | Path, config: CliProfileConfig) -> None:
         _ = config_path.write_text(render_profile_config(config), encoding="utf-8")
         _ = config_path.chmod(CONFIG_FILE_MODE)
     except OSError as exc:
-        raise exceptions.KSeFValidationError(
+        raise exceptions.KSeFProfileConfigError(
             f"Failed to write ksef2-cli profile config at {config_path}: {exc}",
             config_path=str(config_path),
         ) from exc
@@ -557,7 +557,7 @@ def load_cli_profile(
         The selected profile's name and settings.
 
     Raises:
-        KSeFValidationError: If no profile is selected, the profile is not defined, or the config file is invalid.
+        KSeFProfileConfigError: If no profile is selected, the profile is not defined, or the config file is invalid.
     """
     env = os.environ if environ is None else environ
     resolved_config_path = _resolve_profile_config_path(config_path, environ=env)
@@ -565,7 +565,7 @@ def load_cli_profile(
     selected_name = name or env.get(PROFILE_ENV_VAR) or config.active_profile
 
     if selected_name is None:
-        raise exceptions.KSeFValidationError(
+        raise exceptions.KSeFProfileConfigError(
             "No ksef2-cli profile selected. Pass a profile name, set KSEF2_PROFILE, "
             f"or configure active_profile in {resolved_config_path}.",
             config_path=str(resolved_config_path),
@@ -573,7 +573,7 @@ def load_cli_profile(
 
     profile = config.profiles.get(selected_name)
     if profile is None:
-        raise exceptions.KSeFValidationError(
+        raise exceptions.KSeFProfileConfigError(
             f"ksef2-cli profile {selected_name!r} is not defined in "
             f"{resolved_config_path}.",
             config_path=str(resolved_config_path),
@@ -596,7 +596,7 @@ def resolve_profile_secret(
     env = os.environ if environ is None else environ
     value = env.get(envvar)
     if value is None:
-        raise exceptions.KSeFValidationError(
+        raise exceptions.KSeFProfileConfigError(
             f"{label} environment variable {envvar} is not set for "
             f"ksef2-cli profile {profile_name!r}.",
             profile_name=profile_name,
@@ -612,7 +612,7 @@ def load_profile_pem_credentials(
 ) -> tuple[Certificate, XAdESPrivateKey]:
     auth = profile.auth
     if auth.cert is None or auth.key is None:
-        raise exceptions.KSeFValidationError(
+        raise exceptions.KSeFProfileConfigError(
             f"ksef2-cli profile {profile_name!r} requires auth.cert and auth.key.",
             profile_name=profile_name,
         )
@@ -631,7 +631,7 @@ def load_profile_pem_credentials(
             ),
         )
     except (OSError, TypeError, ValueError) as exc:
-        raise exceptions.KSeFValidationError(
+        raise exceptions.KSeFProfileConfigError(
             f"Failed to load PEM credentials for ksef2-cli profile "
             f"{profile_name!r}: {exc}",
             profile_name=profile_name,
@@ -647,7 +647,7 @@ def load_profile_p12_credentials(
 ) -> tuple[Certificate, XAdESPrivateKey]:
     auth = profile.auth
     if auth.p12 is None:
-        raise exceptions.KSeFValidationError(
+        raise exceptions.KSeFProfileConfigError(
             f"ksef2-cli profile {profile_name!r} requires auth.p12.",
             profile_name=profile_name,
         )
@@ -663,7 +663,7 @@ def load_profile_p12_credentials(
             password=password.encode("utf-8") if password else None,
         )
     except (OSError, TypeError, ValueError) as exc:
-        raise exceptions.KSeFValidationError(
+        raise exceptions.KSeFProfileConfigError(
             f"Failed to load PKCS#12/PFX credentials for ksef2-cli profile "
             f"{profile_name!r}: {exc}",
             profile_name=profile_name,

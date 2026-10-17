@@ -8,7 +8,7 @@ import pytest
 from pydantic import BaseModel
 
 from ksef2._endpoints.async_base import AsyncBaseEndpoints
-from ksef2._core.exceptions import KSeFValidationError
+from ksef2._core.exceptions import KSeFResponseValidationError
 from tests.unit.fakes.transport import AsyncFakeTransport
 
 
@@ -67,7 +67,7 @@ class TestAsyncBaseEndpointsParse:
         assert results[1].name == "second"
 
     async def test_parse_raises_validation_error_on_malformed_json(self) -> None:
-        """_parse raises KSeFValidationError on malformed response body."""
+        """_parse raises KSeFResponseValidationError on malformed response body."""
         fake = AsyncFakeTransport()
         fake.enqueue(
             content=b'{"name": 123, "value": "not-an-int"}',
@@ -76,11 +76,13 @@ class TestAsyncBaseEndpointsParse:
         )
 
         endpoints = _ConcreteEndpoints(fake)
-        with pytest.raises(KSeFValidationError, match="Invalid response payload"):
+        with pytest.raises(
+            KSeFResponseValidationError, match="Invalid response payload"
+        ):
             await endpoints.fetch_one("/test")
 
     async def test_parse_list_raises_validation_error_on_malformed_json(self) -> None:
-        """_parse_list raises KSeFValidationError on malformed response body."""
+        """_parse_list raises KSeFResponseValidationError on malformed response body."""
         fake = AsyncFakeTransport()
         fake.enqueue(
             content=b'[{"name": 123, "value": "not-an-int"}]',
@@ -89,7 +91,9 @@ class TestAsyncBaseEndpointsParse:
         )
 
         endpoints = _ConcreteEndpoints(fake)
-        with pytest.raises(KSeFValidationError, match="Invalid response payload"):
+        with pytest.raises(
+            KSeFResponseValidationError, match="Invalid response payload"
+        ):
             await endpoints.fetch_list("/test")
 
     async def test_transport_is_awaited(self) -> None:

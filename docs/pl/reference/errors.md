@@ -21,6 +21,13 @@ aktualne sformułowania KSeF i mogą zmienić się między wydaniami. To samo do
 | Klasa | Baza | `code` | Główne atrybuty |
 | --- | --- | --- | --- |
 | `KSeFException` | `Exception` | `SDK_ERROR` | `context`, `hint` |
+| `KSeFPollingTimeoutError` | `KSeFException` | `POLLING_TIMEOUT` | `timeout` |
+| `KSeFResponseValidationError` | `KSeFValidationError` | `RESPONSE_VALIDATION_ERROR` | `context`, `hint` |
+| `KSeFProfileConfigError` | `KSeFValidationError` | `PROFILE_CONFIG_ERROR` | `context`, `hint` |
+| `KSeFSessionFailedError` | `KSeFSessionError` | `SESSION_FAILED` | `reference_number`, `session_status_code`, `description`, `details`, `status` |
+| `KSeFTokenActivationFailedError` | `KSeFApiError` | `TOKEN_ACTIVATION_FAILED` | `reference_number`, `token_status` |
+| `KSeFNotFoundError` | `KSeFApiError` | `NOT_FOUND` | `status_code`, `ksef_code`, `details`, `response` |
+| `KSeFServerError` | `KSeFApiError` | `SERVER_ERROR` | `status_code`, `ksef_code`, `details`, `response` |
 | `KSeFApiError` | `KSeFException` | `API_ERROR` | `status_code`, `ksef_code`, `exception_code`, `trace_id`, `details`, `response` |
 | `KSeFNotReadyError` | `KSeFApiError` | `NOT_READY` | Atrybuty błędu API |
 | `KSeFAuthError` | `KSeFApiError` | `AUTH_ERROR` | Atrybuty błędu API |
@@ -54,6 +61,13 @@ except httpx.HTTPError as exc:
 
 | Klasa | `code` | Kiedy jest rzucana |
 | --- | --- | --- |
+| `KSeFPollingTimeoutError` | `POLLING_TIMEOUT` | Baza dziesięciu timeoutów pollingu workflow. |
+| `KSeFResponseValidationError` | `RESPONSE_VALIDATION_ERROR` | Nieprawidłowa odpowiedź API lub metadane eksportu. |
+| `KSeFProfileConfigError` | `PROFILE_CONFIG_ERROR` | Nieprawidłowa konfiguracja profilu, brak sekretów lub błąd wczytywania poświadczeń. |
+| `KSeFSessionFailedError` | `SESSION_FAILED` | Przetwarzanie sesji online lub wsadowej zakończyło się błędem. |
+| `KSeFTokenActivationFailedError` | `TOKEN_ACTIVATION_FAILED` | Aktywacja wygenerowanego tokenu nie powiodła się lub token został unieważniony. |
+| `KSeFNotFoundError` | `NOT_FOUND` | Brak zasobu według kodu KSeF lub HTTP 404/410. |
+| `KSeFServerError` | `SERVER_ERROR` | Sesja tymczasowo niedostępna lub HTTP 5xx. |
 | `KSeFClientClosedError` | `CLIENT_CLOSED` | Klient główny albo klient sesji użyty po zamknięciu. |
 | `KSeFUnsupportedEnvironmentError` | `UNSUPPORTED_ENVIRONMENT` | Gałąź albo przepływ tylko dla TEST użyty poza `Environment.TEST`. |
 | `KSeFValidationError` | `VALIDATION_ERROR` | Niepoprawne dane wejściowe SDK, błędny payload odpowiedzi, błędny profil albo błędne argumenty sesji/batch. |
@@ -160,20 +174,23 @@ opisem jest krótki, skrócony fragment tej treści.
 | Wartość | Wysyłany nagłówek | Błędy 400 i 429 |
 | --- | --- | --- |
 | `"problem-details"` (domyślnie) | `X-Error-Format: problem-details` | `application/problem+json`: `trace_id` jest ustawiony, a `response` to `BadRequestProblemDetails` / `TooManyRequestsProblemDetails` |
-| `"legacy"` | brak | `application/json`: bez `trace_id`, a `response` to `ExceptionResponse` / `TooManyRequestsResponse` |
+| `"legacy"` | brak | `application/json`: `trace_id` to identyfikator śledzenia zawarty w `serviceCode` (brak przy 429), a `response` to `ExceptionResponse` / `TooManyRequestsResponse` |
 
 401, 403 i 410 zawsze są Problem Details. SDK czyta oba formaty tak samo, więc
 `ksef_code`, `details`, klasa i wskazówka się nie zmieniają; zmienia się tylko
-`trace_id` i typ `response`. Używaj `"legacy"` tylko wtedy, gdy Twój kod czyta
-`response` i oczekuje starszych modeli:
+typ `response`, a `trace_id` pochodzi z `serviceCode` zamiast z `traceId`
+(starszy błąd 429 nie ma żadnego z nich). Używaj `"legacy"` tylko wtedy, gdy
+Twój kod czyta `response` i oczekuje starszych modeli:
 
 ```python
 client = Client(Environment.PRODUCTION, transport_config=TransportConfig(error_format="legacy"))
 ```
 
-Treść Problem Details niezgodna ze swoim modelem w specyfikacji KSeF (albo ze
-statusem, dla którego specyfikacja nie ma modelu, na przykład 500) nie jest
-parsowana: opisem jest fragment treści, a `response` to `None`.
+Treść niezgodna ze swoim modelem w specyfikacji KSeF (brak wymaganego pola,
+wartość poza limitami specyfikacji) albo Problem Details ze statusem, dla
+którego specyfikacja nie ma modelu, na przykład 500, jest czytana bez modelu:
+`response` to `None`, ale kod KSeF, opis, szczegóły i identyfikator śledzenia
+nadal pochodzą z treści, więc klasa i wskazówka się nie zmieniają.
 
 Przykład: pobranie UPO faktury, którego KSeF jeszcze nie wystawił:
 
@@ -181,7 +198,7 @@ Przykład: pobranie UPO faktury, którego KSeF jeszcze nie wystawił:
 KSeF rejected GET /sessions/online/S1/invoices/I1/upo (HTTP 400, KSeF code 21178): Nie znaleziono UPO dla podanych kryteriów.
 Details: UPO o numerze referencyjnym I1 nie zostało znalezione.
 Trace ID: 0b1f6a7c-4d2e-4a53-9a6e-3f2b9d1c8e11
-Hint: KSeF has no UPO for this yet. Call `wait()` on the invoice submission or the session first, then call `download_upo()` again. If `wait()` raises `KSeFInvoiceRejectedError`, KSeF rejected the invoice and will never issue a UPO for it.
+Hint: KSeF has no UPO for this yet. Call `wait()` on the invoice submission or the session first, then call `download_upo()` or `download_invoice_upo()` again. If `wait()` raises `KSeFInvoiceRejectedError`, KSeF rejected the invoice and will never issue a UPO for it.
 ```
 
 Opis i szczegóły pochodzą z KSeF, a `Hint` z SDK, które pisze wskazówki po
@@ -201,20 +218,27 @@ wynika wtedy ze statusu (`KSeFAuthError`):
 
 | Status HTTP | Kod KSeF | Klasa | Wskazówka |
 | --- | --- | --- | --- |
-| dowolny | 21155 | `KSeFApiError` | The session has reached its invoice limit. Close it with `close()` and send the remaining invoices in a new session from `online_session()`. |
-| dowolny | 21165 | `KSeFNotReadyError` | KSeF has processed the invoice but has not made it available yet. Call `download()` with a `timeout` so the SDK keeps polling until it is. |
-| dowolny | 21178 | `KSeFNotReadyError` | KSeF has no UPO for this yet. Call `wait()` on the invoice submission or the session first, then call `download_upo()` again. If `wait()` raises `KSeFInvoiceRejectedError`, KSeF rejected the invoice and will never issue a UPO for it. |
-| dowolny | 21180 | `KSeFApiError` | The session is already closed or KSeF is processing it, so it accepts no more invoices. Send further invoices in a new session from `online_session()` or `batch_session()`. |
-| dowolny | 21182 | `KSeFApiError` | KSeF limits how many exports can run at once. Wait for a running export to finish with `wait()`, then call `export()` again. |
-| dowolny | 21183 | `KSeFApiError` | The date range reaches outside the data KSeF keeps. Narrow the date range in the filters passed to `search()`. |
-| dowolny | 21184 | `KSeFApiError` | KSeF cannot accept invoices in this session at the moment. Retry later, or send the invoice in a new session from `online_session()`. |
-| dowolny | 21208 | `KSeFApiError` | KSeF cancelled the batch session because the parts were not uploaded or the session was not closed in time. Send the package again in a new session from `batch_session()`. |
-| dowolny | 21418 | `KSeFApiError` | Continuation tokens come from KSeF and are only valid as returned. Iterate the pager the SDK returns, or use its `pages()`, instead of building or reusing a token yourself. |
-| dowolny | 21470 | `KSeFApiError` | KSeF does not know the public key the request was encrypted with, or has retired it. The SDK keeps KSeF certificates for 24 hours; create a new client so it loads the current ones. |
-| dowolny | 25006 | `KSeFApiError` | KSeF allows only a limited number of certificate enrollments. `get_limits()` shows how many are still allowed. |
-| dowolny | 25007 | `KSeFApiError` | You hold the maximum number of KSeF certificates. Revoke one you no longer use with `revoke()`, and check `get_limits()` for the limit. |
-| dowolny | 26001 | `KSeFApiError` | A token can only get permissions the authenticated identity holds. Request fewer permissions in `generate()`. |
-| dowolny | 30001 | `KSeFApiError` | The subject or person already exists on KSeF TEST. Reuse it, or remove it first with `delete_subject()` or `delete_person()`. |
+| inny | 21155 | `KSeFApiError` | The session has reached its invoice limit. Close it with `close()` and send the remaining invoices in a new session from `online_session()`. |
+| inny | 21157 | `KSeFApiError` | Build the encrypted package with `auth.batch.prepare()`, which splits parts within KSeF size and count limits. |
+| inny | 21161 | `KSeFApiError` | Build the encrypted package with `auth.batch.prepare()`, which splits parts within KSeF size and count limits. |
+| inny | 21165 | `KSeFNotReadyError` | KSeF has processed the invoice but has not made it available yet. Call `download()` with a `timeout` so the SDK keeps polling until it is. |
+| inny | 21178 | `KSeFNotReadyError` | KSeF has no UPO for this yet. Call `wait()` on the invoice submission or the session first, then call `download_upo()` or `download_invoice_upo()` again. If `wait()` raises `KSeFInvoiceRejectedError`, KSeF rejected the invoice and will never issue a UPO for it. |
+| inny | 21180 | `KSeFApiError` | The session is already closed or in a state that does not allow this operation. Check its state with `get_status()`, or open a new session with `online_session()` or `batch_session()`. |
+| inny | 21182 | `KSeFApiError` | KSeF limits how many exports can run at once. Wait for a running export to finish with `wait()`, then call `export()` again. |
+| inny | 21183 | `KSeFApiError` | The date range reaches outside the data KSeF keeps. Narrow the date range in the filters passed to `search()`. |
+| inny | 21184 | `KSeFServerError` | KSeF cannot accept invoices in this session at the moment. Retry later, or send the invoice in a new session from `online_session()`. |
+| inny | 21205 | `KSeFApiError` | Upload every declared batch part with `upload_parts()` before closing the session, or send the batch with `submit()`. |
+| inny | 21208 | `KSeFApiError` | KSeF cancelled the batch session because the parts were not uploaded or the session was not closed in time. Send the package again in a new session from `batch_session()`. |
+| inny | 21418 | `KSeFApiError` | Continuation tokens come from KSeF and are only valid as returned. Iterate the pager the SDK returns, or use its `pages()`, instead of building or reusing a token yourself. |
+| inny | 21470 | `KSeFApiError` | KSeF does not know the public key the request was encrypted with, or has retired it. The SDK keeps KSeF certificates for 24 hours; create a new client so it loads the current ones. |
+| inny | 25001 | `KSeFApiError` | Certificate enrollment requires XAdES authentication. Authenticate with `client.authentication.with_xades()` instead of `client.authentication.with_token()`. |
+| inny | 25002 | `KSeFApiError` | Certificate enrollment requires XAdES authentication. Authenticate with `client.authentication.with_xades()` instead of `client.authentication.with_token()`. |
+| inny | 25003 | `KSeFApiError` | Fetch the subject data KSeF expects with `get_enrollment_data()` and build a new CSR before calling `enroll()`. |
+| inny | 25006 | `KSeFApiError` | KSeF allows only a limited number of certificate enrollments. `get_limits()` shows how many are still allowed. |
+| inny | 25007 | `KSeFApiError` | You hold the maximum number of KSeF certificates. Revoke one you no longer use with `revoke()`, and check `get_limits()` for the limit. |
+| inny | 26001 | `KSeFApiError` | A token can only get permissions the authenticated identity holds. Request fewer permissions in `generate()`. |
+| inny | 26002 | `KSeFApiError` | KSeF tokens cannot be generated in this context type. Authenticate in a supported context before calling `generate()`. |
+| inny | 30001 | `KSeFApiError` | The subject or person already exists on KSeF TEST. Reuse it, or remove it first with `delete_subject()` or `delete_person()`. |
 | 401 | inny | `KSeFAuthError` | KSeF rejected the credentials or the access token. Authenticate again with `client.authentication.with_token()` or `client.authentication.with_xades()`, and check that the token or certificate is valid for this context. |
 | 403 | inny | `KSeFAuthError` | The authenticated identity is not allowed to do this in the current context. Check the reason in `details`, and grant the missing permission with the permissions client, for example `grant_person()`. |
 
@@ -241,6 +265,8 @@ Wskazówki do pozostałych błędów SDK:
 | `KSeFOnlineSessionTimeoutError` | KSeF may still be processing the session. Call `wait()` on the session again with a larger `timeout`. After a restart, rebuild the session from the state saved with `resume_state()` using `online_session(state=...)`. |
 | `KSeFPermissionOperationFailedError` | Read `description` for the reason, fix the request and grant or revoke again. `get_operation_status()` shows the operation's final state. |
 | `KSeFPermissionOperationTimeoutError` | The operation may still be applied. Call `wait()` on the operation again with a larger `timeout`, or check it with `get_operation_status()`. |
+| `KSeFSessionFailedError` | See why invoices failed with `list_failed_invoices()`. |
+| `KSeFTokenActivationFailedError` | Generate a new token with `generate()`, or inspect the token status with `get_status()`. |
 | `KSeFTokenStatusTimeoutError` | KSeF may still be activating the token. Call `wait()` on the token again with a larger `timeout`, or check it with `get_status()`. |
 
 `KSeFSessionError` nie ma wskazówki na poziomie klasy. SDK ustawia ją tam, gdzie
@@ -251,9 +277,13 @@ Odrzucony duplikat (`440`) dostaje własną wskazówkę w `KSeFInvoiceRejectedEr
 ## Kody błędów KSeF
 
 `ksef_code` to liczba wysłana przez KSeF. SDK nigdy nie gubi nieznanego kodu.
-Tylko `21165` i `21178` mają dedykowaną klasę (`KSeFNotReadyError`); pozostałe to
-zwykły `KSeFApiError` z ustawionym `ksef_code` (`KSeFAuthError` przy 401 albo
-403). Poniżej są wszystkie kody, które wymienia dokumentacja API KSeF
+Kody `21165` i `21178` zgłaszają `KSeFNotReadyError`. Kody `21301`, `21304`
+i `21308` zgłaszają `KSeFAuthError` także przy HTTP 400. Kody `21164`, `21173`,
+`21175`, `25005`, `25008` i `71001` zgłaszają `KSeFNotFoundError`, a `21184`
+zgłasza `KSeFServerError`. Pozostałe kody klasyfikuje status HTTP: 401/403
+oznacza błąd uwierzytelnienia, 429 limit żądań, 404/410 brak zasobu, a 5xx
+błąd serwera. Kolejność: brak gotowości, uwierzytelnienie, limit żądań, brak
+zasobu, błąd serwera. Inne błędy zgłaszają `KSeFApiError`. Poniżej są wszystkie kody, które wymienia dokumentacja API KSeF
 (`openapi.json`), wszystkie w odpowiedziach HTTP 400, i każdy ma swój element
 `ExceptionCode`. Test jednostkowy nie przejdzie, gdy aktualizacja specyfikacji
 doda kod, którego tu nie ma.
@@ -333,6 +363,9 @@ surowa liczba zostaje w `ksef_code`. W nowym kodzie preferuj `ksef_code`.
 
 ## Klasy timeoutów pollingu
 
+Wszystkie dziesięć klas poniżej dziedziczy po `KSeFPollingTimeoutError`,
+który udostępnia `timeout`.
+
 Wyjątki timeoutów pollingu oznaczają przekroczenie lokalnego deadline'u
 czekania. Same w sobie nie dowodzą, że zdalny workflow KSeF się nie udał.
 
@@ -388,7 +421,7 @@ W przeciwieństwie do `KSeFApiError.status_code`, które zawsze jest statusem HT
 
 Dla duplikatu (`440`) `extensions` zawiera `originalKsefNumber` i
 `originalSessionReferenceNumber`. Wywołujący, który odzyskuje wysyłkę z utraconą
-odpowiedzią, może przekazać `originalKsefNumber` do `download_invoice()` i
+odpowiedzią, może przekazać `originalKsefNumber` do `download()` i
 porównać pobraną fakturę z wysłaną. Jeśli to ta sama faktura, może uznać ją za
 już przyjętą.
 

@@ -448,7 +448,7 @@ class AuthenticatedClient:
         offline_mode: bool = False,
     ) -> BatchSessionClient:
         if prepared_batch is not None and batch_file is not None:
-            raise exceptions.KSeFValidationError(
+            raise exceptions.KSeFArgumentError(
                 "Pass either prepared_batch or batch_file when opening a batch session."
             )
 
@@ -468,7 +468,7 @@ class AuthenticatedClient:
             )
 
         if batch_file is None:
-            raise exceptions.KSeFValidationError(
+            raise exceptions.KSeFArgumentError(
                 "prepared_batch or batch_file is required when opening a batch session."
             )
 

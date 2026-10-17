@@ -251,10 +251,8 @@ class AsyncBatchSessionClient:
 
     def _raise_if_failed(self, status: SessionStatusResponse) -> None:
         if status.status.code >= 400:
-            raise exceptions.KSeFSessionError(
-                "Batch session processing failed: "
-                f"{self.reference_number} ({status.status.code}: {status.status.description})",
-                hint="See why invoices failed with `list_failed_invoices()`.",
+            raise exceptions.KSeFSessionFailedError(
+                self.reference_number, status, session_kind="Batch"
             )
 
     async def wait(
@@ -276,7 +274,8 @@ class AsyncBatchSessionClient:
             The final successful session status, including the session UPO references.
 
         Raises:
-            KSeFSessionError: If the session is still open, or if batch processing reaches a failed terminal status.
+            KSeFSessionError: If the session is still open.
+            KSeFSessionFailedError: If batch processing reaches a failed terminal status.
             KSeFBatchSessionTimeoutError: If polling exceeds ``timeout``.
         """
         if not self._closed and not self._resumed:

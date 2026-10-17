@@ -104,7 +104,7 @@ class TestCodeHints:
     def test_a_code_without_a_hint_has_none(self) -> None:
         error = _raise(400, 21164)
 
-        assert type(error) is exceptions.KSeFApiError
+        assert type(error) is exceptions.KSeFNotFoundError
         assert error.exception_code is ExceptionCode.INVOICE_NOT_FOUND
         assert error.hint is None
 

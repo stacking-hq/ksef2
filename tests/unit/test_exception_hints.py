@@ -1,10 +1,12 @@
 """Hints on SDK exceptions, and backward compatibility of the exception hierarchy."""
 
+from datetime import UTC, datetime
+
 import inspect
 import pickle
 import re
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, Literal
 
 import pytest
 
@@ -12,7 +14,11 @@ import ksef2
 import ksef2.clients as public_clients
 from ksef2._core import exceptions, response_errors
 from ksef2._core.exceptions import ExceptionCode
-from ksef2._domain.models.session import SessionInvoiceStatusResponse
+from ksef2._domain.models.session import (
+    SessionInvoiceStatusResponse,
+    SessionStatusResponse,
+)
+from ksef2._domain.models.session import StatusInfo
 
 
 def _all_exception_classes() -> list[type[exceptions.KSeFException]]:
@@ -37,6 +43,7 @@ _DUMMY_ARGUMENTS: dict[str, Any] = {
     "operation": "upload",
     "host": "storage.example",
     "part_ordinal": 1,
+    "token_status": "failed",
 }
 
 
@@ -125,11 +132,23 @@ class TestHintsNameRealMethods:
 
 class TestHintCoverage:
     TIMEOUTS = [
-        c for c in _all_exception_classes() if c.__name__.endswith("TimeoutError")
+        c
+        for c in _all_exception_classes()
+        if c.__name__.endswith("TimeoutError")
+        and c is not exceptions.KSeFPollingTimeoutError
     ]
 
+    @pytest.mark.parametrize("cls", TIMEOUTS, ids=lambda c: c.__name__)
+    def test_workflow_timeouts_share_base_and_timeout(
+        self, cls: type[exceptions.KSeFException]
+    ) -> None:
+        error = _build(cls)
+        assert isinstance(error, exceptions.KSeFPollingTimeoutError)
+        assert error.timeout == 3.0
+        assert error.context["timeout"] == 3.0
+
     def test_there_are_timeout_classes_to_check(self) -> None:
-        assert len(self.TIMEOUTS) >= 10
+        assert len(self.TIMEOUTS) == 10
 
     @pytest.mark.parametrize("cls", TIMEOUTS, ids=lambda c: c.__name__)
     def test_every_timeout_error_says_how_to_keep_waiting(
@@ -151,6 +170,7 @@ class TestHintCoverage:
             exceptions.KSeFPermissionOperationFailedError,
             exceptions.KSeFCertificateEnrollmentFailedError,
             exceptions.KSeFArgumentError,
+            exceptions.KSeFTokenActivationFailedError,
         ],
         ids=lambda c: c.__name__,
     )
@@ -171,9 +191,14 @@ class TestHintCoverage:
     def test_hints_are_only_set_when_the_cause_is_known(self) -> None:
         for cls in (
             exceptions.KSeFException,
+            exceptions.KSeFPollingTimeoutError,
             exceptions.KSeFApiError,
+            exceptions.KSeFNotFoundError,
+            exceptions.KSeFServerError,
             exceptions.KSeFSessionError,
             exceptions.KSeFValidationError,
+            exceptions.KSeFResponseValidationError,
+            exceptions.KSeFProfileConfigError,
             exceptions.KSeFEncryptionError,
             exceptions.KSeFClientClosedError,
             exceptions.KSeFMetadataPaginationError,
@@ -261,6 +286,59 @@ class TestBackwardCompatibility:
         assert ksef2.KSeFNotReadyError is exceptions.KSeFNotReadyError
         assert "KSeFNotReadyError" in ksef2.__all__
 
+    @pytest.mark.parametrize(
+        ("cls", "base"),
+        [
+            (exceptions.KSeFPollingTimeoutError, exceptions.KSeFException),
+            (exceptions.KSeFResponseValidationError, exceptions.KSeFValidationError),
+            (exceptions.KSeFProfileConfigError, exceptions.KSeFValidationError),
+            (exceptions.KSeFSessionFailedError, exceptions.KSeFSessionError),
+            (exceptions.KSeFTokenActivationFailedError, exceptions.KSeFApiError),
+            (exceptions.KSeFNotFoundError, exceptions.KSeFApiError),
+            (exceptions.KSeFServerError, exceptions.KSeFApiError),
+        ],
+    )
+    def test_new_errors_preserve_base_and_public_export(
+        self, cls: type[exceptions.KSeFException], base: type[exceptions.KSeFException]
+    ) -> None:
+        assert issubclass(cls, base)
+        assert getattr(ksef2, cls.__name__) is cls
+        assert cls.__name__ in ksef2.__all__
+
+    @pytest.mark.parametrize("session_kind", ["Online", "Batch"])
+    def test_session_failure_keeps_status_and_context(
+        self, session_kind: Literal["Online", "Batch"]
+    ) -> None:
+        status = SessionStatusResponse(
+            date_created=datetime(2026, 1, 1, tzinfo=UTC),
+            date_updated=datetime(2026, 1, 1, tzinfo=UTC),
+            status=StatusInfo(
+                code=450, description="Rejected", details=["bad invoice"]
+            ),
+        )
+        error = exceptions.KSeFSessionFailedError(
+            "session-ref", status, session_kind=session_kind
+        )
+        assert error.status is status
+        assert error.reference_number == "session-ref"
+        assert error.session_status_code == 450
+        assert error.description == "Rejected"
+        assert error.details == ["bad invoice"]
+        assert error.details is not status.status.details
+        assert error.context == {
+            "code": "SESSION_FAILED",
+            "hint": error.hint,
+            "reference_number": "session-ref",
+            "session_status_code": 450,
+            "description": "Rejected",
+            "details": ["bad invoice"],
+        }
+        assert (
+            f"{session_kind} session processing failed: session-ref (450: Rejected)"
+            in str(error)
+        )
+        assert error.hint == "See why invoices failed with `list_failed_invoices()`."
+
     def test_old_constructors_and_attributes_still_work(self) -> None:
         api = exceptions.KSeFApiError(404, ExceptionCode.UPO_NOT_FOUND, "gone", None)
         auth = exceptions.KSeFAuthError(401, "denied")
@@ -316,6 +394,8 @@ class TestPickling:
         [
             exceptions.KSeFException("plain", answer=42),
             exceptions.KSeFValidationError("invalid"),
+            exceptions.KSeFResponseValidationError("invalid response"),
+            exceptions.KSeFProfileConfigError("invalid profile"),
             exceptions.KSeFArgumentError("bad arguments"),
             exceptions.KSeFArgumentError("bad arguments", hint="Do this."),
             exceptions.KSeFAuthenticationExpiredError(),

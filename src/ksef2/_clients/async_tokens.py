@@ -105,10 +105,8 @@ class AsyncGeneratedToken(
     @override
     def _check_status(self, status: TokenStatusResponse) -> None:
         if status.status in ("failed", "revoked"):
-            raise exceptions.KSeFApiError(
-                0,
-                exceptions.ExceptionCode.UNKNOWN_ERROR,
-                f"Token activation failed: status={status.status}",
+            raise exceptions.KSeFTokenActivationFailedError(
+                self.reference_number, status.status
             )
 
     @override
@@ -138,7 +136,7 @@ class AsyncGeneratedToken(
             The first status response that reports the token as active.
 
         Raises:
-            KSeFApiError: If activation ends in a terminal failure state.
+            KSeFTokenActivationFailedError: If activation ends in a terminal failure state.
             KSeFTokenStatusTimeoutError: If polling exceeds ``timeout``.
         """
         return await self._wait(timeout, poll_interval)
@@ -201,7 +199,7 @@ class AsyncTokensClient:
             The first status response that reports the token as active.
 
         Raises:
-            KSeFApiError: If activation ends in a terminal failure state.
+            KSeFTokenActivationFailedError: If activation ends in a terminal failure state.
             KSeFTokenStatusTimeoutError: If polling exceeds ``timeout``.
             httpx.HTTPError: If a status request fails at the transport boundary.
         """

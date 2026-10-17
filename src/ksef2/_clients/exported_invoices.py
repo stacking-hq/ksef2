@@ -72,7 +72,7 @@ class ExportedInvoices:
             The parsed ``invoices`` list of ``_metadata.json``, or ``None`` if the package has no such file.
 
         Raises:
-            KSeFValidationError: If ``_metadata.json`` is not valid metadata.
+            KSeFResponseValidationError: If ``_metadata.json`` is not valid metadata.
             zipfile.BadZipFile: If a ZIP archive is invalid.
             tarfile.TarError: If a TarGz archive is invalid.
             ValueError: If an archive contains links or special files.
@@ -170,7 +170,7 @@ class ExportedInvoices:
                         for item in payload["invoices"]
                     ]
                 except (ValueError, KeyError, TypeError) as exc:
-                    raise exceptions.KSeFValidationError(
+                    raise exceptions.KSeFResponseValidationError(
                         f"Export package has an invalid {METADATA_FILE_NAME}: {exc}"
                     ) from exc
         return None

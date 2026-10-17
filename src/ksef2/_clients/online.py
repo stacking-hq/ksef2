@@ -468,11 +468,11 @@ class OnlineSessionClient:
             The UPO as XML bytes.
 
         Raises:
-            KSeFValidationError: If both or neither of ``ksef_number`` and ``reference_number`` are given.
+            KSeFArgumentError: If both or neither of ``ksef_number`` and ``reference_number`` are given.
         """
         self._ensure_open()
         if (ksef_number is None) == (reference_number is None):
-            raise exceptions.KSeFValidationError(
+            raise exceptions.KSeFArgumentError(
                 "Pass exactly one of ksef_number or reference_number."
             )
         if ksef_number is not None:
@@ -540,10 +540,8 @@ class OnlineSessionClient:
 
     def _raise_if_failed(self, status: SessionStatusResponse) -> None:
         if status.status.code >= 400:
-            raise exceptions.KSeFSessionError(
-                "Online session processing failed: "
-                f"{self.reference_number} ({status.status.code}: {status.status.description})",
-                hint="See why invoices failed with `list_failed_invoices()`.",
+            raise exceptions.KSeFSessionFailedError(
+                self.reference_number, status, session_kind="Online"
             )
 
     def wait(
@@ -565,7 +563,8 @@ class OnlineSessionClient:
             The final successful session status, including the session UPO references.
 
         Raises:
-            KSeFSessionError: If the session is still open, or if KSeF reports a failed terminal status.
+            KSeFSessionError: If the session is still open.
+            KSeFSessionFailedError: If KSeF reports a failed terminal status.
             KSeFOnlineSessionTimeoutError: If polling exceeds ``timeout``.
         """
         if not self._closed and not self._resumed:

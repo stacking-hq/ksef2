@@ -134,7 +134,8 @@ def test_upo_not_issued_comes_back_as_problem_details_and_not_ready(
 def test_legacy_error_format_comes_back_as_the_older_payload(
     recording_legacy_auth: tuple[AuthenticatedClient, _Seen, str],
 ) -> None:
-    """Without the header KSeF answers ``application/json``: same code, no trace ID."""
+    """Without the header KSeF answers ``application/json``: same code, and the trace
+    ID is the trace-id part of the W3C ``traceparent`` in ``serviceCode``."""
     auth, seen, _ = recording_legacy_auth
 
     with pytest.raises(KSeFApiError) as exc_info:
@@ -144,7 +145,9 @@ def test_legacy_error_format_comes_back_as_the_older_payload(
     assert seen.errors == [(400, JSON)]
     assert isinstance(error.response, spec.ExceptionResponse)
     assert error.ksef_code == 21405
-    assert error.trace_id is None
+    exception = error.response.exception
+    assert exception is not None and exception.serviceCode
+    assert error.trace_id == exception.serviceCode.split("-")[1]
 
 
 @pytest.mark.integration

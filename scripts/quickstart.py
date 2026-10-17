@@ -51,19 +51,19 @@ with Client(Environment.TEST) as client:
 
     with auth.online_session(form_code=FormSchema.FA3) as session:
         submission = session.send_invoice(invoice_xml)
-        print(f"Sent invoice: {submission.reference_number}")
+        # print(f"Sent invoice: {submission.reference_number}")
 
-        status = submission.wait(timeout=120.0)
-        print("Invoice status:")
-        print(status.model_dump_json(indent=2))
+        # status = submission.wait(timeout=120.0)
+        # print("Invoice status:")
+        # print(status.model_dump_json(indent=2))
 
         upo_xml = submission.download_upo()
         (DOWNLOADS / "upo.xml").write_bytes(upo_xml)
-        print("Saved downloads/upo.xml")
+        # print("Saved downloads/upo.xml")
 
-    if status.ksef_number is None:
+    if submission.ksef_number is None:
         raise RuntimeError("KSeF did not assign an invoice number.")
 
-    downloaded_xml = auth.invoices.download(status.ksef_number, timeout=120.0)
+    downloaded_xml = auth.invoices.download(submission.ksef_number, timeout=120.0)
     (DOWNLOADS / "processed-invoice.xml").write_bytes(downloaded_xml)
-    print("Saved downloads/processed-invoice.xml")
+    # print("Saved downloads/processed-invoice.xml")

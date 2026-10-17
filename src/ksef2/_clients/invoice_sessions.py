@@ -10,7 +10,7 @@ from typing import final
 from typing_extensions import deprecated
 
 from ksef2._clients._pager import Pager
-from ksef2._core.exceptions import KSeFValidationError
+from ksef2._core.exceptions import KSeFArgumentError
 from ksef2._core.protocols import Middleware
 from ksef2._domain.models.pagination import ListSessionsQuery
 from ksef2._domain.models.session import (
@@ -37,7 +37,7 @@ class InvoiceSessionsClient:
         KSeFApiError: If KSeF returns an API error response. Catch
             ``KSeFAuthError`` for authentication or authorization failures and
             ``KSeFRateLimitError`` for throttling.
-        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        KSeFResponseValidationError: If a KSeF response cannot be parsed into SDK models.
         httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
     """
 
@@ -75,7 +75,7 @@ class InvoiceSessionsClient:
             The invoice UPO or session UPO page as XML bytes.
 
         Raises:
-            KSeFValidationError: If no selector or multiple selectors are given.
+            KSeFArgumentError: If no selector or multiple selectors are given.
             KSeFNotReadyError: If KSeF has not issued the requested UPO yet.
                 Check processing status before retrying. Rejected invoices may
                 never receive a UPO.
@@ -89,7 +89,7 @@ class InvoiceSessionsClient:
             )
         )
         if selector_count != 1:
-            raise KSeFValidationError(
+            raise KSeFArgumentError(
                 "Pass exactly one of invoice_reference_number, ksef_number "
                 "or upo_reference_number."
             )

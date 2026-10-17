@@ -19,7 +19,7 @@ from ksef2._core.exceptions import (
     KSeFAuthPollingTimeoutError,
     KSeFAuthTokenRedemptionError,
     KSeFUnsupportedEnvironmentError,
-    KSeFValidationError,
+    KSeFProfileConfigError,
     NoCertificateAvailableError,
 )
 from ksef2._core.routes import AuthRoutes
@@ -564,7 +564,7 @@ class TestAuthClient:
         )
         client = _build_auth_client(fake_transport, environment=Environment.TEST)
 
-        with pytest.raises(KSeFValidationError, match="profile 'prod-token' uses"):
+        with pytest.raises(KSeFProfileConfigError, match="profile 'prod-token' uses"):
             _ = client.with_profile("prod-token", config_path=config_path)
 
     def test_with_profile_requires_token_environment_variable(
@@ -589,7 +589,7 @@ class TestAuthClient:
         monkeypatch.delenv("KSEF2_TOKEN", raising=False)
         client = _build_auth_client(fake_transport, environment=Environment.PRODUCTION)
 
-        with pytest.raises(KSeFValidationError, match="KSEF2_TOKEN is not set"):
+        with pytest.raises(KSeFProfileConfigError, match="KSEF2_TOKEN is not set"):
             _ = client.with_profile("prod-token", config_path=config_path)
 
 

@@ -730,7 +730,6 @@ class PaymentBuilder[TParent]:
         return self._parent
 
     def _validate_state(self) -> None:
-
         if not self._state["paid"]:
             self._state["payment_date"] = None
 

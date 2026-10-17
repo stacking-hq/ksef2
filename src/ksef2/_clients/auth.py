@@ -314,7 +314,7 @@ class AuthClient:
             An authenticated client for the profile's context.
 
         Raises:
-            KSeFValidationError: If the profile's environment differs from the client's, or the profile is missing a required secret.
+            KSeFProfileConfigError: If the profile's environment differs from the client's, or the profile is missing a required secret.
             KSeFAuthError: If authentication fails.
             KSeFAuthPollingTimeoutError: If polling exceeds ``timeout``.
 
@@ -326,7 +326,7 @@ class AuthClient:
         """
         profile_name, profile = load_cli_profile(name, config_path=config_path)
         if profile.sdk_environment is not self._environment:
-            raise exceptions.KSeFValidationError(
+            raise exceptions.KSeFProfileConfigError(
                 f"ksef2-cli profile {profile_name!r} uses "
                 f"Environment.{profile.sdk_environment.name}, but this client uses "
                 f"Environment.{self._environment.name}.",
@@ -354,7 +354,7 @@ class AuthClient:
                     profile_name=profile_name,
                 )
                 if token is None:
-                    raise exceptions.KSeFValidationError(
+                    raise exceptions.KSeFProfileConfigError(
                         f"ksef2-cli profile {profile_name!r} requires auth.token_env.",
                         profile_name=profile_name,
                     )

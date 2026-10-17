@@ -8,14 +8,21 @@ from ksef2._clients.async_authenticated import AsyncAuthenticatedClient
 from ksef2._clients.authenticated import AuthenticatedClient
 from ksef2._core.exceptions import (
     KSeFApiError,
+    KSeFArgumentError,
     KSeFAuthError,
     KSeFNotReadyError,
+    KSeFSessionFailedError,
+    KSeFSessionError,
     KSeFValidationError,
 )
 from ksef2._core.middlewares.async_exceptions import AsyncKSeFExceptionMiddleware
 from ksef2._core.middlewares.exceptions import KSeFExceptionMiddleware
 from ksef2._core.stores import CertificateStore
 from ksef2._domain.models.auth import AuthTokens
+from ksef2._domain.models.batch import BatchSessionResumeState
+from ksef2._domain.models.session import OnlineSessionResumeState
+from ksef2._infra.schema.api import spec
+from tests.unit.payloads import session_status
 from tests.unit.fakes.transport import AsyncFakeTransport, FakeTransport
 from tests.unit.flavors import Flavor
 
@@ -96,8 +103,9 @@ def test_requires_exactly_one_selector_before_requesting(
     flavor: Flavor,
     selectors: dict[str, str],
 ) -> None:
-    with pytest.raises(KSeFValidationError, match="Pass exactly one"):
+    with pytest.raises(KSeFArgumentError, match="Pass exactly one") as exc_info:
         _ = flavor.run(auth.invoice_sessions.download_upo(SESSION_REF, **selectors))
+    assert isinstance(exc_info.value, KSeFValidationError)
     assert flavor.transport.calls == []
 
 
@@ -179,4 +187,34 @@ def test_transport_failure_is_preserved(
     with pytest.raises(httpx.ConnectError) as exc_info:
         _ = flavor.run(auth.invoice_sessions.download_upo(SESSION_REF, **selector))
     assert exc_info.value is error
+    assert len(flavor.transport.calls) == 1
+
+
+@pytest.mark.parametrize("session_kind", ["Online", "Batch"])
+def test_session_wait_exposes_failed_status(
+    auth: AuthenticatedClient | AsyncAuthenticatedClient,
+    flavor: Flavor,
+    session_kind: str,
+    domain_online_session_state: BaseFactory[OnlineSessionResumeState],
+    domain_batch_session_state: BaseFactory[BatchSessionResumeState],
+    inv_session_status_resp: BaseFactory[spec.SessionStatusResponse],
+) -> None:
+    if session_kind == "Online":
+        session = flavor.run(
+            auth.online_session(state=domain_online_session_state.build())
+        )
+    else:
+        session = flavor.run(
+            auth.batch_session(state=domain_batch_session_state.build())
+        )
+    flavor.transport.enqueue(session_status(inv_session_status_resp, 450))
+    with pytest.raises(KSeFSessionFailedError) as exc_info:
+        _ = flavor.run(session.wait(timeout=1.0, poll_interval=0.0))
+    error = exc_info.value
+    assert isinstance(error, KSeFSessionError)
+    assert error.reference_number == session.reference_number
+    assert error.session_status_code == 450
+    assert error.description == "status 450"
+    assert f"{session_kind} session processing failed:" in str(error)
+    assert error.context["reference_number"] == session.reference_number
     assert len(flavor.transport.calls) == 1

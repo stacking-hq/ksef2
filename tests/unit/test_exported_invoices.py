@@ -9,7 +9,7 @@ import pytest
 from polyfactory import BaseFactory
 
 from ksef2._clients.exported_invoices import ExportedInvoices
-from ksef2._core.exceptions import KSeFValidationError
+from ksef2._core.exceptions import KSeFResponseValidationError
 from ksef2._domain.models.invoices import InvoiceMetadata
 from ksef2._infra.schema.api import spec
 
@@ -96,13 +96,13 @@ class TestMetadata:
     def test_invalid_metadata_raises_a_validation_error(self) -> None:
         exported = ExportedInvoices([_zip({"_metadata.json": b'{"invoices": [{}]}'})])
 
-        with pytest.raises(KSeFValidationError, match="_metadata.json"):
+        with pytest.raises(KSeFResponseValidationError, match="_metadata.json"):
             _ = exported.metadata
 
     def test_malformed_metadata_json_raises_a_validation_error(self) -> None:
         exported = ExportedInvoices([_zip({"_metadata.json": b"not json"})])
 
-        with pytest.raises(KSeFValidationError, match="_metadata.json"):
+        with pytest.raises(KSeFResponseValidationError, match="_metadata.json"):
             _ = exported.metadata
 
 

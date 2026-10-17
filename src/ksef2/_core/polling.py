@@ -6,6 +6,7 @@ types are intentionally kept internal: callers only supply plain
 callables, predicates, and exception factories.
 """
 
+import asyncio
 from collections.abc import Awaitable, Callable
 from typing import TypeVar
 
@@ -17,17 +18,30 @@ from tenacity import (
     stop_after_attempt,
     stop_after_delay,
     wait_fixed,
+    nap,
 )
 from tenacity.stop import stop_base
 
+# Unused here since the helpers declare their own ``[T]``; kept because 0.x
+# releases exposed it as ``ksef2.core.polling.T``.
 T = TypeVar("T")
 
-# ---------------------------------------------------------------------------
-# Sync helper
-# ---------------------------------------------------------------------------
+
+def _build_stop(
+    timeout_seconds: float | None,
+    max_attempts: int | None,
+) -> stop_base:
+    """Return the appropriate tenacity stop condition."""
+    if timeout_seconds is not None and max_attempts is not None:
+        raise ValueError("Only one of timeout_seconds or max_attempts may be provided.")
+    if timeout_seconds is not None:
+        return stop_after_delay(timeout_seconds)
+    if max_attempts is not None:
+        return stop_after_attempt(max_attempts)
+    raise ValueError("Either timeout_seconds or max_attempts must be provided.")
 
 
-def poll_until(
+def poll_until[T](
     *,
     operation: Callable[[], T],
     retry_predicate: Callable[[T], bool],
@@ -58,33 +72,22 @@ def poll_until(
     if max_attempts is not None and max_attempts < 1:
         raise timeout_error_factory()
 
-    if sleep is None:
-        retryer = Retrying(
-            stop=stop,
-            wait=wait_fixed(poll_interval),
-            retry=retry_if_result(retry_predicate),
-            reraise=True,
-        )
-    else:
-        retryer = Retrying(
-            stop=stop,
-            wait=wait_fixed(poll_interval),
-            retry=retry_if_result(retry_predicate),
-            reraise=True,
-            sleep=sleep,
-        )
+    effective_sleep = nap.sleep if sleep is None else sleep
+    retryer = Retrying(
+        stop=stop,
+        wait=wait_fixed(poll_interval),
+        retry=retry_if_result(retry_predicate),
+        reraise=True,
+        sleep=effective_sleep,
+    )
+
     try:
         return retryer(operation)
     except _RetryError as exc:
         raise timeout_error_factory() from exc
 
 
-# ---------------------------------------------------------------------------
-# Async helper
-# ---------------------------------------------------------------------------
-
-
-async def async_poll_until(
+async def async_poll_until[T](
     *,
     operation: Callable[[], Awaitable[T]],
     retry_predicate: Callable[[T], bool],
@@ -118,41 +121,15 @@ async def async_poll_until(
     async def invoke_operation() -> T:
         return await operation()
 
-    if sleep is None:
-        retryer = AsyncRetrying(
-            stop=stop,
-            wait=wait_fixed(poll_interval),
-            retry=retry_if_result(retry_predicate),
-            reraise=True,
-        )
-    else:
-        retryer = AsyncRetrying(
-            stop=stop,
-            wait=wait_fixed(poll_interval),
-            retry=retry_if_result(retry_predicate),
-            reraise=True,
-            sleep=sleep,
-        )
+    effective_sleep = asyncio.sleep if sleep is None else sleep
+    retryer = AsyncRetrying(
+        stop=stop,
+        wait=wait_fixed(poll_interval),
+        retry=retry_if_result(retry_predicate),
+        reraise=True,
+        sleep=effective_sleep,
+    )
     try:
         return await retryer(invoke_operation)
     except _RetryError as exc:
         raise timeout_error_factory() from exc
-
-
-# ---------------------------------------------------------------------------
-# Internal utilities
-# ---------------------------------------------------------------------------
-
-
-def _build_stop(
-    timeout_seconds: float | None,
-    max_attempts: int | None,
-) -> stop_base:
-    """Return the appropriate tenacity stop condition."""
-    if timeout_seconds is not None and max_attempts is not None:
-        raise ValueError("Only one of timeout_seconds or max_attempts may be provided.")
-    if timeout_seconds is not None:
-        return stop_after_delay(timeout_seconds)
-    if max_attempts is not None:
-        return stop_after_attempt(max_attempts)
-    raise ValueError("Either timeout_seconds or max_attempts must be provided.")

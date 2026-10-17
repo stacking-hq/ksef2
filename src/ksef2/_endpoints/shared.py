@@ -33,7 +33,7 @@ def parse_response[T: BaseModel](response: httpx.Response, response_type: type[T
     try:
         return codecs.JsonResponseCodec.parse(response, response_type)
     except ValidationError as e:
-        raise exceptions.KSeFValidationError("Invalid response payload") from e
+        raise exceptions.KSeFResponseValidationError("Invalid response payload") from e
 
 
 def parse_response_list[T: BaseModel](
@@ -42,7 +42,7 @@ def parse_response_list[T: BaseModel](
     try:
         return codecs.JsonResponseCodec.parse_list(response, response_type)
     except ValidationError as e:
-        raise exceptions.KSeFValidationError("Invalid response payload") from e
+        raise exceptions.KSeFResponseValidationError("Invalid response payload") from e
 
 
 def build_params(

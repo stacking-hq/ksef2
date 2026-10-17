@@ -671,7 +671,7 @@ class AsyncBatchService:
             Final successful batch session status.
 
         Raises:
-            KSeFSessionError: If batch processing reaches a failed terminal status.
+            KSeFSessionFailedError: If batch processing reaches a failed terminal status.
             KSeFBatchSessionTimeoutError: If polling exceeds ``timeout``.
         """
         return self._wait_for_completion(
@@ -694,10 +694,8 @@ class AsyncBatchService:
                 )
             )
             if status.status.code >= 400:
-                raise exceptions.KSeFSessionError(
-                    "Batch session processing failed: "
-                    f"{reference_number} ({status.status.code}: {status.status.description})",
-                    hint="See why invoices failed with `list_failed_invoices()`.",
+                raise exceptions.KSeFSessionFailedError(
+                    reference_number, status, session_kind="Batch"
                 )
             return status
 

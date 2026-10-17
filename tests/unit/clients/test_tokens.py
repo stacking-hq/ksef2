@@ -75,10 +75,16 @@ class TestTokensClient:
         )
         fake_transport.enqueue(failed_resp.model_dump(mode="json"))
 
-        with pytest.raises(exceptions.KSeFApiError, match="Token activation failed"):
+        with pytest.raises(
+            exceptions.KSeFTokenActivationFailedError, match="Token activation failed"
+        ) as exc_info:
             _ = tokens_client.wait_for_activation(
                 reference_number=failed_resp.referenceNumber,
             )
+
+        assert exc_info.value.reference_number == failed_resp.referenceNumber
+        assert exc_info.value.token_status == "failed"
+        assert isinstance(exc_info.value, exceptions.KSeFApiError)
 
     @legacy_api
     def test_activation_timeout_does_not_discard_generated_token(
