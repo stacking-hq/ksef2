@@ -6,7 +6,7 @@ rest of ``scripts/examples``.
     uv run -m scripts.examples.quickstart
 
 What it demonstrates:
-- building a FA(3) invoice with ``FA3InvoiceBuilder``
+- building a FA(3) invoice with ``InvoiceBuilder``
 - authenticating in TEST
 - opening an online session
 - sending an invoice with both context-manager and manual session handling
@@ -18,7 +18,7 @@ from decimal import Decimal
 from uuid import uuid4
 
 from ksef2 import Client, Environment, FormSchema
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+from ksef2.fa3 import InvoiceBuilder, VatRate
 
 # KSeF TEST accepts any well-formed NIP together with a generated test
 # certificate, so the quickstart needs no configuration. Pass
@@ -34,7 +34,7 @@ def build_invoice(seller_nip: str) -> bytes:
     by seller plus number and rejects a repeat with ``440 Duplikat faktury``.
     """
     builder = (
-        FA3InvoiceBuilder()
+        InvoiceBuilder()
         .header(system_info="ksef2 quickstart")
         .seller(
             name="KSeF2 example seller",

@@ -3,7 +3,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from ksef2 import Client, Environment, FormSchema
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+from ksef2.fa3 import InvoiceBuilder, VatRate
 
 
 SELLER_NIP = "5261040828"
@@ -11,7 +11,7 @@ DOWNLOADS = Path("downloads")
 
 invoice_number = f"QS/{datetime.now(timezone.utc):%Y%m%d%H%M%S}"
 invoice_xml = (
-    FA3InvoiceBuilder()
+    InvoiceBuilder()
     .header(system_info="ksef2 quickstart")
     .seller(
         name="Demo Seller Sp. z o.o.",

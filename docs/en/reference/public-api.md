@@ -25,7 +25,7 @@ Prefer the highest-level import that fits the workflow:
 
 ```python
 from ksef2 import Client, Environment, FormSchema, KSeFApiError
-from ksef2.fa3 import FA3InvoiceBuilder, KsefInvoiceDraft, VatRate
+from ksef2.fa3 import InvoiceBuilder, KsefInvoiceDraft, VatRate
 from ksef2.models import InvoicesFilter, InvoiceMetadataParams
 from ksef2.renderers import InvoicePDFExporter, InvoiceXSLTRenderer
 from ksef2.xades import XAdESCredentials, load_certificate_from_pem
@@ -205,7 +205,7 @@ and resumable paging does not replace it. Every `Pager`, including the one from
 `auth.invoices.search(...)`, answers `.page(cursor)` with a `Page` holding
 `items` and the `next_cursor` you store to continue that collection later.
 
-`FA3InvoiceBuilder.dump_state()` and `from_state()` are a separate builder
+`InvoiceBuilder.dump_state()` and `from_state()` are a separate builder
 draft API and are not deprecated.
 
 ## Reference

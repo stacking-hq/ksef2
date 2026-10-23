@@ -10,10 +10,10 @@ hand-writing XML.
 from datetime import date
 from decimal import Decimal
 
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+from ksef2.fa3 import InvoiceBuilder, VatRate
 
 builder = (
-    FA3InvoiceBuilder()
+    InvoiceBuilder()
     .header(system_info="my app")
     .seller(
         name="ACME S.A.",
@@ -27,19 +27,19 @@ builder = (
         address_line_1="Unter den Linden 1",
     )
     .standard()
-        .issue_place("Warszawa")
-        .issue_date(date(2026, 3, 29))
-        .invoice_number("FV/2026/03/0001")
-        .rows()
-            .add_line(
-                name="Consulting service",
-                supply_date=date(2026, 3, 29),
-                unit_of_measure="h",
-                quantity=Decimal("10"),
-                unit_price_net=Decimal("100.00"),
-                vat_rate=VatRate.VAT_23,
-            )
-        .done()
+    .issue_place("Warszawa")
+    .issue_date(date(2026, 3, 29))
+    .invoice_number("FV/2026/03/0001")
+    .rows()
+    .add_line(
+        name="Consulting service",
+        supply_date=date(2026, 3, 29),
+        unit_of_measure="h",
+        quantity=Decimal("10"),
+        unit_price_net=Decimal("100.00"),
+        vat_rate=VatRate.VAT_23,
+    )
+    .done()
     .done()
 )
 
@@ -79,14 +79,14 @@ xml_text = builder.to_xml()   # XML string
 Persist the builder state when a user can leave an invoice unfinished.
 
 ```python
-from ksef2.fa3 import FA3InvoiceBuilder, KsefInvoiceDraft
+from ksef2.fa3 import InvoiceBuilder, KsefInvoiceDraft
 
 draft = builder.dump_state()
 json_text = builder.dump_state_json(indent=2)
 
 same_draft = KsefInvoiceDraft.model_validate_json(json_text)
-restored = FA3InvoiceBuilder.from_state(same_draft)
-restored_from_json = FA3InvoiceBuilder.from_state_json(json_text)
+restored = InvoiceBuilder.from_state(same_draft)
+restored_from_json = InvoiceBuilder.from_state_json(json_text)
 ```
 
 ## Send the XML

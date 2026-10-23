@@ -36,14 +36,41 @@ just bump patch        # albo minor, albo major
 just changelog-seed    # commity od poprzedniego tagu, po jednym punkcie w linii
 ```
 
-1. Popraw `CHANGELOG.md`. Nową sekcję zacznij od `## vX.Y.Z (YYYY-MM-DD)` na
-   początku pliku i przepisz wygenerowane punkty tak, żeby czytało się je przy
-   aktualizacji. `scripts/verify_release.py` odrzuci publikację bez tego nagłówka.
+1. Popraw `CHANGELOG.md` i przepisz wygenerowane punkty dla osób aktualizujących SDK.
+   Podczas przygotowań użyj `## vX.Y.Z (unreleased)` na początku pliku.
+   Gdy wydanie jest gotowe, wpisz rzeczywistą datę jako `## vX.Y.Z (YYYY-MM-DD)`.
+   `scripts/verify_release.py` odrzuca nagłówek bez daty, nieprawidłową datę
+   kalendarzową lub nagłówek innej wersji przed publikacją.
 2. Uruchom `just release-check`.
 3. Utwórz PR do `main`. Wydanie zmienia `pyproject.toml`, `uv.lock` i
    `CHANGELOG.md`. Przejrzyj PR jak każdy inny i scal.
 
 Scalenie niczego nie publikuje.
+
+## Warunki wydania 1.0.0
+
+PR [#147](https://github.com/stacking-hq/ksef2/pull/147) przygotowuje wydanie.
+Nie upoważnia do tagowania, publikacji ani wdrożenia dokumentacji.
+
+- [ ] Ukończ [#171](https://github.com/stacking-hq/ksef2/issues/171) i sprawdź,
+  że stare importy i nazwy metod działają przez całą linię 1.x. Przykłady migracji
+  muszą być dostępne po polsku i angielsku. Uzgodnij tabelę publicznego API,
+  ostrzeżenia i testy importów z usunięciem nie wcześniej niż w 2.0.
+  To blokuje wydanie 1.0.0.
+- [ ] Sprawdź osobno prowadzone [#172](https://github.com/stacking-hq/ksef2/issues/172),
+  [#174](https://github.com/stacking-hq/ksef2/issues/174) i
+  [#103](https://github.com/stacking-hq/ksef2/issues/103). Przed zakończeniem
+  notatek określ, które zmiany wchodzą do wydania, a które są odłożone.
+- [ ] Uwzględnij końcowe scalone zmiany w #147 i ponownie uruchom
+  `just release-check`. Potwierdź CI dla Pythona 3.12, 3.13 i 3.14, pokrycie,
+  walidację dokumentacji i integrację z KSeF TEST dla zaktualizowanego PR.
+- [ ] Potwierdź konfigurację PyPI trusted publisher i środowiska `pypi`, wymagane
+  wydanie ksef2-cli oraz dane dostępowe do wdrożenia ksef2-docs.
+- [ ] Zastąp `(unreleased)` rzeczywistą datą wydania, usuń informacje o przygotowaniach
+  z obu stron notatek i uruchom
+  `uv run python scripts/verify_release.py --tag v1.0.0` na świeżych paczkach.
+  Weryfikator sprawdza poprawność daty, ale jej zgodność z rzeczywistym wydaniem
+  musi potwierdzić maintainer.
 
 ## Opublikuj
 

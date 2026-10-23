@@ -569,10 +569,10 @@ class PersonPermissionDetail(KSeFBaseModel):
     """First name of the person holding the permission, if known."""
     person_last_name: str | None = None
     """Last name of the person holding the permission, if known."""
-    entity_first_name: str | None = None
-    """First name of the entity owner holding the permission, if the entity is a natural person."""
-    entity_last_name: str | None = None
-    """Last name of the entity owner holding the permission, if the entity is a natural person."""
+    entity_full_name: str | None = None
+    """Full name of the entity the permission applies to, if known."""
+    entity_address: str | None = None
+    """Address of the entity the permission applies to, if known."""
 
 
 class PersonPermissionsQueryResponse(KSeFBaseModel):

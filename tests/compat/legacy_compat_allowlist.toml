@@ -45,3 +45,49 @@ reason = "Deleted by #167 (24a77b3, one KSeF error pipeline) before 1.0; its fro
 path = "ksef2.core.response_errors.mapper"
 kind = "exact"
 reason = "Module alias for ksef2.infra.mappers.exceptions inside ksef2.core.response_errors, removed together with that module by #167 (24a77b3); see the entry above."
+
+# PersonPermissionDetail dropped the entity_first_name/entity_last_name fields
+# fixed by #205: they duplicated subjectEntityDetails.fullName into both fields
+# and the model had no address. The API provides only one fullName, so the
+# fields are replaced by entity_full_name and entity_address (matching
+# AuthorizationGrantDetail and PersonalPermissionDetail) in unreleased 1.0.0;
+# the rename is announced in the CHANGELOG "Fixed" section.
+[[entry]]
+path = "ksef2.models.PersonPermissionDetail.entity_first_name"
+kind = "exact"
+reason = "Renamed to entity_full_name by #205 before 1.0: the field duplicated subjectEntityDetails.fullName instead of a first name."
+
+[[entry]]
+path = "ksef2.models.PersonPermissionDetail.entity_last_name"
+kind = "exact"
+reason = "Removed by #205 before 1.0: the API offers no separate last name, only fullName; read entity_full_name."
+
+[[entry]]
+path = "ksef2.domain.models.PersonPermissionDetail.entity_first_name"
+kind = "exact"
+reason = "Legacy alias of the ksef2.models attribute removed by #205; see the entry above."
+
+[[entry]]
+path = "ksef2.domain.models.PersonPermissionDetail.entity_last_name"
+kind = "exact"
+reason = "Legacy alias of the ksef2.models attribute removed by #205; see the entry above."
+
+[[entry]]
+path = "ksef2.domain.models.permissions.PersonPermissionDetail.entity_first_name"
+kind = "exact"
+reason = "Legacy alias of the ksef2.models attribute removed by #205; see the entry above."
+
+[[entry]]
+path = "ksef2.domain.models.permissions.PersonPermissionDetail.entity_last_name"
+kind = "exact"
+reason = "Legacy alias of the ksef2.models attribute removed by #205; see the entry above."
+
+[[entry]]
+path = "ksef2.infra.mappers.permissions.responses.query_person.PersonPermissionDetail.entity_first_name"
+kind = "exact"
+reason = "Re-export of the ksef2.models class by the person-permission mapper; attribute removed by #205, see the entry above."
+
+[[entry]]
+path = "ksef2.infra.mappers.permissions.responses.query_person.PersonPermissionDetail.entity_last_name"
+kind = "exact"
+reason = "Re-export of the ksef2.models class by the person-permission mapper; attribute removed by #205, see the entry above."

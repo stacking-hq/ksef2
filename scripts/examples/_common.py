@@ -4,7 +4,7 @@ from decimal import Decimal
 from pathlib import Path
 from uuid import uuid4
 
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+from ksef2.fa3 import InvoiceBuilder, VatRate
 from ksef2.models import BatchInvoice
 
 _MARKER = "pyproject.toml"
@@ -48,7 +48,7 @@ def example_invoice_xml(*, seller_nip: str, invoice_number: str | None = None) -
     """
     number = example_invoice_number() if invoice_number is None else invoice_number
     builder = (
-        FA3InvoiceBuilder()
+        InvoiceBuilder()
         .header(system_info="ksef2 examples")
         .seller(
             name="KSeF2 example seller",

@@ -319,8 +319,11 @@ class TestPermissionsQueryResponseMapper:
         assert output.context_type == "internal_id"
         assert output.target_type == "all_partners"
         assert output.person_first_name == "Jan"
-        assert output.entity_first_name == "Entity Name"
-        assert output.entity_last_name == "Entity Name"
+        assert output.person_last_name == "Kowalski"
+        assert output.entity_full_name == "Entity Name"
+        assert output.entity_address == "Main Street 1"
+        assert not hasattr(output, "entity_first_name")
+        assert not hasattr(output, "entity_last_name")
 
     def test_maps_person_permission_without_optional_values(
         self,
@@ -351,6 +354,10 @@ class TestPermissionsQueryResponseMapper:
         assert output.context_type is None
         assert output.target_type == "all_partners"
         assert output.target_value is None
+        assert output.entity_full_name is None
+        assert output.entity_address is None
+        assert output.person_first_name is None
+        assert output.person_last_name is None
 
     def test_maps_authorization_grant_item(
         self,

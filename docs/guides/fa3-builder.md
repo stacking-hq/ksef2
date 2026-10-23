@@ -12,10 +12,10 @@ Import the builder and the commonly used enums directly from that namespace.
 from datetime import date
 from decimal import Decimal
 
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+from ksef2.fa3 import InvoiceBuilder, VatRate
 
 invoice = (
-    FA3InvoiceBuilder()
+    InvoiceBuilder()
     .header(system_info="my app")
     .seller(
         name="ACME S.A.",
@@ -31,19 +31,19 @@ invoice = (
         address_line_2="10115 Berlin",
     )
     .standard()
-        .issue_place("Warszawa")
-        .issue_date(date(2026, 3, 29))
-        .invoice_number("FV/2026/03/0001")
-        .rows()
-            .add_line(
-                name="Consulting service",
-                supply_date=date(2026, 3, 29),
-                unit_of_measure="h",
-                quantity=Decimal("10"),
-                unit_price_net=Decimal("100.00"),
-                vat_rate=VatRate.VAT_23,
-            )
-        .done()
+    .issue_place("Warszawa")
+    .issue_date(date(2026, 3, 29))
+    .invoice_number("FV/2026/03/0001")
+    .rows()
+    .add_line(
+        name="Consulting service",
+        supply_date=date(2026, 3, 29),
+        unit_of_measure="h",
+        quantity=Decimal("10"),
+        unit_price_net=Decimal("100.00"),
+        vat_rate=VatRate.VAT_23,
+    )
+    .done()
     .done()
     .build()
 )
@@ -55,7 +55,7 @@ If you want XML directly, call `to_xml()` on the builder instead.
 ## Import
 
 ```python
-from ksef2.fa3 import FA3InvoiceBuilder, KsefInvoice, VatRate
+from ksef2.fa3 import InvoiceBuilder, KsefInvoice, VatRate
 ```
 
 ## Builder Flow
@@ -77,9 +77,9 @@ Example with payment and annotations:
 from datetime import date
 from decimal import Decimal
 
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+from ksef2.fa3 import InvoiceBuilder, VatRate
 
-builder = FA3InvoiceBuilder()
+builder = InvoiceBuilder()
 _ = (
     builder.header(system_info="my app")
     .seller(
@@ -94,25 +94,25 @@ _ = (
         address_line_1="Unter den Linden 1",
     )
     .standard()
-        .issue_date(date(2026, 3, 29))
-        .invoice_number("FV/2026/03/0001")
-        .rows()
-            .add_line(
-                name="Consulting service",
-                quantity=Decimal("1"),
-                unit_of_measure="h",
-                unit_price_net=Decimal("100.00"),
-                vat_rate=VatRate.VAT_23,
-            )
-        .done()
-        .payment()
-            .via("bank_transfer")
-            .due_on(date(2026, 4, 12))
-            .bank_account("PL10101010101010101010101010")
-        .done()
-        .annotations()
-            .split_payment()
-        .done()
+    .issue_date(date(2026, 3, 29))
+    .invoice_number("FV/2026/03/0001")
+    .rows()
+    .add_line(
+        name="Consulting service",
+        quantity=Decimal("1"),
+        unit_of_measure="h",
+        unit_price_net=Decimal("100.00"),
+        vat_rate=VatRate.VAT_23,
+    )
+    .done()
+    .payment()
+    .via("bank_transfer")
+    .due_on(date(2026, 4, 12))
+    .bank_account("PL10101010101010101010101010")
+    .done()
+    .annotations()
+    .split_payment()
+    .done()
     .done()
 )
 
@@ -152,9 +152,9 @@ You can persist the current builder state as a `KsefInvoiceDraft` and load it ba
 This works for incomplete drafts as well as fully populated invoices.
 
 ```python
-from ksef2.fa3 import FA3InvoiceBuilder, KsefInvoiceDraft
+from ksef2.fa3 import InvoiceBuilder, KsefInvoiceDraft
 
-builder = FA3InvoiceBuilder()
+builder = InvoiceBuilder()
 _ = (
     builder.header(system_info="my app")
     .seller(
@@ -169,15 +169,15 @@ draft = builder.dump_state()
 json_text = builder.dump_state_json(indent=2)
 
 same_draft = KsefInvoiceDraft.model_validate_json(json_text)
-restored_builder = FA3InvoiceBuilder.from_state(same_draft)
-restored_from_json = FA3InvoiceBuilder.from_state_json(json_text)
+restored_builder = InvoiceBuilder.from_state(same_draft)
+restored_from_json = InvoiceBuilder.from_state_json(json_text)
 ```
 
 If you already have a built invoice and want to reopen it in the builder, use `from_invoice(...)`:
 
 ```python
 invoice = builder.build()
-restored_builder = FA3InvoiceBuilder.from_invoice(invoice)
+restored_builder = InvoiceBuilder.from_invoice(invoice)
 ```
 
 ## Sending The Built Invoice

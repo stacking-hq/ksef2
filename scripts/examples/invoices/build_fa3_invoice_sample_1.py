@@ -5,7 +5,7 @@ from pathlib import Path
 
 from lxml import etree
 
-from ksef2.fa3 import FA3InvoiceBuilder, InvoiceSummaryOverrides, VatRate
+from ksef2.fa3 import InvoiceBuilder, InvoiceSummaryOverrides, VatRate
 
 _MARKER = "pyproject.toml"
 
@@ -27,7 +27,7 @@ class ExampleConfig:
 
 
 def build_invoice_xml() -> str:
-    builder = FA3InvoiceBuilder()
+    builder = InvoiceBuilder()
     _ = (
         builder.header(
             generation_timestamp=datetime(2026, 2, 1, 0, 0, 0, tzinfo=timezone.utc),

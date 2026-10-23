@@ -35,14 +35,14 @@ from decimal import Decimal
 from pathlib import Path
 
 from ksef2 import Client, Environment, FormSchema
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+from ksef2.fa3 import InvoiceBuilder, VatRate
 
 SELLER_NIP = "5261040828"
 DOWNLOADS = Path("downloads")
 
 invoice_number = f"QS/{datetime.now(timezone.utc):%Y%m%d%H%M%S}"
 invoice_xml = (
-    FA3InvoiceBuilder()
+    InvoiceBuilder()
     .header(system_info="ksef2 quickstart")
     .seller(
         name="Demo Seller Sp. z o.o.",
@@ -58,17 +58,17 @@ invoice_xml = (
         address_line_2="00-002 Warszawa",
     )
     .standard()
-        .issue_date(date.today())
-        .issue_place("Warszawa")
-        .invoice_number(invoice_number)
-        .rows()
-            .add_line(
-                name="Consulting service",
-                quantity=Decimal("1"),
-                unit_price_net=Decimal("100.00"),
-                vat_rate=VatRate.VAT_23,
-            )
-        .done()
+    .issue_date(date.today())
+    .issue_place("Warszawa")
+    .invoice_number(invoice_number)
+    .rows()
+    .add_line(
+        name="Consulting service",
+        quantity=Decimal("1"),
+        unit_price_net=Decimal("100.00"),
+        vat_rate=VatRate.VAT_23,
+    )
+    .done()
     .done()
     .to_xml()
     .encode("utf-8")
@@ -126,7 +126,7 @@ uwierzytelniania.
 
 ## Co robi ten przykład
 
-1. `FA3InvoiceBuilder` utworzył minimalny XML FA(3) z nazwami pól SDK, takimi
+1. `InvoiceBuilder` utworzył minimalny XML FA(3) z nazwami pól SDK, takimi
    jak `invoice_number`, `tax_id` i `unit_price_net`.
 
 2. `Client(Environment.TEST)` wybrał adresy bazowe środowiska TEST KSeF i

@@ -4,12 +4,12 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from ksef2.fa3 import FA3InvoiceBuilder, KsefInvoice, VatRate
+from ksef2.fa3 import InvoiceBuilder, KsefInvoice, VatRate
 
 
 def test_fa3_public_builder_builds_invoice() -> None:
     invoice = (
-        FA3InvoiceBuilder()
+        InvoiceBuilder()
         .header(system_info="public api test")
         .seller(
             name="ACME S.A.",
@@ -45,7 +45,7 @@ def test_fa3_public_builder_builds_invoice() -> None:
 
 def test_fa3_public_builder_builds_gross_priced_line() -> None:
     invoice = (
-        FA3InvoiceBuilder()
+        InvoiceBuilder()
         .header(system_info="public api gross test")
         .seller(
             name="ACME S.A.",
@@ -83,7 +83,7 @@ def test_fa3_public_builder_builds_gross_priced_line() -> None:
 
 
 def test_fa3_public_builder_rejects_ambiguous_unit_price_inputs() -> None:
-    rows = FA3InvoiceBuilder().standard().rows()
+    rows = InvoiceBuilder().standard().rows()
 
     with pytest.raises(ValueError, match="unit_price_net or unit_price_gross"):
         _ = rows.add_line(
@@ -96,7 +96,7 @@ def test_fa3_public_builder_rejects_ambiguous_unit_price_inputs() -> None:
 
 
 def test_fa3_public_builder_requires_one_unit_price_input() -> None:
-    rows = FA3InvoiceBuilder().standard().rows()
+    rows = InvoiceBuilder().standard().rows()
 
     with pytest.raises(ValueError, match="unit_price_net or unit_price_gross"):
         _ = rows.add_line(
@@ -108,7 +108,7 @@ def test_fa3_public_builder_requires_one_unit_price_input() -> None:
 
 def test_fa3_public_builder_rejects_xsd_invalid_invoice_number() -> None:
     body_builder = (
-        FA3InvoiceBuilder().standard().issue_date(date(2026, 3, 29)).invoice_number("")
+        InvoiceBuilder().standard().issue_date(date(2026, 3, 29)).invoice_number("")
     )
 
     with pytest.raises(ValidationError, match="invoice_number"):
@@ -118,5 +118,5 @@ def test_fa3_public_builder_rejects_xsd_invalid_invoice_number() -> None:
 def test_services_builders_exports_only_canonical_builder() -> None:
     import ksef2._services.builders as builders
 
-    assert builders.__all__ == ["FA3InvoiceBuilder"]
-    assert builders.FA3InvoiceBuilder is FA3InvoiceBuilder
+    assert builders.__all__ == ["InvoiceBuilder"]
+    assert builders.InvoiceBuilder is InvoiceBuilder

@@ -26,10 +26,10 @@ invoice_xml = Path("invoice.xml").read_bytes()
 from datetime import date
 from decimal import Decimal
 
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+from ksef2.fa3 import InvoiceBuilder, VatRate
 
 invoice_xml = (
-    FA3InvoiceBuilder()
+    InvoiceBuilder()
     .header(system_info="ksef2 send guide")
     .seller(
         name="Demo Seller Sp. z o.o.",
@@ -45,17 +45,17 @@ invoice_xml = (
         address_line_2="00-002 Warszawa",
     )
     .standard()
-        .issue_date(date.today())
-        .issue_place("Warszawa")
-        .invoice_number("FV/42/2026")
-        .rows()
-            .add_line(
-                name="Usługa konsultingowa",
-                quantity=Decimal("1"),
-                unit_price_net=Decimal("100.00"),
-                vat_rate=VatRate.VAT_23,
-            )
-        .done()
+    .issue_date(date.today())
+    .issue_place("Warszawa")
+    .invoice_number("FV/42/2026")
+    .rows()
+    .add_line(
+        name="Usługa konsultingowa",
+        quantity=Decimal("1"),
+        unit_price_net=Decimal("100.00"),
+        vat_rate=VatRate.VAT_23,
+    )
+    .done()
     .done()
     .to_xml()
     .encode("utf-8")
@@ -231,7 +231,7 @@ zanim uznasz, że każda faktura z paczki osiągnęła oczekiwany wynik biznesow
 1. Uwierzytelnij się w kontekście sprzedawcy.
 
 2. Wczytaj XML faktury z własnego systemu albo zbuduj go przez
-   `FA3InvoiceBuilder`.
+   `InvoiceBuilder`.
 
 3. Użyj sesji online dla małej interaktywnej wysyłki albo `auth.batch` dla
    większych zestawów.

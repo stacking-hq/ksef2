@@ -37,6 +37,7 @@ from ksef2._endpoints.async_auth import AsyncAuthEndpoints
 from ksef2._infra.mappers.auth import from_spec, to_spec
 
 
+# [TODO] wtf why is this not inlined
 def _build_signed_xades(
     *,
     challenge: str,

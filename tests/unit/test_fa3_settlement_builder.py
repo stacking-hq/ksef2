@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+from ksef2.fa3 import InvoiceBuilder, VatRate
 from ksef2._domain.models.fa3.body import (
     InvoiceSettlement,
     SettlementCharge,
@@ -16,7 +16,7 @@ from ksef2._services.builders.fa3.sub.settlement import SettlementBuilder
 
 def started_standard_body() -> Any:
     """Open a standard body on an invoice whose header, seller and buyer are set."""
-    builder = FA3InvoiceBuilder()
+    builder = InvoiceBuilder()
     _ = builder.header(system_info="billing-service")
     _ = builder.seller(
         name="ACME S.A.",

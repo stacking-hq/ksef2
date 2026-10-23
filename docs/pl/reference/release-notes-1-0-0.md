@@ -3,11 +3,9 @@ title: Notatki wydania 1.0.0
 description: Granica stabilności i udokumentowana publiczna powierzchnia pierwszego stabilnego wydania SDK.
 ---
 
-:::caution[Draft do czasu tagu 1.0.0]
-Te notatki opisują planowany kontrakt publiczny 1.0.0. Po oznaczeniu
-`v1.0.0` traktuj changelog pakietu i finalny GitHub release jako źródło
-rozstrzygające.
-:::
+> Trwają przygotowania do wydania. Data wydania nie jest ustalona.
+> Aliasy kompatybilności z [#171](https://github.com/stacking-hq/ksef2/issues/171)
+> są już dostępne i objęte kontrolą zgodności dawnych API.
 
 ksef2 1.0.0 to pierwsze wydanie, które traktuje udokumentowane, aplikacyjne
 ścieżki importu jako kontrakt kompatybilności dla linii 1.x.
@@ -40,7 +38,6 @@ moduł, który da się zaimportować z repozytorium.
 
 Dokładną granicę kompatybilności opisuje strona interfejsu publicznego.
 
-
 `PreparedBatch.to_sensitive_dict()` i `to_sensitive_json()` zapisują pełną
 przygotowaną paczkę jako `{"version": "1", "payload": {...}}`, z zaszyfrowanymi
 częściami jako Base64 bezpieczne dla URL z dopełnieniem. Odtwórz ją przez
@@ -53,6 +50,71 @@ wersji zapisu. Niezgodne formaty wymagają nowej wersji i udokumentowanej migrac
 Stany wznowienia sesji i operacji zapisują teraz `format_version` jako tekst
 `"1"`; czytniki przyjmują także liczbę całkowitą `1` zapisywaną przez wcześniejsze
 wydania. Kursory stronicowania zachowują osobne pole wersji całkowitej.
+
+## Przepływy faktur w 1.0
+
+Operacje, które uruchamiają asynchroniczną pracę KSeF, zwracają uchwyt z metodą
+`.wait()`, a każda kolekcja zwraca jeden `Pager`. Stare nazwy zostają jako
+przestarzałe aliasy.
+
+```python
+# przed (0.22.x)
+sent = session.send_invoice(invoice_xml=xml)
+status = session.wait_for_invoice_ready(invoice_reference_number=sent.reference_number)
+for m in auth.invoices.all_metadata(filters=f): ...
+
+# po (1.0)
+submission = session.send_invoice(xml)
+status = submission.wait(timeout=60)
+upo = submission.download_upo()
+for m in auth.invoices.search(f): ...
+package = auth.invoices.export(f).wait()
+package.save("out/")
+```
+
+Tokeny dostępu odświeżają się automatycznie, a sesję lub eksport można wznowić
+metodą, która je uruchamia: `auth.online_session(state=saved)`.
+
+## Polityka wycofywania
+
+Stare ścieżki importu i nazwy metod pozostają działające przez całą linię 1.x.
+Usunięcie jest decyzją dla 2.0 (#171), także dla API wycofanych w 0.19.0.
+Ta decyzja zastępuje wcześniejszy plan usunięcia w 1.10.0. Zobacz tabelę [wycofywanych API](public-api.md#wycofywane-api).
+
+## Błędy
+
+Każdy błąd API ma ten sam format, niesie surowy kod KSeF i identyfikator śladu
+oraz podpowiada, co zrobić dalej. Treść odpowiedzi nie jest już zrzucana do
+komunikatu; pozostaje w `e.response`. Rozgałęziaj kod po klasie wyjątku lub
+`ksef_code`, nigdy po treści komunikatu.
+
+Węższe klasy obejmują typowe przypadki: `KSeFNotFoundError`, `KSeFServerError`,
+`KSeFResponseValidationError`, `KSeFProfileConfigError`, `KSeFSessionFailedError`
+i `KSeFTokenActivationFailedError`. Każdy timeout oczekiwania dziedziczy po
+`KSeFPollingTimeoutError`, który udostępnia `timeout`. Każda nowa klasa dziedziczy
+po klasie rzucanej wcześniej, więc istniejące obsługi nadal działają. Zobacz
+[referencję błędów](errors.md).
+
+```text
+# przed
+API_ERROR/400: KSeF API error: 400
+[UPO_NOT_FOUND:21178] Nie znaleziono UPO dla podanych kryteriów.
+Response: { "exception": { "exceptionDetailList": [ ... ] } }
+
+# po (KSeFNotReadyError)
+KSeF rejected GET /sessions/online/S1/invoices/I1/upo (HTTP 400, KSeF code 21178): Nie znaleziono UPO dla podanych kryteriów.
+Details: UPO o numerze referencyjnym 20260101-EE-ABC nie zostało znalezione.
+Hint: KSeF has not issued the UPO yet. Wait for processing to finish and request it again.
+```
+
+`download_upo()` pobiera UPO od razu i zgłasza `KSeFNotReadyError`, jeśli UPO
+nie jest gotowe. Najpierw wywołaj
+`wait(timeout=..., poll_interval=...)` na zgłoszeniu lub zamkniętej sesji,
+a następnie pobierz UPO (#169).
+
+SDK domyślnie żąda Problem Details. `TransportConfig(error_format="legacy")`
+wybiera starszy format HTTP 400/429; HTTP 401, 403 i 410 zawsze używają
+Problem Details (#169, #175).
 
 ## Przełomowe zmiany w 1.0
 

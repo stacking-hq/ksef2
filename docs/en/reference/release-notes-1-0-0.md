@@ -3,11 +3,9 @@ title: ksef2 1.0.0 Release Notes
 description: Stability boundary and the documented public surface of the first stable ksef2 SDK release.
 ---
 
-:::caution[Draft until the 1.0.0 tag]
-These notes describe the intended 1.0.0 public contract. Treat the package
-changelog and the final GitHub release as authoritative once `v1.0.0` is
-tagged.
-:::
+> Release preparation is in progress. The release date is not set.
+> Compatibility aliases from [#171](https://github.com/stacking-hq/ksef2/issues/171)
+> are included and covered by the legacy compatibility gate.
 
 ksef2 1.0.0 is the first release that treats documented application-facing
 imports as a compatibility contract for the 1.x line.
@@ -40,7 +38,6 @@ module in the repository.
 
 For the exact compatibility boundary, use the public API contract page.
 
-
 `PreparedBatch.to_sensitive_dict()` and `to_sensitive_json()` persist the full
 prepared batch as `{"version": "1", "payload": {...}}`, with encrypted parts as
 URL-safe padded Base64. Restore it with `from_sensitive_dict()` or
@@ -52,6 +49,71 @@ Readers in 1.x retain support for released persistence versions. Incompatible
 formats require a new version and a documented migration. Session and operation resume states now write `format_version` as the string
 `"1"`; readers also accept the integer `1` written by earlier releases.
 Pagination cursors retain a separate integer version field.
+
+## Invoice workflows in 1.0
+
+Operations that start asynchronous KSeF work return a handle with `.wait()`,
+and every collection returns one `Pager`. The old names remain as deprecated
+aliases.
+
+```python
+# before (0.22.x)
+sent = session.send_invoice(invoice_xml=xml)
+status = session.wait_for_invoice_ready(invoice_reference_number=sent.reference_number)
+for m in auth.invoices.all_metadata(filters=f): ...
+
+# after (1.0)
+submission = session.send_invoice(xml)
+status = submission.wait(timeout=60)
+upo = submission.download_upo()
+for m in auth.invoices.search(f): ...
+package = auth.invoices.export(f).wait()
+package.save("out/")
+```
+
+Access tokens refresh automatically, and a session or export can be resumed
+through the method that starts it: `auth.online_session(state=saved)`.
+
+## Deprecation policy
+
+Old import paths and method names remain functional through 1.x. Removal is
+a 2.0 decision (#171), including APIs deprecated in 0.19.0. This supersedes
+the earlier 1.10.0 removal plan. See the
+[deprecated APIs](public-api.md#deprecated-apis) table.
+
+## Errors
+
+Every API error reads the same way, carries the raw KSeF code and trace ID, and
+says what to do next. The response body is no longer dumped into the message; it
+stays on `e.response`. Branch on the exception class or `ksef_code`, never on
+message text.
+
+Narrower classes cover the common cases: `KSeFNotFoundError`, `KSeFServerError`,
+`KSeFResponseValidationError`, `KSeFProfileConfigError`, `KSeFSessionFailedError`
+and `KSeFTokenActivationFailedError`. Every polling timeout derives from
+`KSeFPollingTimeoutError`, which exposes `timeout`. Each new class subclasses the
+class that was raised before, so existing handlers keep working. See the
+[error reference](errors.md).
+
+```text
+# before
+API_ERROR/400: KSeF API error: 400
+[UPO_NOT_FOUND:21178] Nie znaleziono UPO dla podanych kryteriów.
+Response: { "exception": { "exceptionDetailList": [ ... ] } }
+
+# after (KSeFNotReadyError)
+KSeF rejected GET /sessions/online/S1/invoices/I1/upo (HTTP 400, KSeF code 21178): Nie znaleziono UPO dla podanych kryteriów.
+Details: UPO o numerze referencyjnym 20260101-EE-ABC nie zostało znalezione.
+Hint: KSeF has not issued the UPO yet. Wait for processing to finish and request it again.
+```
+
+`download_upo()` fetches immediately and raises `KSeFNotReadyError` if the UPO
+is not ready. Call `wait(timeout=..., poll_interval=...)` first on the submission
+or closed session, then fetch the UPO (#169).
+
+KSeF Problem Details is requested by default. Use
+`TransportConfig(error_format="legacy")` for the older HTTP 400/429 format;
+HTTP 401, 403 and 410 always use Problem Details (#169, #175).
 
 ## Breaking in 1.0
 

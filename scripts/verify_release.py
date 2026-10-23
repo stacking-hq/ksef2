@@ -1,9 +1,11 @@
 """Verify that a release tag and built distributions describe one SDK version."""
 
 import argparse
+import re
 import sys
 import tomllib
 import zipfile
+from datetime import date
 from email.parser import Parser
 from pathlib import Path
 from typing import cast
@@ -31,6 +33,18 @@ def verify_release(*, tag: str, root: Path, dist_directory: Path) -> list[str]:
         errors.append(
             f"CHANGELOG.md must start with a {changelog_heading.strip()!r} heading"
         )
+    else:
+        heading = changelog.splitlines()[0]
+        date_match = re.fullmatch(
+            re.escape(changelog_heading) + r"\((\d{4}-\d{2}-\d{2})\)", heading
+        )
+        if date_match is None:
+            errors.append("CHANGELOG.md release heading must contain a YYYY-MM-DD date")
+        else:
+            try:
+                _ = date.fromisoformat(date_match[1])
+            except ValueError:
+                errors.append("CHANGELOG.md release heading contains an invalid date")
 
     wheels = sorted(dist_directory.glob(f"ksef2-{project_version}-*.whl"))
     if len(wheels) != 1:

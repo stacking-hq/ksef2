@@ -30,7 +30,7 @@ After, the same types and helpers come from the supported facades:
 from ksef2 import FormSchema, KSeFApiError
 from ksef2.models import InvoicesFilter, InvoiceMetadataParams
 from ksef2.xades import load_certificate_from_pem
-from ksef2.fa3 import FA3InvoiceBuilder
+from ksef2.fa3 import InvoiceBuilder
 from ksef2.renderers import InvoiceXSLTRenderer
 ```
 
@@ -39,7 +39,7 @@ from ksef2.renderers import InvoiceXSLTRenderer
 | `ksef2.domain.models` and its submodules | `ksef2.models`, or `ksef2.fa3` for FA(3) domain models |
 | `ksef2.infra.mappers` | `ksef2.raw.mappers` |
 | `ksef2.infra.schema.api.spec` / `.supp` | `from ksef2.raw import spec, supp` |
-| `ksef2.infra.schema.fa3` and generated submodules | Keep the deprecated alias if generated XSD classes or schema resources are required. There is no public replacement for every generated FA(3) class. For invoice construction, use `ksef2.fa3.FA3InvoiceBuilder`. |
+| `ksef2.infra.schema.fa3` and generated submodules | Keep the deprecated alias if generated XSD classes or schema resources are required. There is no public replacement for every generated FA(3) class. For invoice construction, use `ksef2.fa3.InvoiceBuilder`. |
 | `ksef2.services.builders` | `ksef2.fa3` |
 | `ksef2.services.renderers.xslt` | `ksef2.renderers` |
 

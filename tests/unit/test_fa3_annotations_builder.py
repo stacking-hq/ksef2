@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+from ksef2.fa3 import InvoiceBuilder, VatRate
 from ksef2._domain.models.fa3.body import (
     InvoiceAnnotationsContext,
     MarginProcedure,
@@ -17,8 +17,8 @@ from ksef2._domain.models.fa3.body import (
 from ksef2._services.builders.fa3.sub.annotations import AnnotationsBuilder
 
 
-def started_standard_body() -> tuple[FA3InvoiceBuilder, Any]:
-    builder = FA3InvoiceBuilder()
+def started_standard_body() -> tuple[InvoiceBuilder, Any]:
+    builder = InvoiceBuilder()
     _ = builder.header(system_info="billing-service")
     _ = builder.seller(
         name="ACME S.A.",

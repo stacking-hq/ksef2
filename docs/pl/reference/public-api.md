@@ -25,7 +25,7 @@ Preferuj najwyższy poziom importu pasujący do workflow:
 
 ```python
 from ksef2 import Client, Environment, FormSchema, KSeFApiError
-from ksef2.fa3 import FA3InvoiceBuilder, KsefInvoiceDraft, VatRate
+from ksef2.fa3 import InvoiceBuilder, KsefInvoiceDraft, VatRate
 from ksef2.models import InvoicesFilter, InvoiceMetadataParams
 from ksef2.renderers import InvoicePDFExporter, InvoiceXSLTRenderer
 from ksef2.xades import XAdESCredentials, load_certificate_from_pem
@@ -206,7 +206,7 @@ stronicowanie z kursorem go nie zastępuje. Każdy `Pager`, także ten z
 `auth.invoices.search(...)`, odpowiada na `.page(cursor)` zwracając `Page` z
 `items` oraz `next_cursor`, który zapisujesz, by kontynuować tę kolekcję później.
 
-`FA3InvoiceBuilder.dump_state()` i `from_state()` to osobne API szkiców buildera
+`InvoiceBuilder.dump_state()` i `from_state()` to osobne API szkiców buildera
 i nie są wycofane.
 
 ## Referencja

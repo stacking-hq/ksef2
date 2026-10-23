@@ -116,9 +116,9 @@ def test_public_models_import() -> None:
 
 
 def test_public_fa3_import() -> None:
-    from ksef2.fa3 import FA3InvoiceBuilder, KsefInvoice, KsefInvoiceDraft
+    from ksef2.fa3 import InvoiceBuilder, KsefInvoice, KsefInvoiceDraft
 
-    assert FA3InvoiceBuilder.__name__ == "FA3InvoiceBuilder"
+    assert InvoiceBuilder.__name__ == "InvoiceBuilder"
     assert KsefInvoice.__name__ == "KsefInvoice"
     assert KsefInvoiceDraft.__name__ == "KsefInvoiceDraft"
 

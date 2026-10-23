@@ -2,7 +2,7 @@
 
 import pytest
 
-from ksef2.fa3 import FA3InvoiceBuilder
+from ksef2.fa3 import InvoiceBuilder
 from ksef2._domain.models.fa3.attachment import (
     Attachment,
     AttachmentTable,
@@ -15,8 +15,8 @@ from ksef2._services.builders.fa3.attachment import (
 )
 
 
-def started_invoice() -> FA3InvoiceBuilder:
-    builder = FA3InvoiceBuilder()
+def started_invoice() -> InvoiceBuilder:
+    builder = InvoiceBuilder()
     _ = builder.header(system_info="billing-service")
     _ = builder.seller(
         name="ACME S.A.",
@@ -293,7 +293,7 @@ def test_attachment_survives_the_draft_round_trip() -> None:
         .done()
     )
 
-    restored = FA3InvoiceBuilder.from_state(builder.dump_state())
+    restored = InvoiceBuilder.from_state(builder.dump_state())
 
     restored_attachment = restored.dump_state().attachment
     assert restored_attachment is not None

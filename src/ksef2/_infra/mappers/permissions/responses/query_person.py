@@ -140,14 +140,14 @@ def _(
 ) -> PersonPermissionDetail:
     person_first_name = None
     person_last_name = None
-    entity_first_name = None
-    entity_last_name = None
+    entity_full_name = None
+    entity_address = None
     if response.subjectPersonDetails:
         person_first_name = response.subjectPersonDetails.firstName
         person_last_name = response.subjectPersonDetails.lastName
     if response.subjectEntityDetails:
-        entity_first_name = response.subjectEntityDetails.fullName
-        entity_last_name = response.subjectEntityDetails.fullName
+        entity_full_name = response.subjectEntityDetails.fullName
+        entity_address = response.subjectEntityDetails.address
     return PersonPermissionDetail(
         id=response.id,
         author_type=_map_author_identifier_type(response.authorIdentifier.type)
@@ -185,8 +185,8 @@ def _(
         can_delegate=response.canDelegate,
         person_first_name=person_first_name,
         person_last_name=person_last_name,
-        entity_first_name=entity_first_name,
-        entity_last_name=entity_last_name,
+        entity_full_name=entity_full_name,
+        entity_address=entity_address,
     )
 
 

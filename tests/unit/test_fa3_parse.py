@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from lxml import etree
 
-from ksef2.fa3 import FA3InvoiceBuilder, InvoiceSummaryOverrides, parse_invoice_xml
+from ksef2.fa3 import InvoiceBuilder, InvoiceSummaryOverrides, parse_invoice_xml
 
 SAMPLES = Path(__file__).parents[2] / "schemas" / "FA3" / "samples"
 
@@ -16,7 +16,7 @@ SAMPLES = Path(__file__).parents[2] / "schemas" / "FA3" / "samples"
 )
 def test_parse_and_rebuild_public_invoice(filename: str) -> None:
     invoice = parse_invoice_xml((SAMPLES / filename).read_bytes())
-    xml = FA3InvoiceBuilder.from_invoice(invoice).to_xml()
+    xml = InvoiceBuilder.from_invoice(invoice).to_xml()
     assert parse_invoice_xml(xml.encode("utf-8")) == invoice
     assert invoice.seller.tax_id
     assert invoice.body.invoice_number
@@ -53,7 +53,7 @@ def test_parse_preserves_xml_declared_encoding() -> None:
 def test_public_builder_serializes_rowless_corrections(kind: str) -> None:
     invoice = parse_invoice_xml((SAMPLES / "FA_3_Przykład_1.xml").read_bytes())
     builder = (
-        FA3InvoiceBuilder()
+        InvoiceBuilder()
         .header_model(invoice.header)
         .seller_model(invoice.seller)
         .buyer_model(invoice.buyer)
@@ -89,7 +89,7 @@ def test_public_builder_serializes_rowless_corrections(kind: str) -> None:
 @pytest.mark.parametrize("value", [True, False, None])
 def test_public_builder_serializes_return_of_excise(value: bool | None) -> None:
     invoice = parse_invoice_xml((SAMPLES / "FA_3_Przykład_1.xml").read_bytes())
-    builder = FA3InvoiceBuilder.from_invoice(invoice)
+    builder = InvoiceBuilder.from_invoice(invoice)
     _ = builder.standard().from_model(invoice.body).return_of_excise(value).done()
     xml = builder.to_xml()
     document = etree.fromstring(xml.encode("utf-8"))

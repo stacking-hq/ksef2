@@ -386,7 +386,7 @@ def test_audit_reaches_the_documented_surface() -> None:
         "ksef2._services.builders.fa3.sub.rows.RowsBuilder.add_line",
         "ksef2._domain.models.invoices.InvoicesFilter.for_seller",
         "ksef2._core.exceptions.KSeFApiError",
-        "ksef2.fa3.FA3InvoiceBuilder",
+        "ksef2.fa3.InvoiceBuilder",
     )
     missing = [name for name in expected if name not in units]
     assert not missing, f"audit no longer reaches: {missing}"

@@ -2,12 +2,12 @@ import warnings
 from datetime import date
 from decimal import Decimal
 
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+from ksef2.fa3 import InvoiceBuilder, VatRate
 
 
 def test_fa3_xml_serialization_emits_no_deprecation_warnings() -> None:
     builder = (
-        FA3InvoiceBuilder()
+        InvoiceBuilder()
         .header(system_info="deprecation gate")
         .seller(
             name="Seller",

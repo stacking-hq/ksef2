@@ -5,7 +5,7 @@ from pathlib import Path
 
 from lxml import etree
 
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+from ksef2.fa3 import InvoiceBuilder, VatRate
 from ksef2.renderers import InvoicePDFExporter
 
 _MARKER = "pyproject.toml"
@@ -25,8 +25,8 @@ class ExampleConfig:
     schema_path: Path = repo_root() / "schemas" / "FA3" / "schemat.xsd"
 
 
-def build_invoice_builder() -> FA3InvoiceBuilder:
-    builder = FA3InvoiceBuilder()
+def build_invoice_builder() -> InvoiceBuilder:
+    builder = InvoiceBuilder()
     return (
         builder.header(system_info="ksef2 example builder")
         .seller(

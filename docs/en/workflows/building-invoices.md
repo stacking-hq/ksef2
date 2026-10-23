@@ -13,10 +13,10 @@ already have XML from another system.
 from datetime import date
 from decimal import Decimal
 
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+from ksef2.fa3 import InvoiceBuilder, VatRate
 
 builder = (
-    FA3InvoiceBuilder()
+    InvoiceBuilder()
     .header(system_info="billing-service")
     .seller(
         name="ACME S.A.",
@@ -30,19 +30,19 @@ builder = (
         address_line_1="Unter den Linden 1",
     )
     .standard()
-        .issue_place("Warszawa")
-        .issue_date(date(2026, 3, 29))
-        .invoice_number("FV/2026/03/0001")
-        .rows()
-            .add_line(
-                name="Consulting service",
-                supply_date=date(2026, 3, 29),
-                unit_of_measure="h",
-                quantity=Decimal("10"),
-                unit_price_net=Decimal("100.00"),
-                vat_rate=VatRate.VAT_23,
-            )
-        .done()
+    .issue_place("Warszawa")
+    .issue_date(date(2026, 3, 29))
+    .invoice_number("FV/2026/03/0001")
+    .rows()
+    .add_line(
+        name="Consulting service",
+        supply_date=date(2026, 3, 29),
+        unit_of_measure="h",
+        quantity=Decimal("10"),
+        unit_price_net=Decimal("100.00"),
+        vat_rate=VatRate.VAT_23,
+    )
+    .done()
     .done()
 )
 
@@ -67,11 +67,11 @@ Persist builder state when invoice editing can span multiple requests or user
 sessions.
 
 ```python
-from ksef2.fa3 import FA3InvoiceBuilder, KsefInvoiceDraft
+from ksef2.fa3 import InvoiceBuilder, KsefInvoiceDraft
 
 json_text = builder.dump_state_json(indent=2)
 draft = KsefInvoiceDraft.model_validate_json(json_text)
-restored = FA3InvoiceBuilder.from_state(draft)
+restored = InvoiceBuilder.from_state(draft)
 ```
 
 ## Send builder output

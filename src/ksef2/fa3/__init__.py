@@ -21,7 +21,7 @@ from ksef2._services.builders.fa3.root import StandardInvoiceBuilder
 from ksef2._services.fa3 import parse_invoice_xml
 
 
-class FA3InvoiceBuilder(StandardInvoiceBuilder):
+class InvoiceBuilder(StandardInvoiceBuilder):
     """Canonical public FA(3) invoice builder.
 
     Example:
@@ -29,10 +29,10 @@ class FA3InvoiceBuilder(StandardInvoiceBuilder):
         from datetime import date
         from decimal import Decimal
 
-        from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+        from ksef2.fa3 import InvoiceBuilder, VatRate
 
         builder = (
-            FA3InvoiceBuilder()
+            InvoiceBuilder()
             .header(system_info="billing-service")
             .seller(
                 name="ACME S.A.",
@@ -66,8 +66,12 @@ class FA3InvoiceBuilder(StandardInvoiceBuilder):
     """
 
 
+# compatability alias
+FA3InvoiceBuilder = InvoiceBuilder
+
 __all__ = [
     "ContactInfo",
+    "InvoiceBuilder",
     "FA3InvoiceBuilder",
     "InvoiceAddress",
     "InvoiceEntity",

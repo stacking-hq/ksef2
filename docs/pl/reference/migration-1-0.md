@@ -30,7 +30,7 @@ Po zmianie, te same typy i funkcje pochodzą ze wspieranych modułów:
 from ksef2 import FormSchema, KSeFApiError
 from ksef2.models import InvoicesFilter, InvoiceMetadataParams
 from ksef2.xades import load_certificate_from_pem
-from ksef2.fa3 import FA3InvoiceBuilder
+from ksef2.fa3 import InvoiceBuilder
 from ksef2.renderers import InvoiceXSLTRenderer
 ```
 
@@ -39,7 +39,7 @@ from ksef2.renderers import InvoiceXSLTRenderer
 | `ksef2.domain.models` i jego podmoduły | `ksef2.models`, lub `ksef2.fa3` dla modeli domenowych FA(3) |
 | `ksef2.infra.mappers` | `ksef2.raw.mappers` |
 | `ksef2.infra.schema.api.spec` / `.supp` | `from ksef2.raw import spec, supp` |
-| `ksef2.infra.schema.fa3` i wygenerowane podmoduły | Zachowaj wycofywany alias, jeśli potrzebujesz wygenerowanych klas XSD lub zasobów schemy. Nie każda wygenerowana klasa FA(3) ma publiczny zamiennik. Do budowania faktur używaj `ksef2.fa3.FA3InvoiceBuilder`. |
+| `ksef2.infra.schema.fa3` i wygenerowane podmoduły | Zachowaj wycofywany alias, jeśli potrzebujesz wygenerowanych klas XSD lub zasobów schemy. Nie każda wygenerowana klasa FA(3) ma publiczny zamiennik. Do budowania faktur używaj `ksef2.fa3.InvoiceBuilder`. |
 | `ksef2.services.builders` | `ksef2.fa3` |
 | `ksef2.services.renderers.xslt` | `ksef2.renderers` |
 

@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
+from ksef2.fa3 import InvoiceBuilder, VatRate
 from ksef2._domain.models.fa3.body import (
     AdditionalDescriptionEntry,
     InvoiceSummaryOverrides,
@@ -27,8 +27,8 @@ from ksef2._services.builders.fa3.body.standard import StandardBodyBuilder
 KSEF_ID = "20260315-1234567890-ABCDEF1234567890"
 
 
-def started_invoice() -> FA3InvoiceBuilder:
-    builder = FA3InvoiceBuilder()
+def started_invoice() -> InvoiceBuilder:
+    builder = InvoiceBuilder()
     _ = builder.header(system_info="billing-service")
     _ = builder.seller(
         name="ACME S.A.",
@@ -98,7 +98,7 @@ def add_advance_reference(body: Any) -> None:
     )
 
 
-def prepared_body(builder: FA3InvoiceBuilder, entry: str) -> Any:
+def prepared_body(builder: InvoiceBuilder, entry: str) -> Any:
     """Open one body builder and fill in whatever that invoice type requires."""
     body = getattr(builder, entry)()
     if entry in {"standard", "simplified", "correction_settlement"}:
@@ -169,7 +169,7 @@ def test_body_builder_done_attaches_the_body_to_the_invoice(
 
     parent = body.done()
 
-    assert isinstance(parent, FA3InvoiceBuilder)
+    assert isinstance(parent, InvoiceBuilder)
     draft = builder.dump_state()
     assert draft.body == prepared
     assert draft.body is not None

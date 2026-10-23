@@ -4,7 +4,7 @@ from typing import Annotated, cast, get_args, get_origin, get_type_hints
 
 from pydantic.fields import FieldInfo
 
-from ksef2.fa3 import FA3InvoiceBuilder
+from ksef2.fa3 import InvoiceBuilder
 from ksef2._domain.models.fa3.body import VatRate
 from ksef2._services.builders.fa3.body.base import BaseBodyBuilder
 from ksef2._services.builders.fa3.root import StandardInvoiceBuilder
@@ -106,7 +106,7 @@ def test_payment_metadata_is_available_for_partial_payment() -> None:
 
 def test_runtime_builder_behavior_is_unchanged() -> None:
     invoice = (
-        FA3InvoiceBuilder()
+        InvoiceBuilder()
         .header(system_info="metadata-test")
         .seller(
             name="ACME S.A.",

@@ -1,12 +1,12 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from ksef2.fa3 import FA3InvoiceBuilder, KsefInvoiceDraft, VatRate
+from ksef2.fa3 import InvoiceBuilder, KsefInvoiceDraft, VatRate
 
 
 def test_fa3_builder_can_roundtrip_partial_draft_json() -> None:
     draft_json = (
-        FA3InvoiceBuilder()
+        InvoiceBuilder()
         .header(
             generation_timestamp=datetime(2026, 4, 8, 12, 0, tzinfo=timezone.utc),
             system_info="draft json test",
@@ -21,7 +21,7 @@ def test_fa3_builder_can_roundtrip_partial_draft_json() -> None:
     )
 
     restored_draft = KsefInvoiceDraft.model_validate_json(draft_json)
-    restored_builder = FA3InvoiceBuilder.from_state_json(draft_json)
+    restored_builder = InvoiceBuilder.from_state_json(draft_json)
 
     assert restored_draft.buyer is None
     assert restored_draft.body is None
@@ -55,7 +55,7 @@ def test_fa3_builder_can_roundtrip_partial_draft_json() -> None:
 
 
 def test_fa3_builder_can_reload_existing_sections_and_continue_editing() -> None:
-    builder = FA3InvoiceBuilder()
+    builder = InvoiceBuilder()
     _ = (
         builder.header(
             generation_timestamp=datetime(2026, 4, 8, 12, 0, tzinfo=timezone.utc),
@@ -94,7 +94,7 @@ def test_fa3_builder_can_reload_existing_sections_and_continue_editing() -> None
         .done()
     )
 
-    restored_builder = FA3InvoiceBuilder.from_state(builder.dump_state())
+    restored_builder = InvoiceBuilder.from_state(builder.dump_state())
     _ = restored_builder.footer().add_information("Updated footer note").done()
     _ = (
         restored_builder.standard()
@@ -128,7 +128,7 @@ def test_fa3_builder_can_reload_existing_sections_and_continue_editing() -> None
 
 def test_fa3_draft_can_be_created_from_built_invoice() -> None:
     invoice = (
-        FA3InvoiceBuilder()
+        InvoiceBuilder()
         .header(
             generation_timestamp=datetime(2026, 4, 8, 12, 0, tzinfo=timezone.utc),
             system_info="invoice snapshot test",
@@ -161,6 +161,6 @@ def test_fa3_draft_can_be_created_from_built_invoice() -> None:
     )
 
     draft = KsefInvoiceDraft.from_invoice(invoice)
-    restored_builder = FA3InvoiceBuilder.from_state(draft)
+    restored_builder = InvoiceBuilder.from_state(draft)
 
     assert restored_builder.build() == invoice
