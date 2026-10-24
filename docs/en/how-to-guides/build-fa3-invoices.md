@@ -121,6 +121,10 @@ All selectors share body-wide methods such as `currency()`, `issue_date()`,
 `add_description()`, `mark_fp()`, `related_party_transaction()`, and
 `summary_overrides()`.
 
+For a non-PLN invoice, set `vat_currency_exchange_rate()` as well as
+`currency()`. `build()` raises a clear `ValueError` when a foreign currency has
+no VAT exchange rate.
+
 ## Add invoice rows
 
 Use `rows().add_line()` for normal application data. The builder calculates
@@ -161,6 +165,11 @@ builder = (
 Use `add_line_model()` or `replace_lines()` when another layer already created
 `InvoiceRow` models. Use `summary_overrides()` when a business case requires
 official FA(3) summary values that cannot be derived from row arithmetic.
+
+The builder calculates and rounds each row's amounts to two decimal places
+using `ROUND_HALF_UP`, then sums those rounded rows for invoice totals. This
+per-line rounding is the default; the builder has no total-based calculation
+mode.
 
 ## Add payments and annotations
 
@@ -260,6 +269,13 @@ correction = (
 The correction section also supports corrected invoice periods, corrected
 seller data, corrected buyers, and model-based input methods when you already
 hold public FA(3) models.
+
+A correction can express a delta directly, including a single negative row.
+When you want to show the before and after state, add both rows to
+`rows().add_line()`: set `before_correction=True` on the original row (FA(3)
+`StanPrzed`), then add the corrected row without that flag. The builder
+calculates the correction totals as the after values minus the before values.
+Add the corrected invoice reference in the nested `.correction()` section.
 
 ## Build advance and settlement invoices
 
@@ -405,6 +421,11 @@ Path("invoice.xml").write_text(xml_text, encoding="utf-8")
 ```
 
 When sending through an online or batch session, pass XML bytes.
+
+Invoice building and PDF rendering have different costs. In one reported
+measurement, building 10,000 lines took 4.3 seconds and peaked at 63 MB; a
+2,000-line PDF took 24 seconds. These figures depend on the machine and invoice
+content, so benchmark representative invoices in your deployment.
 
 ```python
 from ksef2 import FormSchema

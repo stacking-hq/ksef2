@@ -12,6 +12,7 @@ from ksef2._domain.models.fa3.body import (
     InvoiceType,
     NewTransportSupply,
 )
+from ksef2._domain.models.fa3.body.tax import SaleCategory, TaxRegime
 from ksef2._domain.models.fa3 import KsefInvoice
 from ksef2._infra.mappers.invoices.fa3.domain.attachment import (
     to_spec as attachment_to_spec,
@@ -63,17 +64,57 @@ def _format_decimal(value: Decimal) -> str:
     return format(value, "f")
 
 
-def _opt_dec(value: Decimal) -> str | None:
-    """Returns formatted decimal, or None if zero, to keep XML clean by omitting empty tax buckets."""
-    if value.is_zero():
+def _opt_dec(value: Decimal, *, has_rows: bool = False) -> str | None:
+    """Format a bucket amount, retaining zero when matching rows exist."""
+    if value.is_zero() and not has_rows:
         return None
     return _format_decimal(value)
 
 
-def _opt_optional_dec(value: Decimal | None) -> str | None:
+def _opt_optional_dec(value: Decimal | None, *, has_rows: bool = False) -> str | None:
     if value is None:
         return None
-    return _opt_dec(value)
+    return _opt_dec(value, has_rows=has_rows)
+
+
+def _present_bucket_names(request: KsefInvoiceBody) -> set[str]:
+    """Return summary buckets that contain at least one financial row."""
+    names: set[str] = set()
+    financial_rows = (
+        request.order_lines
+        if request.invoice_type == InvoiceType.ZAL
+        or (request.invoice_type == InvoiceType.CORRECTING_ZAL and request.order)
+        else request.rows
+    )
+    for line in financial_rows:
+        if line.tax_regime == TaxRegime.STANDARD:
+            if line.sale_category in {SaleCategory.RATE_23, SaleCategory.RATE_22}:
+                names.add("base_rate")
+            elif line.sale_category in {SaleCategory.RATE_8, SaleCategory.RATE_7}:
+                names.add("first_reduced_rate")
+            elif line.sale_category == SaleCategory.RATE_5:
+                names.add("second_reduced_rate")
+        if line.tax_regime == TaxRegime.TAXI_FLAT_RATE:
+            names.add("taxi")
+        elif line.tax_regime == TaxRegime.SPECIAL_XII:
+            names.add("special_procedure")
+        elif line.tax_regime == TaxRegime.MARGIN:
+            names.add("margin")
+        if line.sale_category == SaleCategory.ZERO_DOMESTIC:
+            names.add("zero_domestic")
+        elif line.sale_category == SaleCategory.ZERO_WDT:
+            names.add("zero_wdt")
+        elif line.sale_category == SaleCategory.ZERO_EXPORT:
+            names.add("zero_export")
+        elif line.sale_category == SaleCategory.EXEMPT:
+            names.add("exempt")
+        elif line.sale_category == SaleCategory.OUT_OF_SCOPE_OUTSIDE_TERRITORY:
+            names.add("out_of_territory")
+        elif line.sale_category == SaleCategory.OUT_OF_SCOPE_ARTICLE_100:
+            names.add("article_100")
+        elif line.sale_category == SaleCategory.REVERSE_CHARGE:
+            names.add("reverse_charge")
+    return names
 
 
 def _map_currency(value: str) -> TkodWaluty:
@@ -383,6 +424,8 @@ def _(request: KsefInvoiceBody) -> FakturaFa:
         for payment in (advance.advance_partial_payments if advance else [])
     ]
 
+    present_buckets = _present_bucket_names(request)
+
     return FakturaFa(
         kod_waluty=_map_currency(request.currency),
         p_1=request.issue_date.isoformat(),
@@ -391,29 +434,80 @@ def _(request: KsefInvoiceBody) -> FakturaFa:
         wz=request.warehouse_documents if request.warehouse_documents else [],
         p_6=request.date_of_supply.isoformat() if request.date_of_supply else None,
         okres_fa=faktura_fa_okres_fa,
-        # Mapped strictly to the SaleCategory tax buckets using _opt_dec to omit empty buckets
-        p_13_1=_opt_dec(request.base_rate_net_total),
-        p_14_1=_opt_dec(request.base_rate_vat_total),
-        p_14_1_w=_opt_optional_dec(request.base_rate_vat_total_pln),
-        p_13_2=_opt_dec(request.first_reduced_rate_net_total),
-        p_14_2=_opt_dec(request.first_reduced_rate_vat_total),
-        p_14_2_w=_opt_optional_dec(request.first_reduced_rate_vat_total_pln),
-        p_13_3=_opt_dec(request.second_reduced_rate_net_total),
-        p_14_3=_opt_dec(request.second_reduced_rate_vat_total),
-        p_14_3_w=_opt_optional_dec(request.second_reduced_rate_vat_total_pln),
-        p_13_4=_opt_dec(request.taxi_flat_rate_net_total),
-        p_14_4=_opt_dec(request.taxi_flat_rate_vat_total),
-        p_14_4_w=_opt_optional_dec(request.taxi_flat_rate_vat_total_pln),
-        p_13_5=_opt_dec(request.special_procedure_xii_net_total),
-        p_14_5=_opt_dec(request.special_procedure_xii_vat_total),
-        p_13_6_1=_opt_dec(request.zero_rate_domestic_total),
-        p_13_6_2=_opt_dec(request.zero_rate_wdt_total),
-        p_13_6_3=_opt_dec(request.zero_rate_export_total),
-        p_13_7=_opt_dec(request.exempt_total),
-        p_13_8=_opt_dec(request.out_of_territory_total),
-        p_13_9=_opt_dec(request.article_100_services_total),
-        p_13_10=_opt_dec(request.reverse_charge_total),
-        p_13_11=_opt_dec(request.margin_total),
+        # Emit each summary bucket when rows belong to it, even when its total is zero.
+        p_13_1=_opt_dec(
+            request.base_rate_net_total, has_rows="base_rate" in present_buckets
+        ),
+        p_14_1=_opt_dec(
+            request.base_rate_vat_total, has_rows="base_rate" in present_buckets
+        ),
+        p_14_1_w=_opt_optional_dec(
+            request.base_rate_vat_total_pln, has_rows="base_rate" in present_buckets
+        ),
+        p_13_2=_opt_dec(
+            request.first_reduced_rate_net_total,
+            has_rows="first_reduced_rate" in present_buckets,
+        ),
+        p_14_2=_opt_dec(
+            request.first_reduced_rate_vat_total,
+            has_rows="first_reduced_rate" in present_buckets,
+        ),
+        p_14_2_w=_opt_optional_dec(
+            request.first_reduced_rate_vat_total_pln,
+            has_rows="first_reduced_rate" in present_buckets,
+        ),
+        p_13_3=_opt_dec(
+            request.second_reduced_rate_net_total,
+            has_rows="second_reduced_rate" in present_buckets,
+        ),
+        p_14_3=_opt_dec(
+            request.second_reduced_rate_vat_total,
+            has_rows="second_reduced_rate" in present_buckets,
+        ),
+        p_14_3_w=_opt_optional_dec(
+            request.second_reduced_rate_vat_total_pln,
+            has_rows="second_reduced_rate" in present_buckets,
+        ),
+        p_13_4=_opt_dec(
+            request.taxi_flat_rate_net_total, has_rows="taxi" in present_buckets
+        ),
+        p_14_4=_opt_dec(
+            request.taxi_flat_rate_vat_total, has_rows="taxi" in present_buckets
+        ),
+        p_14_4_w=_opt_optional_dec(
+            request.taxi_flat_rate_vat_total_pln, has_rows="taxi" in present_buckets
+        ),
+        p_13_5=_opt_dec(
+            request.special_procedure_xii_net_total,
+            has_rows="special_procedure" in present_buckets,
+        ),
+        p_14_5=_opt_dec(
+            request.special_procedure_xii_vat_total,
+            has_rows="special_procedure" in present_buckets,
+        ),
+        p_13_6_1=_opt_dec(
+            request.zero_rate_domestic_total,
+            has_rows="zero_domestic" in present_buckets,
+        ),
+        p_13_6_2=_opt_dec(
+            request.zero_rate_wdt_total, has_rows="zero_wdt" in present_buckets
+        ),
+        p_13_6_3=_opt_dec(
+            request.zero_rate_export_total, has_rows="zero_export" in present_buckets
+        ),
+        p_13_7=_opt_dec(request.exempt_total, has_rows="exempt" in present_buckets),
+        p_13_8=_opt_dec(
+            request.out_of_territory_total,
+            has_rows="out_of_territory" in present_buckets,
+        ),
+        p_13_9=_opt_dec(
+            request.article_100_services_total,
+            has_rows="article_100" in present_buckets,
+        ),
+        p_13_10=_opt_dec(
+            request.reverse_charge_total, has_rows="reverse_charge" in present_buckets
+        ),
+        p_13_11=_opt_dec(request.margin_total, has_rows="margin" in present_buckets),
         # Total Gross is mandatory, always format to string even if 0.00
         p_15=_format_decimal(request.total_gross),
         kurs_waluty_z=_format_decimal(request.vat_currency_exchange_rate)

@@ -29,6 +29,14 @@ and method names remain functional throughout 1.x (#171). Read
 - Deprecations are visible to type checkers and IDEs (PEP 702 `@deprecated`) and
   remain functional through the 1.x line. Removal is a 2.0 decision (#171).
 
+### Fixed
+
+- **FA(3) builder (#293, #304).** Emit summary amounts for VAT buckets with
+  rows even when rounding or correction arithmetic produces zero, validate
+  foreign-currency VAT exchange rates, and document rounding, corrections, and
+  large-invoice performance. #304 parser string handling remains in #297; the
+  missing corrected-invoice error remains in #296.
+
 ### Breaking changes
 
 - **Collective-identifier invoice queries (#128).** KSeF API 2.8.1 replaced

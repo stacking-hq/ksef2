@@ -121,6 +121,10 @@ Wszystkie selektory body mają wspólne metody, między innymi `currency()`,
 `billing_period()`, `add_description()`, `mark_fp()`,
 `related_party_transaction()` i `summary_overrides()`.
 
+Dla faktury w walucie innej niż PLN ustaw `vat_currency_exchange_rate()` razem
+z `currency()`. `build()` zgłasza czytelny `ValueError`, gdy faktura w obcej
+walucie nie ma kursu VAT.
+
 ## Dodaj pozycje faktury
 
 Użyj `rows().add_line()` dla zwykłych danych aplikacji. Builder wylicza brakujące
@@ -161,6 +165,10 @@ builder = (
 Użyj `add_line_model()` albo `replace_lines()`, gdy inna warstwa utworzyła już
 modele `InvoiceRow`. Użyj `summary_overrides()`, gdy oficjalny przypadek FA(3)
 wymaga wartości podsumowania, których nie należy wyliczać z pozycji.
+
+Builder wylicza kwoty każdej pozycji, zaokrągla je do dwóch miejsc metodą
+`ROUND_HALF_UP`, a potem sumuje zaokrąglone pozycje. Domyślnie obowiązuje
+zaokrąglanie per pozycja; builder nie udostępnia trybu obliczeń od sumy.
 
 ## Dodaj płatności i adnotacje
 
@@ -258,6 +266,13 @@ correction = (
 
 Sekcja korekty obsługuje też okres faktury korygowanej, skorygowane dane
 sprzedawcy, skorygowanych nabywców oraz metody przyjmujące gotowe modele FA(3).
+
+Korekta może bezpośrednio opisywać różnicę, także pojedynczą ujemną pozycją.
+Jeśli chcesz pokazać stan przed i po, dodaj obie pozycje przez
+`rows().add_line()`: dla pierwotnej ustaw `before_correction=True` (pole FA(3)
+`StanPrzed`), a pozycję po korekcie dodaj bez tej flagi. Builder oblicza sumy
+korekty jako wartości po zmianie minus wartości sprzed zmiany. Referencję do
+korygowanej faktury dodaj w zagnieżdżonej sekcji `.correction()`.
 
 ## Zbuduj zaliczkę i rozliczenie
 
@@ -403,6 +418,11 @@ Path("invoice.xml").write_text(xml_text, encoding="utf-8")
 ```
 
 Do sesji online albo batch przekaż bajty XML.
+
+Budowanie faktury i renderowanie PDF mają różny koszt. W jednym zgłoszonym
+pomiarze budowa faktury z 10 000 pozycji zajęła 4,3 s i osiągnęła szczytowo
+63 MB pamięci; PDF z 2 000 pozycji powstawał 24 s. Wynik zależy od komputera i
+treści faktury, dlatego zmierz reprezentatywne faktury w swoim środowisku.
 
 ```python
 from ksef2 import FormSchema
