@@ -2,6 +2,7 @@ import base64
 import json
 from collections.abc import Callable
 from io import BytesIO
+from pathlib import Path
 from zipfile import ZipFile
 
 import httpx
@@ -13,6 +14,7 @@ from ksef2._core.crypto import decrypt_aes_cbc, sha256_b64
 from ksef2._core.exceptions import (
     KSeFBatchUploadError,
     KSeFBatchSessionTimeoutError,
+    KSeFArgumentError,
     KSeFSessionError,
     KSeFSessionFailedError,
     KSeFValidationError,
@@ -31,6 +33,7 @@ from ksef2._domain.models.batch import (
 from ksef2._domain.models.session import FormSchema, SessionEncryptionMaterial
 from ksef2._infra.schema.api import spec
 from ksef2._services.batch import BatchService, BatchSessionOpener
+from ksef2._services.batch_preparation import load_batch_items
 from tests.unit.fakes.transport import FakeTransport
 from tests.unit.flavors import Flavor
 from tests.unit.helpers import VALID_PUBLIC_KEY_ID, legacy_api
@@ -87,6 +90,27 @@ def prepared_batch(fake_transport: FakeTransport) -> PreparedBatch:
     return _build_service(
         fake_transport, open_batch_session=_unused_open_batch_session
     ).prepare([b"<Invoice>1</Invoice>", b"<Invoice>2</Invoice>"], offline_mode=True)
+
+
+def test_batch_string_that_names_existing_file_fails_with_path_hint(
+    tmp_path: Path,
+) -> None:
+    invoice_path = tmp_path / "invoice.xml"
+    invoice_path.write_text("<Invoice />", encoding="utf-8")
+
+    with pytest.raises(
+        KSeFArgumentError,
+        match=r"looks like an existing file path; pass Path\(\.\.\.\)",
+    ):
+        _ = load_batch_items([str(invoice_path)])
+
+    assert load_batch_items([invoice_path])[0].content == b"<Invoice />"
+
+
+def test_batch_long_xml_text_is_content() -> None:
+    xml = f"<Invoice><Description>{'x' * 300}</Description></Invoice>"
+
+    assert load_batch_items([xml])[0].content == xml.encode("utf-8")
 
 
 def test_prepared_batch_sensitive_export_round_trips(

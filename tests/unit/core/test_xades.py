@@ -116,7 +116,11 @@ def test_load_private_key_from_pem_bytes_and_path(
     assert load_private_key_from_pem(path).private_numbers() == (
         private_key.private_numbers()
     )
-    assert load_private_key_from_pem(str(path)).private_numbers() == (
+    with pytest.warns(DeprecationWarning, match="pass Path"):
+        assert load_private_key_from_pem(str(path)).private_numbers() == (
+            private_key.private_numbers()
+        )
+    assert load_private_key_from_pem(key_pem.decode("ascii")).private_numbers() == (
         private_key.private_numbers()
     )
 
@@ -161,20 +165,41 @@ def test_load_certificate_from_pem_bytes_and_path(
     _ = path.write_bytes(cert_pem)
 
     assert load_certificate_from_pem(cert_pem) == cert
+    assert load_certificate_from_pem(cert_pem.decode("ascii")) == cert
     assert load_certificate_from_pem(path) == cert
 
 
+def test_malformed_long_certificate_text_does_not_echo_content() -> None:
+    content = "not-a-certificate-" + "sensitive-material-" * 30
+
+    with pytest.raises(ValueError) as error:
+        load_certificate_from_pem(content)
+
+    assert content not in str(error.value)
+
+
 def test_load_certificate_and_key_from_p12(
+    tmp_path: Path,
     rsa_key_and_cert: tuple[x509.Certificate, rsa.RSAPrivateKey],
 ) -> None:
     cert, private_key = rsa_key_and_cert
+    blob = archive(cert, private_key, password=b"hastle")
 
     loaded_cert, loaded_key = load_certificate_and_key_from_p12(
-        archive(cert, private_key, password=b"hastle"), password=b"hastle"
+        blob, password=b"hastle"
     )
 
     assert loaded_cert == cert
     assert loaded_key.private_numbers() == private_key.private_numbers()
+
+    path = tmp_path / "credentials.p12"
+    _ = path.write_bytes(blob)
+    with pytest.warns(DeprecationWarning, match="pass Path"):
+        legacy_cert, legacy_key = load_certificate_and_key_from_p12(
+            str(path), password=b"hastle"
+        )
+    assert legacy_cert == cert
+    assert legacy_key.private_numbers() == private_key.private_numbers()
 
 
 def test_load_certificate_and_key_rejects_a_p12_without_a_certificate(

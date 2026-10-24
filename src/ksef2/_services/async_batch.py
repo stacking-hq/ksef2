@@ -100,7 +100,11 @@ class AsyncBatchService:
         """Build a ZIP package, split it, and encrypt each upload part.
 
         Args:
-            invoices: Invoices to include. Each item is invoice XML as ``bytes`` or ``str`` (named ``invoice-<position>.xml``), a ``Path`` to an XML file (keeps its file name) or a ``BatchInvoice`` with an explicit file name.
+            invoices: Invoices to include. ``bytes`` and ``str`` are XML content
+                (named ``invoice-<position>.xml``); ``Path`` reads an XML file and
+                keeps its name; ``BatchInvoice`` supplies an explicit name. A
+                string naming an existing file raises an argument error; use
+                ``Path`` to read it.
             form_code: Invoice schema declared for the batch session.
             offline_mode: Whether to declare offline invoicing mode for the batch.
             max_part_size: Maximum size of each ZIP part before encryption.

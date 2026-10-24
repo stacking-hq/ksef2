@@ -17,6 +17,7 @@ SAMPLES = Path(__file__).parents[2] / "schemas" / "FA3" / "samples"
 def test_parse_and_rebuild_public_invoice(filename: str) -> None:
     invoice = parse_invoice_xml((SAMPLES / filename).read_bytes())
     xml = InvoiceBuilder.from_invoice(invoice).to_xml()
+    assert parse_invoice_xml(xml) == invoice
     assert parse_invoice_xml(xml.encode("utf-8")) == invoice
     assert invoice.seller.tax_id
     assert invoice.body.invoice_number
@@ -47,6 +48,13 @@ def test_parse_preserves_xml_declared_encoding() -> None:
     xml = (SAMPLES / "FA_3_Przykład_1.xml").read_bytes()
     text = xml.decode("utf-8").replace('encoding="UTF-8"', 'encoding="ISO-8859-2"')
     assert parse_invoice_xml(text.encode("iso-8859-2")) == parse_invoice_xml(xml)
+
+
+def test_parse_unicode_string_normalizes_declared_encoding() -> None:
+    xml = (SAMPLES / "FA_3_Przykład_1.xml").read_bytes()
+    text = xml.decode("utf-8").replace('encoding="UTF-8"', 'encoding="ISO-8859-2"')
+
+    assert parse_invoice_xml(text) == parse_invoice_xml(xml)
 
 
 @pytest.mark.parametrize("kind", ["correction_advance", "correction_settlement"])

@@ -54,6 +54,23 @@ potem korzystać z modułów uwierzytelnionych: `auth.invoices`,
 wtedy, gdy potrzebujesz kontroli na poziomie protokołu.
 :::
 
+## Dane i pliki wejściowe
+
+W całym publicznym SDK wartości `bytes` i `str` oznaczają dane. Obiekt
+`pathlib.Path` oznacza plik do odczytania. SDK nie traktuje tekstu jako ścieżki
+do pliku; aby odczytać plik, przekaż `Path("faktura.xml")`. Na przykład
+`auth.batch.prepare([xml_text])` dodaje treść XML, a
+`auth.batch.prepare([Path("faktura.xml")])` odczytuje plik. Jeśli tekst
+przekazany do przygotowania paczki wskazuje istniejący plik, metoda zgłasza
+błąd argumentu z podpowiedzią.
+
+Helpery PEM przyjmują treść PEM jako bajty lub tekst, a pliki jako obiekty
+`Path`. Helpery PKCS#12 przyjmują bajty archiwum lub `Path`. Dla zgodności
+istniejąca ścieżka do pliku przekazana jako tekst do helpera certyfikatów nadal
+działa w wersji 1.x i wyświetla ostrzeżenie o wycofaniu. Zamiast tego przekaż
+`Path(...)`. Obsługa ścieżek tekstowych może zostać usunięta nie wcześniej niż
+w wersji 2.0.0.
+
 ## Główne pojęcia
 
 | Pojęcie | Znaczenie w SDK |

@@ -54,6 +54,22 @@ authenticated branches such as `auth.invoices`, `auth.online_session()`, or
 control.
 :::
 
+## Content and file inputs
+
+Across the public SDK, `bytes` and `str` values represent content. A
+`pathlib.Path` represents a file to read. The SDK does not treat a string as a
+file path; pass `Path("invoice.xml")` when you want to read a file. For
+example, `auth.batch.prepare([xml_text])` adds XML content, while
+`auth.batch.prepare([Path("invoice.xml")])` reads that file. If a string passed
+to batch preparation names an existing file, preparation raises an argument
+error with this hint.
+
+PEM helpers accept PEM content as bytes or text and files as `Path` objects.
+PKCS#12 helpers accept archive bytes or a `Path`. For compatibility, an
+existing file path passed as a string to a certificate helper still works
+during 1.x and emits a deprecation warning; pass `Path(...)` instead. String
+paths may be removed no earlier than 2.0.0.
+
 ## Main nouns
 
 | Noun | What it means in the SDK |

@@ -62,10 +62,25 @@ def load_batch_items(
             invoices.append(
                 BatchInvoice(file_name=item.name, content=item.read_bytes())
             )
-        else:
-            content = item.encode("utf-8") if isinstance(item, str) else item
+        elif isinstance(item, str):
+            if not item.lstrip("\ufeff \t\r\n").startswith("<") and "\n" not in item:
+                try:
+                    looks_like_file = Path(item).is_file()
+                except (OSError, ValueError):
+                    looks_like_file = False
+                if looks_like_file:
+                    raise exceptions.KSeFArgumentError(
+                        "Invoice content looks like an existing file path; pass Path(...) "
+                        "to read a file, or pass the XML content as str or bytes."
+                    )
             invoices.append(
-                BatchInvoice(file_name=f"invoice-{position}.xml", content=content)
+                BatchInvoice(
+                    file_name=f"invoice-{position}.xml", content=item.encode("utf-8")
+                )
+            )
+        else:
+            invoices.append(
+                BatchInvoice(file_name=f"invoice-{position}.xml", content=item)
             )
     return invoices
 

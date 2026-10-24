@@ -624,16 +624,16 @@ def load_profile_pem_credentials(
     )
     try:
         return (
-            load_certificate_from_pem(auth.cert),
+            load_certificate_from_pem(Path(auth.cert)),
             load_private_key_from_pem(
-                auth.key,
+                Path(auth.key),
                 password=password.encode("utf-8") if password else None,
             ),
         )
     except (OSError, TypeError, ValueError) as exc:
         raise exceptions.KSeFProfileConfigError(
             f"Failed to load PEM credentials for ksef2-cli profile "
-            f"{profile_name!r}: {exc}",
+            f"{profile_name!r} (cause: {type(exc).__name__}).",
             profile_name=profile_name,
             cert_path=str(auth.cert),
             key_path=str(auth.key),
@@ -659,13 +659,13 @@ def load_profile_p12_credentials(
     )
     try:
         return load_certificate_and_key_from_p12(
-            auth.p12,
+            Path(auth.p12),
             password=password.encode("utf-8") if password else None,
         )
     except (OSError, TypeError, ValueError) as exc:
         raise exceptions.KSeFProfileConfigError(
             f"Failed to load PKCS#12/PFX credentials for ksef2-cli profile "
-            f"{profile_name!r}: {exc}",
+            f"{profile_name!r} (cause: {type(exc).__name__}).",
             profile_name=profile_name,
             p12_path=str(auth.p12),
         ) from exc
