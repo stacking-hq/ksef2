@@ -43,6 +43,8 @@ def main() -> int:
         module = f"ksef2.{family}"
         if module in sys.modules:
             problems.append(f"{module} was activated by a modern import")
+    if any(name.startswith("ksef2.clients.") for name in sys.modules):
+        problems.append("a deprecated ksef2.clients submodule was activated")
     if "ksef2._legacy_imports" in sys.modules:
         problems.append("ksef2._legacy_imports was activated by a modern import")
     if "weasyprint" in sys.modules:

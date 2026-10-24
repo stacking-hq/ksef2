@@ -13,6 +13,7 @@ from ksef2._clients._handles import OperationHandle, not_after_resume
 from ksef2._clients._pager import Pager
 from ksef2._clients._pagination_cursor import ContinuationCursor
 from ksef2._core import exceptions
+from ksef2._core.polling import poll_until as _until
 from ksef2._core.protocols import Middleware
 from ksef2._domain.models.pagination import Page, TokenListParams
 from ksef2._domain.models.tokens import (
@@ -26,6 +27,8 @@ from ksef2._domain.models.tokens import (
 )
 from ksef2._endpoints.tokens import TokenEndpoints
 from ksef2._infra.mappers.tokens import from_spec, to_spec
+
+poll_until = _until
 
 
 @final

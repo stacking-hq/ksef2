@@ -6,6 +6,7 @@ from typing import cast, final, override
 
 from typing_extensions import deprecated
 
+from ksef2._core.polling import async_poll_until as _until
 from ksef2._clients._async_handles import AsyncOperationHandle, not_after_resume
 from ksef2._clients._async_pager import AsyncPager
 from ksef2._clients._pagination_cursor import ContinuationCursor
@@ -23,6 +24,8 @@ from ksef2._domain.models.tokens import (
 )
 from ksef2._endpoints.async_tokens import AsyncTokenEndpoints
 from ksef2._infra.mappers.tokens import from_spec, to_spec
+
+async_poll_until = _until
 
 
 @final

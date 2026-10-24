@@ -7,6 +7,7 @@ transport gets an ``httpx.MockTransport`` that refuses every request.
 """
 
 from datetime import UTC, datetime
+import importlib
 
 import httpx
 from pydantic import SecretStr
@@ -28,6 +29,44 @@ from ksef2.models import (
 )
 from ksef2.profiles import ProfileConfig
 from ksef2.services.invoices import InvoicesFilter as ServiceInvoicesFilter
+
+LEGACY_CLIENT_MODULES = (
+    "_async_session",
+    "_metadata_pagination",
+    "async_auth",
+    "async_authenticated",
+    "async_base",
+    "async_batch",
+    "async_certificates",
+    "async_collective_identifiers",
+    "async_encryption",
+    "async_invoice_sessions",
+    "async_invoices",
+    "async_limits",
+    "async_online",
+    "async_peppol",
+    "async_permissions",
+    "async_session_management",
+    "async_testdata",
+    "async_tokens",
+    "auth",
+    "authenticated",
+    "base",
+    "batch",
+    "certificates",
+    "collective_identifiers",
+    "encryption",
+    "invoice_sessions",
+    "invoices",
+    "limits",
+    "online",
+    "peppol",
+    "permissions",
+    "profiles",
+    "session_management",
+    "testdata",
+    "tokens",
+)
 
 AES_KEY = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
 INITIALIZATION_VECTOR = "MDEyMzQ1Njc4OWFiY2RlZg=="
@@ -63,6 +102,10 @@ def run() -> None:
     assert OnlineSessionState is OnlineSessionResumeState
     assert BatchSessionState is models.BatchSessionResumeState
     assert InvoicesClient.__module__ == "ksef2._clients.invoices"
+    for name in LEGACY_CLIENT_MODULES:
+        legacy_module = importlib.import_module(f"ksef2.clients.{name}")
+        canonical_module = importlib.import_module(f"ksef2._clients.{name}")
+        assert legacy_module is canonical_module, name
 
     # Data files stay reachable through the legacy resource path.
     assert STYLESHEET_PATH.is_file()

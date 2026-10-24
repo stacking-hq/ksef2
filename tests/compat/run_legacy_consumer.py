@@ -29,6 +29,7 @@ EXPECTED_DEPRECATIONS: tuple[str, ...] = (
     "`ksef2.domain` and its submodules are deprecated",
     "`ksef2.infra` and its submodules are deprecated",
     "`ksef2.services` and its submodules are deprecated",
+    "`ksef2.clients` submodules are deprecated",
     "`ksef2.models.OnlineSessionState` is deprecated",
     "`ksef2.models.BatchSessionState` is deprecated",
     "`ksef2.clients.InvoicesClient` is deprecated",

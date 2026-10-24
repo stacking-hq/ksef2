@@ -22,11 +22,6 @@ kind = "tree"
 reason = "Deliberately privatised as ksef2._logging before 1.0; tests/unit/test_module_visibility_contract.py::test_other_internal_paths_remain_private and docs/en/reference/public-api.md keep it out of the public API."
 
 [[entry]]
-path = "ksef2.clients"
-kind = "submodules"
-reason = "Only ksef2.clients itself is public; its implementation modules are ksef2._clients, as tests/unit/test_module_visibility_contract.py::test_other_internal_paths_remain_private records for ksef2.clients.base."
-
-[[entry]]
 path = "ksef2.raw.facade"
 kind = "tree"
 reason = "Deliberately privatised as ksef2._raw.facade before 1.0; tests/unit/test_module_visibility_contract.py::test_other_internal_paths_remain_private and docs/en/reference/public-api.md expose ksef2.raw instead."

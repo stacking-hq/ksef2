@@ -26,6 +26,44 @@ PUBLIC_MODULES = frozenset(
 LEGACY_PACKAGES = frozenset(
     {"ksef2.core", "ksef2.domain", "ksef2.infra", "ksef2.services"}
 )
+LEGACY_CLIENT_MODULES = frozenset(
+    f"ksef2.clients.{name}"
+    for name in (
+        "async_auth",
+        "async_authenticated",
+        "async_base",
+        "async_batch",
+        "async_certificates",
+        "async_collective_identifiers",
+        "async_encryption",
+        "async_invoice_sessions",
+        "async_invoices",
+        "async_limits",
+        "async_online",
+        "async_peppol",
+        "async_permissions",
+        "async_session_management",
+        "async_testdata",
+        "async_tokens",
+        "auth",
+        "authenticated",
+        "base",
+        "batch",
+        "certificates",
+        "collective_identifiers",
+        "encryption",
+        "invoice_sessions",
+        "invoices",
+        "limits",
+        "online",
+        "peppol",
+        "permissions",
+        "profiles",
+        "session_management",
+        "testdata",
+        "tokens",
+    )
+)
 
 
 def _is_dunder(part: str) -> bool:
@@ -60,6 +98,7 @@ def test_every_module_without_an_underscore_component_is_listed_as_public() -> N
         if not _is_private(module)
         and not _is_dunder_module(module)
         and module not in LEGACY_PACKAGES
+        and module not in LEGACY_CLIENT_MODULES
         and module not in PUBLIC_MODULES
     )
 
@@ -83,12 +122,18 @@ def test_legacy_packages_exist_alongside_canonical_implementations() -> None:
         assert module.replace("ksef2.", "ksef2._", 1) in modules, module
 
 
+def test_legacy_client_shims_exist_for_every_published_public_module() -> None:
+    modules = _all_modules()
+    missing = sorted(LEGACY_CLIENT_MODULES - modules)
+
+    assert not missing, f"Missing deprecated client shims: {', '.join(missing)}"
+
+
 def test_other_internal_paths_remain_private() -> None:
     old_internal = {
         "ksef2.endpoints",
         "ksef2.config",
         "ksef2.logging",
-        "ksef2.clients.base",
         "ksef2.raw.facade",
     }
 

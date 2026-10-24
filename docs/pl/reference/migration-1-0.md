@@ -3,8 +3,8 @@ title: Migracja do ksef2 1.0
 description: Zastąp wycofywane importy i operacje faktur, zachowując działanie dotychczasowego kodu przez całe 1.x.
 ---
 
-Dawne importy z `ksef2.core`, `ksef2.domain`, `ksef2.infra` i `ksef2.services`
-oraz wycofywane nazwy metod działają przez całe 1.x.
+Dawne importy z `ksef2.core`, `ksef2.domain`, `ksef2.infra`, `ksef2.services`
+i `ksef2.clients.*` oraz wycofywane nazwy metod działają przez całe 1.x.
 Emitują `DeprecationWarning` wskazujące zamiennik. Usunięcie jest możliwe nie
 wcześniej niż w 2.0.0 i pozostaje decyzją dla tego wydania. Nowy kod powinien
 używać publicznych importów i uchwytów operacji pokazanych poniżej.
@@ -42,6 +42,7 @@ from ksef2.renderers import InvoiceXSLTRenderer
 | `ksef2.infra.schema.fa3` i wygenerowane podmoduły | Zachowaj wycofywany alias, jeśli potrzebujesz wygenerowanych klas XSD lub zasobów schemy. Nie każda wygenerowana klasa FA(3) ma publiczny zamiennik. Do budowania faktur używaj `ksef2.fa3.InvoiceBuilder`. |
 | `ksef2.services.builders` | `ksef2.fa3` |
 | `ksef2.services.renderers.xslt` | `ksef2.renderers` |
+| `ksef2.clients.*` | Importuj typy klientów z `ksef2.clients`; w nowym kodzie używaj klientów podrzędnych `AuthenticatedClient` lub `AsyncAuthenticatedClient`. |
 
 Pierwszy import ze starego pakietu ładuje całe jego drzewo implementacji
 i rejestruje aliasy do tych samych modułów i klas. Ostrzeżenie pojawia się raz
@@ -49,9 +50,14 @@ dla danej rodziny pakietów, także przy bezpośrednim imporcie podmodułu. Nowe
 importy nie aktywują aliasów. Opcjonalne zależności PDF pozostają niezaładowane
 aż do użycia renderowania.
 
-Zagnieżdżone stare importy działają w czasie wykonania, ale IDE i narzędzia
-sprawdzające typy mogą nie rozpoznawać dynamicznych aliasów. Do analizy
-statycznej używaj publicznych importów pokazanych powyżej.
+Fasada `ksef2.clients` pozostaje obsługiwana. Jej dawne podmoduły, takie jak
+`ksef2.clients.authenticated` i `ksef2.clients.online`, ostrzegają przy
+pierwszym użyciu i wskazują na kanoniczne moduły klientów.
+
+Moduły zgodności `ksef2.clients.*` są rzeczywistymi modułami re-eksportującymi,
+więc IDE i narzędzia sprawdzające typy mogą je rozpoznawać. Drzewa `core`,
+`domain`, `infra` i `services` nadal używają aliasów czasu wykonania; do analizy
+statycznej tych ścieżek używaj publicznych importów pokazanych powyżej.
 
 ## Wysyłka, oczekiwanie i pobieranie UPO
 

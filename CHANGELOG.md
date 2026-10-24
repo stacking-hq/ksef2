@@ -1,5 +1,9 @@
 ## v1.0.0 (unreleased)
 
+### Fixed
+
+- Restore deprecated `ksef2.clients.*` submodule imports throughout 1.x.
+
 ksef2 1.0.0 is being prepared as the first stable release. It targets KSeF
 OpenAPI 2.8.1 and starts the 1.x compatibility contract. Collective-identifier
 invoice queries change because KSeF replaced the endpoint. Old SDK import paths
