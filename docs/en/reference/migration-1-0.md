@@ -132,6 +132,13 @@ process if you need to, and the search resumes on the page after it: an invoice
 search cursor carries the filters, parameters and truncation boundary of the
 request it resumes.
 
+## Authentication and permission failures
+
+HTTP 401 still raises `KSeFAuthError`. HTTP 403 now raises
+`KSeFPermissionDeniedError`, which is an API error but not an authentication
+error. If a handler used `except KSeFAuthError` to recover from 403, add a
+`KSeFPermissionDeniedError` handler or catch `KSeFApiError` for both cases.
+
 ## Transport failures
 
 Before, any HTTP request failure reached the caller as an `httpx` exception, so

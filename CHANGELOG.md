@@ -26,6 +26,10 @@ and method names remain functional throughout 1.x (#171). Read
   for a before/after.
 - KSeF errors come from one pipeline with one message format, carry `ksef_code`,
   `trace_id` and `details`, and say what to do next in `hint` (#167).
+- Public Pydantic model validation and invoice-builder validation raise SDK
+  exceptions; HTTP 403 raises `KSeFPermissionDeniedError`, separate from
+  `KSeFAuthError`; terminal operation failures share `KSeFOperationFailedError`
+  (#296).
 - Deprecations are visible to type checkers and IDEs (PEP 702 `@deprecated`) and
   remain functional through the 1.x line. Removal is a 2.0 decision (#171).
 

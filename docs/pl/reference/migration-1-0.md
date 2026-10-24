@@ -133,6 +133,14 @@ innego procesu, a wyszukiwanie wznowi się na stronie po niej: kursor
 wyszukiwania faktur zawiera filtry, parametry i granicę obcięcia żądania, które
 wznawia.
 
+## Błędy uwierzytelniania i uprawnień
+
+HTTP 401 nadal zgłasza `KSeFAuthError`. HTTP 403 zgłasza teraz
+`KSeFPermissionDeniedError`, który jest błędem API, ale nie błędem
+uwierzytelnienia. Jeśli obsługa przez `except KSeFAuthError` odzyskiwała po HTTP
+403, dodaj obsługę `KSeFPermissionDeniedError` albo przechwytuj
+`KSeFApiError` dla obu przypadków.
+
 ## Błędy transportu
 
 Wcześniej każde nieudane żądanie HTTP docierało do wywołującego jako wyjątek

@@ -1,3 +1,4 @@
+import re
 from typing import final, override
 
 import httpx
@@ -14,6 +15,11 @@ _TRANSPORT_FAILED_MESSAGE = (
 
 
 _SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
+_URL = re.compile(r"https?://[^\s)]+")
+
+
+def _safe_cause_message(error: Exception) -> str:
+    return _URL.sub("[URL]", str(error)).split("?", 1)[0]
 
 
 @final
@@ -63,6 +69,8 @@ class AsyncKSeFExceptionMiddleware(AsyncBaseMiddleware):
                 _TRANSPORT_FAILED_MESSAGE,
                 method=method,
                 path=path,
+                cause_type=type(exc).__name__,
+                cause_message=_safe_cause_message(exc),
                 outcome_ambiguous=method.upper() not in _SAFE_METHODS,
             ) from exc
         return self._handle(response, method, path)

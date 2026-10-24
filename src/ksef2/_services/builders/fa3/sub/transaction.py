@@ -534,7 +534,7 @@ class TransactionBuilder[TParent]:
             ValueError: If transaction details are empty.
         """
         if self._is_empty():
-            raise ValueError(
+            raise _validation_error(
                 "Transaction details are empty. Set at least one field before calling done()."
             )
         self._on_done(self.build())
@@ -558,3 +558,9 @@ class TransactionBuilderMixin:
 
     def _set_transaction(self, value: TransactionConditions) -> None:
         self._transaction_conditions = value
+
+
+def _validation_error(message: str):
+    from ksef2._core.exceptions import KSeFValidationError
+
+    return KSeFValidationError(message)

@@ -722,7 +722,7 @@ class PaymentBuilder[TParent]:
                 no description.
         """
         if self._is_empty():
-            raise ValueError(
+            raise _validation_error(
                 "Payment details are empty. Set at least one field before calling done()."
             )
 
@@ -734,7 +734,7 @@ class PaymentBuilder[TParent]:
             self._state["payment_date"] = None
 
         if self._state["other_payment_form"] and not self._state["payment_description"]:
-            raise ValueError(
+            raise _validation_error(
                 "payment_description is required when other_payment_form is enabled"
             )
 
@@ -754,3 +754,9 @@ class PaymentBuilderMixin:
 
     def _set_payment(self, value: InvoicePayment) -> None:
         self._payment = value
+
+
+def _validation_error(message: str):
+    from ksef2._core.exceptions import KSeFValidationError
+
+    return KSeFValidationError(message)

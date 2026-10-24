@@ -294,7 +294,7 @@ class SettlementBuilder[TParent]:
             ValueError: If settlement details are empty.
         """
         if self._is_empty():
-            raise ValueError(
+            raise _validation_error(
                 "Settlement details are empty. Set at least one field before calling done()."
             )
         self._on_done(self.build())
@@ -316,3 +316,9 @@ class SettlementBuilderMixin:
 
     def _set_settlement(self, value: InvoiceSettlement) -> None:
         self._settlement = value
+
+
+def _validation_error(message: str):
+    from ksef2._core.exceptions import KSeFValidationError
+
+    return KSeFValidationError(message)

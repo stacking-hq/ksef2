@@ -170,6 +170,7 @@ def test_transport_failure_surfaces_as_sdk_error(
     assert error.path == LimitRoutes.GET_API_RATE_LIMITS.path
     assert error.outcome_ambiguous is False
     assert len(outcome.requests) == _RETRY.max_attempts
+    assert failure.__name__ in str(error)
 
 
 def test_malformed_encoded_response_surfaces_as_sdk_error(
@@ -365,6 +366,8 @@ def test_transport_context_is_sanitized(
     assert error.path == "/invoices/query"
     assert error.outcome_ambiguous is ambiguous
     assert isinstance(error.__cause__, httpx.ConnectError)
+    assert "ConnectError" in str(error)
+    assert "part" in str(error)
     secrets = (
         "query-secret",
         "bearer-in-url",

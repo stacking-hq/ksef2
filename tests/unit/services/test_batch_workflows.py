@@ -7,6 +7,7 @@ from typing import Any
 
 import pytest
 from polyfactory import BaseFactory
+from pydantic import ValidationError
 
 from ksef2._core.crypto import decrypt_aes_cbc
 from ksef2._core.exceptions import KSeFValidationError
@@ -97,6 +98,13 @@ class TestPrepare:
     def test_rejects_an_empty_batch(self, flavor: Flavor) -> None:
         with pytest.raises(KSeFValidationError):
             flavor.run(_service(flavor).prepare([]))
+
+    def test_wraps_pydantic_batch_model_limit_errors(self, flavor: Flavor) -> None:
+        with pytest.raises(KSeFValidationError) as caught:
+            flavor.run(_service(flavor).prepare([b"<one />"], max_part_size=1))
+
+        assert isinstance(caught.value.__cause__, ValidationError)
+        assert caught.value.errors()
 
     def test_rejects_a_missing_file(self, flavor: Flavor, tmp_path: Path) -> None:
         with pytest.raises(FileNotFoundError):

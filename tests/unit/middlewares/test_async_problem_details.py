@@ -105,11 +105,12 @@ class TestAsyncProblemDetailsMiddleware:
         }
         async_fake_transport.responses.append(_make_problem_response(403, body))
 
-        with pytest.raises(exceptions.KSeFAuthError) as exc_info:
+        with pytest.raises(exceptions.KSeFPermissionDeniedError) as exc_info:
             _ = asyncio.run(exceptions_middleware.request("POST", "/invoice"))
 
         err = exc_info.value
         assert err.status_code == 403
+        assert not isinstance(err, exceptions.KSeFAuthError)
         assert isinstance(err.response, spec.ForbiddenProblemDetails)
         assert err.response.reasonCode == "missing-permissions"
         assert "Insufficient permissions" in str(err)

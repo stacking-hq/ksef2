@@ -22,6 +22,7 @@ from ksef2._core.exceptions import (
     KSeFApiError,
     KSeFAuthenticationExpiredError,
     KSeFAuthError,
+    KSeFPermissionDeniedError,
 )
 from ksef2._core.middlewares.async_auth import AsyncBearerTokenMiddleware
 from ksef2._core.middlewares.async_exceptions import AsyncKSeFExceptionMiddleware
@@ -210,7 +211,7 @@ class TestReactiveRefresh:
         refresher = Refresher(clock)
         manager = AsyncTokenManager(_tokens(), refresher, clock=clock)
 
-        with pytest.raises(KSeFAuthError):
+        with pytest.raises(KSeFPermissionDeniedError):
             _ = await _chain(Server(set(), rejection=403), manager).get("/limits")
 
         assert refresher.calls == []

@@ -240,9 +240,11 @@ def _validate_unit_price_choice(
     unit_price_gross: Decimal | None,
 ) -> None:
     if unit_price_net is not None and unit_price_gross is not None:
-        raise ValueError("Provide either unit_price_net or unit_price_gross, not both.")
+        raise _validation_error(
+            "Provide either unit_price_net or unit_price_gross, not both."
+        )
     if unit_price_net is None and unit_price_gross is None:
-        raise ValueError("Provide unit_price_net or unit_price_gross.")
+        raise _validation_error("Provide unit_price_net or unit_price_gross.")
 
 
 class RowsBuilder[TParent]:
@@ -547,7 +549,7 @@ class RowsBuilder[TParent]:
             ValueError: If no invoice rows have been added.
         """
         if self._is_empty():
-            raise ValueError("Invoice rows are empty. Add at least one line.")
+            raise _validation_error("Invoice rows are empty. Add at least one line.")
         self._on_done(self.build())
         return self._parent
 
@@ -567,3 +569,9 @@ class RowsBuilderMixin:
 
     def _set_rows(self, value: list[InvoiceRow]) -> None:
         self._rows = list(value)
+
+
+def _validation_error(message: str):
+    from ksef2._core.exceptions import KSeFValidationError
+
+    return KSeFValidationError(message)

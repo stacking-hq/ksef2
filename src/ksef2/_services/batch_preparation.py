@@ -3,6 +3,8 @@ from io import BytesIO
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
+from pydantic import ValidationError
+
 from ksef2._core import exceptions
 from ksef2._core.crypto import encrypt_invoice, sha256_b64
 from ksef2._domain.models.batch import (
@@ -129,15 +131,22 @@ def prepare_batch_package(
             )
         )
 
-    return PreparedBatch(
-        form_code=form_code,
-        offline_mode=offline_mode,
-        batch_file=BatchFileInfo(
+    try:
+        batch_file = BatchFileInfo(
             file_size=len(zip_bytes),
             file_hash=sha256_b64(zip_bytes),
             compression_type="zip",
             parts=declared_parts,
-        ),
+        )
+    except ValidationError as exc:
+        raise exceptions.KSeFValidationError(
+            "Prepared batch exceeds KSeF model limits.", validation_error=exc
+        ) from exc
+
+    return PreparedBatch(
+        form_code=form_code,
+        offline_mode=offline_mode,
+        batch_file=batch_file,
         parts=prepared_parts,
         encryption=BatchEncryptionData.from_bytes(
             aes_key=aes_key,

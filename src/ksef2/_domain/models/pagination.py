@@ -110,6 +110,8 @@ class InvoiceMetadataParams(
 ):
     """Pagination parameters for invoice metadata queries."""
 
+    wrap_validation_errors = True
+
     page_size: int = Field(default=10, ge=10, le=250)
     """Number of results per page (10–250)."""
 

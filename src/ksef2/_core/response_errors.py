@@ -132,6 +132,7 @@ _SERVER_ERROR_CODES = frozenset(
 type ApiResponseExceptions = (
     exceptions.KSeFNotReadyError
     | exceptions.KSeFAuthError
+    | exceptions.KSeFPermissionDeniedError
     | exceptions.KSeFNotFoundError
     | exceptions.KSeFServerError
     | exceptions.KSeFRateLimitError
@@ -149,7 +150,7 @@ EXCEPTION_CODE_TO_EXCEPTION_MAP: dict[
 
 STATUS_CODE_TO_EXCEPTION_MAP: dict[int, type[ApiResponseExceptions]] = {
     401: exceptions.KSeFAuthError,
-    403: exceptions.KSeFAuthError,
+    403: exceptions.KSeFPermissionDeniedError,
     404: exceptions.KSeFNotFoundError,
     410: exceptions.KSeFNotFoundError,
     429: exceptions.KSeFRateLimitError,
@@ -521,8 +522,12 @@ def raise_for_ksef_status(response: httpx.Response, *, method: str, path: str) -
 
     hint = _CODE_HINTS.get(fields.error_code) if fields.error_code is not None else None
 
+    # HTTP 403 is an authorization decision even when its body carries an auth code.
+    if status == 403:
+        exception_cls = exceptions.KSeFPermissionDeniedError
+
     # mapping by first exception code returned by API has priority
-    if exception_code in EXCEPTION_CODE_TO_EXCEPTION_MAP:
+    elif exception_code in EXCEPTION_CODE_TO_EXCEPTION_MAP:
         exception_cls = EXCEPTION_CODE_TO_EXCEPTION_MAP[exception_code]
 
     # if we don't have a mapping for a specific exception code
@@ -537,7 +542,9 @@ def raise_for_ksef_status(response: httpx.Response, *, method: str, path: str) -
         # everything else
         exception_cls = exceptions.KSeFApiError
 
-    if issubclass(exception_cls, exceptions.KSeFAuthError):
+    if issubclass(
+        exception_cls, (exceptions.KSeFAuthError, exceptions.KSeFPermissionDeniedError)
+    ):
         raise exception_cls(
             status,
             message,

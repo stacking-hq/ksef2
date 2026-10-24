@@ -190,7 +190,7 @@ class FooterBuilder[TParent]:
             ValueError: If footer details are empty.
         """
         if self._is_empty():
-            raise ValueError(
+            raise _validation_error(
                 "Footer details are empty. Set at least one field before calling done()."
             )
         self._on_done(self.build())
@@ -212,3 +212,9 @@ class FooterBuilderMixin:
 
     def _set_footer(self, value: InvoiceFooter) -> None:
         self._footer = value
+
+
+def _validation_error(message: str):
+    from ksef2._core.exceptions import KSeFValidationError
+
+    return KSeFValidationError(message)

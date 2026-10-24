@@ -27,14 +27,16 @@ log it, but do not parse it.
 | `KSeFPollingTimeoutError` | `KSeFException` | `POLLING_TIMEOUT` | `timeout` |
 | `KSeFResponseValidationError` | `KSeFValidationError` | `RESPONSE_VALIDATION_ERROR` | `context`, `hint` |
 | `KSeFProfileConfigError` | `KSeFValidationError` | `PROFILE_CONFIG_ERROR` | `context`, `hint` |
-| `KSeFSessionFailedError` | `KSeFSessionError` | `SESSION_FAILED` | `reference_number`, `session_status_code`, `description`, `details`, `status` |
-| `KSeFTokenActivationFailedError` | `KSeFApiError` | `TOKEN_ACTIVATION_FAILED` | `reference_number`, `token_status` |
+| `KSeFSessionFailedError` | `KSeFSessionError`, `KSeFOperationFailedError` | `SESSION_FAILED` | `reference_number`, `session_status_code`, `description`, `details`, `status` |
+| `KSeFTokenActivationFailedError` | `KSeFApiError`, `KSeFOperationFailedError` | `TOKEN_ACTIVATION_FAILED` | `reference_number`, `token_status` |
+| `KSeFOperationFailedError` | `KSeFException` | `OPERATION_FAILED` | Common base for terminal operation failures. |
 | `KSeFNotFoundError` | `KSeFApiError` | `NOT_FOUND` | `status_code`, `ksef_code`, `details`, `response` |
 | `KSeFServerError` | `KSeFApiError` | `SERVER_ERROR` | `status_code`, `ksef_code`, `details`, `response` |
 | `KSeFTransportError` | `KSeFException` | `TRANSPORT_ERROR` | `method`, `path`, `outcome_ambiguous` |
 | `KSeFApiError` | `KSeFException` | `API_ERROR` | `status_code`, `ksef_code`, `exception_code`, `trace_id`, `details`, `response` |
 | `KSeFNotReadyError` | `KSeFApiError` | `NOT_READY` | API error attributes |
 | `KSeFAuthError` | `KSeFApiError` | `AUTH_ERROR` | API error attributes |
+| `KSeFPermissionDeniedError` | `KSeFApiError` | `PERMISSION_DENIED` | API error attributes |
 | `KSeFAuthenticationExpiredError` | `KSeFAuthError` | `AUTHENTICATION_EXPIRED` | API error attributes |
 | `KSeFRateLimitError` | `KSeFApiError` | `RATE_LIMIT_ERROR` | `retry_after` and the API error attributes |
 | `KSeFExternalTransferError` | `KSeFTransportError` | `EXTERNAL_TRANSFER_ERROR` | `operation`, `host`, `reference_number`, `part_ordinal`, `status_code`, `outcome_ambiguous` |
@@ -76,14 +78,14 @@ except KSeFException as exc:
 | `KSeFClientClosedError` | `CLIENT_CLOSED` | Root client or session client used after close. |
 | `KSeFUnsupportedEnvironmentError` | `UNSUPPORTED_ENVIRONMENT` | TEST-only branch or flow used outside `Environment.TEST`. |
 | `KSeFValidationError` | `VALIDATION_ERROR` | Invalid SDK input, invalid response payload, invalid profile config, or invalid session/batch arguments. |
-| `KSeFArgumentError` | `ARGUMENT_ERROR` | A call combined arguments the SDK does not allow, such as both or neither of `form_code` and `state`. Subclass of both `KSeFValidationError` and `TypeError`. |
+| `KSeFArgumentError` | `ARGUMENT_ERROR` | A call combined arguments the SDK does not allow, such as both or neither of `form_code` and `state`. Subclass of `KSeFValidationError`, `TypeError` and (through `KSeFValidationError`) `ValueError`. |
 | `KSeFInvoiceRenderingError` | `INVOICE_RENDERING_ERROR` | Optional XSLT/PDF rendering failures. |
 | `KSeFEncryptionError` | `ENCRYPTION_ERROR` | Token, symmetric-key, invoice encryption, or decryption failure. |
 | `KSeFSessionError` | `SESSION_ERROR` | Session-state violation, such as using a closed session. Base class of `KSeFInvoiceRejectedError`. |
 | `KSeFInvoiceRejectedError` | `INVOICE_REJECTED` | KSeF finished processing an online-session invoice and rejected it (`InvoiceSubmission.wait()`). |
-| `KSeFExportFailedError` | `EXPORT_FAILED` | KSeF finished an invoice export without a package: it failed, was cancelled by the system or expired (`ExportJob.wait()`). |
-| `KSeFPermissionOperationFailedError` | `PERMISSION_OPERATION_FAILED` | KSeF finished a permission grant or revoke without applying it (`PermissionOperation.wait()`). |
-| `KSeFCertificateEnrollmentFailedError` | `CERTIFICATE_ENROLLMENT_FAILED` | KSeF rejected, cancelled or failed a certificate enrollment (`CertificateEnrollment.wait()`). |
+| `KSeFExportFailedError` | `EXPORT_FAILED` | KSeF finished an invoice export without a package: it failed, was cancelled by the system or expired (`ExportJob.wait()`). Subclass of `KSeFOperationFailedError`. |
+| `KSeFPermissionOperationFailedError` | `PERMISSION_OPERATION_FAILED` | KSeF finished a permission grant or revoke without applying it (`PermissionOperation.wait()`). Subclass of `KSeFOperationFailedError`. |
+| `KSeFCertificateEnrollmentFailedError` | `CERTIFICATE_ENROLLMENT_FAILED` | KSeF rejected, cancelled or failed a certificate enrollment (`CertificateEnrollment.wait()`). Subclass of `KSeFOperationFailedError`. |
 | `KSeFAuthTokenRedemptionError` | `AUTH_TOKEN_REDEMPTION_ERROR` | A one-shot authentication redemption got no usable response and may have succeeded. Subclass of `KSeFTransportError`. |
 | `KSeFExternalTransferError` | `EXTERNAL_TRANSFER_ERROR` | A presigned external-storage upload or download was rejected or got no usable response. |
 | `KSeFBatchUploadError` | `BATCH_UPLOAD_ERROR` | A batch-part upload failed while protected recovery state remains available. |
@@ -93,6 +95,14 @@ except KSeFException as exc:
 `KSeFAuthTokenRedemptionError.outcome_ambiguous` is always `True`. Do not retry
 the redemption: KSeF may already have consumed the temporary authentication
 token even though no usable response reached the caller.
+
+`KSeFValidationError` also subclasses `ValueError` for compatibility with code
+that caught builder or model validation failures. It exposes Pydantic's
+structured `.errors()` when the cause came from Pydantic and keeps that original
+exception in `__cause__`. `KSeFArgumentError` also subclasses `TypeError`.
+HTTP 401 raises `KSeFAuthError`; HTTP 403 raises `KSeFPermissionDeniedError`.
+Code that previously caught `KSeFAuthError` for 403 responses must now catch
+`KSeFPermissionDeniedError` or `KSeFApiError`.
 
 ## Transport failure attributes
 
@@ -107,12 +117,15 @@ single attempt; the wrapping changes no attempt count.
 | --- | --- | --- |
 | `method` | `str \| None` | HTTP method of the failed request, or `None` when the SDK does not know it. |
 | `path` | `str \| None` | Pathname the SDK was asked for, kept without userinfo, host, query and fragment. Presigned storage URLs are never kept here. |
+| `cause_type` | `str \| None` | Type name of the original transport error, when available. |
+| `cause_message` | `str \| None` | Sanitized cause summary, when available. URLs and query strings are removed. |
 | `outcome_ambiguous` | `bool` | `True` when the request may have reached KSeF anyway: anything but `GET`, `HEAD` and `OPTIONS`, because an earlier attempt may have arrived. |
 
-The original `httpx` exception stays available as `__cause__`. It is raw HTTP
-diagnostic output and can repeat request details the error itself leaves out, so
-read it only in a protected log. Message, `str(exc)`, `repr(exc)` and `context`
-never carry a bearer token, a signed URL or a request body.
+The original `httpx` exception stays available as `__cause__`. The message and
+`str(exc)` include the request method, sanitized pathname, cause type and a
+sanitized cause summary. `repr(exc)` and `context` do not include the cause,
+request body, bearer token or signed URL. `cause_message` can be `None` when the
+SDK created the exception without an underlying transport error.
 
 ```python
 from ksef2 import KSeFException, KSeFTransportError
@@ -247,8 +260,8 @@ knows the cause, every method it names is a current one, and it can be replaced
 for one occurrence by passing `hint=...` to the exception.
 
 Hints on API errors come from the KSeF code first, then the HTTP status. A
-code with its own hint keeps it on a 401 or 403 too, and the class still
-follows the status there (`KSeFAuthError`):
+code with its own hint keeps it on a 401 or 403 too. HTTP 401 raises
+`KSeFAuthError`; HTTP 403 raises `KSeFPermissionDeniedError`:
 
 | HTTP status | KSeF code | Class | Hint |
 | --- | --- | --- | --- |
@@ -274,7 +287,7 @@ follows the status there (`KSeFAuthError`):
 | other | 26002 | `KSeFApiError` | KSeF tokens cannot be generated in this context type. Authenticate in a supported context before calling `generate()`. |
 | other | 30001 | `KSeFApiError` | The subject or person already exists on KSeF TEST. Reuse it, or remove it first with `delete_subject()` or `delete_person()`. |
 | 401 | other | `KSeFAuthError` | KSeF rejected the credentials or the access token. Authenticate again with `client.authentication.with_token()` or `client.authentication.with_xades()`, and check that the token or certificate is valid for this context. |
-| 403 | other | `KSeFAuthError` | The authenticated identity is not allowed to do this in the current context. Check the reason in `details`, and grant the missing permission with the permissions client, for example `grant_person()`. |
+| 403 | other | `KSeFPermissionDeniedError` | The authenticated identity is not allowed to do this in the current context. Check the reason in `details`, and grant the missing permission with the permissions client, for example `grant_person()`. |
 
 `KSeFRateLimitError` builds its hint from `retry_after`, for example
 `Wait 17 seconds before retrying.`
@@ -314,9 +327,9 @@ duplicate (`440`) gets its own hint on `KSeFInvoiceRejectedError`.
 Codes `21165` and `21178` raise `KSeFNotReadyError`. Codes `21301`, `21304`
 and `21308` raise `KSeFAuthError` even on HTTP 400. Codes `21164`, `21173`,
 `21175`, `25005`, `25008` and `71001` raise `KSeFNotFoundError`; `21184`
-raises `KSeFServerError`. Other codes use the HTTP status: 401/403 for auth,
-429 for rate limits, 404/410 for missing resources, and 5xx for server errors.
-Not-ready codes take precedence over auth, then rate limits, not-found and
+raises `KSeFServerError`. HTTP 403 always raises `KSeFPermissionDeniedError`.
+Otherwise, mapped KSeF codes take precedence, then the HTTP status: 401 for
+authentication, 429 for rate limits, 404/410 for missing resources, and 5xx for
 server errors. All other failures raise `KSeFApiError`.
 The codes below are every code the KSeF API documentation (`openapi.json`)
 lists, all of them on HTTP 400 responses, and each has an `ExceptionCode`

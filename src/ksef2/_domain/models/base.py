@@ -2,8 +2,9 @@
 
 import json
 import re
+from importlib import import_module
 from collections.abc import Mapping
-from typing import Annotated, Any, Literal, Self, cast
+from typing import Annotated, Any, Callable, ClassVar, Literal, Self, cast, override
 
 from pydantic import (
     AliasChoices,
@@ -13,12 +14,22 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     model_validator,
+    ValidationError,
 )
 from pydantic.alias_generators import to_camel
 
 from ksef2._logging import get_logger
 
 logger = get_logger(__name__)
+
+
+def _validation_exception(error: ValidationError, model_name: str) -> Exception:
+    exception_module = import_module("ksef2._core.exceptions")
+    error_type = cast(
+        Callable[..., Exception], getattr(exception_module, "KSeFValidationError")
+    )
+    reason = error.errors()[0]["msg"]
+    return error_type(f"Invalid {model_name} input: {reason}", validation_error=error)
 
 
 _AliasSpec = str | AliasPath | AliasChoices | None
@@ -75,6 +86,34 @@ class KSeFBaseModel(BaseModel):
     """Base model that ignores undeclared fields and logs warnings about them."""
 
     model_config = ConfigDict(extra="ignore")
+    wrap_validation_errors: ClassVar[bool] = False
+
+    def __init__(self, **data: Any) -> None:  # pyright: ignore[reportAny, reportExplicitAny]
+        try:
+            super().__init__(**data)
+        except ValidationError as exc:
+            if self.wrap_validation_errors:
+                raise _validation_exception(exc, type(self).__name__) from exc
+            raise
+
+    @classmethod
+    @override
+    def model_validate(cls, obj: Any, **kwargs: Any) -> Self:  # pyright: ignore[reportAny, reportExplicitAny]
+        """Validate an object, optionally wrapping input errors for SDK-facing models.
+
+        Args:
+            obj: Object to validate.
+            **kwargs: Pydantic validation options.
+
+        Returns:
+            The validated model.
+        """
+        try:
+            return super().model_validate(obj, **kwargs)  # pyright: ignore[reportAny]
+        except ValidationError as exc:
+            if cls.wrap_validation_errors:
+                raise _validation_exception(exc, cls.__name__) from exc
+            raise
 
     @model_validator(mode="before")
     @classmethod

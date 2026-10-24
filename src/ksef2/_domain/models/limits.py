@@ -22,6 +22,9 @@ class CollectiveIdentifierLimits(KSeFBaseModel):
 
 
 class ContextLimits(KSeFBaseModel):
+    """Limits that apply to the authenticated KSeF context."""
+
+    wrap_validation_errors = True
     """Limits applied to sessions and collective identifiers."""
 
     online_session: SessionLimits

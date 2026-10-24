@@ -1,7 +1,8 @@
 """Compression choices accepted by invoice export and batch payloads."""
 
 from enum import StrEnum
-from typing import Literal
+from importlib import import_module
+from typing import Callable, Literal, cast
 
 type CompressionType = Literal["zip", "tar_gz"]
 type CompressionTypeSpecValue = Literal["Zip", "TarGz"]
@@ -47,7 +48,7 @@ def normalize_compression_type(
     if value in _COMPRESSION_TYPE_FROM_SPEC:
         return _COMPRESSION_TYPE_FROM_SPEC[value]  # pyright: ignore[index]
 
-    raise ValueError(
+    raise _validation_error(
         f"Invalid compression type: {value}. Valid compression types are: "
         f"{', '.join(_COMPRESSION_TYPE_TO_SPEC)}"
     )
@@ -58,3 +59,11 @@ def compression_type_to_spec(
 ) -> CompressionTypeSpecValue:
     """Convert a compression value to the OpenAPI representation."""
     return _COMPRESSION_TYPE_TO_SPEC[normalize_compression_type(value)]
+
+
+def _validation_error(message: str):
+    exception_module = import_module("ksef2._core.exceptions")
+    error_type = cast(
+        Callable[[str], Exception], getattr(exception_module, "KSeFValidationError")
+    )
+    return error_type(message)

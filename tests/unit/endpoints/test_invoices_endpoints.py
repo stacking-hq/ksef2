@@ -25,7 +25,7 @@ _EXPORT_REF = "20250625-EX-2C3E6C8000-B675CF5D68-07"
 _TRANSPORT_ERRORS = [
     (exceptions.KSeFApiError, 500),
     (exceptions.KSeFRateLimitError, 429),
-    (exceptions.KSeFAuthError, 403),
+    (exceptions.KSeFPermissionDeniedError, 403),
     (exceptions.KSeFAuthError, 401),
     (exceptions.KSeFApiError, 400),
 ]

@@ -296,7 +296,7 @@ class AdvanceBuilder[TParent]:
             ValueError: If advance details are empty.
         """
         if self._is_empty():
-            raise ValueError(
+            raise _validation_error(
                 "Advance details are empty. Set at least one field before calling done()."
             )
         self._on_done(self.build())
@@ -318,3 +318,9 @@ class AdvanceBuilderMixin:
 
     def _set_advance(self, value: AdvancePaymentInvoiceContext) -> None:
         self._advance = value
+
+
+def _validation_error(message: str):
+    from ksef2._core.exceptions import KSeFValidationError
+
+    return KSeFValidationError(message)

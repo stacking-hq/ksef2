@@ -27,14 +27,16 @@ aktualne sformułowania KSeF i mogą zmienić się między wydaniami. To samo do
 | `KSeFPollingTimeoutError` | `KSeFException` | `POLLING_TIMEOUT` | `timeout` |
 | `KSeFResponseValidationError` | `KSeFValidationError` | `RESPONSE_VALIDATION_ERROR` | `context`, `hint` |
 | `KSeFProfileConfigError` | `KSeFValidationError` | `PROFILE_CONFIG_ERROR` | `context`, `hint` |
-| `KSeFSessionFailedError` | `KSeFSessionError` | `SESSION_FAILED` | `reference_number`, `session_status_code`, `description`, `details`, `status` |
-| `KSeFTokenActivationFailedError` | `KSeFApiError` | `TOKEN_ACTIVATION_FAILED` | `reference_number`, `token_status` |
+| `KSeFSessionFailedError` | `KSeFSessionError`, `KSeFOperationFailedError` | `SESSION_FAILED` | `reference_number`, `session_status_code`, `description`, `details`, `status` |
+| `KSeFTokenActivationFailedError` | `KSeFApiError`, `KSeFOperationFailedError` | `TOKEN_ACTIVATION_FAILED` | `reference_number`, `token_status` |
+| `KSeFOperationFailedError` | `KSeFException` | `OPERATION_FAILED` | Wspólna baza błędów operacji zakończonych niepowodzeniem. |
 | `KSeFNotFoundError` | `KSeFApiError` | `NOT_FOUND` | `status_code`, `ksef_code`, `details`, `response` |
 | `KSeFServerError` | `KSeFApiError` | `SERVER_ERROR` | `status_code`, `ksef_code`, `details`, `response` |
 | `KSeFTransportError` | `KSeFException` | `TRANSPORT_ERROR` | `method`, `path`, `outcome_ambiguous` |
 | `KSeFApiError` | `KSeFException` | `API_ERROR` | `status_code`, `ksef_code`, `exception_code`, `trace_id`, `details`, `response` |
 | `KSeFNotReadyError` | `KSeFApiError` | `NOT_READY` | Atrybuty błędu API |
 | `KSeFAuthError` | `KSeFApiError` | `AUTH_ERROR` | Atrybuty błędu API |
+| `KSeFPermissionDeniedError` | `KSeFApiError` | `PERMISSION_DENIED` | Atrybuty błędu API |
 | `KSeFAuthenticationExpiredError` | `KSeFAuthError` | `AUTHENTICATION_EXPIRED` | Atrybuty błędu API |
 | `KSeFRateLimitError` | `KSeFApiError` | `RATE_LIMIT_ERROR` | `retry_after` oraz atrybuty błędu API |
 | `KSeFExternalTransferError` | `KSeFTransportError` | `EXTERNAL_TRANSFER_ERROR` | `operation`, `host`, `reference_number`, `part_ordinal`, `status_code`, `outcome_ambiguous` |
@@ -76,14 +78,14 @@ except KSeFException as exc:
 | `KSeFClientClosedError` | `CLIENT_CLOSED` | Klient główny albo klient sesji użyty po zamknięciu. |
 | `KSeFUnsupportedEnvironmentError` | `UNSUPPORTED_ENVIRONMENT` | Gałąź albo przepływ tylko dla TEST użyty poza `Environment.TEST`. |
 | `KSeFValidationError` | `VALIDATION_ERROR` | Niepoprawne dane wejściowe SDK, błędny payload odpowiedzi, błędny profil albo błędne argumenty sesji/batch. |
-| `KSeFArgumentError` | `ARGUMENT_ERROR` | Wywołanie łączy argumenty niedozwolone przez SDK, na przykład oba albo żaden z `form_code` i `state`. Podklasa `KSeFValidationError` i `TypeError`. |
+| `KSeFArgumentError` | `ARGUMENT_ERROR` | Wywołanie łączy argumenty niedozwolone przez SDK, na przykład oba albo żaden z `form_code` i `state`. Podklasa `KSeFValidationError`, `TypeError` i (przez `KSeFValidationError`) `ValueError`. |
 | `KSeFInvoiceRenderingError` | `INVOICE_RENDERING_ERROR` | Błędy opcjonalnego renderowania XSLT/PDF. |
 | `KSeFEncryptionError` | `ENCRYPTION_ERROR` | Błąd szyfrowania tokenu, klucza symetrycznego, faktury albo deszyfrowania. |
 | `KSeFSessionError` | `SESSION_ERROR` | Naruszenie stanu sesji, na przykład użycie zamkniętej sesji. Klasa bazowa `KSeFInvoiceRejectedError`. |
 | `KSeFInvoiceRejectedError` | `INVOICE_REJECTED` | KSeF zakończył przetwarzanie faktury z sesji interaktywnej i ją odrzucił (`InvoiceSubmission.wait()`). |
-| `KSeFExportFailedError` | `EXPORT_FAILED` | KSeF zakończył eksport faktur bez paczki: eksport się nie powiódł, został anulowany przez system albo wygasł (`ExportJob.wait()`). |
-| `KSeFPermissionOperationFailedError` | `PERMISSION_OPERATION_FAILED` | KSeF zakończył nadanie albo cofnięcie uprawnienia bez jego zastosowania (`PermissionOperation.wait()`). |
-| `KSeFCertificateEnrollmentFailedError` | `CERTIFICATE_ENROLLMENT_FAILED` | KSeF odrzucił, anulował albo nie zrealizował rejestracji certyfikatu (`CertificateEnrollment.wait()`). |
+| `KSeFExportFailedError` | `EXPORT_FAILED` | KSeF zakończył eksport faktur bez paczki: eksport się nie powiódł, został anulowany przez system albo wygasł (`ExportJob.wait()`). Podklasa `KSeFOperationFailedError`. |
+| `KSeFPermissionOperationFailedError` | `PERMISSION_OPERATION_FAILED` | KSeF zakończył nadanie albo cofnięcie uprawnienia bez jego zastosowania (`PermissionOperation.wait()`). Podklasa `KSeFOperationFailedError`. |
+| `KSeFCertificateEnrollmentFailedError` | `CERTIFICATE_ENROLLMENT_FAILED` | KSeF odrzucił, anulował albo nie zrealizował rejestracji certyfikatu (`CertificateEnrollment.wait()`). Podklasa `KSeFOperationFailedError`. |
 | `KSeFAuthTokenRedemptionError` | `AUTH_TOKEN_REDEMPTION_ERROR` | Jednorazowy redeem uwierzytelnienia nie dostał użytecznej odpowiedzi i mógł się powieść. Podklasa `KSeFTransportError`. |
 | `KSeFExternalTransferError` | `EXTERNAL_TRANSFER_ERROR` | Upload lub download przez presigned URL został odrzucony albo nie dał użytecznej odpowiedzi. |
 | `KSeFBatchUploadError` | `BATCH_UPLOAD_ERROR` | Upload części batch nie powiódł się, ale chroniony stan odzyskiwania pozostaje dostępny. |
@@ -93,6 +95,14 @@ except KSeFException as exc:
 `KSeFAuthTokenRedemptionError.outcome_ambiguous` ma zawsze wartość `True`. Nie
 ponawiaj redeem: KSeF mógł już zużyć tymczasowy token uwierzytelnienia, mimo że
 do wywołującego nie dotarła użyteczna odpowiedź.
+
+`KSeFValidationError` dziedziczy również po `ValueError`, aby zachować zgodność
+z kodem obsługującym wcześniejsze błędy walidacji. Gdy przyczyną jest walidacja
+Pydantic, wyjątek udostępnia `.errors()` i zachowuje oryginalny wyjątek w
+`__cause__`. `KSeFArgumentError` dziedziczy również po `TypeError`. HTTP 401
+zgłasza `KSeFAuthError`, a HTTP 403 zgłasza `KSeFPermissionDeniedError`. Kod,
+który wcześniej obsługiwał HTTP 403 przez `except KSeFAuthError`, powinien teraz
+obsługiwać `KSeFPermissionDeniedError` albo `KSeFApiError`.
 
 ## Atrybuty błędu transportu
 
@@ -108,13 +118,15 @@ otoczka nie zmienia liczby prób.
 | --- | --- | --- |
 | `method` | `str \| None` | Metoda HTTP błędnego żądania albo `None`, gdy SDK jej nie zna. |
 | `path` | `str \| None` | Ścieżka URL żądania bez userinfo, hosta, query i fragmentu. Presigned URL-e storage nigdy nie trafiają do tego pola. |
+| `cause_type` | `str \| None` | Typ oryginalnego błędu transportu albo `None`. |
+| `cause_message` | `str \| None` | Bezpieczne podsumowanie przyczyny; adresy URL i query są usuwane. |
 | `outcome_ambiguous` | `bool` | `True`, gdy żądanie mogło mimo wszystko dotrzeć do KSeF: wszystko poza `GET`, `HEAD` i `OPTIONS`, bo wcześniejsza próba mogła dotrzeć. |
 
-Oryginalny wyjątek `httpx` pozostaje dostępny jako `__cause__`. To surowa
-diagnostyka HTTP, która może powtórzyć szczegóły żądania nieuwzględnione w samym
-błędzie, więc czytaj ją wyłącznie w chronionym logu. Komunikat, `str(exc)`,
-`repr(exc)` i `context` nigdy nie zawierają tokenu bearer, podpisanego URL-a ani
-ciała żądania.
+Oryginalny wyjątek `httpx` pozostaje dostępny jako `__cause__`. Komunikat i
+`str(exc)` zawierają metodę żądania, oczyszczoną ścieżkę, typ przyczyny i jej
+bezpieczne podsumowanie. `repr(exc)` i `context` nie zawierają przyczyny, treści
+żądania, tokenu bearer ani podpisanego URL-a. `cause_message` może mieć wartość
+`None`, gdy SDK utworzyło wyjątek bez pierwotnego błędu transportu.
 
 ```python
 from ksef2 import KSeFException, KSeFTransportError
@@ -253,8 +265,8 @@ tylko wtedy, gdy SDK zna przyczynę, każda wymieniona w niej metoda jest aktual
 a dla jednego wystąpienia można ją zastąpić, przekazując `hint=...` do wyjątku.
 
 Wskazówki do błędów API zależą najpierw od kodu KSeF, potem od statusu HTTP.
-Kod z własną wskazówką zachowuje ją także przy 401 albo 403, a klasa nadal
-wynika wtedy ze statusu (`KSeFAuthError`):
+Kod z własną wskazówką zachowuje ją także przy 401 albo 403. HTTP 401 zgłasza
+`KSeFAuthError`, a HTTP 403 zgłasza `KSeFPermissionDeniedError`:
 
 | Status HTTP | Kod KSeF | Klasa | Wskazówka |
 | --- | --- | --- | --- |
@@ -280,7 +292,7 @@ wynika wtedy ze statusu (`KSeFAuthError`):
 | inny | 26002 | `KSeFApiError` | KSeF tokens cannot be generated in this context type. Authenticate in a supported context before calling `generate()`. |
 | inny | 30001 | `KSeFApiError` | The subject or person already exists on KSeF TEST. Reuse it, or remove it first with `delete_subject()` or `delete_person()`. |
 | 401 | inny | `KSeFAuthError` | KSeF rejected the credentials or the access token. Authenticate again with `client.authentication.with_token()` or `client.authentication.with_xades()`, and check that the token or certificate is valid for this context. |
-| 403 | inny | `KSeFAuthError` | The authenticated identity is not allowed to do this in the current context. Check the reason in `details`, and grant the missing permission with the permissions client, for example `grant_person()`. |
+| 403 | inny | `KSeFPermissionDeniedError` | The authenticated identity is not allowed to do this in the current context. Check the reason in `details`, and grant the missing permission with the permissions client, for example `grant_person()`. |
 
 `KSeFRateLimitError` buduje wskazówkę z `retry_after`, na przykład
 `Wait 17 seconds before retrying.`
@@ -320,10 +332,11 @@ Odrzucony duplikat (`440`) dostaje własną wskazówkę w `KSeFInvoiceRejectedEr
 Kody `21165` i `21178` zgłaszają `KSeFNotReadyError`. Kody `21301`, `21304`
 i `21308` zgłaszają `KSeFAuthError` także przy HTTP 400. Kody `21164`, `21173`,
 `21175`, `25005`, `25008` i `71001` zgłaszają `KSeFNotFoundError`, a `21184`
-zgłasza `KSeFServerError`. Pozostałe kody klasyfikuje status HTTP: 401/403
-oznacza błąd uwierzytelnienia, 429 limit żądań, 404/410 brak zasobu, a 5xx
-błąd serwera. Kolejność: brak gotowości, uwierzytelnienie, limit żądań, brak
-zasobu, błąd serwera. Inne błędy zgłaszają `KSeFApiError`. Poniżej są wszystkie kody, które wymienia dokumentacja API KSeF
+zgłasza `KSeFServerError`. HTTP 403 zawsze zgłasza
+`KSeFPermissionDeniedError`. W pozostałych przypadkach pierwszeństwo mają
+zmapowane kody KSeF, a następnie status HTTP: 401 oznacza błąd uwierzytelnienia,
+429 limit żądań, 404/410 brak zasobu, a 5xx błąd serwera. Inne błędy zgłaszają
+`KSeFApiError`. Poniżej są wszystkie kody, które wymienia dokumentacja API KSeF
 (`openapi.json`), wszystkie w odpowiedziach HTTP 400, i każdy ma swój element
 `ExceptionCode`. Test jednostkowy nie przejdzie, gdy aktualizacja specyfikacji
 doda kod, którego tu nie ma.

@@ -531,7 +531,7 @@ class CorrectionBuilder[TParent]:
             ValueError: If correction details are empty.
         """
         if self._is_empty():
-            raise ValueError(
+            raise _validation_error(
                 "Correction details are empty. Set at least one field before calling done()."
             )
         self._on_done(self.build())
@@ -553,3 +553,9 @@ class CorrectionBuilderMixin:
 
     def _set_correction(self, value: CorrectionInvoiceContext) -> None:
         self._correction = value
+
+
+def _validation_error(message: str):
+    from ksef2._core.exceptions import KSeFValidationError
+
+    return KSeFValidationError(message)

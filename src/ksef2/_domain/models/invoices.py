@@ -593,6 +593,9 @@ class ExportResumeState(KSeFPersistedModel):
 
 
 class InvoicesFilter(KSeFBaseModel):
+    """Filter criteria for invoice queries by role, date, identifier and amount."""
+
+    wrap_validation_errors = True
     """Filters accepted by invoice metadata query and export operations.
 
     Datetimes are stored as UTC-aware values. Inputs with an explicit offset keep

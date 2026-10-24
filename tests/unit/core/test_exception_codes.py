@@ -117,7 +117,7 @@ class TestCodeHints:
     def test_a_code_hint_wins_over_the_status_hint(self) -> None:
         raised = _raise_legacy(403, 26001)
 
-        assert type(raised) is exceptions.KSeFAuthError
+        assert type(raised) is exceptions.KSeFPermissionDeniedError
         assert raised.hint == response_errors._CODE_HINTS[26001]  # pyright: ignore[reportPrivateUsage]
 
     def test_the_status_hint_applies_without_a_code_hint(self) -> None:

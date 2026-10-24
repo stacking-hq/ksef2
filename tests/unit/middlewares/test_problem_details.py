@@ -107,11 +107,12 @@ class TestProblemDetailsMiddleware:
         }
         fake_transport.responses.append(_make_problem_response(403, body))
 
-        with pytest.raises(exceptions.KSeFAuthError) as exc_info:
+        with pytest.raises(exceptions.KSeFPermissionDeniedError) as exc_info:
             exceptions_middleware.request("POST", "/invoice")
 
         err = exc_info.value
         assert err.status_code == 403
+        assert isinstance(err, exceptions.KSeFPermissionDeniedError)
         assert isinstance(err.response, spec.ForbiddenProblemDetails)
         assert err.response.reasonCode == "missing-permissions"
         assert "Insufficient permissions" in str(err)
@@ -183,7 +184,7 @@ class TestProblemDetailsMiddleware:
         ("status_code", "expected_exception"),
         [
             (401, exceptions.KSeFAuthError),
-            (403, exceptions.KSeFAuthError),
+            (403, exceptions.KSeFPermissionDeniedError),
             (429, exceptions.KSeFRateLimitError),
         ],
     )
@@ -208,6 +209,8 @@ class TestProblemDetailsMiddleware:
 
         err = exc_info.value
         assert err.status_code == status_code
+        if status_code == 403:
+            assert not isinstance(err, exceptions.KSeFAuthError)
         if isinstance(err, exceptions.KSeFRateLimitError):
             assert err.retry_after == 30
 

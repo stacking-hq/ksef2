@@ -430,11 +430,18 @@ class TestClassMapping:
         assert type(error) is exceptions.KSeFNotReadyError
 
     @pytest.mark.parametrize("status", [401, 403])
-    def test_auth_statuses_map_to_auth_error(self, status: int) -> None:
+    def test_authentication_and_permission_statuses_have_separate_errors(
+        self, status: int
+    ) -> None:
         shape = _problem(status, "No", "Denied.", reasonCode="x")
         error = _raise(status, json=shape, headers=PROBLEM)
 
-        assert type(error) is exceptions.KSeFAuthError
+        expected = (
+            exceptions.KSeFAuthError
+            if status == 401
+            else exceptions.KSeFPermissionDeniedError
+        )
+        assert type(error) is expected
         assert error.status_code == status
 
     @pytest.mark.parametrize("shape", ["legacy", "problem"])

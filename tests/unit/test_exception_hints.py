@@ -454,6 +454,11 @@ class TestBackwardCompatibility:
         )
         assert issubclass(exceptions.KSeFArgumentError, exceptions.KSeFValidationError)
         assert issubclass(exceptions.KSeFArgumentError, TypeError)
+        assert issubclass(exceptions.KSeFValidationError, ValueError)
+        assert issubclass(exceptions.KSeFPermissionDeniedError, exceptions.KSeFApiError)
+        assert not issubclass(
+            exceptions.KSeFPermissionDeniedError, exceptions.KSeFAuthError
+        )
 
     def test_not_ready_error_is_exported_from_the_package(self) -> None:
         assert ksef2.KSeFNotReadyError is exceptions.KSeFNotReadyError
@@ -467,6 +472,23 @@ class TestBackwardCompatibility:
             (exceptions.KSeFProfileConfigError, exceptions.KSeFValidationError),
             (exceptions.KSeFSessionFailedError, exceptions.KSeFSessionError),
             (exceptions.KSeFTokenActivationFailedError, exceptions.KSeFApiError),
+            (
+                exceptions.KSeFTokenActivationFailedError,
+                exceptions.KSeFOperationFailedError,
+            ),
+            (exceptions.KSeFExportFailedError, exceptions.KSeFOperationFailedError),
+            (
+                exceptions.KSeFPermissionOperationFailedError,
+                exceptions.KSeFOperationFailedError,
+            ),
+            (
+                exceptions.KSeFCertificateEnrollmentFailedError,
+                exceptions.KSeFOperationFailedError,
+            ),
+            (
+                exceptions.KSeFSessionFailedError,
+                exceptions.KSeFOperationFailedError,
+            ),
             (exceptions.KSeFNotFoundError, exceptions.KSeFApiError),
             (exceptions.KSeFServerError, exceptions.KSeFApiError),
         ],

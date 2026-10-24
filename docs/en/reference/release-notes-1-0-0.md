@@ -91,8 +91,8 @@ message text.
 Narrower classes cover the common cases: `KSeFNotFoundError`, `KSeFServerError`,
 `KSeFResponseValidationError`, `KSeFProfileConfigError`, `KSeFSessionFailedError`
 and `KSeFTokenActivationFailedError`. Every polling timeout derives from
-`KSeFPollingTimeoutError`, which exposes `timeout`. Each new class subclasses the
-class that was raised before, so existing handlers keep working. See the
+`KSeFPollingTimeoutError`, which exposes `timeout`. Narrower error classes retain
+their earlier bases except for the 403 change documented below. See the
 [error reference](errors.md).
 
 ```text
@@ -117,6 +117,15 @@ HTTP 401, 403 and 410 always use Problem Details (#169, #175).
 
 ## Breaking in 1.0
 
+Public model validation and invoice-builder input failures now raise
+`KSeFValidationError` (or `KSeFArgumentError`) with the original Pydantic error
+as `__cause__`; these classes also inherit from `ValueError` or `TypeError` for
+existing handlers. HTTP 403 now raises `KSeFPermissionDeniedError` instead of
+`KSeFAuthError`. Applications that caught `KSeFAuthError` for 403 responses
+must add a handler for `KSeFPermissionDeniedError` (or its `KSeFApiError` base).
+Workflow `*FailedError` classes, including token activation failure, now share
+`KSeFOperationFailedError` while keeping their existing API and session bases.
+
 Transport failures are SDK errors. A public method no longer lets an `httpx`
 exception escape: a request that produces no usable response raises
 `KSeFTransportError` (`code = "TRANSPORT_ERROR"`) with `method`, `path` and
@@ -125,7 +134,8 @@ every `httpx.RequestError`: connection and timeout failures, a response the HTTP
 client could not decode, and an abandoned redirect chain. It does not subclass
 `httpx.HTTPError`, so handlers that caught `httpx.HTTPError` must name the SDK
 class; `KSeFException` already covers every SDK failure. Retries, API error
-classes and `KSeFAuthError` on a 401 or 403 are unchanged.
+classes and `KSeFAuthError` on a 401 are unchanged. HTTP 403 now raises
+`KSeFPermissionDeniedError`; see the breaking change above.
 `KSeFExternalTransferError`, `KSeFBatchUploadError` and
 `KSeFAuthTokenRedemptionError` now derive from `KSeFTransportError` and keep their
 own codes and recovery behaviour.

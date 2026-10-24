@@ -155,6 +155,7 @@ class QueryTokensResponse(KSeFBaseModel):
 
 
 class GenerateTokenRequest(KSeFBaseModel):
+    wrap_validation_errors = True
     """Payload used to request a new KSeF token."""
 
     permissions: list[TokenPermission]

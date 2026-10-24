@@ -6,6 +6,7 @@
 from functools import cached_property
 from typing import final, overload
 
+from pydantic import ValidationError
 from typing_extensions import deprecated
 
 from ksef2._clients.batch import BatchSessionClient
@@ -266,11 +267,16 @@ class AuthenticatedClient:
     def _rebind_online_session(
         self, state: OnlineSessionResumeState | str
     ) -> OnlineSessionClient:
-        resume = (
-            OnlineSessionResumeState.from_json(state)
-            if isinstance(state, str)
-            else state
-        )
+        try:
+            resume = (
+                OnlineSessionResumeState.from_json(state)
+                if isinstance(state, str)
+                else state
+            )
+        except ValidationError as exc:
+            raise exceptions.KSeFValidationError(
+                "Invalid online session resume state.", validation_error=exc
+            ) from exc
         return OnlineSessionClient(
             transport=self._authed_transport, state=resume, resumed=True
         )

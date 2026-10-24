@@ -91,8 +91,8 @@ komunikatu; pozostaje w `e.response`. Rozgałęziaj kod po klasie wyjątku lub
 Węższe klasy obejmują typowe przypadki: `KSeFNotFoundError`, `KSeFServerError`,
 `KSeFResponseValidationError`, `KSeFProfileConfigError`, `KSeFSessionFailedError`
 i `KSeFTokenActivationFailedError`. Każdy timeout oczekiwania dziedziczy po
-`KSeFPollingTimeoutError`, który udostępnia `timeout`. Każda nowa klasa dziedziczy
-po klasie rzucanej wcześniej, więc istniejące obsługi nadal działają. Zobacz
+`KSeFPollingTimeoutError`, który udostępnia `timeout`. Węższe klasy zachowują
+wcześniejsze bazy z wyjątkiem zmiany dla HTTP 403 opisanej poniżej. Zobacz
 [referencję błędów](errors.md).
 
 ```text
@@ -118,6 +118,17 @@ Problem Details (#169, #175).
 
 ## Przełomowe zmiany w 1.0
 
+Błędy walidacji publicznych modeli i dane wejściowe builderów faktur zgłaszają
+teraz `KSeFValidationError` (albo `KSeFArgumentError`) z oryginalnym błędem
+Pydantic w `__cause__`. Dla zgodności klasy te dziedziczą również po
+`ValueError` lub `TypeError`. HTTP 403 zgłasza teraz
+`KSeFPermissionDeniedError` zamiast `KSeFAuthError`. Aplikacje obsługujące HTTP
+403 przez `except KSeFAuthError` muszą dodać obsługę
+`KSeFPermissionDeniedError` albo jego bazy `KSeFApiError`. Trzy rodzaje błędów
+Błędy `*FailedError` workflow, w tym niepowodzenie aktywacji tokenu, mają teraz
+wspólną bazę `KSeFOperationFailedError` i zachowują dotychczasowe bazy API oraz
+sesji.
+
 Błędy transportu są błędami SDK. Metoda publiczna nie przepuszcza już wyjątku
 `httpx`: żądanie, które nie dało użytecznej odpowiedzi, rzuca
 `KSeFTransportError` (`code = "TRANSPORT_ERROR"`) z `method`, `path` i
@@ -126,7 +137,8 @@ Obejmuje każdy `httpx.RequestError`: błędy połączenia i timeouty, odpowied�
 klient HTTP nie odkodował, oraz porzucony łańcuch przekierowań. Nie dziedziczy on
 po `httpx.HTTPError`, więc obsługujące je wcześniej bloki muszą wskazać klasę SDK;
 `KSeFException` obejmuje już każdy błąd SDK. Ponowienia, klasy błędów API oraz
-`KSeFAuthError` dla 401 albo 403 pozostają bez zmian.
+`KSeFAuthError` dla 401 pozostaje bez zmian. HTTP 403 zgłasza teraz
+`KSeFPermissionDeniedError`; szczegóły opisano wyżej.
 `KSeFExternalTransferError`, `KSeFBatchUploadError` i
 `KSeFAuthTokenRedemptionError` dziedziczą teraz po `KSeFTransportError` i zachowują
 własne kody oraz zachowanie odzyskiwania.

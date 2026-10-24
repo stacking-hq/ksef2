@@ -276,11 +276,11 @@ class AttachmentTableBuilder:
             ValueError: If the table is empty or the builder has no parent.
         """
         if self._parent is None:
-            raise ValueError(
+            raise _validation_error(
                 "AttachmentTableBuilder must have a parent DataBlockBuilder to call done()."
             )
         if self._is_empty():
-            raise ValueError(
+            raise _validation_error(
                 "Attachment table is empty. Add at least one row before calling done()."
             )
         _ = self._parent.add_table_model(self.build())
@@ -488,11 +488,11 @@ class DataBlockBuilder:
             ValueError: If the data block is empty or the builder has no parent.
         """
         if self._parent is None:
-            raise ValueError(
+            raise _validation_error(
                 "DataBlockBuilder must have a parent AttachmentBuilder to call done()."
             )
         if self._is_empty():
-            raise ValueError(
+            raise _validation_error(
                 "Attachment data block is empty. Set at least one field before calling done()."
             )
         _ = self._parent.add_data_block_model(self.build())
@@ -588,11 +588,11 @@ class AttachmentBuilder[TParent]:
             ValueError: If the attachment is empty or the builder has no parent.
         """
         if self._parent is None or self._on_done is None:
-            raise ValueError(
+            raise _validation_error(
                 "AttachmentBuilder must have a parent builder to call done()."
             )
         if self._is_empty():
-            raise ValueError(
+            raise _validation_error(
                 "Attachment details are empty. Add at least one data block before calling done()."
             )
         self._on_done(self.build())
@@ -614,3 +614,9 @@ class AttachmentBuilderMixin:
 
     def _set_attachment(self, attachment: Attachment) -> None:
         self._attachment = attachment
+
+
+def _validation_error(message: str):
+    from ksef2._core.exceptions import KSeFValidationError
+
+    return KSeFValidationError(message)

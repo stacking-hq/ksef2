@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Annotated, Self, override
 
 from lxml import etree
+from pydantic import ValidationError
 from xsdata.formats.dataclass.serializers import XmlSerializer
 from xsdata.formats.dataclass.serializers.config import SerializerConfig
 
@@ -691,7 +692,7 @@ class StandardInvoiceBuilder(
         address = None
         if address_line_1 is not None:
             if address_country_code is None:
-                raise ValueError(
+                raise _validation_error(
                     "address_country_code is required when providing a third-party address."
                 )
             address = self._build_address(
@@ -711,11 +712,11 @@ class StandardInvoiceBuilder(
             )
         ):
             if correspondence_address_line_1 is None:
-                raise ValueError(
+                raise _validation_error(
                     "correspondence_address_line_1 is required when providing a correspondence address."
                 )
             if correspondence_country_code is None:
-                raise ValueError(
+                raise _validation_error(
                     "correspondence_country_code is required when providing a correspondence address."
                 )
             correspondence_address = self._build_address(
@@ -973,26 +974,31 @@ class StandardInvoiceBuilder(
             ValueError: If the required header, seller, buyer, or body is missing.
         """
         if self._header is None:
-            raise ValueError("Invoice header is required but not set.")
+            raise _validation_error("Invoice header is required but not set.")
         if self._seller is None:
-            raise ValueError("Invoice seller is required but not set.")
+            raise _validation_error("Invoice seller is required but not set.")
         if self._buyer is None:
-            raise ValueError("Invoice buyer is required but not set.")
+            raise _validation_error("Invoice buyer is required but not set.")
         if self._body is None:
-            raise ValueError("Invoice body is required but not set.")
+            raise _validation_error("Invoice body is required but not set.")
 
         if self._third_parties is None:
             self._third_parties = []
 
-        return KsefInvoice(
-            header=self._header,
-            seller=self._seller,
-            buyer=self._buyer,
-            third_parties=self._third_parties,
-            body=self._body,
-            footer=self._footer,
-            attachment=self._attachment,
-        )
+        try:
+            return KsefInvoice(
+                header=self._header,
+                seller=self._seller,
+                buyer=self._buyer,
+                third_parties=self._third_parties,
+                body=self._body,
+                footer=self._footer,
+                attachment=self._attachment,
+            )
+        except ValidationError as exc:
+            raise _validation_error(
+                "Invalid invoice builder state.", validation_error=exc
+            ) from exc
 
     def to_spec(self) -> Faktura:
         """Convert the built invoice to the generated FA(3) schema model.
@@ -1044,7 +1050,9 @@ class StandardInvoiceBuilder(
                 document = etree.fromstring(xml.encode(encoding), parser)
                 _load_fa3_schema().assertValid(document)
             except (etree.DocumentInvalid, etree.XMLSyntaxError) as exc:
-                raise ValueError(f"FA(3) XML schema validation failed: {exc}") from exc
+                raise _validation_error(
+                    f"FA(3) XML schema validation failed: {exc}"
+                ) from exc
         return xml
 
     @staticmethod
@@ -1071,7 +1079,9 @@ class StandardInvoiceBuilder(
         address = None
         if address_line_1:
             if country_code is None:
-                raise ValueError("country_code is required when providing an address.")
+                raise _validation_error(
+                    "country_code is required when providing an address."
+                )
             address = StandardInvoiceBuilder._build_address(
                 country_code=country_code,
                 address_line_1=address_line_1,
@@ -1107,3 +1117,9 @@ class StandardInvoiceBuilder(
             address_line_2=address_line_2,
             gln=gln,
         )
+
+
+def _validation_error(message: str, *, validation_error: Exception | None = None):
+    from ksef2._core.exceptions import KSeFValidationError
+
+    return KSeFValidationError(message, validation_error=validation_error)

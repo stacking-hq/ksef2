@@ -28,6 +28,7 @@ from ksef2._core.exceptions import (
     KSeFApiError,
     KSeFAuthError,
     KSeFClientClosedError,
+    KSeFPermissionDeniedError,
     KSeFRateLimitError,
 )
 from tests.unit.fakes.transport import AsyncFakeTransport
@@ -348,7 +349,7 @@ class TestAsyncKSeFExceptionMiddleware:
             await middleware.request("GET", "/test")
 
     async def test_403_raises_auth_error(self) -> None:
-        """403 response raises KSeFAuthError."""
+        """403 response raises KSeFPermissionDeniedError."""
         fake = AsyncFakeTransport()
         fake.enqueue(
             json_body={
@@ -365,7 +366,7 @@ class TestAsyncKSeFExceptionMiddleware:
         )
 
         middleware = AsyncKSeFExceptionMiddleware(fake)
-        with pytest.raises(KSeFAuthError):
+        with pytest.raises(KSeFPermissionDeniedError):
             await middleware.request("GET", "/test")
 
     async def test_429_raises_rate_limit_error(self) -> None:

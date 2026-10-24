@@ -9,7 +9,7 @@ from ksef2._clients.authenticated import AuthenticatedClient
 from ksef2._core.exceptions import (
     KSeFApiError,
     KSeFArgumentError,
-    KSeFAuthError,
+    KSeFPermissionDeniedError,
     KSeFNotReadyError,
     KSeFSessionFailedError,
     KSeFSessionError,
@@ -173,7 +173,7 @@ def test_authorization_failure_is_preserved(
     selector: dict[str, str],
 ) -> None:
     flavor.transport.enqueue(status_code=403, content=b"")
-    with pytest.raises(KSeFAuthError):
+    with pytest.raises(KSeFPermissionDeniedError):
         _ = flavor.run(auth.invoice_sessions.download_upo(SESSION_REF, **selector))
     assert len(flavor.transport.calls) == 1
 

@@ -580,7 +580,7 @@ class AnnotationsBuilder[TParent]:
             ValueError: If annotation details are empty.
         """
         if self._is_empty():
-            raise ValueError(
+            raise _validation_error(
                 "Annotation details are empty. Set at least one field before calling done()."
             )
         self._on_done(self.build())
@@ -602,3 +602,9 @@ class AnnotationsBuilderMixin:
 
     def _set_annotations(self, value: InvoiceAnnotationsContext) -> None:
         self._annotations = value
+
+
+def _validation_error(message: str):
+    from ksef2._core.exceptions import KSeFValidationError
+
+    return KSeFValidationError(message)

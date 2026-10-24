@@ -82,7 +82,7 @@ class TestEncryptionEndpoints:
         responses_to_try = [
             (exceptions.KSeFApiError, 500),
             (exceptions.KSeFRateLimitError, 429),
-            (exceptions.KSeFAuthError, 403),
+            (exceptions.KSeFPermissionDeniedError, 403),
             (exceptions.KSeFAuthError, 401),
             (exceptions.KSeFApiError, 400),
         ]

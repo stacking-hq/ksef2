@@ -1,6 +1,6 @@
 """Public exception hierarchy raised by the KSeF SDK."""
 
-from typing import Any, Literal, override
+from typing import Any, Callable, Literal, cast, override
 from pydantic import BaseModel
 from urllib.parse import urlsplit
 from enum import IntEnum
@@ -238,15 +238,16 @@ class KSeFTransportError(KSeFException):
     client could not decode, or followed a redirect chain it gave up on. Retryable
     requests are retried first, so this error means the retries were used up or the
     request was not safe to retry. The original ``httpx`` exception is the
-    ``__cause__`` and may repeat request details that are not in ``message``,
-    ``str(exc)`` or ``context``: read it only in a protected log, never put it in a
-    message shown to a user or in a generic error dump.
+    ``__cause__`` and may repeat request details that are not in the sanitized
+    cause summary. Read it only in a protected log.
 
     Args:
         message: Human-readable error message.
         hint: Next step for this occurrence; overrides the class default.
         method: HTTP method of the failed request, ``None`` when the SDK does not know it.
         path: Request target, kept as its URL pathname; userinfo, host, query and fragment are dropped.
+        cause_type: Safe type name of the original transport error.
+        cause_message: Safe summary of the original transport error; query strings are removed.
         outcome_ambiguous: Whether the request may have reached KSeF despite the failure.
         **context: Additional structured details, stored in ``context``. ``code`` is
             reserved: it always reports the code of the exception class.
@@ -254,6 +255,8 @@ class KSeFTransportError(KSeFException):
     Attributes:
         method: HTTP method of the failed request, or ``None``.
         path: Pathname of the failed request, or ``None`` when the SDK did not record one.
+        cause_type: Type name of the original transport error, or ``None``.
+        cause_message: Sanitized summary of the original transport error, or ``None``.
         outcome_ambiguous: Whether KSeF may have processed the request despite the failure. Read it before sending the request again; it does not say the retry is safe.
     """
 
@@ -266,11 +269,15 @@ class KSeFTransportError(KSeFException):
         hint: str | None = None,
         method: str | None = None,
         path: str | None = None,
+        cause_type: str | None = None,
+        cause_message: str | None = None,
         outcome_ambiguous: bool = False,
         **context: object,
     ) -> None:
         self.method = method
         self.path = None if path is None else _pathname(path)
+        self.cause_type = cause_type
+        self.cause_message = cause_message
         self.outcome_ambiguous = outcome_ambiguous
         super().__init__(message, hint=hint)
         # ``code`` belongs to the class, so extra context must not replace it.
@@ -281,6 +288,14 @@ class KSeFTransportError(KSeFException):
         if self.path is not None:
             self.context["path"] = self.path
         self.context["outcome_ambiguous"] = outcome_ambiguous
+
+    @override
+    def __str__(self) -> str:
+        message = super().__str__()
+        if self.cause_type is not None and self.cause_message is not None:
+            target = f"{self.method or 'HTTP'} {self.path or '/'}"
+            message = f"{message} ({target}: {self.cause_type}: {self.cause_message})"
+        return message
 
 
 class KSeFClientClosedError(KSeFException):
@@ -295,16 +310,42 @@ class KSeFUnsupportedEnvironmentError(KSeFException):
     code: str = "UNSUPPORTED_ENVIRONMENT"
 
 
-class KSeFValidationError(KSeFException):
+class KSeFValidationError(KSeFException, ValueError):  # pyright: ignore[reportUnsafeMultipleInheritance]
     """Raised when validation fails.
 
     Args:
         message: Human-readable error message.
+        validation_error: Original Pydantic validation error, if one was wrapped.
         hint: Next step for this occurrence; overrides the class default.
         **context: Additional structured details, stored in ``context``.
+
     """
 
     code: str = "VALIDATION_ERROR"
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        validation_error: object | None = None,
+        **context: Any,  # pyright: ignore[reportAny, reportExplicitAny]
+    ) -> None:
+        self.validation_error = validation_error
+        super().__init__(message, **context)  # pyright: ignore[reportAny]
+
+    def errors(self) -> list[dict[str, object]]:
+        """Return Pydantic's structured validation errors when available.
+
+        Returns:
+            Structured validation errors, or an empty list when no Pydantic error was wrapped.
+        """
+        if self.validation_error is None:
+            return []
+        errors_method = getattr(self.validation_error, "errors", None)
+        if errors_method is None:
+            return []
+        errors = cast(Callable[[], object], errors_method)
+        return cast(list[dict[str, object]], errors())
 
 
 class KSeFResponseValidationError(KSeFValidationError):
@@ -325,7 +366,8 @@ class KSeFArgumentError(KSeFValidationError, TypeError):  # pyright: ignore[repo
     It is raised for "exactly one of" violations, such as passing both or neither
     of ``form_code`` and ``state`` to ``online_session()``. It subclasses
     ``KSeFValidationError`` so existing handlers keep catching it, and
-    ``TypeError`` because the call itself is wrong.
+    ``TypeError`` because the call itself is wrong. Through
+    ``KSeFValidationError``, it also remains a ``ValueError``.
 
     Args:
         message: Human-readable error message.
@@ -403,7 +445,13 @@ class KSeFApiError(KSeFException):
         )
 
 
-class KSeFTokenActivationFailedError(KSeFApiError):
+class KSeFOperationFailedError(KSeFException):
+    """Common base for operations that reached a failed terminal status."""
+
+    code: str = "OPERATION_FAILED"
+
+
+class KSeFTokenActivationFailedError(KSeFApiError, KSeFOperationFailedError):  # pyright: ignore[reportUnsafeMultipleInheritance]
     """Raised when a generated token fails activation or is revoked.
 
     Args:
@@ -470,10 +518,10 @@ class KSeFNotReadyError(KSeFApiError):
 
 
 class KSeFAuthError(KSeFApiError):
-    """Raised on 401/403 responses.
+    """Raised on 401 responses.
 
     Args:
-        status_code: HTTP status code of the response, ``401`` or ``403``.
+        status_code: HTTP status code of the response (401).
         message: Human-readable error message.
         response: Parsed error response body, if available.
         ksef_code: Raw KSeF error code from the response, if there was one.
@@ -507,6 +555,44 @@ class KSeFAuthError(KSeFApiError):
         )
 
 
+class KSeFPermissionDeniedError(KSeFApiError):
+    """Raised when the authenticated identity is not allowed to perform an operation.
+
+    Args:
+        status_code: HTTP status code of the response.
+        message: Human-readable error message.
+        response: Parsed error response body, if available.
+        ksef_code: Raw KSeF error code from the response, if there was one.
+        trace_id: KSeF trace ID of the failed request, if KSeF returned one.
+        details: Detail messages KSeF attached to the error.
+        hint: Next step for this occurrence; overrides the class default.
+    """
+
+    code: str = "PERMISSION_DENIED"
+
+    def __init__(
+        self,
+        status_code: int,
+        message: str,
+        response: BaseModel | None = None,
+        *,
+        ksef_code: int | None = None,
+        trace_id: str | None = None,
+        details: list[str] | None = None,
+        hint: str | None = None,
+    ) -> None:
+        super().__init__(
+            status_code,
+            ExceptionCode.from_code(ksef_code),
+            message,
+            response,
+            ksef_code=ksef_code,
+            trace_id=trace_id,
+            details=details,
+            hint=hint,
+        )
+
+
 class KSeFAuthenticationExpiredError(KSeFAuthError):
     """Raised when the refresh token is expired or rejected and the session cannot be renewed.
 
@@ -516,7 +602,7 @@ class KSeFAuthenticationExpiredError(KSeFAuthError):
 
     Args:
         message: Human-readable error message; defaults to a statement that the access token can no longer be renewed.
-        status_code: HTTP status code of the rejected response, ``401`` or ``403``.
+        status_code: HTTP status code of the rejected response (401).
         response: Parsed error response body, if available.
         ksef_code: Raw KSeF error code from the rejected response, if there was one.
         trace_id: KSeF trace ID of the rejected request, if KSeF returned one.
@@ -682,7 +768,7 @@ class KSeFBatchUploadError[RecoveryStateT](KSeFExternalTransferError):
         *,
         transfer_error: KSeFExternalTransferError,
         recovery_state: RecoveryStateT,
-        prepared_batch: PreparedBatch | None = None,
+        prepared_batch: "PreparedBatch | None" = None,
     ) -> None:
         self._recovery_state = recovery_state
         self._prepared_batch = prepared_batch
@@ -706,7 +792,7 @@ class KSeFBatchUploadError[RecoveryStateT](KSeFExternalTransferError):
         """
         return self._recovery_state
 
-    def recovery_prepared_batch(self) -> PreparedBatch:
+    def recovery_prepared_batch(self) -> "PreparedBatch":
         """Return the original sensitive payload, including internally prepared batches.
 
         Pass it with ``recovery_state()`` to ``auth.batch_session()``. It contains
@@ -766,7 +852,7 @@ class KSeFSessionError(KSeFException):
         super().__init__(f"{self.code}: {message}", hint=hint)
 
 
-class KSeFSessionFailedError(KSeFSessionError):
+class KSeFSessionFailedError(KSeFSessionError, KSeFOperationFailedError):  # pyright: ignore[reportUnsafeMultipleInheritance]
     """Raised when online or batch session processing reaches a failed status.
 
     Args:
@@ -789,7 +875,7 @@ class KSeFSessionFailedError(KSeFSessionError):
     def __init__(
         self,
         reference_number: str,
-        status: SessionStatusResponse,
+        status: "SessionStatusResponse",
         *,
         session_kind: Literal["Online", "Batch"] = "Online",
         hint: str | None = None,
@@ -853,7 +939,7 @@ class KSeFInvoiceRejectedError(KSeFSessionError):
     def __init__(
         self,
         invoice_reference_number: str,
-        status: SessionInvoiceStatusResponse,
+        status: "SessionInvoiceStatusResponse",
     ) -> None:
         self.invoice_reference_number = invoice_reference_number
         self.status = status
@@ -931,7 +1017,7 @@ class KSeFExportTimeoutError(KSeFPollingTimeoutError):
         )
 
 
-class KSeFExportFailedError(KSeFException):
+class KSeFExportFailedError(KSeFOperationFailedError):
     """Raised when KSeF finishes an invoice export without producing a package.
 
     Raised by ``ExportJob.wait()`` when the export failed, was cancelled by the
@@ -980,7 +1066,7 @@ class KSeFExportFailedError(KSeFException):
         )
 
 
-class KSeFPermissionOperationFailedError(KSeFException):
+class KSeFPermissionOperationFailedError(KSeFOperationFailedError):
     """Raised when KSeF finishes a permission grant or revoke without applying it.
 
     Raised by ``PermissionOperation.wait()``. ``operation_status_code`` is a KSeF
@@ -1053,7 +1139,7 @@ class KSeFPermissionOperationTimeoutError(KSeFPollingTimeoutError):
         )
 
 
-class KSeFCertificateEnrollmentFailedError(KSeFException):
+class KSeFCertificateEnrollmentFailedError(KSeFOperationFailedError):
     """Raised when KSeF finishes a certificate enrollment without issuing a certificate.
 
     Raised by ``CertificateEnrollment.wait()`` when the request was rejected, hit

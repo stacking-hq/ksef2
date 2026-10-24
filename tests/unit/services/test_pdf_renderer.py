@@ -1,13 +1,15 @@
+import os
 import tomllib
 from base64 import b64decode, urlsafe_b64encode
 from hashlib import sha256
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+from typing import cast
 
 import pytest
 from lxml import etree
 
-from ksef2 import Environment
+from ksef2 import Environment, KSeFArgumentError
 
 from ksef2.renderers import InvoicePDFExporter, InvoiceXSLTRenderer, PDFPageSize
 
@@ -155,3 +157,12 @@ def test_pdf_page_size_overrides_css(size: PDFPageSize, css_size: str) -> None:
             load.return_value.CSS.call_args.kwargs["string"]
             == "@page { size: A5; }\n@page { size: " + css_size + "; }"
         )
+
+
+@pytest.mark.skipif(
+    os.getenv("KSEF2_RUNTIME_CHECKS") == "1",
+    reason="Runtime type checks reject strings before the enum value boundary runs.",
+)
+def test_invalid_pdf_page_size_raises_sdk_argument_error() -> None:
+    with pytest.raises(KSeFArgumentError, match="Unsupported PDF page size"):
+        InvoicePDFExporter(page_size=cast(PDFPageSize, cast(object, "A4")))

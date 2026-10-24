@@ -12,6 +12,7 @@ from typing import Any, final
 from lxml import etree
 
 from ksef2._config import Environment
+from ksef2._core.exceptions import KSeFArgumentError
 from ksef2._services.fa3 import parse_invoice_xml
 
 from ksef2._services.renderers.xslt import InvoiceXSLTRenderer
@@ -67,7 +68,12 @@ class InvoicePDFExporter:
         Raises:
             ImportError: If optional PDF dependencies are not installed.
         """
-        self._page_size = PDFPageSize(page_size) if page_size is not None else None
+        try:
+            self._page_size = PDFPageSize(page_size) if page_size is not None else None
+        except ValueError as exc:
+            raise KSeFArgumentError(
+                f"Unsupported PDF page size: {page_size!r}."
+            ) from exc
         self._verification_environment = Environment(verification_environment)
         self._weasyprint = _load_weasyprint()
         self._xslt_renderer = InvoiceXSLTRenderer(
