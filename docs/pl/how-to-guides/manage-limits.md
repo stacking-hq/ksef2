@@ -61,9 +61,10 @@ zarządzać limitami, a zmiana jest częścią kontrolowanego testu albo procedu
 administracyjnej.
 
 ```python
-from ksef2.models import ContextLimits, SessionLimits
+from ksef2.models import CollectiveIdentifierLimits, ContextLimits, SessionLimits
 
 limits = ContextLimits(
+    collective_identifier=CollectiveIdentifierLimits(),
     online_session=SessionLimits(
         max_invoice_size_mb=10,
         max_invoice_with_attachment_size_mb=20,

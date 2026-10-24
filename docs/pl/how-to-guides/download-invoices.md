@@ -61,6 +61,9 @@ w granicy, którą KSeF raportuje jako kompletną. Zapisz
 aż paczka będzie gotowa, pobiera i odszyfrowuje części, łączy je i zwraca obiekt
 `ExportedInvoices`.
 
+Opcjonalny `compression_type` przyjmuje `"zip"` albo `"tar_gz"`. Gdy go
+pominięto, format paczki wybiera serwer.
+
 ```python
 job = auth.invoices.export(filters)
 package = job.wait(timeout=300.0)

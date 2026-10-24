@@ -6,6 +6,9 @@ Prerequisites:
 What it demonstrates:
 - invoice submission in an online session
 - waiting for processing and downloading by KSeF number
+
+Run from the repository root with:
+    uv run -m scripts.examples.invoices.send_invoice
 """
 
 from dataclasses import dataclass

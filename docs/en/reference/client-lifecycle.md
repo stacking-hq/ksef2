@@ -32,6 +32,9 @@ AsyncClient(
 
 When `http_client` is omitted, the SDK creates the underlying `httpx` client
 from `transport_config` and closes it when the root client closes.
+When supplying `http_client`, its `base_url` must match the selected
+`Environment`; the SDK uses that client for requests without replacing its
+base URL.
 
 ## Root client members
 

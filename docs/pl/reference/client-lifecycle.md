@@ -33,6 +33,9 @@ AsyncClient(
 
 Gdy `http_client` nie jest podany, SDK tworzy klienta `httpx` z
 `transport_config` i zamyka go razem z klientem bazowym.
+Przekazany `http_client` musi mieć `base_url` zgodny z wybranym
+`Environment`; SDK używa tego klienta do requestów i nie zastępuje jego
+`base_url`.
 
 ## Elementy klienta bazowego
 

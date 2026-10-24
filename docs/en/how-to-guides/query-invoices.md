@@ -31,6 +31,10 @@ request mapping. Values with an explicit offset preserve their instant. Naive
 values are interpreted as Europe/Warsaw local time; ambiguous or nonexistent
 daylight-saving times must include an explicit offset.
 
+KSeF accepts query ranges of at most 100 days. Split longer historical queries
+into smaller date windows. `InvoiceMetadataParams.page_size` must be between 10
+and 250; the default is 10.
+
 :::tip[Use permanent storage dates for sync]
 `issue_date` is usually the right choice for accounting periods. For
 unattended incremental sync, use `date_type="permanent_storage"` and

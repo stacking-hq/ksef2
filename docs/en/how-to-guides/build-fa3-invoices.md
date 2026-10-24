@@ -127,6 +127,13 @@ Use `rows().add_line()` for normal application data. The builder calculates
 missing row totals from `quantity`, one unit price, and VAT classification.
 Provide either `unit_price_net` or `unit_price_gross`, not both.
 
+The builder rounds each row's net and VAT amounts to two decimal places before
+adding them to invoice totals. In the `10,000 × 1.5 × 10.01` example, this
+per-row calculation gives 150,200.00 net and 34,500.00 VAT. Calculating from
+the totals instead gives 150,150.00 net and 34,546.00 VAT. The builder follows
+the row-by-row amounts required by FA(3), so its totals can differ from a
+calculation that rounds only once at invoice level.
+
 ```python
 builder = (
     InvoiceBuilder()

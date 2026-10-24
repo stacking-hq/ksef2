@@ -86,7 +86,8 @@ auth = client.authentication.with_xades(
 )
 ```
 
-Or pass the credential holder. The async branch awaits the same call.
+Or pass the credential holder. The async branch awaits the same call inside an
+`async def main()` function.
 
 ```python
 auth = await client.authentication.with_xades(

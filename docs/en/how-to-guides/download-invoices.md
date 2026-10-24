@@ -60,6 +60,9 @@ the next sync window.
 until the package is ready, downloads and decrypts the parts, joins them and
 returns an `ExportedInvoices` object.
 
+The optional `compression_type` accepts `"zip"` or `"tar_gz"`. When omitted,
+the server chooses the package format.
+
 ```python
 job = auth.invoices.export(filters)
 package = job.wait(timeout=300.0)

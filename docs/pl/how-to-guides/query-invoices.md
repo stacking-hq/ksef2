@@ -31,6 +31,10 @@ mapowaniem requestu. Wartości z jawnym offsetem zachowują swój moment. Warto�
 bez strefy są interpretowane jako czas lokalny Europe/Warsaw; niejednoznaczne
 albo nieistniejące godziny zmiany czasu muszą zawierać jawny offset.
 
+KSeF przyjmuje zakresy zapytań o długości najwyżej 100 dni. Dłuższe zapytania
+historyczne podziel na krótsze przedziały. `InvoiceMetadataParams.page_size`
+musi wynosić od 10 do 250; domyślna wartość to 10.
+
 :::tip[Do synchronizacji użyj dat trwałego zapisu]
 `issue_date` jest zwykle właściwe dla okresów księgowych. Dla automatycznej
 synchronizacji przyrostowej użyj `date_type="permanent_storage"` oraz

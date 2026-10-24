@@ -261,7 +261,7 @@ store.save(
 ```
 
 Klient asynchroniczny używa tego samego pliku profili i tej samej kolejności
-wyboru:
+wyboru. Ten fragment należy umieścić wewnątrz funkcji `async def main()`:
 
 ```python
 from ksef2 import AsyncClient, Environment

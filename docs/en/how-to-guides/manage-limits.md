@@ -60,9 +60,10 @@ Use session overrides only when the authenticated context is allowed to manage
 limits and the change is part of a controlled test or administration procedure.
 
 ```python
-from ksef2.models import ContextLimits, SessionLimits
+from ksef2.models import CollectiveIdentifierLimits, ContextLimits, SessionLimits
 
 limits = ContextLimits(
+    collective_identifier=CollectiveIdentifierLimits(),
     online_session=SessionLimits(
         max_invoice_size_mb=10,
         max_invoice_with_attachment_size_mb=20,

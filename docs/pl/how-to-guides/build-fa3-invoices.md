@@ -127,6 +127,13 @@ Użyj `rows().add_line()` dla zwykłych danych aplikacji. Builder wylicza brakuj
 sumy pozycji z `quantity`, jednej ceny jednostkowej i klasyfikacji VAT. Przekaż
 `unit_price_net` albo `unit_price_gross`, ale nie oba naraz.
 
+Builder zaokrągla kwoty netto i VAT każdej pozycji do dwóch miejsc po przecinku,
+a następnie dodaje je do sum faktury. W przykładzie `10 000 × 1,5 × 10,01`
+obliczenie dla każdej pozycji daje 150 200,00 netto i 34 500,00 VAT. Obliczenie
+od sum daje 150 150,00 netto i 34 546,00 VAT. Builder stosuje kwoty pozycji
+wymagane przez FA(3), więc jego sumy mogą różnić się od obliczenia, które
+zaokrągla tylko raz na poziomie faktury.
+
 ```python
 builder = (
     InvoiceBuilder()

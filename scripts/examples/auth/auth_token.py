@@ -11,31 +11,30 @@ What it demonstrates:
 from dataclasses import dataclass
 
 from ksef2 import Client, Environment
-from ksef2.testdata import generate_nip
 
 KSEF_TOKEN = "<your-token-here>"
+KSEF_NIP = "<nip-bound-to-token>"
 
 
 @dataclass
 class ExampleConfig:
     environment: Environment = Environment.TEST
     ksef_token: str = KSEF_TOKEN
+    nip: str = KSEF_NIP
 
 
 def run(config: ExampleConfig) -> None:
-    client = Client(environment=config.environment)
-    nip = generate_nip()
+    with Client(environment=config.environment) as client:
+        print("Authenticating via KSeF token...")
+        auth = client.authentication.with_token(
+            ksef_token=config.ksef_token,
+            nip=config.nip,
+        )
 
-    print("Authenticating via KSeF token...")
-    auth = client.authentication.with_token(
-        ksef_token=config.ksef_token,
-        nip=nip,
-    )
-
-    print(f"Access token:  {auth.access_token[:40]}…")
-    print(f"  Valid until: {auth.auth_tokens.access_token.valid_until}")
-    print(f"Refresh token: {auth.refresh_token[:40]}…")
-    print(f"  Valid until: {auth.auth_tokens.refresh_token.valid_until}")
+        print(f"Access token:  {auth.access_token[:40]}…")
+        print(f"  Valid until: {auth.auth_tokens.access_token.valid_until}")
+        print(f"Refresh token: {auth.refresh_token[:40]}…")
+        print(f"  Valid until: {auth.auth_tokens.refresh_token.valid_until}")
 
 
 def main() -> int:

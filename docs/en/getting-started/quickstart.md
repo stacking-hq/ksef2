@@ -134,7 +134,7 @@ covered in the authentication guide.
 3. `with_test_certificate()` authenticated the TEST context represented by
    `SELLER_NIP`.
 
-4. `online_session(FormSchema.FA3)` opened an online session for FA(3) invoice
+4. `online_session(form_code=FormSchema.FA3)` opened an online session for an FA(3) invoice
    submission.
 
 5. `send_invoice()` submitted the invoice and returned an `InvoiceSubmission`

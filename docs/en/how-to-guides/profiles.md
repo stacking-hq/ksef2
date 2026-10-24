@@ -87,7 +87,8 @@ with Client(profile.sdk_environment) as client:
     auth = client.authentication.with_profile(profile_name)
 ```
 
-Async clients use the same profile file and selection order:
+Async clients use the same profile file and selection order. This excerpt runs
+inside an `async def main()` function:
 
 ```python
 from ksef2 import AsyncClient, Environment

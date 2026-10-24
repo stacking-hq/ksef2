@@ -86,7 +86,8 @@ auth = client.authentication.with_xades(
 )
 ```
 
-Można też przekazać obiekt poświadczeń. W warstwie async użyj `await`:
+Można też przekazać obiekt poświadczeń. W warstwie async użyj `await` wewnątrz
+funkcji `async def main()`:
 
 ```python
 auth = await client.authentication.with_xades(

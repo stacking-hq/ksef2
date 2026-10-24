@@ -135,7 +135,7 @@ uwierzytelniania.
 3. `with_test_certificate()` uwierzytelniło kontekst TEST wskazany przez
    `SELLER_NIP`.
 
-4. `online_session(FormSchema.FA3)` otworzyło sesję online do wysłania faktury
+4. `online_session(form_code=FormSchema.FA3)` otworzyło sesję online do wysłania faktury
    FA(3).
 
 5. `send_invoice()` wysłało fakturę i zwróciło uchwyt `InvoiceSubmission` z

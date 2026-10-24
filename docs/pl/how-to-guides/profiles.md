@@ -88,7 +88,8 @@ with Client(profile.sdk_environment) as client:
     auth = client.authentication.with_profile(profile_name)
 ```
 
-Klient async używa tego samego pliku profili i tej samej kolejności wyboru:
+Klient async używa tego samego pliku profili i tej samej kolejności wyboru.
+Ten fragment należy umieścić wewnątrz funkcji `async def main()`:
 
 ```python
 from ksef2 import AsyncClient, Environment

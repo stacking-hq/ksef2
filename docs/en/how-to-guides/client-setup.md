@@ -25,10 +25,15 @@ with Client(Environment.TEST) as client:
 ### Async
 
 ```python
+import asyncio
+
 from ksef2 import AsyncClient, Environment
 
-async with AsyncClient(Environment.TEST) as client:
-    auth = await client.authentication.with_test_certificate(nip="5261040828")
+async def main() -> None:
+    async with AsyncClient(Environment.TEST) as client:
+        auth = await client.authentication.with_test_certificate(nip="5261040828")
+
+asyncio.run(main())
 ```
 
 Use `Environment.DEMO` or `Environment.PRODUCTION` outside local TEST
@@ -62,7 +67,7 @@ def get_client() -> Iterator[Client]:
         client.close()
 ```
 
-Async applications use the same boundary with `async with`:
+Async applications use the same boundary with `async with` inside an async function:
 
 ```python
 from ksef2 import AsyncClient, Environment

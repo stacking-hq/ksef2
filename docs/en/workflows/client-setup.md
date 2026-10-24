@@ -24,6 +24,9 @@ with Client(Environment.TEST) as client:
 
 ### Async
 
+This async example belongs inside `async def main()`; run it with
+`asyncio.run(main())` as shown in the [client setup guide](../how-to-guides/client-setup.md).
+
 ```python
 from ksef2 import AsyncClient, Environment
 
