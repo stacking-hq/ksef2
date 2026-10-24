@@ -124,11 +124,14 @@ Make metadata writes durable and deduplicate by `ksef_number`. Save the checkpoi
 only after every page has been consumed and persisted successfully.
 
 ```python
+from datetime import timedelta
+
 from ksef2.models import InvoiceMetadataParams, InvoicesFilter
 
 filters = InvoicesFilter.for_buyer(
     date_type="permanent_storage",
     date_from=last_synced_at,
+    date_to=last_synced_at + timedelta(days=100),
     restrict_to_permanent_storage_hwm_date=True,
 )
 

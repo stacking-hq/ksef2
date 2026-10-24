@@ -33,6 +33,7 @@ from ksef2._infra.mappers.sessions import from_spec as session_from_spec
 from ksef2._logging import get_logger
 
 logger = get_logger(__name__)
+DEFAULT_MAX_INVOICE_SIZE_BYTES = 1_000_000
 
 
 @final
@@ -309,6 +310,12 @@ class OnlineSessionClient:
         xml_bytes = (
             invoice_xml.encode("utf-8") if isinstance(invoice_xml, str) else invoice_xml
         )
+        if len(xml_bytes) > DEFAULT_MAX_INVOICE_SIZE_BYTES:
+            raise exceptions.KSeFValidationError(
+                "Invoice exceeds the default 1 MB size limit.",
+                hint="Reduce the invoice XML size or use a session whose auth.limits allows a larger invoice.",
+                invoice_size_bytes=len(xml_bytes),
+            )
         encrypted = encrypt_invoice(
             xml_bytes=xml_bytes,
             key=self._state.get_aes_key_bytes(),

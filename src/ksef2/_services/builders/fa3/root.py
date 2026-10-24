@@ -1008,7 +1008,7 @@ class StandardInvoiceBuilder(
     def to_xml(
         self,
         *,
-        pretty_print: bool = True,
+        pretty_print: bool = False,
         xml_declaration: bool = True,
         encoding: str = "UTF-8",
         validate: bool = True,

@@ -40,6 +40,9 @@ builder = (
 xml_text = builder.to_xml()
 ```
 
+`to_xml()` domyślnie używa zwartego formatu. Przekaż `pretty_print=True`, aby
+zastosować wcięcia ułatwiające przeglądanie XML.
+
 ## Przepływ
 
 1. Utwórz `InvoiceBuilder`.

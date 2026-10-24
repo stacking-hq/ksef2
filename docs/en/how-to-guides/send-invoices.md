@@ -92,6 +92,8 @@ with auth.online_session(form_code=FormSchema.FA3) as session:
 ```
 
 `send_invoice()` only means KSeF accepted the encrypted payload into the session.
+The SDK checks invoice XML against a documented default size limit of 1 MB
+before encryption. Check `auth.limits` when your environment has a limit override.
 `submission.wait()` waits for the per-invoice result and returns the KSeF
 number when processing succeeds. It also works after the session is closed, and
 `session.wait()` returns the terminal status of the closed session.

@@ -6,6 +6,10 @@ description: Query invoice metadata with ksef2 filters, pagination helpers, and 
 Use `auth.invoices` when you need invoice metadata outside a sending session.
 The examples below assume you already have an authenticated client named `auth`.
 
+`InvoiceMetadataParams.page_size` accepts values from 10 through 250. Metadata
+date ranges may span at most 100 days; split longer searches into consecutive
+ranges.
+
 ## Build a narrow filter
 
 Start with the business question: which role, which date field, and which time
@@ -196,3 +200,6 @@ nothing appears in time it raises `KSeFInvoiceQueryTimeoutError`.
 - [Download invoices](download-invoices.md): Download invoice XML directly or through an encrypted export package.
 - [Send invoices](send-invoices.md): Submit invoice XML through online or batch sessions before querying the result.
 - [Querying and exports](../concepts/querying-and-exports.md): Understand metadata, direct downloads, export packages, and HWM sync.
+`InvoiceMetadataParams.page_size` accepts values from 10 through 250. Metadata
+date ranges may span at most 100 days; split longer searches into consecutive
+ranges.

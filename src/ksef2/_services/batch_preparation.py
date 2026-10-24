@@ -17,6 +17,7 @@ from ksef2._domain.models.batch import (
 from ksef2._domain.models.session import FormSchema
 
 MAX_BATCH_PART_SIZE = 100_000_000
+DEFAULT_MAX_INVOICE_SIZE_BYTES = 1_000_000
 
 
 def load_batch_invoices(invoice_paths: Iterable[Path | str]) -> list[BatchInvoice]:
@@ -105,6 +106,13 @@ def prepare_batch_package(
     validate_max_part_size(max_part_size)
 
     zip_bytes = build_zip(normalized)
+    part_count = (len(zip_bytes) + max_part_size - 1) // max_part_size
+    if part_count > 50:
+        raise exceptions.KSeFValidationError(
+            f"Batch needs {part_count} parts, exceeding the 50-part limit; increase max_part_size.",
+            hint="Increase max_part_size so the batch contains at most 50 parts.",
+            part_count=part_count,
+        )
     raw_parts = split_bytes(zip_bytes, max_part_size=max_part_size)
 
     prepared_parts: list[BatchPreparedPart] = []
@@ -166,6 +174,14 @@ def validate_invoices(invoices: list[BatchInvoice]) -> None:
         raise exceptions.KSeFValidationError(
             "At least one invoice is required to build a batch package."
         )
+
+    for invoice in invoices:
+        if len(invoice.content) > DEFAULT_MAX_INVOICE_SIZE_BYTES:
+            raise exceptions.KSeFValidationError(
+                f"Invoice {invoice.file_name!r} exceeds the default 1 MB size limit.",
+                hint="Reduce the invoice XML size or use auth.limits to check whether a larger invoice is allowed.",
+                invoice_size_bytes=len(invoice.content),
+            )
 
     file_names = [invoice.file_name for invoice in invoices]
     if any(not name for name in file_names):

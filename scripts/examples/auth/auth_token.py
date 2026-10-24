@@ -23,6 +23,10 @@ class ExampleConfig:
 
 
 def run(config: ExampleConfig) -> None:
+    if "<" in config.ksef_token or ">" in config.ksef_token:
+        raise ValueError(
+            "Replace KSEF_TOKEN with a real token before running this example."
+        )
     client = Client(environment=config.environment)
     nip = generate_nip()
 

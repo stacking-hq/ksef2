@@ -3,6 +3,8 @@
 
 """Authentication branch client."""
 
+import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import final
 
@@ -39,6 +41,7 @@ from ksef2._infra.mappers.auth import from_spec, to_spec
 from ksef2.xades import XAdESPrivateKey, generate_test_certificate
 
 
+# [TODO] wtf why is this not inlined
 def _build_signed_xades(
     *,
     challenge: str,
@@ -50,6 +53,35 @@ def _build_signed_xades(
 
     xml_bytes = build_auth_token_request_xml(challenge, nip)
     return sign_xades(xml_bytes, cert, private_key)
+
+
+def _validated_nip(nip: str | None) -> str:
+    if not isinstance(nip, str):
+        raise exceptions.KSeFArgumentError(
+            "nip must be a 10-digit Polish NIP.",
+            hint="Pass 10 digits; dashes and a leading PL prefix are accepted.",
+        )
+    normalized = re.sub(r"[-\s]", "", nip.strip()).upper()
+    if normalized.startswith("PL"):
+        normalized = normalized[2:]
+    if not re.fullmatch(r"\d{10}", normalized):
+        raise exceptions.KSeFArgumentError(
+            "nip must contain exactly 10 digits.",
+            hint="Pass 10 digits; dashes and a leading PL prefix are accepted.",
+        )
+    weights = (6, 5, 7, 2, 3, 4, 5, 6, 7)
+    checksum = (
+        sum(
+            int(digit) * weight
+            for digit, weight in zip(normalized[:9], weights, strict=True)
+        )
+        % 11
+    )
+    if checksum == 10 or checksum != int(normalized[9]):
+        raise exceptions.KSeFArgumentError(
+            "nip has an invalid checksum.", hint="Check the 10-digit NIP value."
+        )
+    return normalized
 
 
 @final
@@ -185,7 +217,7 @@ class AuthClient:
     def with_xades(
         self,
         *,
-        nip: str,
+        nip: str | None,
         cert: Certificate | None = None,
         private_key: XAdESPrivateKey | None = None,
         credentials: XAdESCredentials | None = None,
@@ -238,6 +270,7 @@ class AuthClient:
             )
             ```
         """
+        nip = _validated_nip(nip)
         if credentials is not None:
             if cert is not None or private_key is not None:
                 raise exceptions.KSeFArgumentError(
@@ -253,6 +286,18 @@ class AuthClient:
                 )
             signing_cert = cert
             signing_key = private_key
+
+        if credentials is None:
+            _ = XAdESCredentials(signing_cert, signing_key)
+        now = datetime.now(timezone.utc)
+        if (
+            now < signing_cert.not_valid_before_utc
+            or now > signing_cert.not_valid_after_utc
+        ):
+            raise exceptions.KSeFArgumentError(
+                "The XAdES certificate is outside its validity period.",
+                hint="Use a certificate that is currently valid.",
+            )
 
         challenge = from_spec(self._auth_ep.challenge())
         signed_xml = _build_signed_xades(
@@ -280,7 +325,7 @@ class AuthClient:
     def with_test_certificate(
         self,
         *,
-        nip: str,
+        nip: str | None,
         verify_chain: bool = False,
         timeout: float = 60.0,
         poll_interval: float = 1.0,
@@ -307,6 +352,7 @@ class AuthClient:
             auth = client.authentication.with_test_certificate(nip="5261040828")
             ```
         """
+        nip = _validated_nip(nip)
         if self._environment is not Environment.TEST:
             raise exceptions.KSeFUnsupportedEnvironmentError(
                 "with_test_certificate() is only available for Environment.TEST"

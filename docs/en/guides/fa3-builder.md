@@ -46,6 +46,9 @@ builder = (
 xml_text = builder.to_xml()
 ```
 
+`to_xml()` uses compact output by default. Pass `pretty_print=True` to indent the
+XML for inspection.
+
 The usual flow is:
 
 1. Create the root builder.

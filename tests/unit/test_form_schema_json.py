@@ -18,6 +18,7 @@ def _invoice_filter(member: FormSchema) -> InvoicesFilter:
         role="seller",
         date_type="issue_date",
         date_from=datetime(2026, 1, 1, tzinfo=UTC),
+        date_to=datetime(2026, 1, 2, tzinfo=UTC),
         invoice_schema=member,
     )
 

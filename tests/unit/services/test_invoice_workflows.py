@@ -423,6 +423,7 @@ page = service.search(
         role="seller",
         date_type="issue_date",
         date_from="2026-01-01T00:00:00+00:00",
+        date_to="2026-02-01T00:00:00+00:00",
     ),
     InvoiceMetadataParams(page_size=15),
 ).page(sys.argv[1])
@@ -676,6 +677,7 @@ class TestSearchCursors:
             role="buyer",
             date_type="invoicing_date",
             date_from=datetime(2026, 1, 1, tzinfo=UTC),
+            date_to=datetime(2026, 2, 1, tzinfo=UTC),
             invoice_schema=FormSchema.PEF3,
         )
         service = flavor.invoices_service()
@@ -887,12 +889,21 @@ def test_resume_checks_explicit_end_date(
     def build(end: datetime | None = None) -> InvoicesFilter:
         start = datetime(2026, 1, 1, tzinfo=UTC)
         if factory == "buyer":
-            return InvoicesFilter.for_buyer(date_from=start, date_to=end)
+            return InvoicesFilter.for_buyer(
+                date_from=start,
+                date_to=end or datetime(2026, 2, 1, tzinfo=UTC),
+            )
         if factory == "seller":
-            return InvoicesFilter.for_seller(date_from=start, date_to=end)
+            return InvoicesFilter.for_seller(
+                date_from=start,
+                date_to=end or datetime(2026, 2, 1, tzinfo=UTC),
+            )
         if end is None:
             return InvoicesFilter(
-                role="seller", date_type="issue_date", date_from=start
+                role="seller",
+                date_type="issue_date",
+                date_from=start,
+                date_to=datetime(2026, 2, 1, tzinfo=UTC),
             )
         return InvoicesFilter(
             role="seller", date_type="issue_date", date_from=start, date_to=end

@@ -9,6 +9,7 @@ from ksef2._core.exceptions import (
     KSeFInvoiceProcessingTimeoutError,
     KSeFInvoiceRejectedError,
     KSeFSessionError,
+    KSeFValidationError,
 )
 from ksef2._core.routes import InvoiceRoutes, SessionRoutes
 from ksef2._domain.models.session import OnlineSessionResumeState
@@ -25,6 +26,18 @@ def _build_client(
 
 
 class TestOnlineSessionClient:
+    def test_send_invoice_rejects_payload_over_default_size_before_upload(
+        self,
+        fake_transport: FakeTransport,
+        domain_online_session_state: BaseFactory[OnlineSessionResumeState],
+    ) -> None:
+        client = _build_client(fake_transport, domain_online_session_state)
+
+        with pytest.raises(KSeFValidationError, match="1 MB"):
+            _ = client.send_invoice(b"x" * 1_000_001)
+
+        assert fake_transport.calls == []
+
     def test_close_is_idempotent_and_blocks_further_calls(
         self,
         fake_transport: FakeTransport,

@@ -4,7 +4,7 @@ import base64
 import json
 from collections.abc import Mapping
 from dataclasses import field
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from enum import StrEnum
 from typing import Literal, Self
 from zoneinfo import ZoneInfo
@@ -884,6 +884,9 @@ class InvoicesFilter(KSeFBaseModel):
 
         if self.date_from > self.date_to:
             raise ValueError("date_from must be less than or equal to date_to.")
+
+        if self.date_to - self.date_from > timedelta(days=100):
+            raise ValueError("date range must not exceed 100 days.")
 
         return self
 

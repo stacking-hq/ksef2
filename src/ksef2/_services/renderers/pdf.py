@@ -7,11 +7,13 @@ from html import escape
 from importlib import import_module
 from io import BytesIO
 from pathlib import Path
+import re
 from typing import Any, final
 
 from lxml import etree
 
 from ksef2._config import Environment
+from ksef2._core import exceptions
 from ksef2._services.fa3 import parse_invoice_xml
 
 from ksef2._services.renderers.xslt import InvoiceXSLTRenderer
@@ -183,6 +185,32 @@ class InvoicePDFExporter:
         """
         if isinstance(invoice_xml, str):
             invoice_xml = invoice_xml.encode("utf-8")
+        parser = etree.XMLParser(no_network=True, resolve_entities=False)
+        try:
+            root = etree.fromstring(invoice_xml, parser)
+        except etree.XMLSyntaxError as exc:
+            raise exceptions.KSeFValidationError(
+                "Invoice XML must have a Faktura root element.",
+                hint="Pass a well-formed FA(3) invoice document.",
+            ) from exc
+        if etree.QName(root).localname != "Faktura":
+            raise exceptions.KSeFValidationError(
+                "Invoice XML must have a Faktura root element.",
+                hint="Pass a FA(3) invoice whose root element is Faktura.",
+            )
+        if ksef_number is not None:
+            if not ksef_number.strip():
+                raise exceptions.KSeFArgumentError(
+                    "ksef_number must not be empty.",
+                    hint="Pass the KSeF number assigned to this accepted invoice.",
+                )
+            if not re.fullmatch(
+                r"\d{10}-\d{8}-[A-Za-z0-9]{12}-[A-Za-z0-9]{2}", ksef_number
+            ):
+                raise exceptions.KSeFArgumentError(
+                    "ksef_number must match the KSeF number format.",
+                    hint="Pass a number in NIP-date-12-character-id-2-character-checksum format.",
+                )
         html_content = self._xslt_renderer.render_from_string(invoice_xml)
         return self._render_html(html_content, invoice_xml, ksef_number)
 

@@ -22,6 +22,13 @@ def test_parse_and_rebuild_public_invoice(filename: str) -> None:
     assert invoice.body.invoice_number
 
 
+def test_builder_xml_defaults_to_compact_output() -> None:
+    invoice = parse_invoice_xml((SAMPLES / "FA_3_Przykład_1.xml").read_bytes())
+    builder = InvoiceBuilder.from_invoice(invoice)
+
+    assert builder.to_xml() == builder.to_xml(pretty_print=False)
+
+
 @pytest.mark.parametrize(
     "xml, message",
     [

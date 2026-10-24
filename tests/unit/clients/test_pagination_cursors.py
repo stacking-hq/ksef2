@@ -200,6 +200,7 @@ def _invoice_search_cursor(
             role="seller",
             date_type="issue_date",
             date_from=datetime(2026, 1, 1),
+            date_to=datetime(2026, 2, 1),
         ),
         params=InvoiceMetadataParams(page_size=10, page_offset=1),
         previous_truncation_boundary=boundary,
@@ -568,6 +569,7 @@ class TestInvoiceSearchCursorState:
             role="seller",
             date_type="issue_date",
             date_from=datetime(2026, 1, 1, tzinfo=timezone.utc),
+            date_to=datetime(2026, 2, 1, tzinfo=timezone.utc),
             invoice_schema=member,
         )
         cursor = InvoiceSearchCursor(
@@ -639,7 +641,7 @@ class TestSearchFingerprint:
 
     def test_fingerprint_ignores_date_to_and_page_offset(self) -> None:
         later = self.FILTERS.model_copy(
-            update={"date_to": datetime(2030, 1, 1, tzinfo=timezone.utc)}
+            update={"date_to": datetime(2026, 2, 15, tzinfo=timezone.utc)}
         )
 
         assert search_fingerprint(

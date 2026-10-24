@@ -47,7 +47,8 @@ ROW = {
 }
 FILTERS = InvoicesFilter.for_buyer(
     date_type="permanent_storage",
-    date_from="2026-01-01T00:00:00Z",
+    date_from="2026-06-25T00:00:00Z",
+    date_to="2026-06-26T00:00:00Z",
     restrict_to_permanent_storage_hwm_date=True,
 )
 

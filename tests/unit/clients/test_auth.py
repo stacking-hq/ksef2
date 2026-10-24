@@ -133,7 +133,7 @@ class TestAuthClient:
         fake_transport.enqueue(status_response.model_dump(mode="json"))
         fake_transport.enqueue(tokens_response.model_dump(mode="json"))
 
-        result = client.with_token(ksef_token="ksef-token", nip="1234567890")
+        result = client.with_token(ksef_token="ksef-token", nip="5261040828")
 
         assert isinstance(result, AuthenticatedClient)
         assert len(fake_transport.calls) == 4
@@ -146,7 +146,7 @@ class TestAuthClient:
         token_request = InitTokenAuthenticationRequest.model_validate(token_call.json)
         assert token_request.challenge == challenge.challenge
         assert token_request.contextIdentifier.type == "Nip"
-        assert token_request.contextIdentifier.value == "1234567890"
+        assert token_request.contextIdentifier.value == "5261040828"
         assert token_request.encryptedToken == VALID_BASE64
         assert token_request.publicKeyId == certificate.public_key_id
         assert status_call.method == "GET"
@@ -200,7 +200,7 @@ class TestAuthClient:
             KSeFAuthTokenRedemptionError,
             match="may have succeeded",
         ) as exc_info:
-            _ = client.with_token(ksef_token="ksef-token", nip="1234567890")
+            _ = client.with_token(ksef_token="ksef-token", nip="5261040828")
 
         assert exc_info.value.outcome_ambiguous is True
         assert exc_info.value.context["outcome_ambiguous"] is True
@@ -223,7 +223,7 @@ class TestAuthClient:
             NoCertificateAvailableError,
             match="No valid certificate for KsefTokenEncryption found",
         ):
-            _ = client.with_token(ksef_token="ksef-token", nip="1234567890")
+            _ = client.with_token(ksef_token="ksef-token", nip="5261040828")
 
     @patch("ksef2._clients.auth.encrypt_token", return_value=VALID_BASE64)
     def test_with_token_raises_when_authentication_fails(
@@ -248,7 +248,7 @@ class TestAuthClient:
         fake_transport.enqueue(failed_status.model_dump(mode="json"))
 
         with pytest.raises(KSeFAuthError, match="Authentication failed"):
-            _ = client.with_token(ksef_token="ksef-token", nip="1234567890")
+            _ = client.with_token(ksef_token="ksef-token", nip="5261040828")
 
     @patch("ksef2._clients.auth.encrypt_token", return_value=VALID_BASE64)
     def test_with_token_raises_on_timeout(
@@ -276,7 +276,7 @@ class TestAuthClient:
         with pytest.raises(KSeFAuthPollingTimeoutError, match="not ready") as exc_info:
             _ = client.with_token(
                 ksef_token="ksef-token",
-                nip="1234567890",
+                nip="5261040828",
                 timeout=0.0,
                 poll_interval=0.0,
             )
@@ -319,10 +319,10 @@ class TestAuthClient:
         fake_transport.enqueue(init_response.model_dump(mode="json"))
         fake_transport.enqueue(status_response.model_dump(mode="json"))
         fake_transport.enqueue(tokens_response.model_dump(mode="json"))
-        cert, private_key = generate_test_certificate("1234567890")
+        cert, private_key = generate_test_certificate("5261040828")
 
         result = client.with_xades(
-            nip="1234567890",
+            nip="5261040828",
             cert=cert,
             private_key=private_key,
             verify_chain=True,
@@ -370,10 +370,10 @@ class TestAuthClient:
         fake_transport.enqueue(init_response.model_dump(mode="json"))
         fake_transport.enqueue(status_response.model_dump(mode="json"))
         fake_transport.enqueue(tokens_response.model_dump(mode="json"))
-        cert, private_key = _generate_ec_test_certificate("1234567890")
+        cert, private_key = _generate_ec_test_certificate("5261040828")
 
         result = client.with_xades(
-            nip="1234567890",
+            nip="5261040828",
             cert=cert,
             private_key=private_key,
             verify_chain=False,
@@ -413,7 +413,7 @@ class TestAuthClient:
         tokens_response = auth_tokens_resp.build()
         for response in (challenge, init_response, status_response, tokens_response):
             flavor.transport.enqueue(response.model_dump(mode="json"))
-        cert, private_key = generate_test_certificate("1234567890")
+        cert, private_key = generate_test_certificate("5261040828")
         password = b"data-credentials-password" if encrypted else None
         credentials = build_credentials(
             cert, private_key, credential_format, password=password
@@ -434,7 +434,7 @@ class TestAuthClient:
         ):
             result = flavor.run(
                 client.with_xades(
-                    nip="1234567890",
+                    nip="5261040828",
                     credentials=credentials,
                     verify_chain=True,
                 )
@@ -461,7 +461,7 @@ class TestAuthClient:
         flavor: Flavor,
     ) -> None:
         client = flavor.auth_client()
-        cert, private_key = generate_test_certificate("1234567890")
+        cert, private_key = generate_test_certificate("5261040828")
         credentials = XAdESCredentials.from_pem(
             cert.public_bytes(Encoding.PEM),
             private_key.private_bytes(
@@ -473,7 +473,7 @@ class TestAuthClient:
         with pytest.raises(KSeFArgumentError):
             _ = flavor.run(
                 client.with_xades(
-                    nip="1234567890",
+                    nip="5261040828",
                     credentials=credentials,
                     cert=cert,
                     private_key=private_key,
@@ -481,20 +481,20 @@ class TestAuthClient:
             )
         with pytest.raises(KSeFArgumentError):
             _ = flavor.run(
-                client.with_xades(nip="1234567890", credentials=credentials, cert=cert)
+                client.with_xades(nip="5261040828", credentials=credentials, cert=cert)
             )
         with pytest.raises(KSeFArgumentError):
             _ = flavor.run(
                 client.with_xades(
-                    nip="1234567890", credentials=credentials, private_key=private_key
+                    nip="5261040828", credentials=credentials, private_key=private_key
                 )
             )
         with pytest.raises(KSeFArgumentError):
-            _ = flavor.run(client.with_xades(nip="1234567890"))
+            _ = flavor.run(client.with_xades(nip="5261040828"))
         with pytest.raises(KSeFArgumentError):
-            _ = flavor.run(client.with_xades(nip="1234567890", cert=cert))
+            _ = flavor.run(client.with_xades(nip="5261040828", cert=cert))
         with pytest.raises(KSeFArgumentError):
-            _ = flavor.run(client.with_xades(nip="1234567890", private_key=private_key))
+            _ = flavor.run(client.with_xades(nip="5261040828", private_key=private_key))
 
         assert flavor.transport.calls == []
 
@@ -503,8 +503,8 @@ class TestAuthClient:
         self, invalid: str, flavor: Flavor
     ) -> None:
         client = flavor.auth_client()
-        cert, _ = generate_test_certificate("1234567890")
-        _, other_key = generate_test_certificate("1234567890")
+        cert, _ = generate_test_certificate("5261040828")
+        _, other_key = generate_test_certificate("5261040828")
         cert_pem = (
             b"junk" if invalid == "unreadable" else cert.public_bytes(Encoding.PEM)
         )
@@ -514,7 +514,7 @@ class TestAuthClient:
         with pytest.raises(KSeFArgumentError):
             flavor.run(
                 client.with_xades(
-                    nip="1234567890",
+                    nip="5261040828",
                     credentials=XAdESCredentials.from_pem(cert_pem, key_pem),
                 )
             )
@@ -552,16 +552,16 @@ class TestAuthClient:
         mock_with_xades.return_value = expected
 
         result = client.with_test_certificate(
-            nip="1234567890",
+            nip="5261040828",
             verify_chain=True,
             timeout=5.0,
             poll_interval=0.5,
         )
 
         assert result is expected
-        mock_generate_test_certificate.assert_called_once_with("1234567890")
+        mock_generate_test_certificate.assert_called_once_with("5261040828")
         mock_with_xades.assert_called_once_with(
-            nip="1234567890",
+            nip="5261040828",
             cert="cert",
             private_key="private-key",
             verify_chain=True,
@@ -579,7 +579,7 @@ class TestAuthClient:
             KSeFUnsupportedEnvironmentError,
             match="with_test_certificate\\(\\) is only available for Environment.TEST",
         ):
-            _ = client.with_test_certificate(nip="1234567890")
+            _ = client.with_test_certificate(nip="5261040828")
 
     @patch.object(AuthClient, "with_token")
     def test_with_profile_uses_active_token_profile(
@@ -893,7 +893,7 @@ def test_redemption_transport_error_keeps_the_redemption_contract(
             with pytest.raises(KSeFAuthTokenRedemptionError) as exc_info:
                 _ = flavor.run(
                     client.authentication.with_token(
-                        ksef_token="ksef-token", nip="1234567890"
+                        ksef_token="ksef-token", nip="5261040828"
                     )
                 )
     finally:

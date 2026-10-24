@@ -91,6 +91,8 @@ with auth.online_session(form_code=FormSchema.FA3) as session:
 ```
 
 `send_invoice()` oznacza tylko, że KSeF przyjął zaszyfrowany payload do sesji.
+SDK sprawdza rozmiar XML faktury przed szyfrowaniem, stosując udokumentowany
+limit domyślny 1 MB. Jeśli środowisko ma nadpisany limit, sprawdź `auth.limits`.
 `submission.wait()` czeka na wynik konkretnej faktury i zwraca numer KSeF
 po udanym przetworzeniu. Działa też po zamknięciu sesji, a `session.wait()`
 zwraca końcowy status zamkniętej sesji.
