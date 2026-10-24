@@ -19,7 +19,7 @@ from ksef2._domain.models.batch import (
 from ksef2._core.crypto import sha256_b64
 from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import FakeTransport
-from tests.unit.helpers import legacy_api
+from tests.unit.support.helpers import legacy_api
 
 
 def _build_prepared_batch() -> PreparedBatch:

@@ -32,7 +32,7 @@ from ksef2._services.batch import BatchService
 from ksef2._services.invoices import InvoicesService
 from tests.unit.conftest import _TOKEN
 from tests.unit.fakes.transport import FakeTransport
-from tests.unit.helpers import VALID_PUBLIC_KEY_ID, legacy_api
+from tests.unit.support.helpers import VALID_PUBLIC_KEY_ID, legacy_api
 from ksef2._core.crypto import sha256_b64
 
 

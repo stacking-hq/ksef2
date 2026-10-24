@@ -147,7 +147,7 @@ podjąć próbę wysłania pakietu. Sprawdź istniejące uruchomienia przed pono
 ## Sprawdź narzędzia bez publikacji
 
 ```bash
-uv run pytest tests/unit/test_verify_release.py -q
+uv run pytest tests/unit/tooling/test_verify_release.py -q
 ```
 
 Test buduje tymczasowe drzewo z fikcyjnym `pyproject.toml`, changelogiem, wheel i

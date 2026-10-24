@@ -1,3 +1,5 @@
+# ksef2: KSeF Python SDK (KSeF 2.0 API client)
+
 <h1 align="center">ksef2 SDK</h1>
 
 <h3 align="center">
@@ -14,7 +16,7 @@
 
 <div align="center">
   <br>
-  <a href="https://docs.stacking.me/sdk/getting-started/overview/" title="ksef2 documentation">
+  <a href="https://docs.stackinghq.com/ksef2/sdk/getting-started/overview/" title="ksef2 documentation">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/stacking-hq/ksef2/main/docs/assets/logo-light.png">
       <img src="https://raw.githubusercontent.com/stacking-hq/ksef2/main/docs/assets/logo-dark.png" alt="ksef2" width="320">
@@ -37,6 +39,10 @@
     <a href="https://github.com/stacking-hq/ksef2/blob/main/README.pl.md">Polski</a>
   </p>
 </div>
+
+Biblioteka Python do Krajowego Systemu e-Faktur (KSeF 2.0): typowane klienci
+synchroniczny i asynchroniczny dla API FA(3), bez ręcznego pisania żądań HTTP,
+pollingu ani obsługi szyfrowania.
 
 ## What is ksef2?
 
@@ -214,11 +220,11 @@ invoice downloads after KSeF assigns invoice numbers.
 
 ## Documentation
 
-- Online docs: <https://docs.stacking.me/sdk/getting-started/overview/>
-- Quickstart: <https://docs.stacking.me/sdk/getting-started/quickstart/>
-- How-to guides: <https://docs.stacking.me/sdk/how-to-guides/overview/>
-- Public API contract: <https://docs.stacking.me/sdk/reference/public-api/>
-- Python API reference: <https://docs.stacking.me/sdk/reference/api/>
+- Online docs: <https://docs.stackinghq.com/ksef2/sdk/getting-started/overview/>
+- Quickstart: <https://docs.stackinghq.com/ksef2/sdk/getting-started/quickstart/>
+- How-to guides: <https://docs.stackinghq.com/ksef2/sdk/how-to-guides/overview/>
+- Public API contract: <https://docs.stackinghq.com/ksef2/sdk/reference/public-api/>
+- Python API reference: <https://docs.stackinghq.com/ksef2/sdk/reference/api/ksef2/>
 - Source docs: [`docs/en`](https://github.com/stacking-hq/ksef2/tree/main/docs/en) and [`docs/pl`](https://github.com/stacking-hq/ksef2/tree/main/docs/pl)
 - Runnable examples: [`scripts/examples`](https://github.com/stacking-hq/ksef2/tree/main/scripts/examples)
 

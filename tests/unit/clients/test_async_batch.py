@@ -24,7 +24,7 @@ from ksef2._domain.models.batch import (
 from ksef2._domain.models.session import FormSchema
 from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import AsyncFakeTransport
-from tests.unit.helpers import legacy_api
+from tests.unit.support.helpers import legacy_api
 
 
 def _build_authenticated_client(

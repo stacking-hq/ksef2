@@ -5,8 +5,20 @@ build-backend = "hatchling.build"
 [project]
 name = "ksef2"
 version = "1.0.0"
-description = "Python SDK and Tools for Poland's KSeF (Krajowy System e-Faktur) API"
+description = "KSeF 2.0 Python SDK / client for Poland's Krajowy System e-Faktur API (FA(3), sync and async)"
 readme = "README.md"
+keywords = [
+    "ksef",
+    "ksef2",
+    "ksef-api",
+    "e-faktura",
+    "faktura",
+    "krajowy-system-e-faktur",
+    "e-invoice",
+    "poland",
+    "sdk",
+    "fa3",
+]
 authors = [{ name = "Artur Podsiadły" }]
 license = { file = "LICENSE.md" }
 requires-python = ">=3.12"
@@ -14,6 +26,8 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
+    "Natural Language :: Polish",
+    "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
@@ -37,7 +51,8 @@ dependencies = [
 ]
 
 [project.urls]
-Documentation = "https://docs.stacking.me/sdk/getting-started/overview/"
+Homepage = "https://stackinghq.com"
+Documentation = "https://docs.stackinghq.com/ksef2/sdk/getting-started/overview/"
 Repository = "https://github.com/stacking-hq/ksef2"
 Issues = "https://github.com/stacking-hq/ksef2/issues"
 Changelog = "https://github.com/stacking-hq/ksef2/blob/main/CHANGELOG.md"

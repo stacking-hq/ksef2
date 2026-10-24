@@ -33,7 +33,7 @@ from ksef2._domain.models.auth import AuthenticationResumeState, AuthTokens
 from ksef2._domain.models.session import OnlineSessionResumeState
 from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import AsyncFakeTransport, FakeTransport
-from tests.unit.flavors import Flavor
+from tests.unit.support.flavors import Flavor
 
 _PublicClient = Client | AsyncClient | AuthenticatedClient | AsyncAuthenticatedClient
 _Operation = Callable[[_PublicClient], object]

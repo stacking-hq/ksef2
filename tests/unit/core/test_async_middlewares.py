@@ -31,7 +31,7 @@ from ksef2._core.exceptions import (
     KSeFRateLimitError,
 )
 from tests.unit.fakes.transport import AsyncFakeTransport
-from tests.unit.helpers import static_token_manager as _manager
+from tests.unit.support.helpers import static_token_manager as _manager
 
 
 # ---------------------------------------------------------------------------

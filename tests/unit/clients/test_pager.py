@@ -12,7 +12,7 @@ from ksef2._core.exceptions import (
     KSeFInvoiceQueryTimeoutError,
 )
 from ksef2._domain.models.pagination import Page
-from tests.unit.flavors import Flavor
+from tests.unit.support.flavors import Flavor
 
 OPERATION = "pager.test"
 

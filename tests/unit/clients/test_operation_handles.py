@@ -36,7 +36,7 @@ from tests.unit.factories.permissions import (
     DomainGrantSubunitPermissionsRequestFactory,
 )
 from tests.unit.factories.tokens import TokenStatusResponseFactory
-from tests.unit.flavors import Flavor
+from tests.unit.support.flavors import Flavor
 
 
 def _handle_base(flavor: Flavor) -> type[Any]:

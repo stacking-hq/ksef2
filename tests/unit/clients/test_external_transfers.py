@@ -27,8 +27,8 @@ from ksef2._domain.models.batch import (
 )
 from ksef2._domain.models.invoices import ExportHandle, InvoicePackage, PackagePart
 from ksef2._core.exceptions import KSeFTransportError
-from tests.unit.flavors import Flavor
-from tests.unit.helpers import legacy_api
+from tests.unit.support.flavors import Flavor
+from tests.unit.support.helpers import legacy_api
 
 
 _SIGNED_DOWNLOAD_URL = "https://storage.example/export/part-1?sig=secret"

@@ -14,7 +14,7 @@ from ksef2._core.routes import InvoiceRoutes, SessionRoutes
 from ksef2._domain.models.session import OnlineSessionResumeState
 from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import FakeTransport
-from tests.unit.helpers import legacy_api
+from tests.unit.support.helpers import legacy_api
 
 
 def _build_client(

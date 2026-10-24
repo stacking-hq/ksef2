@@ -32,8 +32,8 @@ from ksef2._domain.models.batch import BatchSessionResumeState
 from ksef2._domain.models.invoices import SendInvoiceResponse
 from ksef2._domain.models.session import OnlineSessionResumeState
 from ksef2._infra.schema.api import spec
-from tests.unit.flavors import Flavor
-from tests.unit.payloads import (
+from tests.unit.support.flavors import Flavor
+from tests.unit.support.payloads import (
     INVOICE_REF,
     KSEF_NUMBER,
     UPO_REFS,

@@ -11,7 +11,7 @@ from tests.unit.factories.permissions import (
     DomainPersonPermissionsQueryFactory,
 )
 from tests.unit.fakes.transport import AsyncFakeTransport
-from tests.unit.helpers import legacy_api
+from tests.unit.support.helpers import legacy_api
 
 
 class TestAsyncPermissionsClient:

@@ -52,7 +52,7 @@ from tests.unit.factories.permissions import (
 )
 from tests.unit.factories.session import SessionsQueryResponseFactory
 from tests.unit.factories.tokens import QueryTokensResponseFactory
-from tests.unit.flavors import Flavor
+from tests.unit.support.flavors import Flavor
 
 KSEF_NUMBER = "1234567890-20250625-ABC123-DEF456-07"
 COLLECTIVE_NUMBER = "1111111111-IZ202607-65ED02180000-E7"

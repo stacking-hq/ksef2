@@ -7,7 +7,7 @@ from tests.unit.factories.peppol import (
 from tests.unit.fakes.transport import AsyncFakeTransport
 from ksef2._clients.async_peppol import AsyncPeppolClient
 from ksef2._core.routes import PeppolRoutes
-from tests.unit.helpers import legacy_api
+from tests.unit.support.helpers import legacy_api
 
 
 async def _collect_async_providers(iterator):

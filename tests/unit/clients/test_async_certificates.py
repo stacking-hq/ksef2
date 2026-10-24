@@ -13,7 +13,7 @@ from tests.unit.factories.certificates import (
     VALID_CERTIFICATE_SERIAL_NUMBER_3,
 )
 from tests.unit.fakes.transport import AsyncFakeTransport
-from tests.unit.helpers import legacy_api
+from tests.unit.support.helpers import legacy_api
 
 
 async def _collect_async_items(iterator):

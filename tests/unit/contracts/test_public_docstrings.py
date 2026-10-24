@@ -5,7 +5,7 @@ their public method and property signatures, must carry Google-style
 docstrings. The API reference is generated from these docstrings, so a missing
 one is a hole in the reference.
 
-Run ``python tests/unit/test_public_docstrings.py`` for a coverage report.
+Run ``python tests/unit/contracts/test_public_docstrings.py`` for a coverage report.
 """
 
 import ast

@@ -10,7 +10,7 @@ import httpx
 
 HTTPX_CLIENT_CLASS = httpx.Client
 HTTPX_ASYNC_CLIENT_CLASS = httpx.AsyncClient
-PROJECT_ROOT = Path(__file__).parents[2]
+PROJECT_ROOT = Path(__file__).parents[3]
 SRC_ROOT = PROJECT_ROOT / "src"
 BEARTYPE_BLOCKED_IMPORT = """
 import builtins

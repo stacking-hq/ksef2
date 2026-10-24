@@ -45,8 +45,8 @@ from ksef2.models import (
     InvoiceSubmissionResumeState,
     PermissionOperationResumeState,
 )
-from tests.unit.flavors import Flavor
-from tests.unit.payloads import INVOICE_REF, KSEF_NUMBER, invoice_status
+from tests.unit.support.flavors import Flavor
+from tests.unit.support.payloads import INVOICE_REF, KSEF_NUMBER, invoice_status
 
 SECRET_TOKEN = "SECRET-TOKEN-VALUE"
 TOKEN_REF = "20250625-TK-2F14610000-3AC9C8E13B-AB"

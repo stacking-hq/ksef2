@@ -14,7 +14,7 @@ from tests.unit.factories.tokens import (
     TokenStatusResponseFactory,
 )
 from tests.unit.fakes.transport import FakeTransport
-from tests.unit.helpers import legacy_api
+from tests.unit.support.helpers import legacy_api
 
 
 class TestTokensClient:

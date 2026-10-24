@@ -21,8 +21,8 @@ from ksef2._domain.models.batch import (
 from ksef2._domain.models.invoices import ExportHandle, ExportResumeState
 from ksef2._domain.models.session import FormSchema, OnlineSessionResumeState
 from ksef2._infra.schema.api import spec
-from tests.unit.flavors import Flavor
-from tests.unit.payloads import (
+from tests.unit.support.flavors import Flavor
+from tests.unit.support.payloads import (
     INVOICE_REF,
     KSEF_1,
     KSEF_2,
@@ -31,7 +31,7 @@ from tests.unit.payloads import (
     package_status,
     session_status,
 )
-from tests.unit.test_invoice_workflows_helpers import filters
+from tests.unit.support.invoice_workflows import filters
 
 KEY = b"k" * 32
 IV = b"v" * 16

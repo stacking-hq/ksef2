@@ -7,7 +7,7 @@ from ksef2._clients.async_invoice_sessions import AsyncInvoiceSessionsClient
 from ksef2._domain.models.session import ListSessionsResponse
 from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import AsyncFakeTransport
-from tests.unit.helpers import legacy_api
+from tests.unit.support.helpers import legacy_api
 
 
 async def _collect_pages(iterator):

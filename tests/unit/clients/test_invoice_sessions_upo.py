@@ -23,9 +23,9 @@ from ksef2._domain.models.auth import AuthTokens
 from ksef2._domain.models.batch import BatchSessionResumeState
 from ksef2._domain.models.session import OnlineSessionResumeState
 from ksef2._infra.schema.api import spec
-from tests.unit.payloads import session_status
+from tests.unit.support.payloads import session_status
 from tests.unit.fakes.transport import AsyncFakeTransport, FakeTransport
-from tests.unit.flavors import Flavor
+from tests.unit.support.flavors import Flavor
 
 
 SESSION_REF = "20260625-SO-session"

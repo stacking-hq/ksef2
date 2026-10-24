@@ -37,7 +37,8 @@ from ksef2._endpoints.async_auth import AsyncAuthEndpoints
 from ksef2._infra.mappers.auth import from_spec, to_spec
 
 
-# [TODO] wtf why is this not inlined
+# Kept as one sync callable so the async client can run the CPU-bound signing
+# in a worker thread via asyncio.to_thread.
 def _build_signed_xades(
     *,
     challenge: str,

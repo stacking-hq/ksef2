@@ -31,7 +31,7 @@ from tests.unit.clients.test_paging import (
     _client,  # pyright: ignore[reportPrivateUsage]
     _page,  # pyright: ignore[reportPrivateUsage]
 )
-from tests.unit.flavors import Flavor
+from tests.unit.support.flavors import Flavor
 
 SUFFIX = "will be removed no earlier than ksef2 2.0.0; use `{new}` instead."
 BY_ID = {collection.id: collection for collection in COLLECTIONS}

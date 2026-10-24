@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-SRC_ROOT = Path(__file__).resolve().parents[2] / "src"
+SRC_ROOT = Path(__file__).resolve().parents[3] / "src"
 PACKAGE_ROOT = SRC_ROOT / "ksef2"
 
 # Every importable module whose path has no underscore-prefixed component.

@@ -19,8 +19,8 @@ from ksef2._domain.models.batch import (
 )
 from ksef2._domain.models.session import SessionEncryptionMaterial
 from ksef2._infra.schema.api import spec
-from tests.unit.flavors import Flavor
-from tests.unit.helpers import VALID_PUBLIC_KEY_ID
+from tests.unit.support.flavors import Flavor
+from tests.unit.support.helpers import VALID_PUBLIC_KEY_ID
 
 KEY = b"k" * 32
 IV = b"v" * 16

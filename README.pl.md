@@ -1,3 +1,5 @@
+# ksef2: Biblioteka Python do KSeF (klient API KSeF 2.0)
+
 <h1 align="center">ksef2 SDK</h1>
 
 <h3 align="center">
@@ -14,7 +16,7 @@
 
 <div align="center">
   <br>
-  <a href="https://docs.stacking.me/pl/sdk/getting-started/overview/" title="dokumentacja ksef2">
+  <a href="https://docs.stackinghq.com/pl/ksef2/sdk/getting-started/overview/" title="dokumentacja ksef2">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/stacking-hq/ksef2/main/docs/assets/logo-light.png">
       <img src="https://raw.githubusercontent.com/stacking-hq/ksef2/main/docs/assets/logo-dark.png" alt="ksef2" width="320">
@@ -37,6 +39,10 @@
     <a href="https://github.com/stacking-hq/ksef2/blob/main/README.pl.md">Polski</a>
   </p>
 </div>
+
+Biblioteka Python do Krajowego Systemu e-Faktur (KSeF 2.0): typowane klienci
+synchroniczny i asynchroniczny dla API FA(3), bez ręcznego pisania żądań HTTP,
+pollingu ani obsługi szyfrowania.
 
 ## Czym jest ksef2?
 
@@ -217,11 +223,11 @@ pobierania paczek i bezpośredniego pobierania faktur.
 
 ## Dokumentacja
 
-- Dokumentacja online: <https://docs.stacking.me/pl/sdk/getting-started/overview/>
-- Quickstart: <https://docs.stacking.me/pl/sdk/getting-started/quickstart/>
-- Przewodniki praktyczne: <https://docs.stacking.me/pl/sdk/how-to-guides/overview/>
-- Kontrakt publicznego API: <https://docs.stacking.me/pl/sdk/reference/public-api/>
-- Referencja API Pythona (EN): <https://docs.stacking.me/sdk/reference/api/>
+- Dokumentacja online: <https://docs.stackinghq.com/pl/ksef2/sdk/getting-started/overview/>
+- Quickstart: <https://docs.stackinghq.com/pl/ksef2/sdk/getting-started/quickstart/>
+- Przewodniki praktyczne: <https://docs.stackinghq.com/pl/ksef2/sdk/how-to-guides/overview/>
+- Kontrakt publicznego API: <https://docs.stackinghq.com/pl/ksef2/sdk/reference/public-api/>
+- Referencja API Pythona (EN): <https://docs.stackinghq.com/ksef2/sdk/reference/api/ksef2/>
 - Źródła dokumentacji: [`docs/en`](https://github.com/stacking-hq/ksef2/tree/main/docs/en) i [`docs/pl`](https://github.com/stacking-hq/ksef2/tree/main/docs/pl)
 - Uruchamialne przykłady: [`scripts/examples`](https://github.com/stacking-hq/ksef2/tree/main/scripts/examples)
 

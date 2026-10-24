@@ -288,7 +288,7 @@ class TestHintCallsResolve:
 
 class TestHintsAreDocumented:
     DOCS = [
-        Path(__file__).parents[2] / "docs" / lang / "reference" / "errors.md"
+        Path(__file__).parents[3] / "docs" / lang / "reference" / "errors.md"
         for lang in ("en", "pl")
     ]
     HINTS = [(owner, hint) for owner, hint in _all_hints() if "(instance)" not in owner]

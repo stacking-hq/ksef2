@@ -12,7 +12,7 @@ from tests.unit.factories.certificates import (
     VALID_CERTIFICATE_SERIAL_NUMBER_3,
 )
 from tests.unit.fakes.transport import FakeTransport
-from tests.unit.helpers import legacy_api
+from tests.unit.support.helpers import legacy_api
 
 
 class TestCertificatesClient:

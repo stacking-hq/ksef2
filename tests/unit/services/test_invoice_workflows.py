@@ -29,8 +29,8 @@ from ksef2._domain.models.session import FormSchema
 from ksef2._infra.schema.api import spec
 from ksef2.clients import ExportedInvoices
 from tests.unit.fakes.transport import RecordedCall
-from tests.unit.flavors import Flavor
-from tests.unit.payloads import (
+from tests.unit.support.flavors import Flavor
+from tests.unit.support.payloads import (
     InvoiceMetadataFactory,
     KSEF_1,
     KSEF_2,
@@ -405,7 +405,7 @@ import sys
 from ksef2._domain.models.invoices import InvoicesFilter
 from ksef2._domain.models.pagination import InvoiceMetadataParams
 from tests.unit.factories.invoices import QueryInvoicesMetadataResponseFactory
-from tests.unit.flavors import Flavor
+from tests.unit.support.flavors import Flavor
 from tests.unit.services.test_invoice_workflows import _boundary_page
 
 flavor = Flavor("sync")

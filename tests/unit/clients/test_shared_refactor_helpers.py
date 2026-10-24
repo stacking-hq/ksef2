@@ -17,7 +17,7 @@ from ksef2._endpoints.base import BaseEndpoints
 from ksef2._services.async_batch import AsyncBatchService
 from ksef2._services.batch import BatchService
 from tests.unit.fakes.transport import AsyncFakeTransport, FakeTransport
-from tests.unit.helpers import VALID_PUBLIC_KEY_ID, legacy_api
+from tests.unit.support.helpers import VALID_PUBLIC_KEY_ID, legacy_api
 
 HTTPX_CLIENT_CLASS = httpx.Client
 HTTPX_ASYNC_CLIENT_CLASS = httpx.AsyncClient

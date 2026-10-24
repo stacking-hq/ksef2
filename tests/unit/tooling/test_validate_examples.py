@@ -175,7 +175,7 @@ def test_main_exit_codes(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> 
 
 
 def test_repository_examples_and_docs_use_the_public_surface() -> None:
-    failures, examples, pages = validate(Path(__file__).resolve().parents[2])
+    failures, examples, pages = validate(Path(__file__).resolve().parents[3])
 
     assert failures == []
     assert examples > 0

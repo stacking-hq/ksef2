@@ -22,7 +22,7 @@ from scripts.examples._common import (
 )
 from scripts.examples.quickstart import SELLER_NIP, build_invoice
 
-SCHEMA_PATH = Path(__file__).parents[2] / "schemas" / "FA3" / "schemat.xsd"
+SCHEMA_PATH = Path(__file__).parents[3] / "schemas" / "FA3" / "schemat.xsd"
 
 _PARSER = etree.XMLParser(no_network=True, resolve_entities=False)
 
@@ -86,7 +86,7 @@ def test_consecutive_invoices_get_different_numbers(
 def test_quickstart_is_self_contained() -> None:
     """The quickstart must not lean on the shared helpers it is meant to survive without."""
     source = (
-        Path(__file__).parents[2] / "scripts" / "examples" / "quickstart.py"
+        Path(__file__).parents[3] / "scripts" / "examples" / "quickstart.py"
     ).read_text()
 
     assert "_common" not in source

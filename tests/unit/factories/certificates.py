@@ -4,7 +4,7 @@ from ksef2._infra.schema.api import spec
 from polyfactory.factories.pydantic_factory import ModelFactory
 from polyfactory.pytest_plugin import register_fixture
 
-from tests.unit.helpers import VALID_BASE64
+from tests.unit.support.helpers import VALID_BASE64
 
 VALID_CERTIFICATE_SERIAL_NUMBER = "0123456789ABCDEF"
 VALID_CERTIFICATE_SERIAL_NUMBER_2 = "FEDCBA9876543210"

@@ -303,6 +303,12 @@ on the public API page for every alias and its replacement.
   or a closed online or batch session (#169).
 - `KSeFAuthError.exception_code` now reflects the KSeF code instead of always
   being `UNKNOWN_ERROR` (#167).
+- The PyPI page now carries discoverability metadata: package keywords, a
+  description naming KSeF 2.0, FA(3) and sync/async, `Natural Language`
+  classifiers and project URLs (Homepage, Documentation, Repository, Issues,
+  Changelog) pointing at `stackinghq.com`, `docs.stackinghq.com` and
+  `github.com/stacking-hq/ksef2`. Both READMEs open with a plain-text
+  "KSeF Python SDK" heading and a Polish sentence (#284, #285).
 - `auth.tokens.list_page()` is supported, not deprecated: it stays the single
   request that takes KSeF's own continuation token, which resumable `page()`
   paging does not replace. `auth.tokens.list_all()` remains deprecated in favour

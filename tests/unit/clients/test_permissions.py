@@ -23,7 +23,7 @@ from tests.unit.factories.permissions import (
     DomainSubunitPermissionsQueryFactory,
 )
 from tests.unit.fakes.transport import FakeTransport
-from tests.unit.helpers import legacy_api
+from tests.unit.support.helpers import legacy_api
 
 
 class TestPermissionsClient:

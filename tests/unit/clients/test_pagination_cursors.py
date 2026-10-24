@@ -37,7 +37,7 @@ from tests.unit.clients.test_paging import (
 )
 from tests.unit.factories.auth import DomainAuthTokensFactory
 from tests.unit.fakes.transport import RecordedCall
-from tests.unit.flavors import Flavor
+from tests.unit.support.flavors import Flavor
 
 COLLECTIONS_BY_ID: dict[str, Collection] = {c.id: c for c in COLLECTIONS}
 PERMISSION_COLLECTION_IDS = sorted(

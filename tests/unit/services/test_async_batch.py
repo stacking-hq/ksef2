@@ -28,7 +28,7 @@ from ksef2._domain.models.session import FormSchema, SessionEncryptionMaterial
 from ksef2._infra.schema.api import spec
 from ksef2._services.async_batch import AsyncBatchService, AsyncBatchSessionOpener
 from tests.unit.fakes.transport import AsyncFakeTransport
-from tests.unit.helpers import VALID_PUBLIC_KEY_ID, legacy_api
+from tests.unit.support.helpers import VALID_PUBLIC_KEY_ID, legacy_api
 
 
 def _build_service(

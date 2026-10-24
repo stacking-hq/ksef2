@@ -17,7 +17,7 @@ from tests.unit.factories.collective_identifiers import (
     CollectiveIdentifiersQueryResponseFactory,
 )
 from tests.unit.fakes.transport import AsyncFakeTransport
-from tests.unit.helpers import legacy_api
+from tests.unit.support.helpers import legacy_api
 
 _KSEF_NUMBER = "1234567890-20250625-ABC123-DEF456-07"
 _SECOND_KSEF_NUMBER = "1234567890-20250625-ABC123-DEF457-08"

@@ -20,7 +20,7 @@ from ksef2.models import (
     PreparedBatch,
     TokenCredentials,
 )
-from tests.unit.flavors import Flavor
+from tests.unit.support.flavors import Flavor
 
 
 @pytest.mark.parametrize("retain_prepared", [True, False])

@@ -25,7 +25,7 @@ from ksef2._domain.models.encryption import PublicKeyCertificate
 from ksef2._infra.schema.api.supp.auth import InitTokenAuthenticationRequest
 from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import AsyncFakeTransport
-from tests.unit.helpers import VALID_BASE64
+from tests.unit.support.helpers import VALID_BASE64
 
 
 def _build_auth_client(

@@ -40,10 +40,10 @@ from ksef2._infra.schema.api.supp.auth import InitTokenAuthenticationRequest
 from ksef2._infra.schema.api import spec
 from ksef2.xades import XAdESCredentials, XAdESPrivateKey
 from tests.unit.fakes.transport import FakeTransport
-from tests.unit.flavors import Flavor
-from tests.unit.helpers import VALID_BASE64
-from tests.unit.helpers import legacy_api
-from tests.unit.xades_material import (
+from tests.unit.support.flavors import Flavor
+from tests.unit.support.helpers import VALID_BASE64
+from tests.unit.support.helpers import legacy_api
+from tests.unit.support.xades_material import (
     CredentialFormat,
     build_credentials,
     public_key_der,

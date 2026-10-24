@@ -3,7 +3,7 @@
 from ksef2._infra.mappers.invoices import from_spec as invoices_from_spec
 from ksef2.models import InvoiceMetadata, Page, TokenInfo
 from tests.unit.factories.tokens import DomainTokenInfoFactory
-from tests.unit.payloads import InvoiceMetadataFactory
+from tests.unit.support.payloads import InvoiceMetadataFactory
 
 
 def _metadata() -> InvoiceMetadata:

@@ -8,7 +8,7 @@ from ksef2._domain.models.pagination import ListSessionsQuery
 from ksef2._domain.models.session import ListSessionsResponse
 from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import FakeTransport
-from tests.unit.helpers import legacy_api
+from tests.unit.support.helpers import legacy_api
 
 
 class TestInvoiceSessionsClient:

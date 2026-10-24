@@ -13,7 +13,7 @@ from ksef2._domain.models.pagination import InvoiceMetadataParams
 from ksef2._infra.mappers.invoices import to_spec
 from ksef2._infra.schema.api import spec
 from tests.unit.fakes.transport import FakeTransport
-from tests.unit.helpers import VALID_PUBLIC_KEY_ID
+from tests.unit.support.helpers import VALID_PUBLIC_KEY_ID
 
 
 def _with_metadata_page_state(

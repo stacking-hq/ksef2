@@ -1,6 +1,6 @@
 import pytest
 from tests.unit.fakes import transport
-from tests.unit.flavors import Flavor
+from tests.unit.support.flavors import Flavor
 
 from tests.unit.factories.certificates import *  # noqa
 from tests.unit.factories.collective_identifiers import *  # noqa

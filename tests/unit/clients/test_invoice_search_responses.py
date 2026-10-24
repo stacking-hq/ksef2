@@ -19,7 +19,7 @@ from ksef2.models import (
     QueryInvoicesMetadataResponse,
     InvoiceMetadata,
 )
-from tests.unit.flavors import Flavor
+from tests.unit.support.flavors import Flavor
 
 HWM = datetime(2026, 6, 25, 9, tzinfo=UTC)
 ROW = {
@@ -236,7 +236,7 @@ def test_documented_sync_persists_before_checkpoint(
         refresh_token_valid_until=datetime(2099, 1, 1, tzinfo=UTC),
     )
     path = (
-        Path(__file__).resolve().parents[2]
+        Path(__file__).resolve().parents[3]
         / "docs"
         / language
         / "concepts/querying-and-exports.md"

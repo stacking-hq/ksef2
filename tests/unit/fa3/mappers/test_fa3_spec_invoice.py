@@ -38,7 +38,7 @@ from ksef2._infra.schema.fa3.models.schemat import (
     Tpodmiot1,
 )
 
-SAMPLES_DIR = Path(__file__).resolve().parents[3] / "schemas" / "FA3" / "samples"
+SAMPLES_DIR = Path(__file__).resolve().parents[4] / "schemas" / "FA3" / "samples"
 
 # Some FA(3) elements are mandatory in the generated models while the mapper
 # reads a missing element as absent; UNSET stands in for those.

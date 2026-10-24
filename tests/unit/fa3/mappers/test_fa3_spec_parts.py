@@ -55,7 +55,7 @@ from ksef2._infra.schema.fa3.models.schemat import (
     Tpodmiot3,
     TrolaPodmiotu3,
 )
-from tests.unit.mappers.test_fa3_spec_invoice import load_sample
+from tests.unit.fa3.mappers.test_fa3_spec_invoice import load_sample
 
 # Some FA(3) elements are mandatory in the generated models while the mapper
 # reads a missing element as absent; UNSET stands in for those.

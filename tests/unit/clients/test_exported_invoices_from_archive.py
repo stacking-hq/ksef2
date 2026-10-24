@@ -14,8 +14,8 @@ from ksef2 import KSeFValidationError
 from ksef2.clients import ExportedInvoices
 from ksef2.models import CompressionType
 from ksef2._infra.schema.api import spec
-from tests.unit.test_exported_invoices import _metadata_json, _zip
-from tests.unit.test_targz_exported_invoices import _tar
+from tests.unit.clients.test_exported_invoices import _metadata_json, _zip
+from tests.unit.clients.test_targz_exported_invoices import _tar
 
 
 def _archive(entries: dict[str, bytes], compression: CompressionType) -> bytes:

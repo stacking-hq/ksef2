@@ -7,7 +7,7 @@ from lxml import etree
 
 from ksef2.fa3 import InvoiceBuilder, InvoiceSummaryOverrides, parse_invoice_xml
 
-SAMPLES = Path(__file__).parents[2] / "schemas" / "FA3" / "samples"
+SAMPLES = Path(__file__).parents[3] / "schemas" / "FA3" / "samples"
 
 
 @pytest.mark.parametrize(

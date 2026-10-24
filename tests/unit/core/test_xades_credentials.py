@@ -17,7 +17,7 @@ from ksef2._core.exceptions import KSeFArgumentError
 from ksef2._core.xades import build_auth_token_request_xml, sign_xades
 from ksef2.models import XAdESCredentials
 from ksef2.xades import XAdESCredentials as FacadeXAdESCredentials
-from tests.unit.xades_material import (
+from tests.unit.support.xades_material import (
     CredentialFormat,
     archive,
     build_credentials,

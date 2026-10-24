@@ -6,7 +6,7 @@ from ksef2._infra.schema.api.supp.batch import OpenBatchSessionRequest
 from polyfactory.factories.pydantic_factory import ModelFactory
 from polyfactory.pytest_plugin import register_fixture
 
-from tests.unit.helpers import VALID_BASE64, VALID_PUBLIC_KEY_ID
+from tests.unit.support.helpers import VALID_BASE64, VALID_PUBLIC_KEY_ID
 
 
 @register_fixture(name="session_open_online_req")

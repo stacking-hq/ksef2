@@ -148,7 +148,7 @@ still attempt an upload. Check existing runs before retrying.
 ## Check the release tooling without publishing
 
 ```bash
-uv run pytest tests/unit/test_verify_release.py -q
+uv run pytest tests/unit/tooling/test_verify_release.py -q
 ```
 
 The test builds a temporary tree with a fake `pyproject.toml`, changelog, wheel,

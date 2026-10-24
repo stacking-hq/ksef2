@@ -7,7 +7,7 @@ from ksef2 import KSeFTransportError
 from ksef2._core.middlewares.async_exceptions import AsyncKSeFExceptionMiddleware
 from ksef2._core.middlewares.exceptions import KSeFExceptionMiddleware
 from tests.unit.fakes.transport import AsyncFakeTransport, FakeTransport
-from tests.unit.flavors import Flavor
+from tests.unit.support.flavors import Flavor
 
 _FAILURES: list[httpx.RequestError | httpx.InvalidURL | httpx.StreamError] = [
     httpx.InvalidURL("Invalid non-printable ASCII character in URL"),

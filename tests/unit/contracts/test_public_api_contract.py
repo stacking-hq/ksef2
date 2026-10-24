@@ -26,7 +26,7 @@ PUBLIC_DOMAIN_ALIAS_NAMES = (
     "TokenStatus",
 )
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 PUBLIC_RUNTIME_ENUM_AND_HELPER_NAMES = (
     "AuthContextIdentifierTypeEnum",
@@ -259,7 +259,7 @@ from typing import get_type_hints
 from ksef2.clients import AsyncPager, Pager
 from ksef2.models import Page
 from tests.unit.clients.test_paging import COLLECTIONS, _client, _page
-from tests.unit.flavors import Flavor
+from tests.unit.support.flavors import Flavor
 
 runtime_checks = sys.argv[1] == "1"
 
