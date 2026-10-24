@@ -101,6 +101,9 @@ Sufit ogranicza jedno zaśnięcie, nie cały request. Jeśli KSeF powtórzy ten 
 wartościach to 240 sekund, bo SDK śpi 120 sekund dwa razy. Zmniejsz
 `max_attempts` albo `max_retry_after`, gdy handler requestu nie może tyle
 czekać.
+`max_attempts` dotyczy pojedynczego requestu HTTP. Poller `wait()` wysyła
+kolejny request po ponawialnym błędzie serwera, limicie lub transporcie i wlicza
+opóźnienia oraz czas requestów do swojego `timeout`.
 
 ## Ponawialne requesty
 
@@ -118,20 +121,36 @@ Ponawialne grupy `POST`:
 
 | Obszar | Operacje |
 | --- | --- |
-| Uwierzytelnianie | challenge, refresh token |
+| Uwierzytelnianie | challenge; refresh token tylko po `429` |
 | Faktury | query metadanych |
 | Certyfikaty | query, retrieve |
 | Uprawnienia | query personal, authorization, EU entity, person, subordinate entity i subunit |
 
-Wysyłka faktury, nadawanie uprawnień, enrollment certyfikatu, generowanie
-tokenu, otwieranie sesji online i otwieranie sesji batch nie są ponawiane przez
-middleware retry SDK. Zapisz zwrócone referencje i wznawiaj przez status zamiast
-tworzyć te operacje ponownie w ciemno.
+Wysyłka faktury jest ponawiana tylko po odpowiedzi `429`, która potwierdza, że
+KSeF jej nie przetworzył. SDK stosuje `Retry-After`, jeśli mieści się w
+`max_retry_after`. Nie ponawia wysyłki po `5xx` ani utracie odpowiedzi; przy
+niejednoznacznym wyniku sprawdź `session.list_invoices()` przed ponowną wysyłką.
+Nadawanie uprawnień, enrollment certyfikatu, generowanie tokenu, otwieranie
+sesji online i otwieranie sesji batch nie są ponawiane przez middleware retry
+SDK. Zapisz zwrócone referencje i wznawiaj przez status zamiast tworzyć te
+operacje ponownie w ciemno.
 
 Redeem tokenu uwierzytelnienia także nigdy nie jest ponawiany, ponieważ KSeF
 zwraca parę access/refresh tylko raz. Utrata odpowiedzi redeem rzuca
 `KSeFAuthTokenRedemptionError` z `outcome_ambiguous=True`; nie powtarzaj tej
 operacji automatycznie.
+
+Request refresh tokenu jest ponawiany wyłącznie po jawnej odpowiedzi `429`.
+SDK nie ponawia go po błędzie transportu ani `5xx`, ponieważ token mógł już
+zostać zmieniony.
+
+## Równoległość pobierania
+
+SDK nie ogranicza liczby równoległych pobrań. Przy pobieraniu wielu faktur
+ogranicz równoległość w aplikacji (na przykład semaforem) i dobierz limit na
+podstawie aktualnych limitów KSeF z `auth.limits`. Dla `429` SDK ponawia
+request skonfigurowaną liczbę razy; nadmiar równoległych operacji może nadal
+wyczerpać te próby.
 
 ## Odświeżanie access tokenu
 

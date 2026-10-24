@@ -1,15 +1,24 @@
 from collections.abc import Mapping
+import asyncio
 from unittest.mock import patch
 
 import httpx
 import pytest
 
 from ksef2._config import RetryConfig
-from ksef2._core.exceptions import KSeFAuthError, KSeFRateLimitError
+from ksef2._core.exceptions import (
+    KSeFAuthError,
+    KSeFRateLimitError,
+    KSeFTransportError,
+)
+from ksef2._core.middlewares.async_exceptions import AsyncKSeFExceptionMiddleware
 from ksef2._core.middlewares.exceptions import KSeFExceptionMiddleware
+from ksef2._core.middlewares.async_retry import AsyncRetryMiddleware
+from ksef2._core.http import HttpTransport
+from ksef2._core.async_http import AsyncHttpTransport
 from ksef2._core.middlewares.retry import RetryMiddleware
-from ksef2._core.routes import AuthRoutes, CollectiveIdentifierRoutes
-from tests.unit.fakes.transport import FakeTransport
+from ksef2._core.routes import AuthRoutes, CollectiveIdentifierRoutes, InvoiceRoutes
+from tests.unit.fakes.transport import AsyncFakeTransport, FakeTransport
 
 
 class FailingThenSucceedingTransport(FakeTransport):
@@ -41,6 +50,229 @@ class FailingThenSucceedingTransport(FakeTransport):
 
 
 class TestRetryMiddleware:
+    def test_invoice_send_retries_429_with_retry_after_on_custom_httpx_transport(
+        self,
+    ) -> None:
+        requests: list[httpx.Request] = []
+        delays: list[float] = []
+
+        def _handle(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            status_code = 429 if len(requests) == 1 else 200
+            return httpx.Response(
+                status_code,
+                headers={"Retry-After": "3"} if status_code == 429 else {},
+                request=request,
+            )
+
+        with httpx.Client(
+            base_url="https://ksef.mock", transport=httpx.MockTransport(_handle)
+        ) as client:
+            middleware = RetryMiddleware(
+                HttpTransport(client, headers={}),
+                RetryConfig(max_attempts=2, max_retry_after=10.0),
+            )
+            response = middleware.request(
+                "POST",
+                InvoiceRoutes.SEND.format(referenceNumber="session-ref"),
+                json={"encryptedInvoice": "payload"},
+                _sleep_fn=delays.append,
+            )
+
+        assert response.status_code == 200
+        assert len(requests) == 2
+        assert delays == [3.0]
+
+    def test_async_invoice_send_retries_429_with_retry_after_on_custom_httpx_transport(
+        self,
+    ) -> None:
+        requests: list[httpx.Request] = []
+        delays: list[float] = []
+
+        def _handle(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            status_code = 429 if len(requests) == 1 else 200
+            return httpx.Response(
+                status_code,
+                headers={"Retry-After": "3"} if status_code == 429 else {},
+                request=request,
+            )
+
+        async def _run() -> None:
+            async with httpx.AsyncClient(
+                base_url="https://ksef.mock", transport=httpx.MockTransport(_handle)
+            ) as client:
+                middleware = AsyncRetryMiddleware(
+                    AsyncHttpTransport(client, headers={}),
+                    RetryConfig(max_attempts=2, max_retry_after=10.0),
+                )
+
+                async def _sleep(delay: float) -> None:
+                    delays.append(delay)
+
+                response = await middleware.request(
+                    "POST",
+                    InvoiceRoutes.SEND.format(referenceNumber="session-ref"),
+                    json={"encryptedInvoice": "payload"},
+                    _sleep_fn=_sleep,
+                )
+                assert response.status_code == 200
+
+        asyncio.run(_run())
+        assert len(requests) == 2
+        assert delays == [3.0]
+
+    def test_invoice_send_does_not_retry_503(self) -> None:
+        transport = FakeTransport()
+        transport.enqueue(status_code=503, json_body={"message": "busy"})
+        transport.enqueue(status_code=200, json_body={"unexpected": True})
+        delays: list[float] = []
+        middleware = RetryMiddleware(transport, RetryConfig(max_attempts=3))
+
+        response = middleware.request(
+            "POST",
+            InvoiceRoutes.SEND.format(referenceNumber="session-ref"),
+            json={"encryptedInvoice": "payload"},
+            _sleep_fn=delays.append,
+        )
+
+        assert response.status_code == 503
+        assert len(transport.calls) == 1
+        assert delays == []
+
+    def test_invoice_send_does_not_retry_transport_error(self) -> None:
+        requests: list[httpx.Request] = []
+        delays: list[float] = []
+
+        def _handle(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            raise httpx.ReadError("response lost", request=request)
+
+        with httpx.Client(
+            base_url="https://ksef.mock", transport=httpx.MockTransport(_handle)
+        ) as client:
+            middleware = RetryMiddleware(
+                HttpTransport(client, headers={}), RetryConfig(max_attempts=3)
+            )
+            with pytest.raises(httpx.ReadError):
+                middleware.request(
+                    "POST",
+                    InvoiceRoutes.SEND.format(referenceNumber="session-ref"),
+                    json={"encryptedInvoice": "payload"},
+                    _sleep_fn=delays.append,
+                )
+
+        assert len(requests) == 1
+        assert delays == []
+
+    def test_async_invoice_send_does_not_retry_transport_error(self) -> None:
+        requests: list[httpx.Request] = []
+        delays: list[float] = []
+
+        def _handle(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            raise httpx.ReadError("response lost", request=request)
+
+        async def _run() -> None:
+            async with httpx.AsyncClient(
+                base_url="https://ksef.mock", transport=httpx.MockTransport(_handle)
+            ) as client:
+                middleware = AsyncRetryMiddleware(
+                    AsyncHttpTransport(client, headers={}),
+                    RetryConfig(max_attempts=3),
+                )
+
+                async def _sleep(delay: float) -> None:
+                    delays.append(delay)
+
+                with pytest.raises(httpx.ReadError):
+                    await middleware.request(
+                        "POST",
+                        InvoiceRoutes.SEND.format(referenceNumber="session-ref"),
+                        json={"encryptedInvoice": "payload"},
+                        _sleep_fn=_sleep,
+                    )
+
+        asyncio.run(_run())
+        assert len(requests) == 1
+        assert delays == []
+
+    def test_retry_attempt_ambiguity_is_sticky_for_sync_and_async(self) -> None:
+        sync_transport = FakeTransport()
+        sync_transport.enqueue_error(httpx.ReadError("first response lost"))
+        sync_transport.enqueue_error(httpx.ConnectError("second connect failed"))
+        sync_error_layer = KSeFExceptionMiddleware(
+            RetryMiddleware(sync_transport, RetryConfig(max_attempts=2))
+        )
+        sync_delays: list[float] = []
+        with pytest.raises(KSeFTransportError) as sync_error:
+            sync_error_layer.request("PUT", "/resource", _sleep_fn=sync_delays.append)
+
+        async_transport = AsyncFakeTransport()
+        async_transport.enqueue_error(httpx.ReadError("first response lost"))
+        async_transport.enqueue_error(httpx.ConnectError("second connect failed"))
+        async_error_layer = AsyncKSeFExceptionMiddleware(
+            AsyncRetryMiddleware(async_transport, RetryConfig(max_attempts=2))
+        )
+        async_delays: list[float] = []
+
+        async def _run() -> KSeFTransportError:
+            async def _sleep(delay: float) -> None:
+                async_delays.append(delay)
+
+            with pytest.raises(KSeFTransportError) as async_error:
+                await async_error_layer.request("PUT", "/resource", _sleep_fn=_sleep)
+            return async_error.value
+
+        async_error = asyncio.run(_run())
+        assert sync_error.value.outcome_ambiguous is True
+        assert isinstance(sync_error.value.__cause__, httpx.ConnectError)
+        assert async_error.outcome_ambiguous is True
+        assert isinstance(async_error.__cause__, httpx.ConnectError)
+        assert sync_delays == [0.5]
+        assert async_delays == [0.5]
+
+    def test_over_ceiling_retry_after_is_marked_for_sync_and_async_pollers(
+        self,
+    ) -> None:
+        sync_transport = FakeTransport()
+        sync_transport.enqueue(status_code=429, headers={"Retry-After": "600"})
+        sync_layer = KSeFExceptionMiddleware(
+            RetryMiddleware(
+                sync_transport,
+                RetryConfig(max_attempts=3, max_retry_after=2.0),
+            )
+        )
+        sync_delays: list[float] = []
+        with pytest.raises(KSeFRateLimitError) as sync_error:
+            sync_layer.request("GET", "/resource", _sleep_fn=sync_delays.append)
+
+        async_transport = AsyncFakeTransport()
+        async_transport.enqueue(status_code=429, headers={"Retry-After": "600"})
+        async_layer = AsyncKSeFExceptionMiddleware(
+            AsyncRetryMiddleware(
+                async_transport,
+                RetryConfig(max_attempts=3, max_retry_after=2.0),
+            )
+        )
+        async_delays: list[float] = []
+
+        async def _run() -> KSeFRateLimitError:
+            async def _sleep(delay: float) -> None:
+                async_delays.append(delay)
+
+            with pytest.raises(KSeFRateLimitError) as async_error:
+                await async_layer.request("GET", "/resource", _sleep_fn=_sleep)
+            return async_error.value
+
+        async_error = asyncio.run(_run())
+        assert sync_error.value.retry_after == 600
+        assert sync_error.value.context["retry_after_exceeds_ceiling"] is True
+        assert async_error.retry_after == 600
+        assert async_error.context["retry_after_exceeds_ceiling"] is True
+        assert sync_delays == []
+        assert async_delays == []
+
     @patch("ksef2._core.middlewares.retry.time.sleep")
     def test_retries_get_on_retryable_status(
         self,
@@ -119,6 +351,56 @@ class TestRetryMiddleware:
 
         assert len(transport.calls) == 1
         sleep_mock.assert_not_called()
+
+    def test_refresh_token_does_not_retry_transport_error(self) -> None:
+        transport = FakeTransport()
+        transport.enqueue_error(httpx.ReadError("refresh response lost"))
+        transport.enqueue(status_code=200, json_body={"unexpected": "retry"})
+        delays: list[float] = []
+        middleware = RetryMiddleware(transport, RetryConfig(max_attempts=3))
+
+        with pytest.raises(httpx.ReadError):
+            middleware.request(
+                "POST", AuthRoutes.REFRESH_TOKEN, _sleep_fn=delays.append
+            )
+
+        assert len(transport.calls) == 1
+        assert delays == []
+
+    def test_refresh_token_does_not_retry_503(self) -> None:
+        transport = FakeTransport()
+        transport.enqueue(status_code=503, json_body={"message": "busy"})
+        transport.enqueue(status_code=200, json_body={"unexpected": "retry"})
+        delays: list[float] = []
+        middleware = RetryMiddleware(transport, RetryConfig(max_attempts=3))
+
+        response = middleware.request(
+            "POST", AuthRoutes.REFRESH_TOKEN, _sleep_fn=delays.append
+        )
+
+        assert response.status_code == 503
+        assert len(transport.calls) == 1
+        assert delays == []
+
+    def test_async_refresh_token_does_not_retry_transport_error(self) -> None:
+        transport = AsyncFakeTransport()
+        transport.enqueue_error(httpx.ReadError("refresh response lost"))
+        transport.enqueue(status_code=200, json_body={"unexpected": "retry"})
+        delays: list[float] = []
+        middleware = AsyncRetryMiddleware(transport, RetryConfig(max_attempts=3))
+
+        async def _run() -> None:
+            async def _sleep(delay: float) -> None:
+                delays.append(delay)
+
+            with pytest.raises(httpx.ReadError):
+                await middleware.request(
+                    "POST", AuthRoutes.REFRESH_TOKEN, _sleep_fn=_sleep
+                )
+
+        asyncio.run(_run())
+        assert len(transport.calls) == 1
+        assert delays == []
 
     @patch("ksef2._core.middlewares.retry.time.sleep")
     def test_retries_safe_post_query_paths(

@@ -27,7 +27,9 @@ from ksef2._core.exceptions import (
     KSeFValidationError,
 )
 from ksef2._core.middlewares.async_exceptions import AsyncKSeFExceptionMiddleware
+from ksef2._core.middlewares.async_retry import AsyncRetryMiddleware
 from ksef2._core.middlewares.exceptions import KSeFExceptionMiddleware
+from ksef2._core.middlewares.retry import RetryMiddleware
 from ksef2._core.routes import LimitRoutes, PeppolRoutes, SessionRoutes
 from ksef2._domain.models.auth import AuthenticationResumeState, AuthTokens
 from ksef2._domain.models.session import OnlineSessionResumeState
@@ -318,35 +320,36 @@ def test_nonretryable_post_is_not_retried(
 
 
 @pytest.mark.parametrize(
-    ("method", "ambiguous"),
+    ("method", "failure", "ambiguous"),
     [
-        ("GET", False),
-        ("HEAD", False),
-        ("OPTIONS", False),
-        ("POST", True),
-        ("PUT", True),
-        ("DELETE", True),
+        ("GET", httpx.ConnectError, False),
+        ("GET", httpx.ConnectTimeout, False),
+        ("HEAD", httpx.ConnectError, False),
+        ("OPTIONS", httpx.ConnectError, False),
+        ("POST", httpx.ConnectError, False),
+        ("POST", httpx.ConnectTimeout, False),
+        ("POST", httpx.ReadError, True),
+        ("PUT", httpx.ConnectError, False),
+        ("PUT", httpx.ReadError, True),
+        ("DELETE", httpx.ReadError, True),
     ],
 )
 def test_transport_context_is_sanitized(
     flavor: Flavor,
     method: str,
+    failure: type[httpx.TransportError],
     ambiguous: bool,
 ) -> None:
     """Method and pathname survive; credentials, tokens and cause text do not."""
     if flavor.is_async:
         async_transport = AsyncFakeTransport()
-        async_transport.enqueue_error(
-            httpx.ConnectError("part?signature=raw-cause-secret")
-        )
+        async_transport.enqueue_error(failure("part?signature=raw-cause-secret"))
         middleware: AsyncKSeFExceptionMiddleware | KSeFExceptionMiddleware = (
             AsyncKSeFExceptionMiddleware(async_transport)
         )
     else:
         sync_transport = FakeTransport()
-        sync_transport.enqueue_error(
-            httpx.ConnectError("part?signature=raw-cause-secret")
-        )
+        sync_transport.enqueue_error(failure("part?signature=raw-cause-secret"))
         middleware = KSeFExceptionMiddleware(sync_transport)
 
     with pytest.raises(KSeFTransportError) as exc_info:
@@ -364,7 +367,7 @@ def test_transport_context_is_sanitized(
     assert error.method == method
     assert error.path == "/invoices/query"
     assert error.outcome_ambiguous is ambiguous
-    assert isinstance(error.__cause__, httpx.ConnectError)
+    assert isinstance(error.__cause__, failure)
     secrets = (
         "query-secret",
         "bearer-in-url",
@@ -377,6 +380,37 @@ def test_transport_context_is_sanitized(
     )
     for payload in (str(error), repr(error), json.dumps(error.context, default=str)):
         assert not [secret for secret in secrets if secret in payload], payload
+
+
+def test_lost_invoice_send_response_has_status_recovery_hint(
+    flavor: Flavor,
+) -> None:
+    path = "/sessions/online/session-ref/invoices"
+    if flavor.is_async:
+        transport = AsyncFakeTransport()
+        transport.enqueue_error(httpx.ReadError("response lost"))
+        middleware: AsyncKSeFExceptionMiddleware | KSeFExceptionMiddleware = (
+            AsyncKSeFExceptionMiddleware(
+                AsyncRetryMiddleware(
+                    transport, RetryConfig(max_attempts=3, initial_delay=0.0)
+                )
+            )
+        )
+    else:
+        transport = FakeTransport()
+        transport.enqueue_error(httpx.ReadError("response lost"))
+        middleware = KSeFExceptionMiddleware(
+            RetryMiddleware(transport, RetryConfig(max_attempts=3, initial_delay=0.0))
+        )
+
+    with pytest.raises(KSeFTransportError) as exc_info:
+        _ = flavor.run(middleware.post(path, json={"invoice": "payload"}))
+
+    assert exc_info.value.outcome_ambiguous is True
+    assert exc_info.value.hint == (
+        "Check `session.list_invoices()` before resending the invoice."
+    )
+    assert len(transport.calls) == 1
 
 
 @pytest.mark.parametrize(

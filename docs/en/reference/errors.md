@@ -107,7 +107,11 @@ single attempt; the wrapping changes no attempt count.
 | --- | --- | --- |
 | `method` | `str \| None` | HTTP method of the failed request, or `None` when the SDK does not know it. |
 | `path` | `str \| None` | Pathname the SDK was asked for, kept without userinfo, host, query and fragment. Presigned storage URLs are never kept here. |
-| `outcome_ambiguous` | `bool` | `True` when the request may have reached KSeF anyway: anything but `GET`, `HEAD` and `OPTIONS`, because an earlier attempt may have arrived. |
+| `outcome_ambiguous` | `bool` | `True` when the request may have reached KSeF. Connect failures raised before sending are `False`; lost responses on unsafe requests are `True`. |
+
+When a send operation has an ambiguous outcome, check its status before
+resending. For an online invoice, `session.list_invoices()` can show whether KSeF
+recorded it. The error's `hint` gives this recovery step.
 
 The original `httpx` exception stays available as `__cause__`. It is raw HTTP
 diagnostic output and can repeat request details the error itself leaves out, so

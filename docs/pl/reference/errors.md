@@ -108,7 +108,11 @@ otoczka nie zmienia liczby prób.
 | --- | --- | --- |
 | `method` | `str \| None` | Metoda HTTP błędnego żądania albo `None`, gdy SDK jej nie zna. |
 | `path` | `str \| None` | Ścieżka URL żądania bez userinfo, hosta, query i fragmentu. Presigned URL-e storage nigdy nie trafiają do tego pola. |
-| `outcome_ambiguous` | `bool` | `True`, gdy żądanie mogło mimo wszystko dotrzeć do KSeF: wszystko poza `GET`, `HEAD` i `OPTIONS`, bo wcześniejsza próba mogła dotrzeć. |
+| `outcome_ambiguous` | `bool` | `True`, gdy żądanie mogło dotrzeć do KSeF. Błędy połączenia przed wysłaniem mają wartość `False`; utrata odpowiedzi dla niebezpiecznego żądania ma wartość `True`. |
+
+Gdy wynik wysyłki jest niejednoznaczny, sprawdź status przed ponowną próbą.
+Dla faktury online `session.list_invoices()` może pokazać, czy KSeF ją zapisał.
+Pole `hint` błędu podaje ten sposób odzyskiwania.
 
 Oryginalny wyjątek `httpx` pozostaje dostępny jako `__cause__`. To surowa
 diagnostyka HTTP, która może powtórzyć szczegóły żądania nieuwzględnione w samym

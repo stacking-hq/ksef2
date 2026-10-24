@@ -30,9 +30,26 @@ class RetryMiddleware(BaseMiddleware):
     def _is_retryable_request(self, method: str, path: str) -> bool:
         if method in {"GET", "PUT", "DELETE"}:
             return True
-        return method == "POST" and path in routes.RETRYABLE_POST_PATHS
+        return method == "POST" and (
+            path in routes.RETRYABLE_POST_PATHS or self._is_send_invoice_path(path)
+        )
 
-    def _is_retryable_status(self, status_code: int) -> bool:
+    @staticmethod
+    def _is_send_invoice_path(path: str) -> bool:
+        return path.startswith("/sessions/online/") and path.endswith("/invoices")
+
+    def _is_non_idempotent_post(self, method: str, path: str) -> bool:
+        return method == "POST" and (
+            self._is_send_invoice_path(path)
+            or path == routes.AuthRoutes.REFRESH_TOKEN.path
+        )
+
+    def _is_retryable_status(self, method: str, path: str, status_code: int) -> bool:
+        if self._is_non_idempotent_post(method, path):
+            return (
+                status_code == 429
+                and status_code in self._config.retryable_status_codes
+            )
         return status_code in self._config.retryable_status_codes
 
     def _parse_retry_after(self, response: httpx.Response) -> float | None:
@@ -83,7 +100,7 @@ class RetryMiddleware(BaseMiddleware):
         if self._config.max_attempts <= 1 or not self._is_retryable_request(
             method, path
         ):
-            return self._next.request(
+            response = self._next.request(
                 method,
                 path,
                 headers=headers,
@@ -91,8 +108,12 @@ class RetryMiddleware(BaseMiddleware):
                 json=json,
                 content=content,
             )
+            if self._retry_after_over_ceiling(response):
+                response.extensions["ksef2_retry_after_exceeds_ceiling"] = True
+            return response
 
         last_response: httpx.Response | None = None
+        ambiguous_seen = False
 
         for attempt in range(1, self._config.max_attempts + 1):
             try:
@@ -104,25 +125,29 @@ class RetryMiddleware(BaseMiddleware):
                     json=json,
                     content=content,
                 )
-            except httpx.TransportError:
+            except httpx.TransportError as error:
+                if self._is_non_idempotent_post(method, path):
+                    raise
+                ambiguous_seen = ambiguous_seen or not isinstance(
+                    error, (httpx.ConnectError, httpx.ConnectTimeout)
+                )
                 if attempt >= self._config.max_attempts:
+                    if ambiguous_seen:
+                        error.__dict__["_ksef2_outcome_ambiguous"] = True
                     raise
                 self._sleep_for(attempt, _sleep_fn=_sleep_fn)
                 continue
 
             last_response = response
+            retry_after_over_ceiling = self._retry_after_over_ceiling(response)
+            if retry_after_over_ceiling:
+                response.extensions["ksef2_retry_after_exceeds_ceiling"] = True
             if (
                 response.is_success
-                or not self._is_retryable_status(response.status_code)
+                or not self._is_retryable_status(method, path, response.status_code)
                 or attempt >= self._config.max_attempts
+                or retry_after_over_ceiling
             ):
-                return response
-
-            if self._retry_after_over_ceiling(response):
-                # Retry-After exceeds the ceiling: do not park this process waiting.
-                # Return the response so the exception middleware raises
-                # KSeFRateLimitError with the true header value for the caller to
-                # reschedule around.
                 return response
 
             self._sleep_for(attempt, response, _sleep_fn=_sleep_fn)

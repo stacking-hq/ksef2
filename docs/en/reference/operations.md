@@ -100,6 +100,9 @@ The ceiling bounds one sleep, not the whole request. If KSeF repeats the same
 `(max_attempts - 1) * max_retry_after` before it gives up. With the defaults
 that is 240 seconds, because the SDK sleeps 120 seconds twice. Lower
 `max_attempts` or `max_retry_after` when a request handler cannot afford that.
+`max_attempts` applies to each HTTP request. A `wait()` poller starts another
+request after retryable server, rate-limit, or transport errors and counts its
+backoff and request time against the poller's `timeout`.
 
 ## Retryable requests
 
@@ -117,20 +120,36 @@ Retryable `POST` groups:
 
 | Area | Operations |
 | --- | --- |
-| Authentication | challenge, refresh token |
+| Authentication | challenge; refresh token only after `429` |
 | Invoices | metadata query |
 | Certificates | query, retrieve |
 | Permissions | personal, authorization, EU entity, person, subordinate entity, and subunit queries |
 
-Invoice submission, permission grants, certificate enrollment, token
-generation, online-session opening, and batch-session opening are not retried by
-the SDK retry middleware. Persist returned references and resume by status
-instead of recreating those operations blindly.
+Invoice submission is retried only when KSeF returns `429`, because that
+response confirms the invoice was not processed. The SDK honors `Retry-After`
+within `max_retry_after`. It does not retry submission after a `5xx` or a lost
+response; check `session.list_invoices()` before resending when the outcome is
+ambiguous. Permission grants, certificate enrollment, token generation,
+online-session opening, and batch-session opening are not retried by the SDK
+retry middleware. Persist returned references and resume by status instead of
+recreating those operations blindly.
 
 Authentication token redemption is also never retried because KSeF returns its
 access/refresh pair only once. A lost redemption response raises
 `KSeFAuthTokenRedemptionError` with `outcome_ambiguous=True`; do not repeat the
 redemption automatically.
+
+Refresh-token requests are retried only after an explicit `429`. The SDK does
+not retry them after a transport error or `5xx`, since the token may already
+have rotated.
+
+## Download concurrency
+
+The SDK does not throttle concurrent downloads. When downloading many invoices,
+limit concurrency in the application (for example with a semaphore) and use the
+current KSeF limits reported by `auth.limits` to choose the bound. A `429` is
+retried for the configured per-request attempts; excess concurrent work can
+still exhaust those attempts.
 
 ## Access-token refresh
 

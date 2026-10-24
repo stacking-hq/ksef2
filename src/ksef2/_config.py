@@ -56,7 +56,14 @@ class ConnectionPoolConfig:
 
 @dataclass(frozen=True, slots=True)
 class RetryConfig:
-    """Retry behavior for retryable KSeF responses and transient failures."""
+    """Retry behavior for retryable KSeF responses and transient failures.
+
+    ``max_attempts`` counts total attempts for one HTTP request. Polling helpers
+    have their own timeout budget: exhausted transient server, rate-limit, and
+    transport failures are retried by the poller until that timeout expires.
+    Invoice submission is retried only after HTTP 429, which confirms that KSeF
+    rejected the request; ambiguous transport failures and 5xx are not retried.
+    """
 
     max_attempts: int = 3
     """Total number of attempts per request, including the first."""
@@ -75,7 +82,11 @@ class RetryConfig:
     backoff_multiplier: float = 2.0
     """Factor by which the delay grows after each retry."""
     retryable_status_codes: tuple[int, ...] = (429, 502, 503, 504)
-    """HTTP status codes that trigger a retry."""
+    """HTTP status codes that trigger retries for otherwise retryable requests.
+
+    Invoice submission uses only 429 from this set; it is never retried for a
+    transport failure or another status because the result could be ambiguous.
+    """
 
 
 @dataclass(frozen=True, slots=True)

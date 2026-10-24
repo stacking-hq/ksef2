@@ -1,44 +1,31 @@
-"""Shared sync and async polling helpers built on tenacity.
-
-These helpers centralise the retry/timeout logic that was previously
-duplicated across auth, token, invoice, and batch call-sites. Tenacity
-types are intentionally kept internal: callers only supply plain
-callables, predicates, and exception factories.
-"""
+"""Shared sync and async polling helpers built on monotonic time."""
 
 import asyncio
+import time
 from collections.abc import Awaitable, Callable
 from typing import TypeVar
 
-from tenacity import (
-    AsyncRetrying,
-    Retrying,
-    RetryError as _RetryError,
-    retry_if_result,
-    stop_after_attempt,
-    stop_after_delay,
-    wait_fixed,
-    nap,
+from ksef2._core.exceptions import (
+    KSeFRateLimitError,
+    KSeFServerError,
+    KSeFTransportError,
 )
-from tenacity.stop import stop_base
 
 # Unused here since the helpers declare their own ``[T]``; kept because 0.x
 # releases exposed it as ``ksef2.core.polling.T``.
 T = TypeVar("T")
 
+_RETRYABLE_POLL_ERRORS = (KSeFRateLimitError, KSeFServerError, KSeFTransportError)
 
-def _build_stop(
-    timeout_seconds: float | None,
-    max_attempts: int | None,
-) -> stop_base:
-    """Return the appropriate tenacity stop condition."""
-    if timeout_seconds is not None and max_attempts is not None:
-        raise ValueError("Only one of timeout_seconds or max_attempts may be provided.")
-    if timeout_seconds is not None:
-        return stop_after_delay(timeout_seconds)
-    if max_attempts is not None:
-        return stop_after_attempt(max_attempts)
-    raise ValueError("Either timeout_seconds or max_attempts must be provided.")
+
+def _error_delay(error: Exception, poll_interval: float) -> float:
+    if isinstance(error, KSeFRateLimitError):
+        if error.context.get("retry_after_exceeds_ceiling") is True:
+            raise error
+        retry_after = error.retry_after
+    else:
+        retry_after = None
+    return float(retry_after) if retry_after is not None else poll_interval
 
 
 def poll_until[T](
@@ -50,41 +37,54 @@ def poll_until[T](
     max_attempts: int | None = None,
     timeout_error_factory: Callable[[], BaseException],
     sleep: Callable[[float], None] | None = None,
+    clock: Callable[[], float] | None = None,
 ) -> T:
-    """Call *operation* repeatedly until it produces a non-retry result.
+    """Call *operation* until complete, or until its attempt/time budget expires.
 
-    Args:
-        operation: Synchronous callable that performs one poll attempt.
-        retry_predicate: When it returns ``True`` the result is considered incomplete and the poller retries after *poll_interval* seconds.
-        poll_interval: Seconds to wait between attempts.
-        timeout_seconds: If given, polling stops after this many seconds have elapsed.
-        max_attempts: If given, polling stops after this many attempts (inclusive of the first call). Values below ``1`` exhaust before calling *operation*. Exactly one of *timeout_seconds* and *max_attempts* must be provided.
-        timeout_error_factory: Called with no arguments to produce the exception raised when polling is exhausted.
-        sleep: Function used to wait between attempts; defaults to ``time.sleep``.
-
-    Returns:
-        The first result for which *retry_predicate* returns ``False``.
-
-    Raises:
-        BaseException: The exception produced by *timeout_error_factory* when retries are exhausted. SDK/domain exceptions raised by *operation* propagate unchanged.
+    Retryable server, rate-limit, and transport errors are treated like pending
+    results. They consume the same timeout budget and do not consume
+    ``max_attempts`` when a timeout is configured.
     """
-    stop = _build_stop(timeout_seconds, max_attempts)
+    if (timeout_seconds is None) == (max_attempts is None):
+        raise ValueError(
+            "Exactly one of timeout_seconds or max_attempts must be provided."
+        )
     if max_attempts is not None and max_attempts < 1:
         raise timeout_error_factory()
 
-    effective_sleep = nap.sleep if sleep is None else sleep
-    retryer = Retrying(
-        stop=stop,
-        wait=wait_fixed(poll_interval),
-        retry=retry_if_result(retry_predicate),
-        reraise=True,
-        sleep=effective_sleep,
-    )
+    effective_sleep = time.sleep if sleep is None else sleep
+    effective_clock = time.monotonic if clock is None else clock
+    started = effective_clock()
+    attempts = 0
 
-    try:
-        return retryer(operation)
-    except _RetryError as exc:
-        raise timeout_error_factory() from exc
+    while True:
+        if (
+            attempts
+            and timeout_seconds is not None
+            and effective_clock() - started >= timeout_seconds
+        ):
+            raise timeout_error_factory()
+        if max_attempts is not None and attempts >= max_attempts:
+            raise timeout_error_factory()
+        attempts += 1
+
+        try:
+            result = operation()
+        except _RETRYABLE_POLL_ERRORS as error:
+            delay = _error_delay(error, poll_interval)
+        else:
+            if not retry_predicate(result):
+                return result
+            delay = poll_interval
+
+        if timeout_seconds is not None:
+            remaining = timeout_seconds - (effective_clock() - started)
+            if remaining <= 0:
+                raise timeout_error_factory()
+            delay = min(delay, remaining)
+        if max_attempts is not None and attempts >= max_attempts:
+            raise timeout_error_factory()
+        effective_sleep(delay)
 
 
 async def async_poll_until[T](
@@ -96,40 +96,46 @@ async def async_poll_until[T](
     max_attempts: int | None = None,
     timeout_error_factory: Callable[[], BaseException],
     sleep: Callable[[float], Awaitable[None]] | None = None,
+    clock: Callable[[], float] | None = None,
 ) -> T:
-    """Async variant of :func:`poll_until`.
-
-    Args:
-        operation: Callable returning an awaitable that performs one poll attempt.
-        retry_predicate: When it returns ``True`` the result is considered incomplete and the poller retries after *poll_interval* seconds.
-        poll_interval: Seconds to wait between attempts.
-        timeout_seconds: If given, polling stops after this many seconds have elapsed.
-        max_attempts: If given, polling stops after this many attempts (inclusive of the first call). Values below ``1`` exhaust before calling *operation*. Exactly one of *timeout_seconds* and *max_attempts* must be provided.
-        timeout_error_factory: Called with no arguments to produce the exception raised when polling is exhausted.
-        sleep: Coroutine function used to wait between attempts; defaults to ``asyncio.sleep``.
-
-    Returns:
-        The first result for which *retry_predicate* returns ``False``.
-
-    Raises:
-        BaseException: The exception produced by *timeout_error_factory* when retries are exhausted. SDK/domain exceptions raised by *operation* propagate unchanged.
-    """
-    stop = _build_stop(timeout_seconds, max_attempts)
+    """Async variant of :func:`poll_until`, with the same timeout accounting."""
+    if (timeout_seconds is None) == (max_attempts is None):
+        raise ValueError(
+            "Exactly one of timeout_seconds or max_attempts must be provided."
+        )
     if max_attempts is not None and max_attempts < 1:
         raise timeout_error_factory()
 
-    async def invoke_operation() -> T:
-        return await operation()
-
     effective_sleep = asyncio.sleep if sleep is None else sleep
-    retryer = AsyncRetrying(
-        stop=stop,
-        wait=wait_fixed(poll_interval),
-        retry=retry_if_result(retry_predicate),
-        reraise=True,
-        sleep=effective_sleep,
-    )
-    try:
-        return await retryer(invoke_operation)
-    except _RetryError as exc:
-        raise timeout_error_factory() from exc
+    effective_clock = time.monotonic if clock is None else clock
+    started = effective_clock()
+    attempts = 0
+
+    while True:
+        if (
+            attempts
+            and timeout_seconds is not None
+            and effective_clock() - started >= timeout_seconds
+        ):
+            raise timeout_error_factory()
+        if max_attempts is not None and attempts >= max_attempts:
+            raise timeout_error_factory()
+        attempts += 1
+
+        try:
+            result = await operation()
+        except _RETRYABLE_POLL_ERRORS as error:
+            delay = _error_delay(error, poll_interval)
+        else:
+            if not retry_predicate(result):
+                return result
+            delay = poll_interval
+
+        if timeout_seconds is not None:
+            remaining = timeout_seconds - (effective_clock() - started)
+            if remaining <= 0:
+                raise timeout_error_factory()
+            delay = min(delay, remaining)
+        if max_attempts is not None and attempts >= max_attempts:
+            raise timeout_error_factory()
+        await effective_sleep(delay)
