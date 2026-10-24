@@ -12,9 +12,12 @@ from ksef2._clients.authenticated import AuthenticatedClient
 from ksef2._clients.encryption import EncryptionClient
 from ksef2._clients.peppol import PeppolClient
 from ksef2._clients.testdata import TestDataClient
-from ksef2._config import Environment, TransportConfig
+from ksef2._config import Environment, TransportConfig, coerce_environment
 from ksef2._core import exceptions, middlewares, stores
-from ksef2._core.http_config import build_http_client_kwargs
+from ksef2._core.http_config import (
+    apply_environment_base_url,
+    build_http_client_kwargs,
+)
 from ksef2._core.http import HttpTransport
 from ksef2._domain.models.auth import AuthenticationResumeState, AuthTokens
 from ksef2.raw._facade import RawClient
@@ -45,7 +48,7 @@ class Client:
 
     def __init__(
         self,
-        environment: Environment = Environment.PRODUCTION,
+        environment: Environment | str,
         *,
         transport_config: TransportConfig | None = None,
         http_client: httpx.Client | None = None,
@@ -54,17 +57,23 @@ class Client:
         """Create the client.
 
         Args:
-            environment: KSeF environment to talk to. Defaults to production.
+            environment: Required KSeF environment to talk to. Accepts an ``Environment`` or a case-insensitive environment name.
             transport_config: HTTP transport settings (timeouts, retries, TLS, connection pool). Defaults are used when omitted.
             http_client: Existing ``httpx.Client`` to use instead of building one. The caller then owns it and must close it.
             certificate_store: Store for KSeF public-key certificates; an in-memory store is created when omitted.
         """
+        environment = coerce_environment(environment)
         self._environment = environment
         self._transport_config = transport_config or TransportConfig()
         self._http_client = http_client or self._build_http_client(
             environment=environment,
             config=self._transport_config,
         )
+        if http_client is not None:
+            apply_environment_base_url(
+                http_client=http_client,
+                environment=environment,
+            )
         self._owns_http_client = http_client is None
         self._lifecycle_state = middlewares.ClientLifecycleState()
         lifecycle_transport = middlewares.ClientLifecycleMiddleware(

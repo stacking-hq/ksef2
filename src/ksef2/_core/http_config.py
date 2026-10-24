@@ -9,6 +9,7 @@ from ksef2._config import (
     TlsConfig,
     TransportConfig,
 )
+from ksef2._core.exceptions import KSeFArgumentError
 
 
 class HttpClientKwargs(TypedDict):
@@ -52,3 +53,27 @@ def build_http_client_kwargs(
         "trust_env": config.trust_env,
         "http2": config.http2,
     }
+
+
+def apply_environment_base_url(
+    *,
+    http_client: object,
+    environment: Environment,
+) -> None:
+    """Bind a supplied HTTP client to the selected KSeF environment."""
+    base_url = getattr(http_client, "base_url", None)
+    if not isinstance(base_url, httpx.URL):
+        return
+    if not str(base_url):
+        setattr(http_client, "base_url", httpx.URL(environment.base_url))
+        return
+    expected = httpx.URL(f"{environment.base_url.rstrip('/')}/")
+    if base_url != expected:
+        raise KSeFArgumentError(
+            "http_client.base_url must match the selected environment.",
+            hint="Set http_client.base_url to the selected environment URL or leave it empty.",
+            environment=environment.name,
+            expected_base_url=str(expected),
+            actual_base_url=str(base_url),
+        )
+    setattr(http_client, "base_url", expected)

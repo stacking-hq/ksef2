@@ -31,6 +31,13 @@ and method names remain functional throughout 1.x (#171). Read
 
 ### Breaking changes
 
+- **Explicit client environments and URL alignment (#294, #295).** `Client`,
+  `AsyncClient`, and `InvoicePDFExporter` now require an environment. Pass an
+  `Environment` or a case-insensitive name such as `"test"`. A supplied
+  `http_client` with no `base_url` inherits the selected environment URL; a
+  conflicting URL raises `KSeFArgumentError` during construction. This prevents
+  environment guards and network routing from disagreeing.
+
 - **Collective-identifier invoice queries (#128).** KSeF API 2.8.1 replaced
   `GET /collective-identifiers/{collectiveIdentifierNumber}/invoices` with
   `POST /collective-identifiers/invoices`, which takes up to 10 identifiers in

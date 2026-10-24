@@ -11,6 +11,11 @@ Nie jest walkthrough wysyłki ani uwierzytelniania.
 `TransportConfig` jest używany tylko wtedy, gdy SDK tworzy wewnętrznego klienta
 `httpx`. Jeśli przekażesz `http_client`, ten klient posiada timeouty HTTP, pool,
 TLS, proxy, `trust_env`, HTTP/2, custom transport i event hooki.
+Jego `base_url` musi pasować do wymaganego `environment` klienta głównego.
+Pusty base URL zostanie ustawiony na podstawie tego środowiska; inny URL
+spowoduje `KSeFArgumentError` podczas tworzenia klienta. Na przykład
+`Client("test", http_client=httpx.Client())` kieruje do API TEST, a klient
+skonfigurowany dla innego środowiska zostanie odrzucony.
 
 ```python
 TransportConfig(

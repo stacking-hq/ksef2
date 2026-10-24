@@ -95,6 +95,13 @@ def _token_store(certificate: PublicKeyCertificate) -> CertificateStore:
 
 
 class TestAuthClient:
+    def test_legacy_auth_constructor_without_environment_still_works(
+        self,
+        fake_transport: FakeTransport,
+    ) -> None:
+        with pytest.warns(DeprecationWarning, match="authentication"):
+            _ = AuthClient(fake_transport, CertificateStore())
+
     def test_resume_rehydrates_authenticated_client(
         self,
         fake_transport: FakeTransport,

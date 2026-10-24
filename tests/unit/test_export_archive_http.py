@@ -142,7 +142,7 @@ async def test_export_reads_and_saves_response_format(
         async with AsyncClient(
             Environment.TEST,
             http_client=httpx.AsyncClient(
-                base_url="https://ksef.mock", transport=transport
+                base_url=Environment.TEST.base_url, transport=transport
             ),
         ) as client:
             auth = client.authentication.resume(auth_state)
@@ -156,7 +156,9 @@ async def test_export_reads_and_saves_response_format(
     else:
         with Client(
             Environment.TEST,
-            http_client=httpx.Client(base_url="https://ksef.mock", transport=transport),
+            http_client=httpx.Client(
+                base_url=Environment.TEST.base_url, transport=transport
+            ),
         ) as client:
             auth = client.authentication.resume(auth_state)
             if resumed:

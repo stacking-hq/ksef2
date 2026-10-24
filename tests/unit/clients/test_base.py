@@ -11,6 +11,7 @@ from ksef2._clients.base import Client
 from ksef2._clients.testdata import TestDataClient as KSeFTestDataClient
 from ksef2._config import Environment, TimeoutConfig, TransportConfig
 from ksef2._core.exceptions import (
+    KSeFArgumentError,
     KSeFClientClosedError,
     KSeFUnsupportedEnvironmentError,
 )
@@ -49,6 +50,34 @@ class CustomCertificateStore:
 
 
 class TestClient:
+    def test_environment_is_required(self) -> None:
+        with pytest.raises(TypeError):
+            Client()  # pyright: ignore[reportCallIssue]
+
+    def test_environment_string_is_case_insensitive(self) -> None:
+        client = Client("tEsT")
+
+        assert client._environment is Environment.TEST
+        assert client._http_client.base_url == httpx.URL(
+            f"{Environment.TEST.base_url}/"
+        )
+        client.close()
+
+    def test_empty_http_client_base_url_uses_environment(self) -> None:
+        http_client = httpx.Client()
+        client = Client(Environment.TEST, http_client=http_client)
+
+        assert http_client.base_url == httpx.URL(f"{Environment.TEST.base_url}/")
+        client.close()
+        http_client.close()
+
+    def test_http_client_base_url_must_match_environment(self) -> None:
+        http_client = httpx.Client(base_url=Environment.DEMO.base_url)
+
+        with pytest.raises(KSeFArgumentError, match="base_url must match"):
+            Client(Environment.TEST, http_client=http_client)
+        http_client.close()
+
     def test_testdata_accessor_uses_client(
         self,
     ) -> None:

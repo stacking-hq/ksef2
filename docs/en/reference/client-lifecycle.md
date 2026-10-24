@@ -10,14 +10,14 @@ Use the how-to guide when you need a runnable setup sequence.
 
 ```python
 Client(
-    environment=Environment.PRODUCTION,
+    environment=Environment.TEST,
     *,
     transport_config=None,
     http_client=None,
 )
 
 AsyncClient(
-    environment=Environment.PRODUCTION,
+    environment=Environment.TEST,
     *,
     transport_config=None,
     http_client=None,
@@ -26,12 +26,17 @@ AsyncClient(
 
 | Argument | Sync type | Async type | Default | Meaning |
 | --- | --- | --- | --- | --- |
-| `environment` | `Environment` | `Environment` | `Environment.PRODUCTION` | KSeF environment and base URL used by the root client. |
+| `environment` | `Environment | str` | `Environment | str` | Required | KSeF environment and base URL used by the root client. Strings accept case-insensitive names such as `"test"`. |
 | `transport_config` | `TransportConfig | None` | `TransportConfig | None` | SDK-managed HTTP timeout, pool, TLS, proxy, HTTP/2, and retry settings. |
 | `http_client` | `httpx.Client | None` | `httpx.AsyncClient | None` | Caller-supplied HTTP client. When provided, the caller owns its HTTP settings and final close. |
 
 When `http_client` is omitted, the SDK creates the underlying `httpx` client
 from `transport_config` and closes it when the root client closes.
+
+When you supply `http_client`, its `base_url` must match `environment`. An
+empty `base_url` is set to the selected environment URL; a different URL raises
+`KSeFArgumentError` during construction. This keeps routing and TEST-only
+feature guards aligned.
 
 ## Root client members
 

@@ -105,7 +105,7 @@ def test_sync_download_uses_unauthed_non_ksef_transfer_transport(
         return httpx.Response(status_code=403, request=request)
 
     with httpx.Client(transport=httpx.MockTransport(_reject)) as http_client:
-        client = Client(http_client=http_client)
+        client = Client(Environment.TEST, http_client=http_client)
         authenticated = client.authentication.resume(
             AuthenticationResumeState.from_tokens(domain_auth_tokens.build())
         )
@@ -152,7 +152,7 @@ def test_sync_upload_marks_lost_response_ambiguous_and_exposes_recovery(
         ],
     )
     with httpx.Client(transport=httpx.MockTransport(_lose_response)) as http_client:
-        client = Client(http_client=http_client)
+        client = Client(Environment.TEST, http_client=http_client)
         authenticated = client.authentication.resume(
             AuthenticationResumeState.from_tokens(domain_auth_tokens.build())
         )
@@ -189,7 +189,7 @@ def test_async_download_uses_unauthed_non_ksef_transfer_transport(
         async with httpx.AsyncClient(
             transport=httpx.MockTransport(_reject)
         ) as http_client:
-            client = AsyncClient(http_client=http_client)
+            client = AsyncClient(Environment.TEST, http_client=http_client)
             authenticated = client.authentication.resume(
                 AuthenticationResumeState.from_tokens(domain_auth_tokens.build())
             )
@@ -242,7 +242,7 @@ def test_async_upload_marks_lost_response_ambiguous_and_exposes_recovery(
         async with httpx.AsyncClient(
             transport=httpx.MockTransport(_lose_response)
         ) as http_client:
-            client = AsyncClient(http_client=http_client)
+            client = AsyncClient(Environment.TEST, http_client=http_client)
             authenticated = client.authentication.resume(
                 AuthenticationResumeState.from_tokens(domain_auth_tokens.build())
             )

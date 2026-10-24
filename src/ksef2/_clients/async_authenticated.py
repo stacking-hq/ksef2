@@ -20,7 +20,7 @@ from ksef2._clients.async_permissions import AsyncPermissionsClient
 from ksef2._clients.async_session_management import AsyncSessionManagementClient
 from ksef2._clients.async_testdata import AsyncTestDataClient
 from ksef2._clients.async_tokens import AsyncTokensClient
-from ksef2._config import Environment
+from ksef2._config import Environment, resolve_legacy_environment
 from ksef2._core.async_protocols import AsyncMiddleware
 from ksef2._core.async_token_manager import AsyncRefresh, AsyncTokenManager
 from ksef2._core import exceptions
@@ -68,7 +68,7 @@ class AsyncAuthenticatedClient:
         transport: AsyncMiddleware,
         auth_tokens: AuthTokens,
         certificate_store: CertificateStoreProtocol,
-        environment: Environment = Environment.PRODUCTION,
+        environment: Environment | None = None,
         transfer_transport: AsyncMiddleware | None = None,
         refresh_access_token: AsyncRefresh | None = None,
     ) -> None:
@@ -78,7 +78,7 @@ class AsyncAuthenticatedClient:
             transport: Middleware chain used for requests.
             auth_tokens: Access and refresh tokens obtained from authentication.
             certificate_store: Store holding the KSeF public-key certificates used to encrypt session keys.
-            environment: KSeF environment the client talks to.
+            environment: KSeF environment the client talks to. Omitting it is deprecated; use the root client's ``authentication.resume(...)`` flow.
             transfer_transport: Middleware used for transfers outside the KSeF API such as batch part uploads; defaults to ``transport``.
             refresh_access_token: Callable exchanging a refresh token for a new access token. When given, the client refreshes its access token shortly before it expires and once after a 401 response; ``None`` disables automatic refresh.
         """
@@ -86,7 +86,13 @@ class AsyncAuthenticatedClient:
         self._transfer_transport = transfer_transport or transport
         self._token_manager = AsyncTokenManager(auth_tokens, refresh_access_token)
         self._certificate_store = certificate_store
-        self._environment = environment
+        self._environment = resolve_legacy_environment(
+            environment,
+            replacement=(
+                "`Client(environment).authentication.resume(...)` or "
+                "`AsyncClient(environment).authentication.resume(...)`"
+            ),
+        )
         self._authed_transport = AsyncBearerTokenMiddleware(
             transport, self._token_manager
         )

@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 from polyfactory import BaseFactory
 
 from ksef2._clients.async_authenticated import AsyncAuthenticatedClient
+from ksef2._config import Environment
 from ksef2._clients.async_invoices import AsyncInvoicesClient
 from ksef2._core.routes import EncryptionRoutes, InvoiceRoutes
 from ksef2._core.stores import CertificateStore
@@ -78,6 +79,7 @@ def _build_client(
         transport=async_fake_transport,
         auth_tokens=auth_tokens,
         certificate_store=certificate_store or CertificateStore(),
+        environment=Environment.TEST,
     )
 
 

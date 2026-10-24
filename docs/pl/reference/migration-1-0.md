@@ -9,6 +9,25 @@ Emitują `DeprecationWarning` wskazujące zamiennik. Usunięcie jest możliwe ni
 wcześniej niż w 2.0.0 i pozostaje decyzją dla tego wydania. Nowy kod powinien
 używać publicznych importów i uchwytów operacji pokazanych poniżej.
 
+## Jawnie wybieraj środowisko KSeF
+
+`Client`, `AsyncClient` i `InvoicePDFExporter` wymagają wskazania środowiska.
+Przekaż element `Environment` albo nazwę bez rozróżniania wielkości liter,
+na przykład `"test"`:
+
+```python
+from ksef2 import AsyncClient, Client, Environment
+from ksef2.renderers import InvoicePDFExporter
+
+client = Client(Environment.TEST)
+async_client = AsyncClient("test")
+pdf_exporter = InvoicePDFExporter(verification_environment=Environment.TEST)
+```
+
+Jeśli klient główny otrzyma własny `http_client`, jego `base_url` musi pasować
+do wybranego środowiska. Pusty base URL zostanie ustawiony na podstawie
+środowiska; konflikt spowoduje `KSeFArgumentError` podczas tworzenia klienta.
+
 ## Importy
 
 Przed zmianą, importy używane przez dotychczasowe aplikacje:

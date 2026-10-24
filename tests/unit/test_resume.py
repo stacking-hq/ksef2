@@ -8,7 +8,7 @@ import pytest
 from polyfactory import BaseFactory
 from pydantic import SecretStr
 
-from ksef2 import AsyncClient, Client
+from ksef2 import AsyncClient, Client, Environment
 from ksef2._core.crypto import encrypt_invoice
 from ksef2._core.exceptions import KSeFExportFailedError
 from ksef2._core.routes import SessionRoutes
@@ -252,7 +252,7 @@ class TestAuthenticationResume:
     ) -> None:
         tokens = domain_auth_tokens.build()
         state = AuthenticationResumeState.from_tokens(tokens)
-        client = Client(http_client=MagicMock(spec=httpx.Client))
+        client = Client(Environment.TEST, http_client=MagicMock(spec=httpx.Client))
 
         authenticated = client.authentication.resume(state.to_json())
 
@@ -263,7 +263,9 @@ class TestAuthenticationResume:
     ) -> None:
         tokens = domain_auth_tokens.build()
         state = AuthenticationResumeState.from_tokens(tokens)
-        client = AsyncClient(http_client=MagicMock(spec=httpx.AsyncClient))
+        client = AsyncClient(
+            Environment.TEST, http_client=MagicMock(spec=httpx.AsyncClient)
+        )
 
         authenticated = client.authentication.resume(state.to_json())
 

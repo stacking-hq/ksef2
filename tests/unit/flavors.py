@@ -129,6 +129,7 @@ class Flavor:
             transport=self.transport,  # pyright: ignore[reportArgumentType]
             auth_tokens=tokens,
             certificate_store=CertificateStore(),
+            environment=Environment.TEST,
         )
 
     def invoices_service(self) -> Any:

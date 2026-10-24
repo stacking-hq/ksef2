@@ -11,6 +11,7 @@ from typing import Any
 import pytest
 from polyfactory import BaseFactory
 
+from ksef2 import Environment
 from ksef2._clients.async_authenticated import AsyncAuthenticatedClient
 from ksef2._clients.authenticated import AuthenticatedClient
 from ksef2._core.exceptions import KSeFInvoiceRejectedError
@@ -439,6 +440,7 @@ class TestAuthenticatedClientAliases:
             transport=flavor.transport,  # pyright: ignore[reportArgumentType]
             auth_tokens=domain_auth_tokens.build(),
             certificate_store=CertificateStore(),
+            environment=Environment.TEST,
         )
 
         session = _once(

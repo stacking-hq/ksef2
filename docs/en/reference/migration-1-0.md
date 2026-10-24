@@ -9,6 +9,24 @@ They emit `DeprecationWarning` naming the replacement. Removal may happen no
 earlier than 2.0.0, and is still a decision for that release. New code should
 use the public facades and operation handles below.
 
+## Choose the KSeF environment explicitly
+
+`Client`, `AsyncClient`, and `InvoicePDFExporter` require an environment. Pass
+an `Environment` member or a case-insensitive name such as `"test"`:
+
+```python
+from ksef2 import AsyncClient, Client, Environment
+from ksef2.renderers import InvoicePDFExporter
+
+client = Client(Environment.TEST)
+async_client = AsyncClient("test")
+pdf_exporter = InvoicePDFExporter(verification_environment=Environment.TEST)
+```
+
+When a root client receives a custom `http_client`, its `base_url` must match
+the selected environment. An empty base URL is set from the environment; a
+conflict raises `KSeFArgumentError` at construction.
+
 ## Imports
 
 Before, these are the imports used by existing applications:

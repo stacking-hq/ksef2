@@ -14,7 +14,7 @@ from ksef2._clients.async_encryption import AsyncEncryptionClient
 from ksef2._clients.async_peppol import AsyncPeppolClient
 from ksef2._clients.async_testdata import AsyncTestDataClient
 from ksef2._config import Environment, TimeoutConfig, TransportConfig
-from ksef2._core.exceptions import KSeFClientClosedError
+from ksef2._core.exceptions import KSeFArgumentError, KSeFClientClosedError
 from ksef2._core.exceptions import KSeFUnsupportedEnvironmentError
 from ksef2._domain.models.auth import AuthTokens
 from ksef2._domain.models.encryption import (
@@ -51,6 +51,34 @@ class CustomCertificateStore:
 
 
 class TestAsyncClient:
+    def test_environment_is_required(self) -> None:
+        with pytest.raises(TypeError):
+            AsyncClient()  # pyright: ignore[reportCallIssue]
+
+    async def test_environment_string_is_case_insensitive(self) -> None:
+        client = AsyncClient("tEsT")
+
+        assert client._environment is Environment.TEST
+        assert client._http_client.base_url == httpx.URL(
+            f"{Environment.TEST.base_url}/"
+        )
+        await client.aclose()
+
+    async def test_empty_http_client_base_url_uses_environment(self) -> None:
+        http_client = httpx.AsyncClient()
+        client = AsyncClient(Environment.TEST, http_client=http_client)
+
+        assert http_client.base_url == httpx.URL(f"{Environment.TEST.base_url}/")
+        await client.aclose()
+        await http_client.aclose()
+
+    async def test_http_client_base_url_must_match_environment(self) -> None:
+        http_client = httpx.AsyncClient(base_url=Environment.DEMO.base_url)
+
+        with pytest.raises(KSeFArgumentError, match="base_url must match"):
+            AsyncClient(Environment.TEST, http_client=http_client)
+        await http_client.aclose()
+
     def test_accessors_return_expected_types(self) -> None:
         client = AsyncClient(environment=Environment.TEST)
 

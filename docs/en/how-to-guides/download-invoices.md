@@ -234,8 +234,8 @@ output = exporter.export_to_file(
 Use the actual assigned KSeF number for the invoice. Supplying `ksef_number`
 adds a locally generated SVG QR and displays that number below it. Omitting it
 keeps the existing PDF output without a QR. The same keyword works with
-`export_from_path()` and `export_from_string()`. The environment defaults to
-`Environment.PRODUCTION`; select `TEST` or `DEMO` for invoices from those systems.
+`export_from_path()` and `export_from_string()`. `verification_environment` is
+required; select the environment that issued the invoice.
 The QR identifies the seller NIP, issue date and SHA-256 of the **original XML
 bytes**, encoded as unpadded Base64URL, according to the
 [Ministry's verification QR specification](https://github.com/CIRFMF/ksef-docs/blob/main/kody-qr.md).

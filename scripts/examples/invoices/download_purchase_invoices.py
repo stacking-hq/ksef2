@@ -29,7 +29,7 @@ from scripts.examples._common import repo_root
 
 @dataclass
 class ExampleConfig:
-    environment: Environment = Environment.PRODUCTION
+    environment: Environment
     nips: list[str] = field(
         default_factory=lambda: [
             "1111111111",
@@ -93,7 +93,7 @@ def run(config: ExampleConfig) -> None:
 
 
 def main() -> int:
-    run(ExampleConfig())
+    run(ExampleConfig(environment=Environment.PRODUCTION))
     return 0
 
 

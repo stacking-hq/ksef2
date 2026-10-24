@@ -40,6 +40,25 @@ def _build_auth_client(
     )
 
 
+def test_legacy_authenticated_constructor_without_environment_still_works(
+    async_fake_transport: AsyncFakeTransport,
+    domain_auth_tokens: BaseFactory[AuthTokens],
+) -> None:
+    with pytest.warns(DeprecationWarning, match="authentication"):
+        _ = AsyncAuthenticatedClient(
+            async_fake_transport,
+            domain_auth_tokens.build(),
+            CertificateStore(),
+        )
+
+
+def test_legacy_auth_constructor_without_environment_still_works(
+    async_fake_transport: AsyncFakeTransport,
+) -> None:
+    with pytest.warns(DeprecationWarning, match="authentication"):
+        _ = AsyncAuthClient(async_fake_transport, CertificateStore())
+
+
 def _token_store(certificate: PublicKeyCertificate) -> CertificateStore:
     store = CertificateStore()
     store.load([certificate])
@@ -327,6 +346,7 @@ class TestAsyncAuthClient:
             transport=async_fake_transport,
             auth_tokens=domain_auth_tokens.build(),
             certificate_store=CertificateStore(),
+            environment=Environment.TEST,
         )
 
         result = asyncio.run(
@@ -381,6 +401,7 @@ class TestAsyncAuthClient:
             transport=async_fake_transport,
             auth_tokens=domain_auth_tokens.build(),
             certificate_store=CertificateStore(),
+            environment=Environment.PRODUCTION,
         )
         mock_with_token = AsyncMock(return_value=expected)
 

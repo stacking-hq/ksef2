@@ -11,14 +11,14 @@ konfiguracji.
 
 ```python
 Client(
-    environment=Environment.PRODUCTION,
+    environment=Environment.TEST,
     *,
     transport_config=None,
     http_client=None,
 )
 
 AsyncClient(
-    environment=Environment.PRODUCTION,
+    environment=Environment.TEST,
     *,
     transport_config=None,
     http_client=None,
@@ -27,12 +27,17 @@ AsyncClient(
 
 | Argument | Typ sync | Typ async | Domyślnie | Znaczenie |
 | --- | --- | --- | --- | --- |
-| `environment` | `Environment` | `Environment` | `Environment.PRODUCTION` | Środowisko KSeF i bazowy URL klienta. |
+| `environment` | `Environment | str` | `Environment | str` | Wymagane | Środowisko KSeF i bazowy URL klienta. Nazwy tekstowe nie rozróżniają wielkości liter, np. `"test"`. |
 | `transport_config` | `TransportConfig | None` | `TransportConfig | None` | Timeouty HTTP, pool, TLS, proxy, HTTP/2 i retry dla klienta HTTP tworzonego przez SDK. |
 | `http_client` | `httpx.Client | None` | `httpx.AsyncClient | None` | Klient HTTP przekazany przez aplikację. Gdy jest podany, aplikacja posiada jego ustawienia HTTP i końcowe zamknięcie. |
 
 Gdy `http_client` nie jest podany, SDK tworzy klienta `httpx` z
 `transport_config` i zamyka go razem z klientem bazowym.
+
+Gdy przekazujesz `http_client`, jego `base_url` musi pasować do `environment`.
+Pusty `base_url` zostanie ustawiony na URL wybranego środowiska; inny URL
+spowoduje `KSeFArgumentError` podczas tworzenia klienta. Dzięki temu routing i
+ograniczenia funkcji TEST pozostają zgodne.
 
 ## Elementy klienta bazowego
 

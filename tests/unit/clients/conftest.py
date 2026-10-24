@@ -1,6 +1,7 @@
 import pytest
 
 from ksef2._clients.auth import AuthClient
+from ksef2._config import Environment
 from ksef2._clients.certificates import CertificatesClient
 from ksef2._clients.invoice_sessions import InvoiceSessionsClient
 from ksef2._clients.invoices import InvoicesClient
@@ -16,7 +17,7 @@ from tests.unit.fakes.transport import FakeTransport
 
 @pytest.fixture
 def auth_client(fake_transport: FakeTransport) -> AuthClient:
-    return AuthClient(fake_transport, CertificateStore())
+    return AuthClient(fake_transport, CertificateStore(), environment=Environment.TEST)
 
 
 @pytest.fixture

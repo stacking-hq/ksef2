@@ -6,6 +6,7 @@ import pytest
 from polyfactory import BaseFactory
 
 from ksef2._clients.async_authenticated import AsyncAuthenticatedClient
+from ksef2._config import Environment
 from ksef2._clients.async_batch import AsyncBatchSessionClient
 from ksef2._core.crypto import sha256_b64
 from ksef2._core.exceptions import KSeFBatchUploadError, KSeFClientClosedError
@@ -35,6 +36,7 @@ def _build_authenticated_client(
         transport=async_fake_transport,
         auth_tokens=auth_tokens,
         certificate_store=CertificateStore(),
+        environment=Environment.TEST,
     )
 
 

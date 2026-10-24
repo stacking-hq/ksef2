@@ -22,7 +22,7 @@ from ksef2._clients.permissions import PermissionsClient
 from ksef2._clients.session_management import SessionManagementClient
 from ksef2._clients.testdata import TestDataClient
 from ksef2._clients.tokens import TokensClient
-from ksef2._config import Environment
+from ksef2._config import Environment, resolve_legacy_environment
 from ksef2._core import exceptions
 from ksef2._core.crypto import encrypt_symmetric_key, generate_session_key
 from ksef2._core.middlewares.auth import BearerTokenMiddleware
@@ -70,7 +70,7 @@ class AuthenticatedClient:
         transport: Middleware,
         auth_tokens: AuthTokens,
         certificate_store: CertificateStoreProtocol,
-        environment: Environment = Environment.PRODUCTION,
+        environment: Environment | None = None,
         transfer_transport: Middleware | None = None,
         refresh_access_token: Refresh | None = None,
     ) -> None:
@@ -80,7 +80,7 @@ class AuthenticatedClient:
             transport: Middleware chain used for requests.
             auth_tokens: Access and refresh tokens obtained from authentication.
             certificate_store: Store holding the KSeF public-key certificates used to encrypt session keys.
-            environment: KSeF environment the client talks to.
+            environment: KSeF environment the client talks to. Omitting it is deprecated; use the root client's ``authentication.resume(...)`` flow.
             transfer_transport: Middleware used for transfers outside the KSeF API such as batch part uploads; defaults to ``transport``.
             refresh_access_token: Callable exchanging a refresh token for a new access token. When given, the client refreshes its access token shortly before it expires and once after a 401 response; ``None`` disables automatic refresh.
         """
@@ -88,7 +88,13 @@ class AuthenticatedClient:
         self._transfer_transport = transfer_transport or transport
         self._token_manager = TokenManager(auth_tokens, refresh_access_token)
         self._certificate_store = certificate_store
-        self._environment = environment
+        self._environment = resolve_legacy_environment(
+            environment,
+            replacement=(
+                "`Client(environment).authentication.resume(...)` or "
+                "`AsyncClient(environment).authentication.resume(...)`"
+            ),
+        )
         self._authed_transport = BearerTokenMiddleware(transport, self._token_manager)
         self._encryption_client = EncryptionClient(transport)
         self._session_eps = SessionEndpoints(self._authed_transport)

@@ -11,6 +11,11 @@ It is not a sending or authentication walkthrough.
 `TransportConfig` is used only when the SDK creates the underlying `httpx`
 client. If you pass `http_client`, that supplied client owns HTTP timeout, pool,
 TLS, proxy, `trust_env`, HTTP/2, custom transport, and event-hook settings.
+Its `base_url` must match the root client's required `environment`. An empty
+base URL is filled from that environment; a different URL raises
+`KSeFArgumentError` when the root client is constructed. For example,
+`Client("test", http_client=httpx.Client())` routes to the TEST API, while a
+client already configured for another environment is rejected.
 
 ```python
 TransportConfig(
