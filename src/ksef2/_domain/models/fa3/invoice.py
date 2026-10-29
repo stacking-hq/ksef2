@@ -2,9 +2,11 @@
 
 from collections.abc import Sequence
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, override
 
-from pydantic import Field, model_validator
+from pydantic import Field, GetJsonSchemaHandler, model_validator
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import CoreSchema
 
 from ksef2._domain.models.base import (
     CURRENT_FORMAT_VERSION,
@@ -13,6 +15,7 @@ from ksef2._domain.models.base import (
 )
 from ksef2._domain.models.base import KSeFBaseModel as KSeFBaseModel
 from ksef2._domain.models.fa3.base import Fa3Model
+from ksef2._domain.models.fa3.draft_input import check_draft_fields, forbid_model_extras
 from ksef2._domain.models.fa3.attachment import Attachment
 from ksef2._domain.models.fa3.body import KsefInvoiceBody
 from ksef2._domain.models.fa3.footer import InvoiceFooter
@@ -22,7 +25,28 @@ from ksef2._domain.models.fa3.third_party import InvoiceThirdParty
 
 
 class KsefInvoiceDraft(KSeFPersistedModel):
-    """Serializable editable snapshot of FA(3) builder state."""
+    """Serializable editable snapshot of FA(3) builder state.
+
+    Raw draft input rejects unknown fields in every nested model before normalizing
+    invoice data. Validation errors include the full input path. Partial rows and
+    free-form attachment metadata remain supported.
+    """
+
+    wrap_validation_errors = True
+
+    @model_validator(mode="before")
+    @classmethod
+    def _check_input_fields(cls, data: object) -> object:
+        return check_draft_fields(cls, data)
+
+    @classmethod
+    @override
+    def __get_pydantic_json_schema__(
+        cls, core_schema: CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        schema = handler(core_schema)
+        forbid_model_extras(schema, handler)
+        return schema
 
     wrap_validation_errors = True
 

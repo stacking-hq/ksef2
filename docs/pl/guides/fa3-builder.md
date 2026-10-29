@@ -49,6 +49,13 @@ xml_text = builder.to_xml()
 4. Dodaj sekcje, na przykład `rows()`, `payment()` albo `annotations()`.
 5. Zakończ przez `build()`, `to_spec()` albo `to_xml()`.
 
+## Wczytywanie wersji roboczych
+
+`KsefInvoiceDraft` i `InvoiceBuilder.from_state_json()` odrzucają nieznane pola w zagnieżdżonych sekcjach błędem `KSeFValidationError`.
+Na przykład `qty` zamiast `quantity` wskazuje ścieżkę `body.rows.0.qty`.
+Schemat `KsefInvoiceDraft.model_json_schema()` również zabrania nieznanych pól modeli zagnieżdżonych.
+Wiersze częściowe nadal mogą pomijać `quantity`, a metadane załączników mogą zawierać własne klucze.
+
 ## Wyślij XML
 
 ```python

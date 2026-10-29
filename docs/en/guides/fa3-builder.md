@@ -92,6 +92,11 @@ restored = InvoiceBuilder.from_state(same_draft)
 restored_from_json = InvoiceBuilder.from_state_json(json_text)
 ```
 
+Draft input rejects unknown fields in nested sections with `KSeFValidationError`.
+For example, `qty` instead of `quantity` reports `body.rows.0.qty`.
+`KsefInvoiceDraft.model_json_schema()` also forbids unknown nested model fields.
+Partial rows can still omit `quantity`; attachment metadata accepts custom keys.
+
 ## Send the XML
 
 Send builder output through the same online-session flow as hand-written XML.
