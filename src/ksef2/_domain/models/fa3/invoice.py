@@ -24,6 +24,8 @@ from ksef2._domain.models.fa3.third_party import InvoiceThirdParty
 class KsefInvoiceDraft(KSeFPersistedModel):
     """Serializable editable snapshot of FA(3) builder state."""
 
+    wrap_validation_errors = True
+
     format_version: PersistedFormatVersion = CURRENT_FORMAT_VERSION
     """Version of the serialized draft format, a dotted number; currently ``"1"``."""
 
