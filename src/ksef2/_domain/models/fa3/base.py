@@ -24,7 +24,10 @@ class Fa3Model(KSeFBaseModel):
             super().__init__(**data)
         except KSeFValidationError as exc:
             # Keep the shared wrapper, its structured errors and original cause.
-            detail = exc.errors()[0]
+            details = exc.errors()
+            if not details:
+                raise
+            detail = details[0]
             location = detail["loc"]
             field = (
                 ".".join(str(part) for part in cast(tuple[object, ...], location))

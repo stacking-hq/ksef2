@@ -48,6 +48,8 @@ class KsefInvoiceDraft(KSeFPersistedModel):
         forbid_model_extras(schema, handler)
         return schema
 
+    wrap_validation_errors = True
+
     format_version: PersistedFormatVersion = CURRENT_FORMAT_VERSION
     """Version of the serialized draft format, a dotted number; currently ``"1"``."""
 
