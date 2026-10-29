@@ -2,7 +2,7 @@ import json
 from datetime import UTC, datetime
 
 import pytest
-from pydantic import SecretStr, ValidationError
+from pydantic import SecretStr
 
 from ksef2 import KSeFValidationError
 from ksef2._domain.models.auth import (
@@ -109,10 +109,10 @@ def test_invoice_draft_state_is_versioned_and_fails_on_unknown_shape() -> None:
     assert KsefInvoiceDraft.model_validate(serialized).format_version == "1"
 
     serialized["format_version"] = 2
-    with pytest.raises(ValidationError, match="unsupported format version"):
+    with pytest.raises(KSeFValidationError, match="unsupported format version"):
         KsefInvoiceDraft.model_validate(serialized)
 
     serialized["format_version"] = "1"
     serialized["future_section"] = {}
-    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+    with pytest.raises(KSeFValidationError, match="Extra inputs are not permitted"):
         KsefInvoiceDraft.model_validate(serialized)
