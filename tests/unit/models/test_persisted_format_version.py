@@ -1,7 +1,7 @@
 import json
 
 import pytest
-from pydantic import SecretStr, ValidationError
+from pydantic import SecretStr
 
 from ksef2 import KSeFValidationError
 from ksef2._domain.models.base import CURRENT_FORMAT_VERSION, parse_format_version
@@ -117,5 +117,5 @@ def test_invoice_draft_reads_integer_and_dotted_versions() -> None:
         KsefInvoiceDraft.model_validate({"format_version": "1.1"}).format_version
         == "1.1"
     )
-    with pytest.raises(ValidationError, match="format version"):
+    with pytest.raises(KSeFValidationError, match="format version"):
         _ = KsefInvoiceDraft.model_validate({"format_version": True})
