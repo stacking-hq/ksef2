@@ -1,3 +1,18 @@
+## v1.2.0 (2026-10-29)
+
+### Changed
+
+- Update the bundled OpenAPI specification to KSeF API 2.9.0.
+- Improve Polish documentation and add offline modes and certificate types to
+  the glossary.
+
+### Fixed
+
+- Reject unknown nested FA(3) draft fields instead of silently ignoring them.
+- Preserve FA(3) validation errors when KSeF returns no structured details.
+- Record the published 1.1.0 compatibility baseline and refresh installed
+  package metadata during legacy compatibility checks.
+
 ## v1.1.0 (2026-10-26)
 
 ### Added
