@@ -39,14 +39,20 @@ class InvoiceXSLTRenderer:
         enable_code_lookups: bool = False,
         *,
         validate: bool = False,
+        footer_text: str | None = None,
+        watermark_text: str | None = None,
     ):
         """Create the InvoiceXSLTRenderer.
 
         Args:
             validate: Opt into bundled FA(3) XSD validation when using the default stylesheet.
             stylesheet_path: Path of an XSLT stylesheet to use; the bundled FA(3) stylesheet when ``None``.
+            footer_text: Optional plain-text notice appended once after the invoice.
+            watermark_text: Optional plain-text watermark, repeated on printed pages.
             enable_code_lookups: Resolve code descriptions offline using bundled XSD files. Allows local file reads, so use only with trusted stylesheets and invoice XML. Network access and writes remain blocked.
         """
+        self._footer_text = footer_text
+        self._watermark_text = watermark_text
         self._stylesheet_path = (
             Path(stylesheet_path) if stylesheet_path else _DEFAULT_STYLESHEET_PATH
         )
@@ -135,7 +141,7 @@ class InvoiceXSLTRenderer:
             ) from e
 
         try:
-            return etree.tostring(
+            html_content = etree.tostring(
                 html_result,
                 pretty_print=True,
                 encoding="unicode",
@@ -144,6 +150,42 @@ class InvoiceXSLTRenderer:
             raise KSeFInvoiceRenderingError(
                 "Failed to serialize transformation result to HTML."
             ) from e
+
+        return self._add_notices(html_content)
+
+    def _add_notices(self, html_content: str) -> str:
+        if not self._footer_text and not self._watermark_text:
+            return html_content
+        document = etree.HTML(html_content)
+        if document is None:  # pyright: ignore[reportUnnecessaryComparison]
+            raise KSeFInvoiceRenderingError("Rendered invoice HTML is empty.")
+        body = document.find("body")
+        if body is None:
+            raise KSeFInvoiceRenderingError("Rendered invoice HTML has no body.")
+        if self._watermark_text:
+            watermark = etree.Element(
+                "div",
+                attrib={
+                    "class": "ksef2-watermark",
+                    "style": "position:fixed;top:40%;left:10%;width:80%;text-align:center;"
+                    "font:48pt sans-serif;color:#999;opacity:0.18;transform:rotate(-30deg);"
+                    "pointer-events:none;z-index:1000;overflow-wrap:anywhere",
+                },
+            )
+            watermark.text = self._watermark_text
+            body.insert(0, watermark)
+        if self._footer_text:
+            footer = etree.SubElement(
+                body,
+                "div",
+                attrib={
+                    "class": "ksef2-footer",
+                    "style": "text-align:center;font:9pt sans-serif;margin:4mm;"
+                    "break-inside:avoid;overflow-wrap:anywhere",
+                },
+            )
+            footer.text = self._footer_text
+        return etree.tostring(document, encoding="unicode", method="html")
 
     def render_from_path(self, invoice_xml_path: str | Path) -> str:
         """Render an invoice XML file to HTML.

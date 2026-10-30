@@ -25,6 +25,10 @@ uv add ksef2
 
 ksef2 requires Python 3.12 or newer.
 
+For PDF rendering, install the optional extra with `pip install 'ksef2[pdf]'`
+or `uv add 'ksef2[pdf]'`. WeasyPrint also requires system libraries; see the
+[PDF rendering guide](../how-to-guides/download-invoices.md).
+
 ## Code example
 
 Copy the following into a `quickstart.py` file.

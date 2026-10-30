@@ -1,5 +1,11 @@
 ## Unreleased
 
+### Added
+
+- Add optional plain-text `footer_text` and `watermark_text` to HTML and PDF
+  renderers, shared by sync and async applications. Defaults remain unchanged.
+- Document the `ksef2[pdf]` installation extra in English and Polish quickstarts.
+
 ### Fixed
 
 - Parse existing FA(3) invoices without draft business rules, with opt-in XSD
@@ -8,6 +14,8 @@
 - Preserve declared order values without requiring equality with supplied lines.
 - Detect unsupported FA(2) XML explicitly and provide actionable parse/render
   hints with structured field, schema, namespace and local-rule context.
+- Reduce verification QR spacing so it stays on the preceding PDF page when
+  the code and assigned number fit.
 
 ## v1.2.0 (2026-10-29)
 

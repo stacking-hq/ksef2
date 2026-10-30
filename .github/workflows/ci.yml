@@ -29,3 +29,13 @@ jobs:
 
       - name: Release check
         run: just release-check
+
+  pdf-layout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - name: Install PDF system libraries
+        run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangoft2-1.0-0
+      - name: Check PDF rendering with the real backend
+        run: uv run --extra pdf python -m pytest tests/unit/services/test_pdf_renderer.py -q

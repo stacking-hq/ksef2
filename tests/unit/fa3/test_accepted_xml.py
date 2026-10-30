@@ -135,3 +135,22 @@ def test_xsd_validation_is_opt_in_for_inspection_and_rendering() -> None:
         parse_invoice_xml(xml, validate=True)
     with pytest.raises(KSeFInvoiceRenderingError):
         InvoiceXSLTRenderer(validate=True).render_from_string(xml)
+
+
+@pytest.mark.parametrize("name", ["zal", "kor-zero"])
+def test_validated_rendering_keeps_footer_and_watermark(name: str) -> None:
+    xml = (FIXTURES / f"{name}.xml").read_bytes()
+    renderer = InvoiceXSLTRenderer(
+        validate=True, footer_text="Local footer", watermark_text="Draft preview"
+    )
+    html = renderer.render_from_string(xml)
+    assert "REGRESSION/1" in html
+    assert "Local footer" in html
+    assert "Draft preview" in html
+    invalid = xml.replace(
+        b"<KodWaluty>PLN</KodWaluty>", b"<KodWaluty>INVALID</KodWaluty>"
+    )
+    with pytest.raises(KSeFInvoiceRenderingError) as caught:
+        renderer.render_from_string(invalid)
+    assert caught.value.detected_schema == "FA(3)"
+    assert caught.value.local_rule is False
