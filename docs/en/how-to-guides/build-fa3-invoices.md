@@ -513,6 +513,32 @@ No private schema or mapper imports are needed.
 Short filename-like strings raise `KSeFArgumentError`; read files with
 `Path(...).read_bytes()` before parsing.
 
+Existing XML is parsed without the builder's business rules. XSD validation is
+opt-in through `parse_invoice_xml(xml, validate=True)` or
+`InvoiceXSLTRenderer(validate=True)` with the bundled stylesheet. Render the original XML when inspecting an invoice accepted by
+KSeF. Rebuilding with `InvoiceBuilder.from_invoice` applies draft rules again
+and is not a lossless XML round trip. For ZAL invoices, `P_15` is the advance
+paid, independent of the declared order value. A declared order value is
+preserved even when it differs from the supplied order lines. Zero quantity is
+allowed on KOR after-correction rows; other draft rows still reject it.
+
+FA(2) XML is detected but unsupported. Use an FA(2)-compatible viewer or the
+Ministry of Finance FA(2) visualization stylesheet. Do not change namespaces
+to make an FA(2) invoice look like FA(3).
+
+Parse failures raise `KSeFValidationError`, which remains a `ValueError`.
+Rendering failures raise `KSeFInvoiceRenderingError`. Both expose `hint`
+(`str | None`) and structured XML error attributes, also available in `context`:
+
+- `field_path: str | None`: XML XPath for XSD failures, or a draft model field path.
+- `detected_schema: str | None`: `"FA(2)"`, `"FA(3)"`, or `None` when unknown.
+- `detected_namespace: str | None`: the root namespace, when readable.
+- `local_rule: bool`: `True` for a local draft rule, `False` for XML/XSD errors.
+- `accepted_by_ksef: bool | None`: `None` when acceptance is unknown. Parsing XML
+  alone does not establish KSeF acceptance.
+
+Use these fields to build error hints instead of parsing exception messages.
+
 ```python
 from pathlib import Path
 from ksef2.fa3 import InvoiceBuilder, parse_invoice_xml

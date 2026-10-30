@@ -483,3 +483,7 @@ już przyjętą.
 - [Operacje](operations.md): Ponowienia, limit żądań, limity czasu przepływów i stan, który da się wznowić.
 - [Tworzenie i zamykanie klientów](client-lifecycle.md): Błędy cyklu życia i zamykanie klientów.
 - [Status i UPO](../concepts/status-and-upo.md): Statusy, dokumenty UPO i lokalne limity czasu.
+
+Domyślna wskazówka renderowania:
+
+> Check that the input uses the FA3 schema and that the stylesheet and output path are accessible. Inspect the original cause for rendering details.

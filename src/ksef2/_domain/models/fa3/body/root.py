@@ -10,6 +10,7 @@ from pydantic import Field, field_validator, model_validator
 
 from ksef2._domain.models.base import KSeFBaseModel as KSeFBaseModel
 from ksef2._domain.models.fa3.base import Fa3Model
+from ksef2._core.exceptions import KSeFValidationError
 from ksef2._domain.models.fa3.body.description import AdditionalDescriptionEntry
 from ksef2._domain.models.fa3.body.advance_payment import (
     AdvancePaymentInvoiceContext,
@@ -275,6 +276,19 @@ class KsefInvoiceBody(Fa3Model):
             and self.period_start > self.period_end
         ):
             raise ValueError("period_start cannot be later than period_end")
+        for index, row in enumerate(self.rows):
+            if row.quantity == 0 and (
+                self.invoice_type != InvoiceType.CORRECTING or row.before_correction
+            ):
+                raise KSeFValidationError(
+                    f"rows.{index}.quantity cannot be zero except on KOR after-correction lines",
+                    field_path=f"rows.{index}.quantity",
+                    detected_schema="FA(3)",
+                    detected_namespace=None,
+                    local_rule=True,
+                    accepted_by_ksef=None,
+                    hint="Use zero quantity only on a KOR after-correction row. For XML already accepted by KSeF, parse or render the original XML without rebuilding a draft.",
+                )
         self._validate_vat_currency_exchange_rate()
         self._validate_row_presence()
         self._validate_intent_specific_data()

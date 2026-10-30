@@ -3,6 +3,7 @@
 from functools import singledispatch
 from typing import overload
 
+from ksef2._infra.mappers.invoices.fa3.construction import mapped_model
 from ksef2._domain.models.fa3.body.correction import (
     CorrectedBuyerEntity,
     CorrectedSellerEntity,
@@ -48,7 +49,8 @@ def _(schema: FakturaFaPodmiot1K) -> CorrectedSellerEntity:
     if identity.nazwa is None:
         raise ValueError("Corrected seller name is required for FA(3) mapping")
 
-    return CorrectedSellerEntity(
+    return mapped_model(
+        CorrectedSellerEntity,
         vat_prefix=schema.prefiks_podatnika.value if schema.prefiks_podatnika else None,
         tax_id=identity.nip,
         name=identity.nazwa,
@@ -67,7 +69,8 @@ def _(schema: FakturaFaPodmiot2K) -> CorrectedBuyerEntity:
         else None
     )
 
-    return CorrectedBuyerEntity(
+    return mapped_model(
+        CorrectedBuyerEntity,
         tax_id=identity.nip,
         eu_vat_id=eu_vat_id,
         country_code=identity.kod_kraju.value if identity.kod_kraju else None,

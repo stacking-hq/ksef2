@@ -444,6 +444,33 @@ Jeżeli masz już kompletny `KsefInvoice`, otwórz go ponownie w builderze przez
 
 `parse_invoice_xml` przyjmuje bajty XML i zwraca publiczny model `KsefInvoice`. Nie wymaga importowania prywatnych schematów ani mapowań. Krótki napis wyglądający jak ścieżka zgłasza `KSeFArgumentError`. Przed parsowaniem odczytaj plik przez `Path(...).read_bytes()`.
 
+Istniejący XML jest parsowany bez reguł biznesowych buildera. Walidacja XSD
+jest opcjonalna. Włącz ją przez `parse_invoice_xml(xml, validate=True)` lub
+`InvoiceXSLTRenderer(validate=True)` z dołączonym arkuszem stylów. Przy przeglądaniu faktury zaakceptowanej przez KSeF renderuj oryginalny
+XML. Ponowne budowanie przez `InvoiceBuilder.from_invoice` stosuje reguły szkicu
+i nie zachowuje bezstratnie XML. Dla ZAL `P_15` oznacza wpłaconą zaliczkę,
+niezależną od zadeklarowanej wartości zamówienia. Zadeklarowana wartość zamówienia
+jest zachowywana również wtedy, gdy różni się od podanych pozycji zamówienia.
+Ilość zero jest dozwolona w wierszach KOR po korekcie. Pozostałe wiersze szkicu
+nadal odrzucają ilość zero.
+
+XML FA(2) jest rozpoznawany, ale nieobsługiwany. Użyj przeglądarki obsługującej
+FA(2) lub arkusza wizualizacji FA(2) Ministerstwa Finansów. Nie zmieniaj
+przestrzeni nazw, aby przedstawić fakturę FA(2) jako FA(3).
+
+Błędy parsowania zgłaszają `KSeFValidationError`, który nadal jest `ValueError`.
+Błędy renderowania zgłaszają `KSeFInvoiceRenderingError`. Oba wyjątki udostępniają
+`hint` (`str | None`) i atrybuty błędów XML, dostępne również w `context`:
+
+- `field_path: str | None`: XPath XML dla błędów XSD lub ścieżka pola modelu szkicu.
+- `detected_schema: str | None`: `"FA(2)"`, `"FA(3)"` lub `None`, gdy schemat jest nieznany.
+- `detected_namespace: str | None`: przestrzeń nazw korzenia, jeśli można ją odczytać.
+- `local_rule: bool`: `True` dla lokalnej reguły szkicu, `False` dla błędów XML/XSD.
+- `accepted_by_ksef: bool | None`: `None`, gdy akceptacja jest nieznana. Samo
+  parsowanie XML nie potwierdza akceptacji przez KSeF.
+
+Buduj wskazówki na podstawie tych pól zamiast analizować treść komunikatu wyjątku.
+
 ```python
 from pathlib import Path
 from ksef2.fa3 import InvoiceBuilder, parse_invoice_xml

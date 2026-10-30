@@ -283,15 +283,14 @@ class InvoiceOrder(Fa3Model):
 
     @model_validator(mode="after")
     def validate_and_populate_total(self) -> Self:
-        """Fill in the order total from its lines and check it against them.
+        """Fill in an omitted order total from its lines.
 
-        When no total is given it is set to the gross sum of the lines, or the net sum if there are no gross amounts.
+        A declared contract value is preserved. The XSD does not require it to
+        equal the supplied lines or the advance paid in P_15. When omitted,
+        use the gross sum, or the net sum if no gross amounts are available.
 
         Returns:
             The validated order.
-
-        Raises:
-            ValueError: If a given total equals neither the gross nor the net sum of the order lines.
         """
         after_lines = [line for line in self.order_lines if not line.before_correction]
         lines_for_total = after_lines if after_lines else self.order_lines
@@ -312,14 +311,6 @@ class InvoiceOrder(Fa3Model):
             ),
             start=Decimal("0.00"),
         )
-
-        if self.total_value is not None and self.total_value not in {
-            computed_gross_total,
-            computed_net_total,
-        }:
-            raise ValueError(
-                "gross amount must equal the sum of order line gross amounts"
-            )
 
         if self.total_value is None:
             if computed_gross_total > Decimal("0.00"):

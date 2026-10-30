@@ -319,6 +319,12 @@ class KSeFValidationError(KSeFException, ValueError):  # pyright: ignore[reportU
         hint: Next step for this occurrence; overrides the class default.
         **context: Additional structured details, stored in ``context``.
 
+    Attributes:
+        field_path: XML XPath or draft field path, or None when unknown.
+        detected_schema: Detected schema name, or None when unknown.
+        detected_namespace: Detected root namespace, or None when unknown.
+        local_rule: Whether the error comes from a local draft rule.
+        accepted_by_ksef: Independently established acceptance, or None when unknown.
     """
 
     code: str = "VALIDATION_ERROR"
@@ -330,6 +336,11 @@ class KSeFValidationError(KSeFException, ValueError):  # pyright: ignore[reportU
         validation_error: object | None = None,
         **context: Any,  # pyright: ignore[reportAny, reportExplicitAny]
     ) -> None:
+        self.field_path: str | None = context.get("field_path")
+        self.detected_schema: str | None = context.get("detected_schema")
+        self.detected_namespace: str | None = context.get("detected_namespace")
+        self.local_rule: bool = context.get("local_rule", False)
+        self.accepted_by_ksef: bool | None = context.get("accepted_by_ksef")
         self.validation_error = validation_error
         super().__init__(message, **context)  # pyright: ignore[reportAny]
 
@@ -410,9 +421,34 @@ class KSeFArgumentError(KSeFValidationError, TypeError):  # pyright: ignore[repo
 
 
 class KSeFInvoiceRenderingError(KSeFException):
-    """Raised when invoice rendering fails."""
+    """Raised when invoice rendering fails.
+
+    XML errors expose ``field_path``, ``detected_schema``, ``detected_namespace``,
+    ``local_rule`` and ``accepted_by_ksef`` in attributes and ``context``.
+    KSeF acceptance is unknown unless independently supplied by the caller.
+
+    Args:
+        message: Human-readable error message.
+        **context: Structured XML or rendering details, including an optional hint.
+    """
 
     code: str = "INVOICE_RENDERING_ERROR"
+    hint: str | None = (
+        "Check that the input uses the FA3 schema and that the stylesheet and output path "
+        "are accessible. Inspect the original cause for rendering details."
+    )
+
+    def __init__(
+        self,
+        message: str,
+        **context: Any,  # pyright: ignore[reportAny, reportExplicitAny]
+    ) -> None:
+        self.field_path: str | None = context.get("field_path")
+        self.detected_schema: str | None = context.get("detected_schema")
+        self.detected_namespace: str | None = context.get("detected_namespace")
+        self.local_rule: bool = context.get("local_rule", False)
+        self.accepted_by_ksef: bool | None = context.get("accepted_by_ksef")
+        super().__init__(message, **context)  # pyright: ignore[reportAny]
 
 
 class KSeFApiError(KSeFException):

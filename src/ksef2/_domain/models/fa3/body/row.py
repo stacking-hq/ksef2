@@ -298,7 +298,6 @@ class InvoiceRow(Fa3Model):
         Raises:
             ValueError: If the quantity, tax classification or gross amount is inconsistent.
         """
-        self._validate_quantity()
         self._validate_tax_classification_rules()
         self._validate_gross_amount_consistency()
         return self
@@ -316,10 +315,6 @@ class InvoiceRow(Fa3Model):
             return None
 
         return self.vat_classification.numeric_rate / Decimal("100")
-
-    def _validate_quantity(self) -> None:
-        if self.quantity == 0:
-            raise ValueError("quantity cannot be zero")
 
     def _validate_tax_classification_rules(self) -> None:
         if self.tax_regime is TaxRegime.MARGIN:

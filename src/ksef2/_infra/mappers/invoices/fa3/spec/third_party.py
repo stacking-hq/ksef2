@@ -3,6 +3,7 @@
 from functools import singledispatch
 from typing import overload
 
+from ksef2._infra.mappers.invoices.fa3.construction import mapped_model
 from ksef2._domain.models.fa3.party import ContactInfo
 from ksef2._domain.models.fa3.third_party import InvoiceThirdParty, ThirdPartyRole
 from ksef2._infra.mappers.invoices.fa3.spec.subject import (
@@ -46,7 +47,7 @@ def _(schema: FakturaPodmiot3) -> InvoiceThirdParty:
     contact = None
     if schema.dane_kontaktowe:
         contacts = [
-            ContactInfo(email=item.email, phone=item.telefon)
+            mapped_model(ContactInfo, email=item.email, phone=item.telefon)
             for item in schema.dane_kontaktowe
             if item.email is not None or item.telefon is not None
         ]
@@ -70,7 +71,8 @@ def _(schema: FakturaPodmiot3) -> InvoiceThirdParty:
         }
         role = role_map[schema.rola]
 
-    return InvoiceThirdParty(
+    return mapped_model(
+        InvoiceThirdParty,
         tax_id=identity.nip,
         internal_id=identity.idwew,
         eu_vat_id=eu_vat_id,

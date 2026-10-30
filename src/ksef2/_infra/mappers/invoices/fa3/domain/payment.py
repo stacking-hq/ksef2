@@ -7,6 +7,7 @@ from typing import overload
 
 from pydantic import BaseModel
 
+from ksef2._infra.mappers.invoices.fa3.construction import mapped_model
 from ksef2._domain.models.fa3.body.payment import (
     BankAccount,
     BankOwnAccountType,
@@ -294,7 +295,8 @@ def _(schema: FakturaFaPlatnosc) -> InvoicePayment:
     discount_terms = schema.skonto.warunki_skonta if schema.skonto else None
     discount_amount = schema.skonto.wysokosc_skonta if schema.skonto else None
 
-    return InvoicePayment(
+    return mapped_model(
+        InvoicePayment,
         paid=schema.zaplacono == Twybor1.VALUE_1,
         payment_date=payment_date,
         partial_payment_status=partial_payment_status,
@@ -318,7 +320,8 @@ def _(schema: FakturaFaPlatnoscZaplataCzesciowa) -> PartialPayment:
         _from_payment_form(schema.forma_platnosci) if schema.forma_platnosci else None
     )
 
-    return PartialPayment(
+    return mapped_model(
+        PartialPayment,
         amount=Decimal(schema.kwota_zaplaty_czesciowej),
         payment_date=date.fromisoformat(schema.data_zaplaty_czesciowej),
         payment_form=payment_form,
@@ -332,7 +335,8 @@ def _(schema: FakturaFaPlatnoscTerminPlatnosci) -> PaymentTerm:
     due_date = date.fromisoformat(schema.termin) if schema.termin else None
     due_date_description = from_spec(schema.termin_opis) if schema.termin_opis else None
 
-    return PaymentTerm(
+    return mapped_model(
+        PaymentTerm,
         due_date=due_date,
         due_date_description=due_date_description,
     )
@@ -340,7 +344,8 @@ def _(schema: FakturaFaPlatnoscTerminPlatnosci) -> PaymentTerm:
 
 @_from_spec.register
 def _(schema: FakturaFaPlatnoscTerminPlatnosciTerminOpis) -> PaymentTermDescription:
-    return PaymentTermDescription(
+    return mapped_model(
+        PaymentTermDescription,
         quantity=schema.ilosc,
         unit=schema.jednostka,
         starting_event=schema.zdarzenie_poczatkowe,
@@ -355,7 +360,8 @@ def _(schema: TrachunekBankowy) -> BankAccount:
         else None
     )
 
-    return BankAccount(
+    return mapped_model(
+        BankAccount,
         account_number=schema.nr_rb,
         swift=schema.swift,
         own_bank_account_type=own_bank_account_type,

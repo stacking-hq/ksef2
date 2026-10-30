@@ -4,7 +4,8 @@ from typing import cast, final
 from lxml import etree
 
 from ksef2._core.paths import reject_path_like_content
-from ksef2._core.exceptions import KSeFInvoiceRenderingError
+from ksef2._core.exceptions import KSeFInvoiceRenderingError, KSeFValidationError
+from ksef2._services.fa3 import validate_invoice_document
 from ksef2._core.xml import parse_xml_bytes, parse_xml_file
 from ksef2._infra.schema.fa3 import STYLESHEET_PATH as _DEFAULT_STYLESHEET_PATH
 
@@ -37,12 +38,14 @@ class InvoiceXSLTRenderer:
         stylesheet_path: str | Path | None = None,
         enable_code_lookups: bool = False,
         *,
+        validate: bool = False,
         footer_text: str | None = None,
         watermark_text: str | None = None,
     ):
         """Create the InvoiceXSLTRenderer.
 
         Args:
+            validate: Opt into bundled FA(3) XSD validation when using the default stylesheet.
             stylesheet_path: Path of an XSLT stylesheet to use; the bundled FA(3) stylesheet when ``None``.
             footer_text: Optional plain-text notice appended once after the invoice.
             watermark_text: Optional plain-text watermark, repeated on printed pages.
@@ -54,6 +57,7 @@ class InvoiceXSLTRenderer:
             Path(stylesheet_path) if stylesheet_path else _DEFAULT_STYLESHEET_PATH
         )
         self._enable_code_lookups = enable_code_lookups
+        self._validate = validate
         read_file = enable_code_lookups
         write_file = False
         create_dir = False
@@ -116,6 +120,15 @@ class InvoiceXSLTRenderer:
         return self._transform
 
     def _render_doc(self, xml_doc: ElementTree | Element) -> str:
+        if self._stylesheet_path == _DEFAULT_STYLESHEET_PATH:
+            root = xml_doc.getroot() if isinstance(xml_doc, ElementTree) else xml_doc
+            try:
+                validate_invoice_document(root, validate=self._validate)
+            except KSeFValidationError as exc:
+                raise KSeFInvoiceRenderingError(
+                    cast(str, exc.args[0]),
+                    **exc.context,
+                ) from exc
         transform = self._get_transform()
 
         try:

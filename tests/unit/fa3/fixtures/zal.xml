@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Faktura xmlns="http://crd.gov.pl/wzor/2025/06/25/13775/">
+  <Naglowek><KodFormularza kodSystemowy="FA (3)" wersjaSchemy="1-0E">FA</KodFormularza><WariantFormularza>3</WariantFormularza><DataWytworzeniaFa>2026-10-01T00:00:00Z</DataWytworzeniaFa></Naglowek>
+  <Podmiot1><DaneIdentyfikacyjne><NIP>5261040828</NIP><Nazwa>Seller</Nazwa></DaneIdentyfikacyjne><Adres><KodKraju>PL</KodKraju><AdresL1>Warszawa</AdresL1></Adres></Podmiot1>
+  <Podmiot2><DaneIdentyfikacyjne><BrakID>1</BrakID><Nazwa>Buyer</Nazwa></DaneIdentyfikacyjne><JST>2</JST><GV>2</GV></Podmiot2>
+  <Fa><KodWaluty>PLN</KodWaluty><P_1>2026-10-01</P_1><P_2>REGRESSION/1</P_2>
+<P_13_1>406.50</P_13_1><P_14_1>93.50</P_14_1><P_15>500.00</P_15><Adnotacje><P_16>2</P_16><P_17>2</P_17><P_18>2</P_18><P_18A>2</P_18A><Zwolnienie><P_19N>1</P_19N></Zwolnienie><NoweSrodkiTransportu><P_22N>1</P_22N></NoweSrodkiTransportu><P_23>2</P_23><PMarzy><P_PMarzyN>1</P_PMarzyN></PMarzy></Adnotacje><RodzajFaktury>ZAL</RodzajFaktury>
+<Zamowienie><WartoscZamowienia>1230.00</WartoscZamowienia><ZamowienieWiersz><NrWierszaZam>1</NrWierszaZam><P_7Z>Order</P_7Z><P_8AZ>szt</P_8AZ><P_8BZ>1</P_8BZ><P_9AZ>1000.00</P_9AZ><P_11NettoZ>1000.00</P_11NettoZ><P_11VatZ>230.00</P_11VatZ><P_12Z>23</P_12Z></ZamowienieWiersz></Zamowienie></Fa></Faktura>
