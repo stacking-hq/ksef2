@@ -34,6 +34,22 @@ class Fa3Model(KSeFBaseModel):
                 if isinstance(location, tuple)
                 else ""
             )
+            exc.field_path = field or type(self).__name__
+            exc.detected_schema = "FA(3)"
+            exc.local_rule = True
+            exc.hint = (
+                f"Check {exc.field_path} in the draft. This is a local SDK rule; "
+                "for XML already accepted by KSeF, use parse_invoice_xml or render "
+                "the original XML instead of rebuilding a draft."
+            )
+            exc.context.update(
+                field_path=exc.field_path,
+                detected_schema=exc.detected_schema,
+                detected_namespace=None,
+                local_rule=True,
+                accepted_by_ksef=None,
+                hint=exc.hint,
+            )
             exc.args = (f"Invalid FA(3) builder {field or 'fields'}: {detail['msg']}",)
             raise
 

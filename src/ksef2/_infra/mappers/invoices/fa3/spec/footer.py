@@ -1,5 +1,6 @@
 """Mappings from FA(3) footer schema models to domain objects."""
 
+from ksef2._infra.mappers.invoices.fa3.construction import mapped_model
 from ksef2._domain.models.fa3.footer import FooterRegistry, InvoiceFooter
 from ksef2._infra.schema.fa3.models.schemat import FakturaStopka
 
@@ -11,7 +12,8 @@ def from_spec(schema: FakturaStopka) -> InvoiceFooter:
         if info.stopka_faktury is not None
     ]
     registries = [
-        FooterRegistry(
+        mapped_model(
+            FooterRegistry,
             full_name=registry.pelna_nazwa,
             krs=registry.krs,
             regon=registry.regon,
@@ -19,7 +21,8 @@ def from_spec(schema: FakturaStopka) -> InvoiceFooter:
         )
         for registry in schema.rejestry
     ]
-    return InvoiceFooter(
+    return mapped_model(
+        InvoiceFooter,
         additional_informations=informations,
         registries=registries,
     )

@@ -73,7 +73,13 @@ def test_formatting_preserves_exception_and_diagnostics(
     assert error.__cause__ is cause
     assert error.validation_error is (cause if structured else None)
     assert error.errors() == details
-    assert error.context == context
+    assert all(error.context[key] == value for key, value in context.items())
+    if structured:
+        assert error.field_path == "quantity"
+        assert error.local_rule is True
+        assert error.hint
+    else:
+        assert error.context == context
     expected = (
         "Invalid FA(3) builder quantity: Input should be greater than 0"
         if structured

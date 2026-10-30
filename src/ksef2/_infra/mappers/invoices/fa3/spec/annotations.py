@@ -4,6 +4,7 @@ from datetime import date, datetime
 from functools import singledispatch
 from typing import overload
 
+from ksef2._infra.mappers.invoices.fa3.construction import mapped_model
 from ksef2._domain.models.fa3.body import (
     InvoiceAnnotationsContext,
     InvoiceTaxExemption,
@@ -60,12 +61,14 @@ def _tax_exemption_from_spec(
         The exemption annotation carrying one legal basis.
     """
     if schema.p_19_a is not None:
-        return InvoiceTaxExemption(legal_basis_act=schema.p_19_a)
+        return mapped_model(InvoiceTaxExemption, legal_basis_act=schema.p_19_a)
     if schema.p_19_b is not None:
-        return InvoiceTaxExemption(legal_basis_eu_directive=schema.p_19_b)
+        return mapped_model(InvoiceTaxExemption, legal_basis_eu_directive=schema.p_19_b)
     if schema.p_19_c is not None:
-        return InvoiceTaxExemption(legal_basis_other=schema.p_19_c)
-    return InvoiceTaxExemption()
+        return mapped_model(InvoiceTaxExemption, legal_basis_other=schema.p_19_c)
+    return mapped_model(
+        InvoiceTaxExemption,
+    )
 
 
 @_from_spec.register
@@ -121,7 +124,8 @@ def _(schema: FakturaFaAdnotacje) -> InvoiceAnnotationsContext | None:
                     except ValueError:
                         available_from = datetime.fromisoformat(raw_str).date()
                 items.append(
-                    NewTransportMeansItem(
+                    mapped_model(
+                        NewTransportMeansItem,
                         available_from=available_from,
                         row_number=item.p_nr_wiersza_nst,
                         brand=item.p_22_bmk,
@@ -141,14 +145,16 @@ def _(schema: FakturaFaAdnotacje) -> InvoiceAnnotationsContext | None:
                         aircraft_serial_number=item.p_22_d1,
                     )
                 )
-            new_transport_supply = NewTransportSupply(
+            new_transport_supply = mapped_model(
+                NewTransportSupply,
                 article_42_5_required=transport.p_42_5 == Twybor12.VALUE_1
                 if transport.p_42_5 is not None
                 else None,
                 items=items,
             )
 
-    return InvoiceAnnotationsContext(
+    return mapped_model(
+        InvoiceAnnotationsContext,
         cash_accounting=schema.p_16 == Twybor12.VALUE_1,
         self_billing=schema.p_17 == Twybor12.VALUE_1,
         reverse_charge_annotation=schema.p_18 == Twybor12.VALUE_1,

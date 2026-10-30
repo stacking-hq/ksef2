@@ -5,6 +5,7 @@ from decimal import Decimal
 from functools import singledispatch
 from typing import overload
 
+from ksef2._infra.mappers.invoices.fa3.construction import mapped_model
 from ksef2._domain.models.fa3.body import MarginProcedure
 from ksef2._domain.models.fa3.body import InvoiceRow, TaxRegime, VatClassification
 from ksef2._domain.models.fa3.body.order import AdvanceOrderLine
@@ -119,7 +120,8 @@ def _(
         vat_rate_xii=schema.p_12_xii,
     )
 
-    return InvoiceRow(
+    return mapped_model(
+        InvoiceRow,
         name=schema.p_7,
         quantity=_to_decimal(schema.p_8_b),
         unit_of_measure=schema.p_8_a or "szt",
@@ -157,7 +159,8 @@ def _(
     vat_classification = _classification_from_schema(schema.p_12_z)
     tax_regime = _tax_regime_for_line(vat_rate_xii=schema.p_12_z_xii)
 
-    return AdvanceOrderLine(
+    return mapped_model(
+        AdvanceOrderLine,
         name=schema.p_7_z,
         quantity=_to_decimal(schema.p_8_bz),
         unit_of_measure=schema.p_8_az,

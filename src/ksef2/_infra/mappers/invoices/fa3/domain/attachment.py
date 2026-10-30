@@ -6,6 +6,7 @@ from typing import overload
 
 from pydantic import BaseModel
 
+from ksef2._infra.mappers.invoices.fa3.construction import mapped_model
 from ksef2._domain.models.fa3.attachment import (
     Attachment,
     AttachmentTable,
@@ -223,7 +224,7 @@ def _from_spec(schema: object) -> object:
 def _(schema: FakturaZalacznik) -> Attachment:
     data_blocks = [from_spec(block) for block in schema.blok_danych]
 
-    return Attachment(data_blocks=data_blocks)
+    return mapped_model(Attachment, data_blocks=data_blocks)
 
 
 @_from_spec.register
@@ -232,7 +233,8 @@ def _(schema: FakturaZalacznikBlokDanych) -> DataBlock:
     paragraphs = list(schema.tekst.akapit) if schema.tekst else None
     tables = [from_spec(table) for table in schema.tabela] if schema.tabela else None
 
-    return DataBlock(
+    return mapped_model(
+        DataBlock,
         header=schema.znaglowek,
         meta_data=meta_data,
         paragraphs=paragraphs,
@@ -252,7 +254,8 @@ def _(schema: FakturaZalacznikBlokDanychTabela) -> AttachmentTable:
     rows = [list(row.wkom) for row in schema.wiersz]
     summary = list(schema.suma.skom) if schema.suma else None
 
-    return AttachmentTable(
+    return mapped_model(
+        AttachmentTable,
         meta_data=meta_data,
         description=schema.opis,
         columns_names=columns_names,

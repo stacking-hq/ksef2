@@ -521,3 +521,7 @@ rejection as already accepted.
 - [Operations reference](operations.md): Review retry behavior, rate limits, workflow timeouts, and resumable state.
 - [Client lifecycle](client-lifecycle.md): Review lifecycle errors and client close behavior.
 - [Status and UPO](../concepts/status-and-upo.md): Understand status surfaces, UPO documents, and polling deadlines.
+
+Default rendering hint:
+
+> Check that the input uses the FA3 schema and that the stylesheet and output path are accessible. Inspect the original cause for rendering details.

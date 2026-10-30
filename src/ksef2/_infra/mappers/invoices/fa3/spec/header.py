@@ -4,6 +4,7 @@ from datetime import datetime
 from functools import singledispatch
 from typing import overload
 
+from ksef2._infra.mappers.invoices.fa3.construction import mapped_model
 from ksef2._domain.models.fa3 import InvoiceHeader
 from ksef2._domain.models.fa3.header import _default_system_info
 from ksef2._infra.schema.fa3.models.schemat import Tnaglowek
@@ -34,7 +35,8 @@ def _from_spec(schema: object) -> object:
 def _(schema: Tnaglowek) -> InvoiceHeader:
     raw = schema.data_wytworzenia_fa
     timestamp = raw if isinstance(raw, datetime) else datetime.fromisoformat(str(raw))
-    return InvoiceHeader(
+    return mapped_model(
+        InvoiceHeader,
         generation_timestamp=timestamp,
         system_info=schema.system_info or _default_system_info(),
     )

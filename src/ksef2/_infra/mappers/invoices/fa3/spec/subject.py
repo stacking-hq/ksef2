@@ -3,6 +3,7 @@
 from functools import singledispatch
 from typing import overload
 
+from ksef2._infra.mappers.invoices.fa3.construction import mapped_model
 from ksef2._domain.models.fa3 import InvoiceAddress
 from ksef2._infra.schema.fa3.models.schemat import Tadres
 
@@ -30,7 +31,8 @@ def _from_spec(schema: object) -> object:
 
 @_from_spec.register
 def _(schema: Tadres) -> InvoiceAddress:
-    return InvoiceAddress(
+    return mapped_model(
+        InvoiceAddress,
         country_code=schema.kod_kraju.value,
         address_line_1=schema.adres_l1,
         address_line_2=schema.adres_l2,

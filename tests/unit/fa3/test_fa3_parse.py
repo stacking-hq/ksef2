@@ -45,7 +45,7 @@ def test_builder_xml_defaults_to_compact_output() -> None:
         (b"<Faktura/>", "FA\\(3\\) namespace"),
         (
             b"<Faktura xmlns='http://crd.gov.pl/wzor/2023/06/29/12648/'/>",
-            "FA\\(3\\) namespace",
+            "FA\\(2\\) is unsupported",
         ),
         (
             b"<!DOCTYPE Faktura [<!ENTITY test SYSTEM 'file:///etc/passwd'>]><Faktura>&test;</Faktura>",

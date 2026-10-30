@@ -1,10 +1,10 @@
 """Root fluent builder for complete FA(3) invoices."""
 
+from ksef2._infra.schema.fa3.validation import load_fa3_schema as _load_fa3_schema
+
 from collections.abc import Sequence
 from datetime import datetime
 from decimal import Decimal
-from functools import lru_cache
-from pathlib import Path
 from typing import Annotated, Self, override
 
 from lxml import etree
@@ -42,20 +42,6 @@ from ksef2._services.builders.fa3.body.settlement import SettlementBodyBuilder
 from ksef2._services.builders.fa3.body.simplified import SimplifiedBodyBuilder
 from ksef2._services.builders.fa3.body.standard import StandardBodyBuilder
 from ksef2._services.builders.fa3.metadata import builder_param
-
-
-@lru_cache(maxsize=1)
-def _load_fa3_schema() -> etree.XMLSchema:
-    schema_path = (
-        Path(__file__).parents[3]
-        / "_infra"
-        / "schema"
-        / "fa3"
-        / "definitions"
-        / "schemat.xsd"
-    )
-    parser = etree.XMLParser(no_network=True, resolve_entities=False)
-    return etree.XMLSchema(etree.parse(str(schema_path), parser))
 
 
 class StandardInvoiceBuilder(

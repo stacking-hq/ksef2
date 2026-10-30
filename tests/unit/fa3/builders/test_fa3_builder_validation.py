@@ -16,7 +16,6 @@ from ksef2.fa3 import InvoiceBuilder
 @pytest.mark.parametrize(
     ("field", "value"),
     [
-        ("quantity", 0),
         ("quantity", Decimal("NaN")),
         ("unit_price_net", Decimal("NaN")),
         ("unit_price_net", Decimal("Infinity")),
@@ -154,3 +153,14 @@ def test_float_inputs_across_builder_sections() -> None:
         .build()
     )
     assert order.total_value == Decimal("12.30")
+
+
+def test_standard_builder_rejects_zero_quantity_at_body_boundary() -> None:
+    body = InvoiceBuilder().standard()
+    body.rows().add_line(
+        name="Service", quantity=0, unit_price_net=100, vat_rate="23"
+    ).done()
+    with pytest.raises(KSeFValidationError, match="quantity") as caught:
+        body.build()
+    assert caught.value.field_path == "rows.0.quantity"
+    assert caught.value.local_rule is True

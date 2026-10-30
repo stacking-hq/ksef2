@@ -5,6 +5,7 @@ from decimal import Decimal
 from functools import singledispatch
 from typing import overload
 
+from ksef2._infra.mappers.invoices.fa3.construction import mapped_model
 from ksef2._domain.models.fa3 import KsefInvoice
 from ksef2._domain.models.fa3.body import (
     KsefInvoiceBody,
@@ -131,7 +132,8 @@ def _enum_value(value: object, *, field_name: str) -> str:
 def _summary_overrides_from_schema(
     schema: FakturaFa,
 ) -> InvoiceSummaryOverrides | None:
-    overrides = InvoiceSummaryOverrides(
+    overrides = mapped_model(
+        InvoiceSummaryOverrides,
         base_rate_net_total=_to_decimal(schema.p_13_1),
         base_rate_vat_total=_to_decimal(schema.p_14_1),
         base_rate_vat_total_pln=_to_decimal(schema.p_14_1_w),
@@ -203,24 +205,31 @@ def _(schema: FakturaFa) -> KsefInvoiceBody:
     settlement = None
     if schema.rozliczenie is not None:
         charges = [
-            SettlementCharge(
+            mapped_model(
+                SettlementCharge,
                 amount=_to_required_decimal(item.kwota, field_name="rozliczenie.kwota"),
                 reason=item.powod,
             )
             for item in schema.rozliczenie.obciazenia
         ]
         deductions = [
-            SettlementDeduction(
+            mapped_model(
+                SettlementDeduction,
                 amount=_to_required_decimal(item.kwota, field_name="rozliczenie.kwota"),
                 reason=item.powod,
             )
             for item in schema.rozliczenie.odliczenia
         ]
-        settlement = InvoiceSettlement(
+        settlement = mapped_model(
+            InvoiceSettlement,
             charges=charges,
-            charges_total=_to_decimal(schema.rozliczenie.suma_obciazen),
+            charges_total=_to_decimal(schema.rozliczenie.suma_obciazen)
+            if schema.rozliczenie.suma_obciazen is not None
+            else sum((item.amount for item in charges), Decimal("0.00")),
             deductions=deductions,
-            deductions_total=_to_decimal(schema.rozliczenie.suma_odliczen),
+            deductions_total=_to_decimal(schema.rozliczenie.suma_odliczen)
+            if schema.rozliczenie.suma_odliczen is not None
+            else sum((item.amount for item in deductions), Decimal("0.00")),
             amount_due=_to_decimal(schema.rozliczenie.do_zaplaty),
             amount_to_settle=_to_decimal(schema.rozliczenie.do_rozliczenia),
         )
@@ -237,7 +246,8 @@ def _(schema: FakturaFa) -> KsefInvoiceBody:
     )
     if has_correction:
         corrected_invoices = [
-            CorrectedInvoiceReference(
+            mapped_model(
+                CorrectedInvoiceReference,
                 issue_date=_to_required_date(
                     item.data_wyst_fa_korygowanej,
                     field_name="dane_fa_korygowanej.data_wyst_fa_korygowanej",
@@ -256,7 +266,8 @@ def _(schema: FakturaFa) -> KsefInvoiceBody:
                 correction_effect = "correction_issue_date"
             else:
                 correction_effect = "other_date"
-        correction = CorrectionInvoiceContext(
+        correction = mapped_model(
+            CorrectionInvoiceContext,
             correction_reason=schema.przyczyna_korekty,
             correction_effect_type=correction_effect,
             corrected_invoices=corrected_invoices,
@@ -279,7 +290,8 @@ def _(schema: FakturaFa) -> KsefInvoiceBody:
     )
     if has_advance:
         partial_payments = [
-            PartialAdvancePayment(
+            mapped_model(
+                PartialAdvancePayment,
                 payment_date=_to_required_date(
                     item.p_6_z,
                     field_name="zaliczka_czesciowa.p_6_z",
@@ -293,14 +305,16 @@ def _(schema: FakturaFa) -> KsefInvoiceBody:
             for item in schema.zaliczka_czesciowa
         ]
         references = [
-            AdvanceInvoiceReference(
+            mapped_model(
+                AdvanceInvoiceReference,
                 ksef_id=item.nr_kse_ffa_zaliczkowej,
                 invoice_number=item.nr_fa_zaliczkowej,
                 outside_ksef=flag(item.nr_kse_fzn),
             )
             for item in schema.faktura_zaliczkowa
         ]
-        advance = AdvancePaymentInvoiceContext(
+        advance = mapped_model(
+            AdvancePaymentInvoiceContext,
             amount_before_correction=_to_decimal(schema.p_15_zk),
             currency_exchange_rate_before_correction=_to_decimal(schema.kurs_waluty_zk),
             advance_partial_payments=partial_payments,
@@ -312,11 +326,13 @@ def _(schema: FakturaFa) -> KsefInvoiceBody:
         order_lines = [
             line_from_spec(row) for row in schema.zamowienie.zamowienie_wiersz
         ]
-        order = InvoiceOrder(
+        order = mapped_model(
+            InvoiceOrder,
             total_value=_to_decimal(schema.zamowienie.wartosc_zamowienia),
             order_lines=order_lines,
         )
-    return KsefInvoiceBody(
+    return mapped_model(
+        KsefInvoiceBody,
         currency=_enum_value(schema.kod_waluty, field_name="kod_waluty"),
         issue_date=_to_required_date(schema.p_1, field_name="p_1"),
         issue_place=schema.p_1_m,
@@ -335,7 +351,8 @@ def _(schema: FakturaFa) -> KsefInvoiceBody:
         if schema.tp is not None
         else False,
         additional_description=[
-            AdditionalDescriptionEntry(
+            mapped_model(
+                AdditionalDescriptionEntry,
                 row_number=item.nr_wiersza,
                 key=item.klucz,
                 value=item.wartosc,
@@ -366,7 +383,8 @@ def _(schema: Faktura) -> KsefInvoice:
     footer = footer_from_spec(schema.stopka) if schema.stopka else None
     attachment = attachment_from_spec(schema.zalacznik) if schema.zalacznik else None
 
-    return KsefInvoice(
+    return mapped_model(
+        KsefInvoice,
         header=header,
         seller=seller,
         buyer=buyer,

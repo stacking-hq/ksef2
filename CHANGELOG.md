@@ -1,3 +1,14 @@
+## Unreleased
+
+### Fixed
+
+- Parse existing FA(3) invoices without draft business rules, with opt-in XSD
+  validation. Render ZAL advances independently of their order value and allow zero
+  quantity on KOR after-correction rows when building drafts.
+- Preserve declared order values without requiring equality with supplied lines.
+- Detect unsupported FA(2) XML explicitly and provide actionable parse/render
+  hints with structured field, schema, namespace and local-rule context.
+
 ## v1.2.0 (2026-10-29)
 
 ### Changed

@@ -3,6 +3,7 @@
 from functools import singledispatch
 from typing import overload
 
+from ksef2._infra.mappers.invoices.fa3.construction import mapped_model
 from ksef2._domain.models.fa3 import ContactInfo, InvoiceEntity
 from ksef2._infra.mappers.invoices.fa3.spec.subject import (
     from_spec as subject_from_spec,
@@ -43,9 +44,10 @@ def _(schema: FakturaPodmiot2) -> InvoiceEntity:
     if schema.dane_kontaktowe:
         first = schema.dane_kontaktowe[0]
         if first.email is not None or first.telefon is not None:
-            contact = ContactInfo(email=first.email, phone=first.telefon)
+            contact = mapped_model(ContactInfo, email=first.email, phone=first.telefon)
 
-    return InvoiceEntity(
+    return mapped_model(
+        InvoiceEntity,
         tax_id=identity.nip,
         eu_vat_id=eu_vat_id,
         other_id=identity.nr_id,

@@ -8,6 +8,7 @@ from typing import overload
 from pydantic import BaseModel
 from xsdata.models.datatype import XmlDateTime
 
+from ksef2._infra.mappers.invoices.fa3.construction import mapped_model
 from ksef2._domain.models.fa3.body.transaction import (
     CargoType,
     TransactionAddress,
@@ -383,7 +384,8 @@ def _(schema: FakturaFaWarunkiTransakcji) -> TransactionConditions:
     contract_currency = schema.waluta_umowna.value if schema.waluta_umowna else None
     transports = [from_spec(transport) for transport in schema.transport]
 
-    return TransactionConditions(
+    return mapped_model(
+        TransactionConditions,
         contracts=contracts,
         orders=orders,
         lot_numbers=schema.nr_partii_towaru,
@@ -401,7 +403,8 @@ def _(schema: FakturaFaWarunkiTransakcjiUmowy) -> TransactionContract:
         date.fromisoformat(schema.data_umowy) if schema.data_umowy is not None else None
     )
 
-    return TransactionContract(
+    return mapped_model(
+        TransactionContract,
         contract_date=contract_date,
         contract_number=schema.nr_umowy,
     )
@@ -415,7 +418,8 @@ def _(schema: FakturaFaWarunkiTransakcjiZamowienia) -> TransactionOrder:
         else None
     )
 
-    return TransactionOrder(
+    return mapped_model(
+        TransactionOrder,
         order_date=order_date,
         order_number=schema.nr_zamowienia,
     )
@@ -448,7 +452,8 @@ def _(schema: FakturaFaWarunkiTransakcjiTransport) -> TransactionTransport:
     shipping_via = [from_spec(address) for address in schema.wysylka_przez]
     shipping_to = from_spec(schema.wysylka_do) if schema.wysylka_do else None
 
-    return TransactionTransport(
+    return mapped_model(
+        TransactionTransport,
         transport_type=transport_type,
         other_transport=schema.transport_inny == Twybor1.VALUE_1,
         other_transport_description=schema.opis_innego_transportu,
@@ -469,7 +474,8 @@ def _(schema: FakturaFaWarunkiTransakcjiTransport) -> TransactionTransport:
 
 @_from_spec.register
 def _(schema: Tpodmiot2) -> TransactionIdentity:
-    return TransactionIdentity(
+    return mapped_model(
+        TransactionIdentity,
         tax_id=schema.nip,
         eu_vat_id=_join_eu_vat_id(schema.kod_ue, schema.nr_vat_ue),
         country_code=_from_country_code(schema.kod_kraju) if schema.kod_kraju else None,
@@ -481,7 +487,8 @@ def _(schema: Tpodmiot2) -> TransactionIdentity:
 
 @_from_spec.register
 def _(schema: Tadres) -> TransactionAddress:
-    return TransactionAddress(
+    return mapped_model(
+        TransactionAddress,
         country_code=_from_country_code(schema.kod_kraju),
         address_line_1=schema.adres_l1,
         address_line_2=schema.adres_l2,
