@@ -47,7 +47,7 @@ PACKAGE_NAME = "ksef2"
 # PyPI. Entries are never dropped while 1.x is supported: each one is the
 # evidence that applications written against that release still import what
 # they used to import and still call what they used to call.
-BASELINE_VERSIONS: tuple[str, ...] = ("0.22.2", "1.0.0", "1.1.0")
+BASELINE_VERSIONS: tuple[str, ...] = ("0.22.2", "1.0.0", "1.1.0", "1.2.0")
 
 # Present since the #184 rename, including published 1.x releases. Pre-1.0
 # baselines must lack it; both 1.x baselines and the candidate must expose it.
