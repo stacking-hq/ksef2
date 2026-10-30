@@ -1,3 +1,16 @@
+## Unreleased
+
+### Added
+
+- Add optional plain-text `footer_text` and `watermark_text` to HTML and PDF
+  renderers, shared by sync and async applications. Defaults remain unchanged.
+- Document the `ksef2[pdf]` installation extra in English and Polish quickstarts.
+
+### Fixed
+
+- Reduce verification QR spacing so it stays on the preceding PDF page when
+  the code and assigned number fit.
+
 ## v1.2.0 (2026-10-29)
 
 ### Changed

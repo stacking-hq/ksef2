@@ -60,6 +60,8 @@ class InvoicePDFExporter:
         html_overrides: str | None = None,
         *,
         page_size: PDFPageSizeInput | None = None,
+        footer_text: str | None = None,
+        watermark_text: str | None = None,
         verification_environment: Environment | str,
     ):
         """Create a PDF exporter.
@@ -68,6 +70,8 @@ class InvoicePDFExporter:
             stylesheet_path: Path of an XSLT stylesheet to use; the bundled FA(3) stylesheet when ``None``.
             enable_code_lookups: Resolve code descriptions offline using bundled XSD files. Allows local file reads, so use only with trusted stylesheets and invoice XML. Network access and writes remain blocked.
             html_overrides: CSS applied before PDF conversion; ``None`` uses the bundled defaults.
+            footer_text: Optional plain-text notice appended once after the invoice and QR.
+            watermark_text: Optional plain-text watermark repeated on every page.
             page_size: Paper size and orientation; ``None`` preserves the stylesheet setting, normally A4 landscape. Overrides page size in ``html_overrides``.
             verification_environment: Required KSeF environment used for verification QR links. Accepts an ``Environment`` or a case-insensitive environment name. QR output is enabled per export by supplying ``ksef_number``.
 
@@ -85,6 +89,8 @@ class InvoicePDFExporter:
         self._xslt_renderer = InvoiceXSLTRenderer(
             stylesheet_path=stylesheet_path,
             enable_code_lookups=enable_code_lookups,
+            footer_text=footer_text,
+            watermark_text=watermark_text,
         )
         self._html_overrides = (
             html_overrides if html_overrides else DEFAULT_CSS_OVERRIDES
@@ -133,14 +139,17 @@ class InvoicePDFExporter:
                 raise ValueError(
                     "Rendered invoice HTML has no body for verification QR"
                 )
-            body.append(
-                etree.fromstring(
-                    '<div style="text-align:center;break-inside:avoid;margin:8mm">'
-                    f'<a href="{escape(url, quote=True)}">'
-                    f'<img src="{image_url}" alt="KSeF QR" style="width:35mm;height:35mm" /></a>'
-                    f"<div>{escape(ksef_number)}</div></div>"
-                )
+            qr_block = etree.fromstring(
+                '<div style="text-align:center;break-inside:avoid;margin:4mm 0 0;line-height:1">'
+                f'<a href="{escape(url, quote=True)}">'
+                f'<img src="{image_url}" alt="KSeF QR" style="width:35mm;height:35mm" /></a>'
+                f"<div>{escape(ksef_number)}</div></div>"
             )
+            footer = body.find("div[@class='ksef2-footer']")
+            if footer is not None:
+                body.insert(body.index(footer), qr_block)
+            else:
+                body.append(qr_block)
             html_content = etree.tostring(document, encoding="unicode", method="html")
         css = self._html_overrides
         if self._page_size is not None:

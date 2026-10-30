@@ -293,3 +293,26 @@ not generate the offline certificate QR, sign URLs, or replace custom PDF layout
 normally A4 landscape. An explicit page size takes precedence over `html_overrides`
 CSS; the other CSS rules still apply. Large invoice tables may need landscape
 orientation or custom CSS to fit on a portrait page.
+
+
+### Custom rendering notices
+
+Use `footer_text` for a notice after the invoice and verification QR, and
+`watermark_text` for a watermark repeated on printed pages. Both accept plain
+text and default to `None`. Set them explicitly for TEST/DEMO invoices; the
+environment does not add notices automatically. The footer appears once.
+The same options work on `InvoiceXSLTRenderer` for HTML. These local renderers
+can be used with either the sync or async client. In async applications,
+use `asyncio.to_thread` to keep PDF conversion off the event loop.
+
+```python
+from ksef2 import Environment
+from ksef2.renderers import InvoicePDFExporter
+
+exporter = InvoicePDFExporter(
+    verification_environment=Environment.TEST,
+    footer_text="Test visualization",
+    watermark_text="TEST",
+)
+pdf = exporter.export_from_path("invoice.xml")
+```
