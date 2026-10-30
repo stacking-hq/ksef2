@@ -212,3 +212,27 @@ Podaj rzeczywisty numer KSeF nadany tej fakturze. `ksef_number` dodaje lokalnie 
 Ta opcja obsługuje faktury z nadanym numerem KSeF. Nie generuje kodu QR certyfikatu dla trybu offline, nie podpisuje adresów URL i nie zastępuje własnych układów PDF.
 
 `PDFPageSize` obsługuje `A4`, `A4_LANDSCAPE`, `A3`, `A3_LANDSCAPE`, `LETTER` oraz `LETTER_LANDSCAPE`. Bez `page_size` obowiązuje dotychczasowe ustawienie arkusza, zwykle A4 poziomo. Jawny rozmiar strony ma pierwszeństwo przed CSS w `html_overrides`. Pozostałe reguły CSS nadal działają. Szerokie tabele mogą wymagać orientacji poziomej albo własnego CSS, żeby zmieściły się na pionowej stronie.
+
+
+### Własne oznaczenia wizualizacji
+
+Użyj `footer_text`, aby dodać tekst za fakturą i kodem QR, oraz
+`watermark_text`, aby dodać znak wodny powtarzany na drukowanych stronach.
+Obie opcje przyjmują zwykły tekst i domyślnie mają wartość `None`. Ustaw je
+jawnie dla faktur TEST/DEMO. Środowisko nie dodaje oznaczeń automatycznie.
+Stopka pojawia się raz. Te same opcje obsługuje `InvoiceXSLTRenderer` dla HTML.
+Renderery lokalne działają z klientem synchronicznym i asynchronicznym.
+W aplikacjach asynchronicznych użyj `asyncio.to_thread`, aby konwersja PDF
+nie blokowała pętli zdarzeń.
+
+```python
+from ksef2 import Environment
+from ksef2.renderers import InvoicePDFExporter
+
+exporter = InvoicePDFExporter(
+    verification_environment=Environment.TEST,
+    footer_text="Test visualization",
+    watermark_text="TEST",
+)
+pdf = exporter.export_from_path("invoice.xml")
+```

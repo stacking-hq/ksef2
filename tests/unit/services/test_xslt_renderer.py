@@ -152,3 +152,34 @@ def test_enabled_code_lookups_allow_read_only_document_file_reads(
     html = renderer.render_from_string("<invoice/>")
 
     assert "lookup ok" in html
+
+
+def test_html_optional_notices_are_plain_text(tmp_path: Path) -> None:
+    from lxml import etree
+
+    xml_path = Path(__file__).parents[3] / "schemas/FA3/samples/FA_3_Przykład_1.xml"
+    renderer = InvoiceXSLTRenderer(
+        footer_text="TEST <b>notice</b>", watermark_text="DEMO"
+    )
+    target = renderer.render_to_file(xml_path, tmp_path / "invoice.html")
+    html = target.read_text()
+    assert html == renderer.render_from_path(xml_path)
+    assert html == renderer.render_from_string(xml_path.read_bytes())
+    document = etree.HTML(html)
+    assert document is not None
+    footer = document.find(".//div[@class='ksef2-footer']")
+    assert footer is not None
+    assert footer.text == "TEST <b>notice</b>"
+    assert len(footer) == 0
+    watermark = document.find(".//div[@class='ksef2-watermark']")
+    assert watermark is not None
+    assert watermark.text == "DEMO"
+
+
+def test_html_default_notices_leave_output_unchanged() -> None:
+    xml = (
+        Path(__file__).parents[3] / "schemas/FA3/samples/FA_3_Przykład_1.xml"
+    ).read_bytes()
+    assert InvoiceXSLTRenderer().render_from_string(xml) == InvoiceXSLTRenderer(
+        footer_text=None, watermark_text=None
+    ).render_from_string(xml)
