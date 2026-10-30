@@ -1,4 +1,4 @@
-## Unreleased
+## v1.3.0 (2026-10-30)
 
 ### Added
 
@@ -16,6 +16,7 @@
   hints with structured field, schema, namespace and local-rule context.
 - Reduce verification QR spacing so it stays on the preceding PDF page when
   the code and assigned number fit.
+- Record the published 1.2.0 compatibility baseline.
 
 ## v1.2.0 (2026-10-29)
 
