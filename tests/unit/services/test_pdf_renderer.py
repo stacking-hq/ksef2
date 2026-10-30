@@ -201,7 +201,15 @@ def test_pdf_notices_follow_qr_and_escape_text() -> None:
     xml = (
         Path(__file__).parents[3] / "schemas/FA3/samples/FA_3_Przykład_1.xml"
     ).read_bytes()
-    with patch("ksef2._services.renderers.pdf._load_weasyprint") as load:
+    with (
+        patch("ksef2._services.renderers.pdf._load_weasyprint") as load,
+        patch("ksef2._services.renderers.pdf.import_module") as import_module,
+    ):
+        import_module.return_value.make_qr.return_value.save.side_effect = (
+            lambda stream, **kwargs: stream.write(
+                b'<svg xmlns="http://www.w3.org/2000/svg"/>'
+            )
+        )
         load.return_value.HTML.return_value.write_pdf.return_value = b"%PDF-test"
         exporter = InvoicePDFExporter(
             verification_environment="TEST",
