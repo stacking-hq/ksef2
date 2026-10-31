@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock
@@ -352,52 +353,76 @@ def test_job_download_rejects_non_paths_before_polling(
     download_to.assert_not_called()
 
 
-def test_cancellation_at_any_await_point_never_leaves_a_mixed_destination(
+@pytest.mark.parametrize(
+    "cancel_at",
+    ["download-1", "decrypt-1", "download-2", "decrypt-2", None],
+    ids=[
+        "first-download",
+        "first-decrypt",
+        "second-download",
+        "second-decrypt",
+        "completed",
+    ],
+)
+def test_cancellation_at_each_transfer_boundary_never_leaves_a_mixed_destination(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    cancel_at: str | None,
 ) -> None:
-    # Large enough that each threaded decrypt spans several event-loop turns.
     plaintext = bytes(range(256)) * 1024
     package, ciphertext = _two_part_package(plaintext)
-    outcomes: set[str] = set()
+    target = tmp_path / "export.zip"
+    target.write_bytes(b"previous archive")
+    real_to_thread = asyncio.to_thread
 
-    async def download_part(**_: object) -> bytes:
-        await asyncio.sleep(0)
-        await asyncio.sleep(0)
-        return ciphertext
+    async def main() -> None:
+        reached = asyncio.Event()
+        downloads = 0
+        decrypts = 0
 
-    async def attempt(turns: int, directory: Path) -> None:
-        target = directory / "export.zip"
-        target.write_bytes(b"previous archive")
+        async def checkpoint(name: str) -> None:
+            if name == cancel_at:
+                reached.set()
+                await asyncio.Event().wait()
+
+        async def download_part(**_: object) -> bytes:
+            nonlocal downloads
+            downloads += 1
+            await checkpoint(f"download-{downloads}")
+            return ciphertext
+
+        async def run_in_thread(
+            func: Callable[..., object], /, *args: object, **kwargs: object
+        ) -> object:
+            nonlocal decrypts
+            result = await real_to_thread(func, *args, **kwargs)
+            decrypts += 1
+            # Keep the service suspended at its thread await after the real
+            # decryption has written the part, without racing the scheduler.
+            await checkpoint(f"decrypt-{decrypts}")
+            return result
+
+        monkeypatch.setattr(asyncio, "to_thread", run_in_thread)
         service = object.__new__(AsyncInvoicesService)
         service._external_transfers = Mock()
         service._external_transfers.download_part = download_part
         task = asyncio.create_task(
             service._download_package_to(package=package, export=_export(), path=target)
         )
-        for _ in range(turns):
-            await asyncio.sleep(0)
-        _ = task.cancel()
         try:
-            _ = await task
-        except asyncio.CancelledError:
-            assert target.read_bytes() == b"previous archive"
-            outcomes.add("cancelled")
-        else:
-            assert target.read_bytes() == plaintext * 2
-            outcomes.add("completed")
-        assert _partials(directory) == []
-
-    async def main() -> None:
-        turns = 0
-        # Step the cancellation one loop turn later each time, until a download
-        # finishes before it is cancelled.
-        while "completed" not in outcomes:
-            directory = tmp_path / str(turns)
-            directory.mkdir()
-            await attempt(turns, directory)
-            turns += 1
-            assert turns < 10_000
+            if cancel_at is None:
+                _ = await asyncio.wait_for(task, timeout=10)
+                assert target.read_bytes() == plaintext * 2
+            else:
+                await asyncio.wait_for(reached.wait(), timeout=10)
+                _ = task.cancel()
+                with pytest.raises(asyncio.CancelledError):
+                    _ = await task
+                assert target.read_bytes() == b"previous archive"
+            assert _partials(tmp_path) == []
+        finally:
+            if not task.done():
+                _ = task.cancel()
+                _ = await asyncio.gather(task, return_exceptions=True)
 
     asyncio.run(main())
-
-    assert outcomes == {"cancelled", "completed"}
