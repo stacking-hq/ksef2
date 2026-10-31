@@ -10,6 +10,8 @@ from xml.etree import ElementTree
 ROOT = Path(__file__).resolve().parent.parent
 COVERAGE_XML_PATH = ROOT / "coverage.xml"
 BADGE_PATH = ROOT / "test-coverage.json"
+# Percentage points, in addition to the half-point whole-number rounding range.
+BADGE_ROUNDING_MARGIN = Decimal("0.05")
 
 
 class CoverageBadge(TypedDict):
@@ -37,7 +39,11 @@ def badge_color(pct: int) -> str:
 def build_badge(coverage_xml_path: Path) -> CoverageBadge:
     root = ElementTree.parse(coverage_xml_path).getroot()
     line_rate = Decimal(root.attrib["line-rate"])
-    pct = int((line_rate * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    return _badge_for_percentage(line_rate * 100)
+
+
+def _badge_for_percentage(percentage: Decimal) -> CoverageBadge:
+    pct = int(percentage.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
     return {
         "schemaVersion": 1,
@@ -51,12 +57,23 @@ def render_badge(badge: CoverageBadge) -> str:
     return json.dumps(badge, indent=2) + "\n"
 
 
-def check_badge(badge: CoverageBadge, badge_path: Path) -> bool:
+def check_badge(coverage_xml_path: Path, badge_path: Path) -> bool:
+    badge = build_badge(coverage_xml_path)
     expected = render_badge(badge)
     actual = badge_path.read_text() if badge_path.exists() else ""
     if actual == expected:
         print(f"{badge_path.name} matches coverage.xml ({badge['message']}).")
         return True
+
+    root = ElementTree.parse(coverage_xml_path).getroot()
+    percentage = Decimal(root.attrib["line-rate"]) * 100
+    for offset in (-BADGE_ROUNDING_MARGIN, BADGE_ROUNDING_MARGIN):
+        if actual == render_badge(_badge_for_percentage(percentage + offset)):
+            print(
+                f"{badge_path.name} is within {BADGE_ROUNDING_MARGIN} percentage "
+                f"points of the coverage.xml rounding boundary ({percentage}%)."
+            )
+            return True
 
     print(
         f"{badge_path.name} is stale. Run "
@@ -111,7 +128,7 @@ def main() -> int:
         print(f"Updated {BADGE_PATH.name} to {badge['message']}.")
         return 0
 
-    return 0 if check_badge(badge, BADGE_PATH) else 1
+    return 0 if check_badge(COVERAGE_XML_PATH, BADGE_PATH) else 1
 
 
 if __name__ == "__main__":

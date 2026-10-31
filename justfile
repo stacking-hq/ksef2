@@ -35,8 +35,9 @@ test-fa3-contracts:
     uv run python -m pytest tests/integration/builders/fa3/ -m integration -q
 
 
+# Use the same extras regardless of which checks ran before coverage.
 test-coverage:
-    uv run python -m pytest --cov=ksef2 --cov-config=.coveragerc.toml --cov-report=xml tests/unit/ -v
+    KSEF2_RUNTIME_CHECKS= uv run --exact --all-groups --extra runtime-checks python -m pytest --cov=ksef2 --cov-config=.coveragerc.toml --cov-report=xml tests/unit/ -v
     uv run python scripts/test_coverage_badge.py --reference-python 3.12
 
 

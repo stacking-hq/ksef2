@@ -1,6 +1,4 @@
-# ksef2: KSeF Python SDK (KSeF 2.0 API client)
-
-<h1 align="center">ksef2 SDK</h1>
+<h1 align="center">ksef2: KSeF Python SDK (KSeF 2.0 API client)</h1>
 
 <h3 align="center">
   Typed Python SDK for automating KSeF 2.0 invoicing workflows.
