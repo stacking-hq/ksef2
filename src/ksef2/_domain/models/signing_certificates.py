@@ -1,14 +1,11 @@
 """Records for persisting XAdES signing certificates and their private keys."""
 
 import hashlib
-from importlib import import_module
 from typing import (
     Annotated,
-    Callable,
     NoReturn,
     Self,
     SupportsIndex,
-    cast,
     override,
 )
 
@@ -16,6 +13,7 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.x509 import Certificate
 from pydantic import AwareDatetime, ConfigDict, Field, model_validator
 
+from ksef2._errors import KSeFArgumentError
 from ksef2._config import Environment
 from ksef2._domain.models.base import KSeFBaseModel, validation_errors
 from ksef2._domain.models.certificates import (
@@ -44,17 +42,10 @@ def _public_key_fingerprint(certificate: Certificate) -> str:
 def _needs_credentials_error() -> Exception:
     """Return the error for a value that is not a credentials holder.
 
-    This module raises an exception the SDK declares in ``ksef2._core.exceptions``, and
-    that module cannot import these records without closing an import cycle through
-    ``xades``, so the exception class is resolved on first use rather than imported
-    here. The raised class, message and hint do not depend on when the module is read.
-
     Returns:
         The exception for the caller to raise.
     """
-    module = import_module("ksef2._core.exceptions")
-    error_type = cast("Callable[..., Exception]", getattr(module, "KSeFArgumentError"))
-    return error_type(
+    return KSeFArgumentError(
         "SigningCertificate needs an XAdESCredentials holder.",
         hint="Load the pair with XAdESCredentials.from_pem(), from_der() "
         "or from_pkcs12().",

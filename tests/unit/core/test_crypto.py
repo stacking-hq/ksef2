@@ -157,9 +157,9 @@ def test_encryption_fails_when_the_message_is_too_long_for_the_key(
 def test_non_rsa_certificates_are_rejected() -> None:
     cert = _certificate(ec.generate_private_key(ec.SECP256R1()))
 
-    with pytest.raises(AssertionError, match="Expected RSA public key"):
+    with pytest.raises(KSeFEncryptionError, match="Expected RSA public key"):
         crypto.encrypt_token("t", "1", cert)
-    with pytest.raises(AssertionError, match="Expected RSA public key"):
+    with pytest.raises(KSeFEncryptionError, match="Expected RSA public key"):
         crypto.encrypt_symmetric_key(b"k" * 32, cert)
 
 

@@ -426,11 +426,11 @@ def test_invoice_margin_line_rejects_each_vat_field_independently(
     forbidden_field: dict[str, object],
 ) -> None:
     line = InvoiceRow.model_construct(
+        _fields_set=None,
         name="Margin sale",
         tax_regime=TaxRegime.MARGIN,
+        **forbidden_field,
     )
-    for field_name, field_value in forbidden_field.items():
-        setattr(line, field_name, field_value)
 
     with pytest.raises(
         ValueError,

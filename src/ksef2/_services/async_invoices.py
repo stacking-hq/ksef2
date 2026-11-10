@@ -1049,6 +1049,8 @@ class AsyncInvoicesService:
             The package metadata once the export is ready.
 
         Raises:
+            KSeFExportFailedError: If KSeF reports a failed export.
+            KSeFResponseValidationError: If a completed response has no package.
             KSeFExportTimeoutError: If polling exceeds ``timeout``.
         """
         return self._wait_for_export_package(
@@ -1076,7 +1078,19 @@ class AsyncInvoicesService:
                 timeout=timeout,
             ),
         )
-        assert status.package is not None
+        if status.status.code >= 210:
+            raise exceptions.KSeFExportFailedError(
+                reference_number=reference_number,
+                status_code=status.status.code,
+                description=status.status.description,
+                details=status.status.details,
+            )
+        if status.package is None:
+            raise exceptions.KSeFResponseValidationError(
+                "Completed export response has no package.",
+                reference_number=reference_number,
+                status_code=status.status.code,
+            )
         return status.package
 
     @deprecated(

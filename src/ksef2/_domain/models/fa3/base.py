@@ -5,7 +5,7 @@ from typing import Any, cast
 
 from pydantic import field_validator
 
-from ksef2._core.exceptions import KSeFValidationError
+from ksef2._errors import KSeFValidationError
 from ksef2._domain.models.base import KSeFBaseModel
 
 

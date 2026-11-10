@@ -1,8 +1,9 @@
 """Shared coercion for public enum inputs."""
 
 from enum import Enum
-from importlib import import_module
-from typing import Callable, TypeVar, cast
+from typing import TypeVar, cast
+
+from ksef2._errors import KSeFArgumentError
 
 EnumT = TypeVar("EnumT", bound=Enum)
 
@@ -45,11 +46,7 @@ def coerce_enum(
         str(cast(object, member.value)) if snake_case_only else _valid_value(member)
         for member in enum_type
     )
-    argument_error = cast(
-        Callable[..., Exception],
-        getattr(import_module("ksef2._core.exceptions"), "KSeFArgumentError"),
-    )
-    raise argument_error(
+    raise KSeFArgumentError(
         f"Invalid {parameter or enum_type.__name__} value {value!r}.{suggestion} Valid values are: {valid_values}.",
         hint="Pass a snake_case permission value or its enum member."
         if snake_case_only

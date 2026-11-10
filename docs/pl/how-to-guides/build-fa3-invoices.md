@@ -495,3 +495,40 @@ Wszystkie cztery zgłoszone problemy buildera odtworzono na tagu 0.17.0. Faktury
 - [Szybki start](../getting-started/quickstart.md): Złóż, wyślij, potwierdź i pobierz fakturę w środowisku testowym od początku do końca.
 - [Wysyłanie faktur](send-invoices.md): Użyj wyniku buildera w sesji interaktywnej albo wsadowej.
 - [Interfejs publiczny](../reference/public-api.md): Stabilne publiczne importy używane przez kod buildera faktur.
+
+## Zmiana kwot wierszy i pozycji zamówienia
+
+`InvoiceRow` i `InvoiceOrderLine` są teraz niemutowalne i odrzucają nieznane
+pola wejściowe. To celowa zmiana zachowania: przypisanie lub usunięcie pola
+zgłasza `ValidationError` Pydantic, a literówka w polu konstruktora zgłasza
+`KSeFValidationError`.
+
+Przy zmianie ilości, ceny lub VAT utwórz wiersz ponownie z danych źródłowych,
+bez wcześniej wyliczonych kwot. Przykład:
+
+```python
+from decimal import Decimal
+from ksef2.fa3 import InvoiceRow, VatRate
+
+source = dict(
+    name="Usługa",
+    quantity=Decimal("1"),
+    unit_price_net=Decimal("100.00"),
+    vat_rate=VatRate.VAT_23,
+)
+original = InvoiceRow.model_validate(source)
+source["quantity"] = Decimal("3")
+updated = InvoiceRow.model_validate(source)
+assert original.gross_amount == Decimal("123.00")
+assert updated.gross_amount == Decimal("369.00")
+```
+
+Pozycję zamówienia odtwórz z pierwotnej kwoty brutto i klasyfikacji VAT,
+aby ponownie wyliczyć netto i VAT. Odtwórz też zamówienie lub fakturę
+zawierającą zmienione pozycje, aby przeliczyć jej podsumowania.
+
+Metody Pydantic `model_copy(update=...)` i `model_construct()` pomijają walidację,
+również w modelach niemutowalnych. Służą do zaufanych danych; nie używaj ich do
+zmiany danych finansowych. Zamiast tego wywołaj konstruktor lub `model_validate()`.
+Niemutowalność blokuje przypisanie pola, ale nie zmianę obiektu wskazywanego przez
+pole; nie modyfikuj również przekazanych obiektów klasyfikacji VAT.

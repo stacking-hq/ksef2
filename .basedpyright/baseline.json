@@ -216,16 +216,6 @@
                 }
             }
         ],
-        "./src/ksef2/_core/exceptions.py": [
-            {
-                "code": "reportExplicitAny",
-                "range": {
-                    "startColumn": 32,
-                    "endColumn": 35,
-                    "lineCount": 1
-                }
-            }
-        ],
         "./src/ksef2/_core/xades.py": [
             {
                 "code": "reportUnknownVariableType",

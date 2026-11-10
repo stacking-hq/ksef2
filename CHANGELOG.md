@@ -1,3 +1,28 @@
+## Unreleased
+
+### Fixed
+
+- Raise SDK encryption errors for non-RSA certificates in all interpreter modes.
+- Raise SDK export failures from legacy sync and async export waits, and reject
+  completed export responses that omit the package.
+- Remove the domain-to-core import cycle by sharing input errors independently
+  of domain models, preserving existing exception imports and class identity.
+
+### Added
+
+- Export `InvoiceRow` and `InvoiceOrderLine` from `ksef2.fa3` for direct
+  construction and validated reconstruction.
+
+### Changed
+
+- **Behavior change:** `InvoiceRow` and `InvoiceOrderLine` are now frozen and
+  reject unknown constructor fields. Assigning or deleting a field raises
+  Pydantic `ValidationError`; unknown constructor fields raise
+  `KSeFValidationError`. Rebuild lines from their original source inputs to edit
+  amounts. English and Polish migration examples cover reconstruction.
+  Pydantic's unchecked `model_copy(update=...)` and `model_construct()` remain
+  intended only for trusted data.
+
 ## v1.3.0 (2026-10-30)
 
 ### Added

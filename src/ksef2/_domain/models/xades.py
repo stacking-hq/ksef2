@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives.serialization import (
 )
 from cryptography.x509 import Certificate
 
-from ksef2._core import exceptions
+import ksef2._errors as exceptions
 
 _DataEncoding = Literal["pem", "der"]
 
