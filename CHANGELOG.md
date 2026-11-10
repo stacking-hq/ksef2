@@ -1,3 +1,23 @@
+## Unreleased
+
+### Fixed
+
+- Raise SDK encryption errors for non-RSA certificates in all interpreter modes.
+- Raise SDK export failures from legacy sync and async export waits, and reject
+  completed export responses that omit the package.
+- Remove the domain-to-core import cycle by sharing input errors independently
+  of domain models, preserving existing exception imports and class identity.
+
+### Added
+
+- Export `InvoiceRow` and `InvoiceOrderLine` from `ksef2.fa3` for direct
+  construction and opt-in strict subclasses.
+
+### Documentation
+
+- Explain the 1.x row and order-line mutation limitation and show validated
+  reconstruction with strict unknown-field checks in English and Polish.
+
 ## v1.3.0 (2026-10-30)
 
 ### Added

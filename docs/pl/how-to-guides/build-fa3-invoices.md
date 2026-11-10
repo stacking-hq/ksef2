@@ -495,3 +495,41 @@ Wszystkie cztery zgłoszone problemy buildera odtworzono na tagu 0.17.0. Faktury
 - [Szybki start](../getting-started/quickstart.md): Złóż, wyślij, potwierdź i pobierz fakturę w środowisku testowym od początku do końca.
 - [Wysyłanie faktur](send-invoices.md): Użyj wyniku buildera w sesji interaktywnej albo wsadowej.
 - [Interfejs publiczny](../reference/public-api.md): Stabilne publiczne importy używane przez kod buildera faktur.
+
+## Zmiana kwot wierszy i pozycji zamówienia
+
+W wersjach 1.x `InvoiceRow` i `InvoiceOrderLine` obliczają brakujące kwoty podczas
+tworzenia obiektu. Bezpośrednie przypisanie oraz `model_copy(update=...)` nie
+walidują zmian ani nie przeliczają kwot. Przy zmianie ilości, ceny lub VAT utwórz
+wiersz ponownie z danych źródłowych, bez wcześniej wyliczonych kwot. Przykład:
+
+```python
+from decimal import Decimal
+from pydantic import ConfigDict
+from ksef2.fa3 import InvoiceRow, VatRate
+
+
+class StrictInvoiceRow(InvoiceRow):
+    model_config = ConfigDict(extra="forbid")
+
+
+source = dict(
+    name="Usługa",
+    quantity=Decimal("1"),
+    unit_price_net=Decimal("100.00"),
+    vat_rate=VatRate.VAT_23,
+)
+row = StrictInvoiceRow.model_validate(source)
+source["quantity"] = Decimal("3")
+row = StrictInvoiceRow.model_validate(source)
+assert row.gross_amount == Decimal("369.00")
+```
+
+Użyj podklasy z konfiguracją `extra="forbid"`, aby odrzucać literówki
+w nazwach pól. Ten sam wzorzec działa dla `InvoiceOrderLine`. Sam argument
+`model_validate(extra="forbid")` nie wymusza tego na tych modelach, ponieważ
+używają własnych konstruktorów. Domyślny konstruktor zachowuje zgodność z 1.x: ignoruje nieznane pola
+i zapisuje ostrzeżenie w logu. Wejście serializowanego szkicu już odrzuca
+nieznane pola zagnieżdżone. Pozycję zamówienia odtwórz z pierwotnej kwoty brutto
+i klasyfikacji VAT, aby ponownie wyliczyć netto i VAT. Odtwórz też zamówienie lub
+fakturę zawierającą zmienione pozycje, aby przeliczyć jej podsumowania.

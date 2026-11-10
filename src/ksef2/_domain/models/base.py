@@ -2,13 +2,11 @@
 
 import json
 import re
-from importlib import import_module
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from typing import (
     Annotated,
     Any,
-    Callable,
     ClassVar,
     Literal,
     Self,
@@ -29,32 +27,29 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel, to_snake
 
+from ksef2._errors import KSeFValidationError
 from ksef2._logging import get_logger
 
 logger = get_logger(__name__)
 
 
 def _validation_exception(error: ValidationError, model_name: str) -> Exception:
-    exception_module = import_module("ksef2._core.exceptions")
-    error_type = cast(
-        Callable[..., Exception], getattr(exception_module, "KSeFValidationError")
-    )
     detail = error.errors()[0]
     reason = detail["msg"]
     if detail["loc"]:
         reason += " (" + ".".join(str(part) for part in detail["loc"]) + ")"
-    return error_type(f"Invalid {model_name} input: {reason}", validation_error=error)
+    return KSeFValidationError(
+        f"Invalid {model_name} input: {reason}", validation_error=error
+    )
 
 
 def _wrapped_sdk_validation_error(error: ValidationError) -> Exception | None:
     """Find an SDK validation error already embedded in Pydantic's error context."""
-    exception_module = import_module("ksef2._core.exceptions")
-    error_type = cast(type[Exception], getattr(exception_module, "KSeFValidationError"))
     for detail in error.errors():
         context = detail.get("ctx")
         if isinstance(context, dict):
             nested_error = context.get("error")
-            if isinstance(nested_error, error_type):
+            if isinstance(nested_error, KSeFValidationError):
                 return nested_error
     return None
 
@@ -67,12 +62,13 @@ def validation_errors(parameter: str | None = None) -> Iterator[None]:
     Otherwise the failing field names the argument. Preserve the original
     Pydantic error even when a domain model has already wrapped it.
     """
-    exception_module = import_module("ksef2._core.exceptions")
-    error_type = cast(type[Exception], getattr(exception_module, "KSeFValidationError"))
     try:
         yield
-    except (ValidationError, error_type) as exc:
-        if not isinstance(exc, ValidationError) and type(exc) is not error_type:
+    except (ValidationError, KSeFValidationError) as exc:
+        if (
+            not isinstance(exc, ValidationError)
+            and type(exc) is not KSeFValidationError
+        ):
             raise
         error = (
             exc

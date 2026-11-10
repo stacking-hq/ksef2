@@ -566,3 +566,43 @@ when totals cannot be computed from rows. `return_of_excise(True)` now emits
 `ZwrotAkcyzy=1`; `False` and `None` omit the optional marker. Parsing an omitted
 marker returns `None`. Transport-only `annotations().add_new_transport_item(...).done()`
 was already fixed before this change and remains covered by regression tests.
+
+## Editing row and order-line amounts
+
+In 1.x, `InvoiceRow` and `InvoiceOrderLine` calculate missing amounts during
+construction. Direct assignment and `model_copy(update=...)` do not validate
+changes or recalculate amounts. Rebuild a line from its source inputs when
+changing quantity, price, or VAT treatment; do not carry over previously derived
+amounts. For example:
+
+```python
+from decimal import Decimal
+from pydantic import ConfigDict
+from ksef2.fa3 import InvoiceRow, VatRate
+
+
+class StrictInvoiceRow(InvoiceRow):
+    model_config = ConfigDict(extra="forbid")
+
+
+source = dict(
+    name="Service",
+    quantity=Decimal("1"),
+    unit_price_net=Decimal("100.00"),
+    vat_rate=VatRate.VAT_23,
+)
+row = StrictInvoiceRow.model_validate(source)
+source["quantity"] = Decimal("3")
+row = StrictInvoiceRow.model_validate(source)
+assert row.gross_amount == Decimal("369.00")
+```
+
+Use a subclass configured with `extra="forbid"` to reject misspelled fields.
+The same pattern applies to `InvoiceOrderLine`. Per-call
+`model_validate(extra="forbid")` does not enforce this on these models because
+they use custom constructors.
+The default constructor preserves 1.x behavior: unknown fields are ignored with
+a log warning. Serialized draft input already rejects unknown nested fields.
+For order lines, rebuild from the original gross amount and VAT treatment to
+derive net and VAT again. Reconstruct any containing order or invoice too, so
+its totals are calculated from the new lines.

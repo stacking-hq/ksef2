@@ -160,3 +160,34 @@ def test_export_download_verifies_each_part(
         assert sorted(item.name for item in tmp_path.iterdir()) == ["export.zip"]
     assert len(flavor.transport.calls) == 2
     assert flavor.transport.responses == []
+
+
+@legacy_api
+@pytest.mark.parametrize("code", [210, 415, 500])
+def test_legacy_export_wait_raises_sdk_failure(flavor: Flavor, code: int) -> None:
+    from ksef2 import KSeFExportFailedError
+
+    flavor.transport.enqueue(
+        {"status": {"code": code, "description": "Failed", "details": ["reason"]}}
+    )
+    with pytest.raises(KSeFExportFailedError) as caught:
+        flavor.run(
+            flavor.invoices_service().wait_for_export_package(
+                reference_number="export-ref", timeout=1.0, poll_interval=0.0
+            )
+        )
+    assert caught.value.reference_number == "export-ref"
+    assert caught.value.export_status_code == code
+
+
+@legacy_api
+def test_legacy_completed_export_requires_package(flavor: Flavor) -> None:
+    from ksef2 import KSeFResponseValidationError
+
+    flavor.transport.enqueue({"status": {"code": 200, "description": "Completed"}})
+    with pytest.raises(KSeFResponseValidationError, match="no package"):
+        flavor.run(
+            flavor.invoices_service().wait_for_export_package(
+                reference_number="export-ref", timeout=1.0, poll_interval=0.0
+            )
+        )

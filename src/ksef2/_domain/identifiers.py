@@ -1,7 +1,7 @@
 """Local validation shared by authentication and permission requests."""
 
 import re
-from ksef2._core import exceptions
+import ksef2._errors as exceptions
 
 
 _NIP_PATTERN = re.compile(r"[1-9]((\d[1-9])|([1-9]\d))\d{7}")

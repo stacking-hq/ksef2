@@ -6,7 +6,7 @@ from typing import Any, Self
 
 from pydantic import Field, field_validator, model_validator
 
-from ksef2._core.exceptions import KSeFArgumentError
+from ksef2._errors import KSeFArgumentError
 from ksef2._domain.models.base import KSeFBaseModel as KSeFBaseModel
 from ksef2._domain.models.fa3.base import Fa3Model
 from ksef2._domain.models._enum import coerce_enum

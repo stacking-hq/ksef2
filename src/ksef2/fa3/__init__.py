@@ -12,6 +12,8 @@ from ksef2._domain.models.fa3 import (
     KsefInvoiceDraft,
 )
 from ksef2._domain.models.fa3.body import (
+    InvoiceOrderLine,
+    InvoiceRow,
     InvoiceSummaryOverrides,
     SaleCategory,
     TaxRegime,
@@ -94,6 +96,8 @@ __all__ = [
     "InvoiceAddress",
     "InvoiceEntity",
     "InvoiceHeader",
+    "InvoiceOrderLine",
+    "InvoiceRow",
     "InvoiceSummaryOverrides",
     "InvoiceThirdParty",
     "KsefInvoice",
