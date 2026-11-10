@@ -273,6 +273,8 @@ class KSeFBaseModel(BaseModel):
     def _warn_extra_fields(cls, data: Any) -> Any:
         if not isinstance(data, dict):
             return data
+        if cls.model_config.get("extra") == "forbid":
+            return cast(dict[object, object], data)
         known = _build_known_keys(cls)
         extra = [k for k in data if k not in known]
         if extra:

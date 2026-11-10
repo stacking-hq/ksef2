@@ -11,12 +11,17 @@
 ### Added
 
 - Export `InvoiceRow` and `InvoiceOrderLine` from `ksef2.fa3` for direct
-  construction and opt-in strict subclasses.
+  construction and validated reconstruction.
 
-### Documentation
+### Changed
 
-- Explain the 1.x row and order-line mutation limitation and show validated
-  reconstruction with strict unknown-field checks in English and Polish.
+- **Behavior change:** `InvoiceRow` and `InvoiceOrderLine` are now frozen and
+  reject unknown constructor fields. Assigning or deleting a field raises
+  Pydantic `ValidationError`; unknown constructor fields raise
+  `KSeFValidationError`. Rebuild lines from their original source inputs to edit
+  amounts. English and Polish migration examples cover reconstruction.
+  Pydantic's unchecked `model_copy(update=...)` and `model_construct()` remain
+  intended only for trusted data.
 
 ## v1.3.0 (2026-10-30)
 

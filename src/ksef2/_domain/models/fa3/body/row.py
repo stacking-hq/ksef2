@@ -4,7 +4,7 @@ from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Literal, Self, cast
 
-from pydantic import Field, model_validator
+from pydantic import ConfigDict, Field, model_validator
 
 from ksef2._domain.models.base import KSeFBaseModel as KSeFBaseModel
 from ksef2._domain.models.fa3.base import Fa3Model
@@ -53,7 +53,9 @@ InvoiceProcedure = Literal[
 
 
 class InvoiceRow(Fa3Model):
-    """Line item stored in the FA(3) ``Fa/FaWiersz`` block."""
+    """Immutable line item in FA(3) ``Fa/FaWiersz``; unknown fields are rejected."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     name: str | None = Field(default=None, description="p_7: Name of good/service")
     """Name of the goods or service (``P_7``)."""
@@ -247,21 +249,31 @@ class InvoiceRow(Fa3Model):
             and self.quantity is not None
         ):
             base_gross = self.unit_price_gross * self.quantity
-            self.gross_amount = round_pln(base_gross) - (
-                self.discount_amount or Decimal("0.00")
+            object.__setattr__(
+                self,
+                "gross_amount",
+                round_pln(base_gross) - (self.discount_amount or Decimal("0.00")),
             )
+            self.__pydantic_fields_set__.add("gross_amount")
 
         if self.gross_amount is not None:
             if self.net_amount is None:
                 if rate is None:
-                    self.net_amount = self.gross_amount
+                    object.__setattr__(self, "net_amount", self.gross_amount)
+                    self.__pydantic_fields_set__.add("net_amount")
                 else:
                     divisor = Decimal("1.00") + rate
-                    self.net_amount = round_pln(self.gross_amount / divisor)
+                    object.__setattr__(
+                        self, "net_amount", round_pln(self.gross_amount / divisor)
+                    )
+                    self.__pydantic_fields_set__.add("net_amount")
 
             if self.vat_amount is None:
                 assert self.net_amount is not None
-                self.vat_amount = round_pln(self.gross_amount - self.net_amount)
+                object.__setattr__(
+                    self, "vat_amount", round_pln(self.gross_amount - self.net_amount)
+                )
+                self.__pydantic_fields_set__.add("vat_amount")
 
         if (
             self.net_amount is None
@@ -269,22 +281,32 @@ class InvoiceRow(Fa3Model):
             and self.quantity is not None
         ):
             base_net = self.unit_price_net * self.quantity
-            self.net_amount = round_pln(base_net) - (
-                self.discount_amount or Decimal("0.00")
+            object.__setattr__(
+                self,
+                "net_amount",
+                round_pln(base_net) - (self.discount_amount or Decimal("0.00")),
             )
+            self.__pydantic_fields_set__.add("net_amount")
 
         if self.vat_amount is None and self.net_amount is not None:
             if rate is None:
-                self.vat_amount = Decimal("0.00")
+                object.__setattr__(self, "vat_amount", Decimal("0.00"))
+                self.__pydantic_fields_set__.add("vat_amount")
             else:
-                self.vat_amount = round_pln(self.net_amount * rate)
+                object.__setattr__(
+                    self, "vat_amount", round_pln(self.net_amount * rate)
+                )
+                self.__pydantic_fields_set__.add("vat_amount")
 
         if (
             self.gross_amount is None
             and self.net_amount is not None
             and self.vat_amount is not None
         ):
-            self.gross_amount = round_pln(self.net_amount + self.vat_amount)
+            object.__setattr__(
+                self, "gross_amount", round_pln(self.net_amount + self.vat_amount)
+            )
+            self.__pydantic_fields_set__.add("gross_amount")
 
         _ = self.validate_tax_logic()
         return self

@@ -498,20 +498,17 @@ Wszystkie cztery zgłoszone problemy buildera odtworzono na tagu 0.17.0. Faktury
 
 ## Zmiana kwot wierszy i pozycji zamówienia
 
-W wersjach 1.x `InvoiceRow` i `InvoiceOrderLine` obliczają brakujące kwoty podczas
-tworzenia obiektu. Bezpośrednie przypisanie oraz `model_copy(update=...)` nie
-walidują zmian ani nie przeliczają kwot. Przy zmianie ilości, ceny lub VAT utwórz
-wiersz ponownie z danych źródłowych, bez wcześniej wyliczonych kwot. Przykład:
+`InvoiceRow` i `InvoiceOrderLine` są teraz niemutowalne i odrzucają nieznane
+pola wejściowe. To celowa zmiana zachowania: przypisanie lub usunięcie pola
+zgłasza `ValidationError` Pydantic, a literówka w polu konstruktora zgłasza
+`KSeFValidationError`.
+
+Przy zmianie ilości, ceny lub VAT utwórz wiersz ponownie z danych źródłowych,
+bez wcześniej wyliczonych kwot. Przykład:
 
 ```python
 from decimal import Decimal
-from pydantic import ConfigDict
 from ksef2.fa3 import InvoiceRow, VatRate
-
-
-class StrictInvoiceRow(InvoiceRow):
-    model_config = ConfigDict(extra="forbid")
-
 
 source = dict(
     name="Usługa",
@@ -519,17 +516,19 @@ source = dict(
     unit_price_net=Decimal("100.00"),
     vat_rate=VatRate.VAT_23,
 )
-row = StrictInvoiceRow.model_validate(source)
+original = InvoiceRow.model_validate(source)
 source["quantity"] = Decimal("3")
-row = StrictInvoiceRow.model_validate(source)
-assert row.gross_amount == Decimal("369.00")
+updated = InvoiceRow.model_validate(source)
+assert original.gross_amount == Decimal("123.00")
+assert updated.gross_amount == Decimal("369.00")
 ```
 
-Użyj podklasy z konfiguracją `extra="forbid"`, aby odrzucać literówki
-w nazwach pól. Ten sam wzorzec działa dla `InvoiceOrderLine`. Sam argument
-`model_validate(extra="forbid")` nie wymusza tego na tych modelach, ponieważ
-używają własnych konstruktorów. Domyślny konstruktor zachowuje zgodność z 1.x: ignoruje nieznane pola
-i zapisuje ostrzeżenie w logu. Wejście serializowanego szkicu już odrzuca
-nieznane pola zagnieżdżone. Pozycję zamówienia odtwórz z pierwotnej kwoty brutto
-i klasyfikacji VAT, aby ponownie wyliczyć netto i VAT. Odtwórz też zamówienie lub
-fakturę zawierającą zmienione pozycje, aby przeliczyć jej podsumowania.
+Pozycję zamówienia odtwórz z pierwotnej kwoty brutto i klasyfikacji VAT,
+aby ponownie wyliczyć netto i VAT. Odtwórz też zamówienie lub fakturę
+zawierającą zmienione pozycje, aby przeliczyć jej podsumowania.
+
+Metody Pydantic `model_copy(update=...)` i `model_construct()` pomijają walidację,
+również w modelach niemutowalnych. Służą do zaufanych danych; nie używaj ich do
+zmiany danych finansowych. Zamiast tego wywołaj konstruktor lub `model_validate()`.
+Niemutowalność blokuje przypisanie pola, ale nie zmianę obiektu wskazywanego przez
+pole; nie modyfikuj również przekazanych obiektów klasyfikacji VAT.

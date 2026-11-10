@@ -569,21 +569,17 @@ was already fixed before this change and remains covered by regression tests.
 
 ## Editing row and order-line amounts
 
-In 1.x, `InvoiceRow` and `InvoiceOrderLine` calculate missing amounts during
-construction. Direct assignment and `model_copy(update=...)` do not validate
-changes or recalculate amounts. Rebuild a line from its source inputs when
-changing quantity, price, or VAT treatment; do not carry over previously derived
-amounts. For example:
+`InvoiceRow` and `InvoiceOrderLine` are now frozen and reject unknown input
+fields. This is an intentional behavior change: assigning or deleting a field
+raises Pydantic `ValidationError`; misspelled constructor fields raise
+`KSeFValidationError`.
+
+Rebuild a line from its source inputs when changing quantity, price, or VAT
+treatment. Do not carry over previously derived amounts. For example:
 
 ```python
 from decimal import Decimal
-from pydantic import ConfigDict
 from ksef2.fa3 import InvoiceRow, VatRate
-
-
-class StrictInvoiceRow(InvoiceRow):
-    model_config = ConfigDict(extra="forbid")
-
 
 source = dict(
     name="Service",
@@ -591,18 +587,19 @@ source = dict(
     unit_price_net=Decimal("100.00"),
     vat_rate=VatRate.VAT_23,
 )
-row = StrictInvoiceRow.model_validate(source)
+original = InvoiceRow.model_validate(source)
 source["quantity"] = Decimal("3")
-row = StrictInvoiceRow.model_validate(source)
-assert row.gross_amount == Decimal("369.00")
+updated = InvoiceRow.model_validate(source)
+assert original.gross_amount == Decimal("123.00")
+assert updated.gross_amount == Decimal("369.00")
 ```
 
-Use a subclass configured with `extra="forbid"` to reject misspelled fields.
-The same pattern applies to `InvoiceOrderLine`. Per-call
-`model_validate(extra="forbid")` does not enforce this on these models because
-they use custom constructors.
-The default constructor preserves 1.x behavior: unknown fields are ignored with
-a log warning. Serialized draft input already rejects unknown nested fields.
 For order lines, rebuild from the original gross amount and VAT treatment to
 derive net and VAT again. Reconstruct any containing order or invoice too, so
 its totals are calculated from the new lines.
+
+Pydantic's `model_copy(update=...)` and `model_construct()` bypass validation,
+including on frozen models. They are intended for trusted data and must not be
+used to edit financial inputs; use a fresh constructor or `model_validate()`.
+Freezing prevents field assignment, not changes to objects referenced by fields;
+keep any supplied VAT classification objects unchanged as well.
