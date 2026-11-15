@@ -294,7 +294,6 @@ normally A4 landscape. An explicit page size takes precedence over `html_overrid
 CSS; the other CSS rules still apply. Large invoice tables may need landscape
 orientation or custom CSS to fit on a portrait page.
 
-
 ### Custom rendering notices
 
 Use `footer_text` for a notice after the invoice and verification QR, and

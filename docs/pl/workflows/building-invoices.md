@@ -99,5 +99,5 @@ Generowanie XML traktuj jako pracę po stronie aplikacji. Wysyłkę w sesji inte
 
 ## Opis API
 
-- [Wysyłanie faktur](sending-invoices.md)
+- [Wysyłanie faktur](../how-to-guides/send-invoices.md)
 - [Opis API FA(3)](../reference/api/fa3.md)

@@ -113,4 +113,4 @@ with auth.online_session(form_code=FormSchema.FA3) as session:
 ## Reference
 
 - [FA(3) API reference](../reference/api/fa3.md)
-- [Invoices](invoices.md)
+- [Invoices](../how-to-guides/build-fa3-invoices.md)

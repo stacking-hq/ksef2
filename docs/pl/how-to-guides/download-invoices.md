@@ -213,7 +213,6 @@ Ta opcja obsługuje faktury z nadanym numerem KSeF. Nie generuje kodu QR certyfi
 
 `PDFPageSize` obsługuje `A4`, `A4_LANDSCAPE`, `A3`, `A3_LANDSCAPE`, `LETTER` oraz `LETTER_LANDSCAPE`. Bez `page_size` obowiązuje dotychczasowe ustawienie arkusza, zwykle A4 poziomo. Jawny rozmiar strony ma pierwszeństwo przed CSS w `html_overrides`. Pozostałe reguły CSS nadal działają. Szerokie tabele mogą wymagać orientacji poziomej albo własnego CSS, żeby zmieściły się na pionowej stronie.
 
-
 ### Własne oznaczenia wizualizacji
 
 Użyj `footer_text`, aby dodać tekst za fakturą i kodem QR, oraz
