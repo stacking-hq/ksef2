@@ -1,4 +1,4 @@
-## Unreleased
+## v1.4.0 (2026-11-14)
 
 ### Fixed
 
@@ -7,6 +7,7 @@
   completed export responses that omit the package.
 - Remove the domain-to-core import cycle by sharing input errors independently
   of domain models, preserving existing exception imports and class identity.
+- Record the published 1.3.0 compatibility baseline.
 
 ### Added
 
@@ -15,6 +16,8 @@
 
 ### Changed
 
+- Update the bundled OpenAPI specification to KSeF API 2.9.0 and regenerate the
+  models from the 2026-11-05 API build.
 - **Behavior change:** `InvoiceRow` and `InvoiceOrderLine` are now frozen and
   reject unknown constructor fields. Assigning or deleting a field raises
   Pydantic `ValidationError`; unknown constructor fields raise
