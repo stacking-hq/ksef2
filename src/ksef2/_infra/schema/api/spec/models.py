@@ -192,6 +192,23 @@ class AuthenticationMethodCategory(StrEnum):
     Other = "Other"
 
 
+class AuthenticationMethodCategoryRev2Code(StrEnum):
+    """
+    | Code | DisplayName | Opis |
+    | --- | --- | --- |
+    | XadesSignature | Podpis XAdES | Uwierzytelnienie podpisem XAdES. |
+    | NationalNode | Węzeł Krajowy | Uwierzytelnienie za pomocą Węzła Krajowego. |
+    | Token | Token | Uwierzytelnienie tokenem. |
+    | FutureValue |  | Kategoria metody uwierzytelnienia nieznana w momencie wydania            bieżącej wersji modelu.            Rzeczywisty kod kategorii jest dostępny w polu `rawCode`,            a jej nazwa w polu `displayName`. |
+
+    """
+
+    XadesSignature = "XadesSignature"
+    NationalNode = "NationalNode"
+    Token = "Token"
+    FutureValue = "FutureValue"
+
+
 class AuthenticationMethodInfo(BaseModel):
     category: AuthenticationMethodCategory
     """
@@ -426,7 +443,10 @@ class CertificateSubjectIdentifierType(StrEnum):
 
 
 class CertificateSubjectLimitsOverride(BaseModel):
-    maxCertificates: Annotated[int | None, Field(ge=0)] = None
+    maxCertificates: Annotated[int, Field(ge=0)]
+    """
+    Maksymalna ilość aktywnych certyfikatów.
+    """
 
 
 class CheckAttachmentPermissionStatusResponse(BaseModel):
@@ -854,7 +874,10 @@ class EnrollmentEffectiveSubjectLimits(BaseModel):
 
 
 class EnrollmentSubjectLimitsOverride(BaseModel):
-    maxEnrollments: Annotated[int | None, Field(ge=0)] = None
+    maxEnrollments: Annotated[int, Field(ge=0)]
+    """
+    Maksymalna ilość aktywnych wniosków o certyfikat.
+    """
 
 
 class EntityAuthorizationPermissionType(StrEnum):
@@ -1012,6 +1035,7 @@ class EuEntityPermissionSubjectDetailsType(StrEnum):
 class EuEntityPermissionType(StrEnum):
     InvoiceWrite = "InvoiceWrite"
     InvoiceRead = "InvoiceRead"
+    CollectiveIdentifierManage = "CollectiveIdentifierManage"
 
 
 class EuEntityPermissionsAuthorIdentifierType(StrEnum):
@@ -1025,6 +1049,7 @@ class EuEntityPermissionsQueryPermissionType(StrEnum):
     InvoiceWrite = "InvoiceWrite"
     InvoiceRead = "InvoiceRead"
     Introspection = "Introspection"
+    CollectiveIdentifierManage = "CollectiveIdentifierManage"
 
 
 class EuEntityPermissionsQueryRequest(BaseModel):
@@ -2117,6 +2142,60 @@ class TokenAuthorIdentifierType(StrEnum):
     Fingerprint = "Fingerprint"
 
 
+class TokenAuthorIdentifierTypeCodeRev2(StrEnum):
+    """
+    | Code | DisplayName | Opis |
+    | --- | --- | --- |
+    | Nip | NIP | Numer identyfikacji podatkowej (NIP). |
+    | Pesel | PESEL | Numer PESEL. |
+    | Fingerprint | Odcisk palca certyfikatu | Odcisk palca certyfikatu. |
+    | FutureValue |  | Typ identyfikatora autora nieznany w bieżącej rewizji operacji.            Rzeczywisty kod jest dostępny w polu `rawCode`. |
+
+    """
+
+    Nip = "Nip"
+    Pesel = "Pesel"
+    Fingerprint = "Fingerprint"
+    FutureValue = "FutureValue"
+
+
+class TokenAuthorIdentifierTypeCodeRev2IdentifierType(BaseModel):
+    code: TokenAuthorIdentifierTypeCodeRev2
+    """
+    Kod typu identyfikatora.
+    | Code | DisplayName | Opis |
+    | --- | --- | --- |
+    | Nip | NIP | Numer identyfikacji podatkowej (NIP). |
+    | Pesel | PESEL | Numer PESEL. |
+    | Fingerprint | Odcisk palca certyfikatu | Odcisk palca certyfikatu. |
+    | FutureValue |  | Typ identyfikatora autora nieznany w bieżącej rewizji operacji.            Rzeczywisty kod jest dostępny w polu `rawCode`. |
+
+    """
+    rawCode: str
+    """
+    Rzeczywisty, stabilny kod typu identyfikatora.
+    """
+    displayName: str
+    """
+    Nazwa typu identyfikatora przeznaczona do prezentacji użytkownikowi.
+    """
+
+
+class TokenAuthorIdentifierTypeFilterRev2(StrEnum):
+    """
+    | Wartość | Opis |
+    | --- | --- |
+    | Nip | NIP. |
+    | Pesel | PESEL. |
+    | Fingerprint | Odcisk palca certyfikatu. |
+
+    """
+
+    Nip = "Nip"
+    Pesel = "Pesel"
+    Fingerprint = "Fingerprint"
+
+
 class TokenAuthorIdentifierTypeIdentifier(BaseModel):
     type: TokenAuthorIdentifierType
     """
@@ -2151,6 +2230,48 @@ class TokenContextIdentifierType(StrEnum):
     PeppolId = "PeppolId"
 
 
+class TokenContextIdentifierTypeCodeRev2(StrEnum):
+    """
+    | Code | DisplayName | Opis |
+    | --- | --- | --- |
+    | Nip | NIP | Numer identyfikacji podatkowej (NIP). |
+    | InternalId | Identyfikator wewnętrzny | Identyfikator wewnętrzny. |
+    | NipVatUe | NIP VAT-UE | Dwuczłonowy identyfikator składający się z numeru NIP            i numeru VAT-UE: `{nip}-{vat_ue}`. |
+    | PeppolId | Identyfikator dostawcy usług Peppol | Identyfikator dostawcy usług Peppol. |
+    | FutureValue |  | Typ identyfikatora kontekstu nieznany w bieżącej rewizji operacji.            Rzeczywisty kod jest dostępny w polu `rawCode`. |
+
+    """
+
+    Nip = "Nip"
+    InternalId = "InternalId"
+    NipVatUe = "NipVatUe"
+    PeppolId = "PeppolId"
+    FutureValue = "FutureValue"
+
+
+class TokenContextIdentifierTypeCodeRev2IdentifierType(BaseModel):
+    code: TokenContextIdentifierTypeCodeRev2
+    """
+    Kod typu identyfikatora.
+    | Code | DisplayName | Opis |
+    | --- | --- | --- |
+    | Nip | NIP | Numer identyfikacji podatkowej (NIP). |
+    | InternalId | Identyfikator wewnętrzny | Identyfikator wewnętrzny. |
+    | NipVatUe | NIP VAT-UE | Dwuczłonowy identyfikator składający się z numeru NIP            i numeru VAT-UE: `{nip}-{vat_ue}`. |
+    | PeppolId | Identyfikator dostawcy usług Peppol | Identyfikator dostawcy usług Peppol. |
+    | FutureValue |  | Typ identyfikatora kontekstu nieznany w bieżącej rewizji operacji.            Rzeczywisty kod jest dostępny w polu `rawCode`. |
+
+    """
+    rawCode: str
+    """
+    Rzeczywisty, stabilny kod typu identyfikatora.
+    """
+    displayName: str
+    """
+    Nazwa typu identyfikatora przeznaczona do prezentacji użytkownikowi.
+    """
+
+
 class TokenContextIdentifierTypeIdentifier(BaseModel):
     type: TokenContextIdentifierType
     """
@@ -2169,6 +2290,27 @@ class TokenContextIdentifierTypeIdentifier(BaseModel):
     """
 
 
+class TokenFailureRev2(BaseModel):
+    code: Annotated[str, Field(min_length=1)]
+    """
+    Kod niepowodzenia.
+
+    | Code | Description |
+    | --- | --- |
+    | token.permission-grant-failed | Nie udało się nadać uprawnień tokenowi |
+    | token.context-limit-exceeded | Przekroczono limit tokenów w kontekście |
+    | token.unknown-error | Wystąpił nieznany błąd|
+    """
+    description: Annotated[str, Field(min_length=1)]
+    """
+    Opis niepowodzenia przeznaczony do prezentacji użytkownikowi.
+    """
+    details: list[str] | None = None
+    """
+    Dodatkowe szczegóły błędu.
+    """
+
+
 class TokenInfo(BaseModel):
     token: str
     """
@@ -2177,6 +2319,45 @@ class TokenInfo(BaseModel):
     validUntil: AwareDatetime
     """
     Data ważności tokena.
+    """
+
+
+class TokenPermissionCodeRev2(StrEnum):
+    InvoiceRead = "InvoiceRead"
+    InvoiceWrite = "InvoiceWrite"
+    CredentialsRead = "CredentialsRead"
+    CredentialsManage = "CredentialsManage"
+    SubunitManage = "SubunitManage"
+    EnforcementOperations = "EnforcementOperations"
+    Introspection = "Introspection"
+    CollectiveIdentifierManage = "CollectiveIdentifierManage"
+    FutureValue = "FutureValue"
+
+
+class TokenPermissionRev2(BaseModel):
+    code: TokenPermissionCodeRev2
+    """
+    Uprawnienie tokenu.
+
+    | Code | DisplayName |
+    | --- | --- |
+    | InvoiceRead | Przeglądanie faktur |
+    | InvoiceWrite | Wystawianie faktur |
+    | CredentialsRead | Przeglądanie uprawnień |
+    | CredentialsManage | Zarządzanie uprawnieniami |
+    | SubunitManage | Zarządzanie jednostkami podrzędnymi |
+    | EnforcementOperations | Wykonywanie operacji egzekucyjnych |
+    | Introspection | Przeglądanie historii sesji i generowanie UPO |
+    | CollectiveIdentifierManage | Zarządzanie identyfikatorami zbiorczymi |
+    | FutureValue | Uprawnienie nieznane w bieżącej rewizji operacji. Rzeczywisty kod uprawnienia jest dostępny w polu `rawCode`. |
+    """
+    rawCode: Annotated[str, Field(min_length=1)]
+    """
+    Rzeczywisty, stabilny kod uprawnienia.
+    """
+    displayName: Annotated[str, Field(min_length=1)]
+    """
+    Nazwa uprawnienia przeznaczona do prezentacji użytkownikowi.
     """
 
 
@@ -2189,6 +2370,33 @@ class TokenPermissionType(StrEnum):
     EnforcementOperations = "EnforcementOperations"
     Introspection = "Introspection"
     CollectiveIdentifierManage = "CollectiveIdentifierManage"
+
+
+class TokenStatusFilterRev2(StrEnum):
+    """
+    | Wartość | Opis |
+    | --- | --- |
+    | Pending | Token został utworzony ale jest jeszcze w trakcie aktywacji i nadawania uprawnień. Nie może być jeszcze wykorzystywany do uwierzytelniania. |
+    | Active | Token jest aktywny i może być wykorzystywany do uwierzytelniania. |
+    | Revoking | Token jest w trakcie unieważniania. Nie może już być wykorzystywany do uwierzytelniania. |
+    | Revoked | Token został unieważniony i nie może być wykorzystywany do uwierzytelniania. |
+    | Failed | Nie udało się aktywować tokena. Należy wygenerować nowy token, obecny nie może być wykorzystywany do uwierzytelniania. |
+    | NotYetActive | Token został wygenerowany poprawnie natomiast, termin jego ważności jeszcze się nie rozpoczął. |
+    | AwaitingApproval | Token został wygenerowany za pomocą tokena KSeF i oczekuje na zatwierdzenie. Do czasu zatwierdzenia nie może być używany do uwierzytelniania. |
+    | ApprovalExpired | Upłynął czas 24 godzin oczekiwania na zatwierdzenie. Token nie może już zostać zatwierdzony ani być wykorzystywany do uwierzytelniania. Należy ponownie zainicjować generowanie nowego tokena. |
+    | Expired | Termin ważności tokena upłynął. |
+
+    """
+
+    Pending = "Pending"
+    Active = "Active"
+    Revoking = "Revoking"
+    Revoked = "Revoked"
+    Failed = "Failed"
+    NotYetActive = "NotYetActive"
+    AwaitingApproval = "AwaitingApproval"
+    ApprovalExpired = "ApprovalExpired"
+    Expired = "Expired"
 
 
 class TokenStatusResponse(BaseModel):
@@ -2235,6 +2443,42 @@ class TokenStatusResponse(BaseModel):
     statusDetails: list[str] | None = None
     """
     Dodatkowe informacje na temat statusu, zwracane w przypadku błędów.
+    """
+
+
+class TokenStatusRev2Code(StrEnum):
+    """
+    | Code | DisplayName | Opis |
+    | --- | --- | --- |
+    | Pending | Token w trakcie aktywacji | Token został utworzony, ale trwa jego aktywacja i nadawanie uprawnień.            Nie może być jeszcze wykorzystywany do uwierzytelniania. |
+    | Active | Token aktywny | Token jest aktywny i może być wykorzystywany do uwierzytelniania. |
+    | Revoking | Token w trakcie unieważniania | Token jest w trakcie unieważniania.            Nie może już być wykorzystywany do uwierzytelniania. |
+    | Revoked | Token unieważniony | Token został unieważniony i nie może być wykorzystywany do uwierzytelniania. |
+    | Failed | Aktywacja tokenu zakończona niepowodzeniem | Nie udało się aktywować tokenu. Należy wygenerować nowy token.            Obecny token nie może być wykorzystywany do uwierzytelniania. |
+    | NotYetActive | Token jeszcze nieaktywny | Token został wygenerowany poprawnie, ale okres jego ważności            jeszcze się nie rozpoczął. |
+    | AwaitingApproval | Token oczekuje na zatwierdzenie | Token został wygenerowany za pomocą tokena KSeF i oczekuje na zatwierdzenie. Do czasu zatwierdzenia nie może być używany do uwierzytelniania. |
+    | ApprovalExpired | Upłynął termin zatwierdzenia tokena | Upłynął czas 24 godzin oczekiwania na zatwierdzenie. Token nie może już zostać zatwierdzony ani być wykorzystywany do uwierzytelniania. Należy ponownie zainicjować generowanie nowego tokena. |
+    | Expired | Token wygasł | Termin ważności tokenu upłynął. |
+    | FutureValue |  | Status tokenu nieznany w momencie wydania bieżącej wersji modelu.            Rzeczywisty kod statusu jest dostępny w polu `rawCode`,            a jego nazwa w polu `displayName`. |
+
+    """
+
+    Pending = "Pending"
+    Active = "Active"
+    Revoking = "Revoking"
+    Revoked = "Revoked"
+    Failed = "Failed"
+    NotYetActive = "NotYetActive"
+    AwaitingApproval = "AwaitingApproval"
+    ApprovalExpired = "ApprovalExpired"
+    Expired = "Expired"
+    FutureValue = "FutureValue"
+
+
+class TokensEffectiveContextLimits(BaseModel):
+    maxTokens: Annotated[int, Field(ge=0)]
+    """
+    Maksymalna liczba tokenów KSeF w kontekście, wliczanych do limitu.
     """
 
 
@@ -2451,6 +2695,7 @@ class AuthenticationListItem(BaseModel):
     | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Nieprawidłowy czas tokena |
     | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Token unieważniony |
     | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Token nieaktywny |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Token poza okresem ważności |
     | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Nieprawidłowe szyfrowanie tokena |
     | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Nieprawidłowe kodowanie tokena |
     | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Token nie może być użyty w kontekście {contextIdentifier} |
@@ -2498,6 +2743,43 @@ class AuthenticationListResponse(BaseModel):
     """
 
 
+class AuthenticationMethodCategoryRev2(BaseModel):
+    code: AuthenticationMethodCategoryRev2Code
+    """
+    Kod wartości słownikowej.
+    | Code | DisplayName | Opis |
+    | --- | --- | --- |
+    | XadesSignature | Podpis XAdES | Uwierzytelnienie podpisem XAdES. |
+    | NationalNode | Węzeł Krajowy | Uwierzytelnienie za pomocą Węzła Krajowego. |
+    | Token | Token | Uwierzytelnienie tokenem. |
+    | FutureValue |  | Kategoria metody uwierzytelnienia nieznana w momencie wydania            bieżącej wersji modelu.            Rzeczywisty kod kategorii jest dostępny w polu `rawCode`,            a jej nazwa w polu `displayName`. |
+
+    """
+    rawCode: Annotated[str, Field(min_length=1)]
+    """
+    Oryginalny kod wartości słownikowej.
+    """
+    displayName: Annotated[str, Field(min_length=1)]
+    """
+    Nazwa przeznaczona do prezentacji użytkownikowi.
+    """
+
+
+class AuthenticationMethodInfoRev2(BaseModel):
+    category: AuthenticationMethodCategoryRev2
+    """
+    Kategoria metody uwierzytelnienia.
+    """
+    code: str
+    """
+    Kod metody uwierzytelnienia.
+    """
+    displayName: str
+    """
+    Nazwa metody uwierzytelnienia do wyświetlenia użytkownikowi.
+    """
+
+
 class AuthenticationOperationStatusResponse(BaseModel):
     startDate: AwareDatetime
     """
@@ -2535,6 +2817,59 @@ class AuthenticationOperationStatusResponse(BaseModel):
     | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Nieprawidłowy czas tokena |
     | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Token unieważniony |
     | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Token nieaktywny |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Token poza okresem ważności |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Nieprawidłowe szyfrowanie tokena |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Nieprawidłowe kodowanie tokena |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Token nie może być użyty w kontekście {contextIdentifier} |
+    | 460 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędu certyfikatu | Nieważny certyfikat |
+    | 460 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędu certyfikatu | Błąd weryfikacji łańcucha certyfikatów |
+    | 460 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędu certyfikatu | Niezaufany łańcuch certyfikatów |
+    | 460 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędu certyfikatu | Certyfikat odwołany |
+    | 460 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędu certyfikatu | Certyfikat zawieszony |
+    | 460 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędu certyfikatu | Niepoprawny certyfikat |
+    | 470 | Uwierzytelnianie zakończone niepowodzeniem | Próba wykorzystania metod autoryzacyjnych osoby zmarłej |
+    | 480 | Uwierzytelnienie zablokowane | Podejrzenie incydentu bezpieczeństwa. Skontaktuj się z Ministerstwem Finansów przez formularz zgłoszeniowy. |
+    | 500 | Nieznany błąd | - |
+    | 550 | Operacja została anulowana przez system | Przetwarzanie zostało przerwane z przyczyn wewnętrznych systemu. Spróbuj ponownie |
+    """
+    isTokenRedeemed: bool | None = None
+    """
+    Czy został już wydany refresh token powiązany z danym uwierzytelnieniem.
+    """
+    lastTokenRefreshDate: AwareDatetime | None = None
+    """
+    Data ostatniego odświeżenia tokena.
+    """
+    refreshTokenValidUntil: AwareDatetime | None = None
+    """
+    Termin ważności refresh tokena (o ile nie zostanie wcześniej unieważniony).
+    """
+
+
+class AuthenticationOperationStatusResponseRev2(BaseModel):
+    startDate: AwareDatetime
+    """
+    Data rozpoczęcia operacji uwierzytelnienia.
+    """
+    authenticationMethodInfo: AuthenticationMethodInfoRev2
+    """
+    Użyta metoda uwierzytelnienia.
+    """
+    status: StatusInfo
+    """
+    Informacje o aktualnym statusie.
+    | Code | Description | Details |
+    | --- | --- | --- |
+    | 100 | Uwierzytelnianie w toku | - |
+    | 200 | Uwierzytelnianie zakończone sukcesem | - |
+    | 415 | Uwierzytelnianie zakończone niepowodzeniem | Brak przypisanych uprawnień |
+    | 425 | Uwierzytelnienie unieważnione  | Uwierzytelnienie i powiązane refresh tokeny zostały unieważnione przez użytkownika |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Nieprawidłowe wyzwanie autoryzacyjne |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Nieprawidłowy token |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Nieprawidłowy czas tokena |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Token unieważniony |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Token nieaktywny |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Token poza okresem ważności |
     | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Nieprawidłowe szyfrowanie tokena |
     | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Nieprawidłowe kodowanie tokena |
     | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Token nie może być użyty w kontekście {contextIdentifier} |
@@ -2719,6 +3054,10 @@ class EffectiveContextLimits(BaseModel):
     collectiveIdentifier: CollectiveIdentifierEffectiveContextLimits
     """
     Limity dla identyfikatorów zbiorczych.
+    """
+    tokens: TokensEffectiveContextLimits
+    """
+    Limity dla tokenów KSeF.
     """
 
 
@@ -3049,7 +3388,37 @@ class GenerateTokenRequest(BaseModel):
     """
 
 
+class GenerateTokenRequestRev2(BaseModel):
+    permissions: list[TokenPermissionType]
+    """
+    Uprawnienia przypisane tokenowi.
+    """
+    description: Annotated[str, Field(max_length=256, min_length=5)]
+    """
+    Opis tokena.
+    """
+    validFrom: AwareDatetime | None = None
+    """
+    Data rozpoczęcia okresu ważności tokena. Może przypadać najpóźniej 60 dni po zainicjowaniu generowania tokena. Jeśli nie zostanie podana, przyjmuje wartość odpowiadającą momentowi inicjacji.
+    """
+    validTo: AwareDatetime | None = None
+    """
+    Data wygaśnięcia tokena. Może przypadać najpóźniej 365 dni po `validFrom`. Jeśli nie zostanie podana, okres ważności wynosi 90 dni od `validFrom`.
+    """
+
+
 class GenerateTokenResponse(BaseModel):
+    referenceNumber: Annotated[str, Field(max_length=36, min_length=36)]
+    """
+    Numer referencyjny tokena KSeF.
+    """
+    token: Annotated[str, Field(max_length=160)]
+    """
+    Token KSeF.
+    """
+
+
+class GenerateTokenResponseRev2(BaseModel):
     referenceNumber: Annotated[str, Field(max_length=36, min_length=36)]
     """
     Numer referencyjny tokena KSeF.
@@ -4143,8 +4512,129 @@ class TestDataPermissionsRevokeRequest(BaseModel):
     authorizedIdentifier: TestDataAuthorizedIdentifier
 
 
+class TokenAuthorIdentifierTypeCodeRev2Identifier(BaseModel):
+    type: TokenAuthorIdentifierTypeCodeRev2IdentifierType
+    """
+    Informacje o typie identyfikatora.
+    """
+    value: str
+    """
+    Wartość identyfikatora.
+    """
+
+
+class TokenContextIdentifierTypeCodeRev2Identifier(BaseModel):
+    type: TokenContextIdentifierTypeCodeRev2IdentifierType
+    """
+    Informacje o typie identyfikatora.
+    """
+    value: str
+    """
+    Wartość identyfikatora.
+    """
+
+
+class TokenStatusRev2(BaseModel):
+    code: TokenStatusRev2Code
+    """
+    Kod wartości słownikowej.
+    | Code | DisplayName | Opis |
+    | --- | --- | --- |
+    | Pending | Token w trakcie aktywacji | Token został utworzony, ale trwa jego aktywacja i nadawanie uprawnień.            Nie może być jeszcze wykorzystywany do uwierzytelniania. |
+    | Active | Token aktywny | Token jest aktywny i może być wykorzystywany do uwierzytelniania. |
+    | Revoking | Token w trakcie unieważniania | Token jest w trakcie unieważniania.            Nie może już być wykorzystywany do uwierzytelniania. |
+    | Revoked | Token unieważniony | Token został unieważniony i nie może być wykorzystywany do uwierzytelniania. |
+    | Failed | Aktywacja tokenu zakończona niepowodzeniem | Nie udało się aktywować tokenu. Należy wygenerować nowy token.            Obecny token nie może być wykorzystywany do uwierzytelniania. |
+    | NotYetActive | Token jeszcze nieaktywny | Token został wygenerowany poprawnie, ale okres jego ważności            jeszcze się nie rozpoczął. |
+    | AwaitingApproval | Token oczekuje na zatwierdzenie | Token został wygenerowany za pomocą tokena KSeF i oczekuje na zatwierdzenie. Do czasu zatwierdzenia nie może być używany do uwierzytelniania. |
+    | ApprovalExpired | Upłynął termin zatwierdzenia tokena | Upłynął czas 24 godzin oczekiwania na zatwierdzenie. Token nie może już zostać zatwierdzony ani być wykorzystywany do uwierzytelniania. Należy ponownie zainicjować generowanie nowego tokena. |
+    | Expired | Token wygasł | Termin ważności tokenu upłynął. |
+    | FutureValue |  | Status tokenu nieznany w momencie wydania bieżącej wersji modelu.            Rzeczywisty kod statusu jest dostępny w polu `rawCode`,            a jego nazwa w polu `displayName`. |
+
+    """
+    rawCode: Annotated[str, Field(min_length=1)]
+    """
+    Oryginalny kod wartości słownikowej.
+    """
+    displayName: Annotated[str, Field(min_length=1)]
+    """
+    Nazwa przeznaczona do prezentacji użytkownikowi.
+    """
+
+
 class UnblockContextAuthenticationRequest(BaseModel):
     contextIdentifier: TestDataAuthenticationContextIdentifier | None = None
+
+
+class AuthenticationListItemRev2(BaseModel):
+    startDate: AwareDatetime
+    """
+    Data rozpoczęcia operacji uwierzytelnienia.
+    """
+    authenticationMethodInfo: AuthenticationMethodInfoRev2
+    """
+    Użyta metoda uwierzytelnienia.
+    """
+    status: StatusInfo
+    """
+    Informacje o aktualnym statusie.
+    | Code | Description | Details |
+    | --- | --- | --- |
+    | 100 | Uwierzytelnianie w toku | - |
+    | 200 | Uwierzytelnianie zakończone sukcesem | - |
+    | 415 | Uwierzytelnianie zakończone niepowodzeniem | Brak przypisanych uprawnień |
+    | 425 | Uwierzytelnienie unieważnione  | Uwierzytelnienie i powiązane refresh tokeny zostały unieważnione przez użytkownika |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Nieprawidłowe wyzwanie autoryzacyjne |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Nieprawidłowy token |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Nieprawidłowy czas tokena |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Token unieważniony |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Token nieaktywny |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Token poza okresem ważności |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Nieprawidłowe szyfrowanie tokena |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Nieprawidłowe kodowanie tokena |
+    | 450 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędnego tokenu | Token nie może być użyty w kontekście {contextIdentifier} |
+    | 460 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędu certyfikatu | Nieważny certyfikat |
+    | 460 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędu certyfikatu | Błąd weryfikacji łańcucha certyfikatów |
+    | 460 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędu certyfikatu | Niezaufany łańcuch certyfikatów |
+    | 460 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędu certyfikatu | Certyfikat odwołany |
+    | 460 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędu certyfikatu | Certyfikat zawieszony |
+    | 460 | Uwierzytelnianie zakończone niepowodzeniem z powodu błędu certyfikatu | Niepoprawny certyfikat |
+    | 470 | Uwierzytelnianie zakończone niepowodzeniem | Próba wykorzystania metod autoryzacyjnych osoby zmarłej |
+    | 480 | Uwierzytelnienie zablokowane | Podejrzenie incydentu bezpieczeństwa. Skontaktuj się z Ministerstwem Finansów przez formularz zgłoszeniowy. |
+    | 500 | Nieznany błąd | - |
+    | 550 | Operacja została anulowana przez system | Przetwarzanie zostało przerwane z przyczyn wewnętrznych systemu. Spróbuj ponownie |
+    """
+    isTokenRedeemed: bool | None = None
+    """
+    Czy został już wydany refresh token powiązany z danym uwierzytelnieniem.
+    """
+    lastTokenRefreshDate: AwareDatetime | None = None
+    """
+    Data ostatniego odświeżenia tokena.
+    """
+    refreshTokenValidUntil: AwareDatetime | None = None
+    """
+    Termin ważności refresh tokena (o ile nie zostanie wcześniej unieważniony).
+    """
+    referenceNumber: Annotated[str, Field(max_length=36, min_length=36)]
+    """
+    Numer referencyjny sesji uwierzytelnienia.
+    """
+    isCurrent: bool | None = None
+    """
+    Czy sesja jest powiązana z aktualnie używanym tokenem.
+    """
+
+
+class AuthenticationListResponseRev2(BaseModel):
+    continuationToken: str | None = None
+    """
+    Token służący do pobrania kolejnej strony wyników. Jeśli jest pusty, to nie ma kolejnych stron.
+    """
+    items: list[AuthenticationListItemRev2]
+    """
+    Lista sesji uwierzytelniania.
+    """
 
 
 class BatchFileInfo(BaseModel):
@@ -5006,6 +5496,65 @@ class QueryTokensResponse(BaseModel):
     """
 
 
+class QueryTokensResponseItemRev2(BaseModel):
+    referenceNumber: Annotated[str, Field(max_length=36, min_length=36)]
+    """
+    Numer referencyjny tokena KSeF.
+    """
+    authorIdentifier: TokenAuthorIdentifierTypeCodeRev2Identifier
+    """
+    Identyfikator osoby która wygenerowała token.
+    """
+    contextIdentifier: TokenContextIdentifierTypeCodeRev2Identifier
+    """
+    Identyfikator kontekstu, w którym został wygenerowany token i do którego daje dostęp.
+    """
+    description: Annotated[str, Field(max_length=256, min_length=5)]
+    """
+    Opis tokena.
+    """
+    requestedPermissions: list[TokenPermissionRev2]
+    """
+    Uprawnienia przypisane tokenowi.
+    """
+    dateCreated: AwareDatetime
+    """
+    Data i czas utworzenia tokena.
+    """
+    lastUseDate: AwareDatetime | None = None
+    """
+    Data ostatniego użycia tokena.
+    """
+    validFrom: AwareDatetime
+    """
+    Data rozpoczęcia okresu ważności tokena.
+    """
+    validTo: AwareDatetime
+    """
+    Data wygaśnięcia tokena.
+    """
+    status: TokenStatusRev2
+    """
+    Status tokena.
+    """
+    failure: TokenFailureRev2 | None = None
+    """
+    Informacje o przyczynie niepowodzenia aktywacji tokenu.
+    Pole jest uzupełniane wyłącznie dla statusu `Failed`.
+    """
+
+
+class QueryTokensResponseRev2(BaseModel):
+    continuationToken: str | None = None
+    """
+    Token służący do pobrania kolejnej strony wyników. Jeśli jest pusty, to nie ma kolejnych stron.
+    """
+    tokens: list[QueryTokensResponseItemRev2]
+    """
+    Lista tokenów uwierzytelniających.
+    """
+
+
 class SessionsQueryResponse(BaseModel):
     continuationToken: str | None = None
     """
@@ -5132,6 +5681,54 @@ class SubunitPermissionsQueryRequest(BaseModel):
     | --- | --- |
     | InternalId | Dwuczłonowy identyfikator składający się z numeru NIP i 5 cyfr: `{nip}-{5_cyfr}` |
     | Nip | 10 cyfrowy numer NIP |
+    """
+
+
+class TokenStatusResponseRev2(BaseModel):
+    referenceNumber: Annotated[str, Field(max_length=36, min_length=36)]
+    """
+    Numer referencyjny tokena KSeF.
+    """
+    authorIdentifier: TokenAuthorIdentifierTypeCodeRev2Identifier
+    """
+    Identyfikator osoby która wygenerowała token.
+    """
+    contextIdentifier: TokenContextIdentifierTypeCodeRev2Identifier
+    """
+    Identyfikator kontekstu, w którym został wygenerowany token i do którego daje dostęp.
+    """
+    description: Annotated[str, Field(max_length=256, min_length=5)]
+    """
+    Opis tokena.
+    """
+    requestedPermissions: list[TokenPermissionRev2]
+    """
+    Uprawnienia przypisane tokenowi.
+    """
+    dateCreated: AwareDatetime
+    """
+    Data i czas utworzenia tokena.
+    """
+    lastUseDate: AwareDatetime | None = None
+    """
+    Data ostatniego użycia tokena.
+    """
+    validFrom: AwareDatetime
+    """
+    Data rozpoczęcia okresu ważności tokena.
+    """
+    validTo: AwareDatetime
+    """
+    Data wygaśnięcia tokena.
+    """
+    status: TokenStatusRev2
+    """
+    Status tokena.
+    """
+    failure: TokenFailureRev2 | None = None
+    """
+    Informacje o przyczynie niepowodzenia aktywacji tokenu.
+    Pole jest uzupełniane wyłącznie dla statusu `Failed`.
     """
 
 
