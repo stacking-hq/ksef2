@@ -41,6 +41,8 @@ def _map_eu_query_permission(
             return "invoice_read"
         case spec.EuEntityPermissionsQueryPermissionType.Introspection:
             return "introspection"
+        case spec.EuEntityPermissionsQueryPermissionType.CollectiveIdentifierManage:
+            return "collective_identifier_manage"
         case _ as unreachable:  # pyright: ignore[reportUnnecessaryComparison]
             assert_never(unreachable)
 

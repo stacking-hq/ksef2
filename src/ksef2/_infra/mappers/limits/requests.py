@@ -67,6 +67,7 @@ def _(request: SubjectLimits) -> spec.SetSubjectLimitsRequest:
                 maxCertificates=request.certificate.max_certificates,
             )
             if request.certificate is not None
+            and request.certificate.max_certificates is not None
             else None
         ),
         enrollment=(
@@ -74,6 +75,7 @@ def _(request: SubjectLimits) -> spec.SetSubjectLimitsRequest:
                 maxEnrollments=request.enrollment.max_enrollments,
             )
             if request.enrollment is not None
+            and request.enrollment.max_enrollments is not None
             else None
         ),
     )

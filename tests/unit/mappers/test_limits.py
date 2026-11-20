@@ -1,6 +1,12 @@
 from polyfactory import BaseFactory
 
-from ksef2._domain.models.limits import ApiRateLimits, ContextLimits, SubjectLimits
+from ksef2._domain.models.limits import (
+    ApiRateLimits,
+    ContextLimits,
+    SubjectCertificateLimits,
+    SubjectEnrollmentLimits,
+    SubjectLimits,
+)
 from ksef2._infra.mappers.limits import from_spec, to_spec
 from ksef2._infra.schema.api import spec
 
@@ -24,11 +30,11 @@ class TestLimitRequestMappers:
             == request.collective_identifier.max_invoices
         )
 
-    def test_to_spec_subject_limits(
-        self,
-        domain_limit_subject: BaseFactory[SubjectLimits],
-    ) -> None:
-        request = domain_limit_subject.build()
+    def test_to_spec_subject_limits(self) -> None:
+        request = SubjectLimits(
+            certificate=SubjectCertificateLimits(max_certificates=0),
+            enrollment=SubjectEnrollmentLimits(max_enrollments=4),
+        )
 
         result = to_spec(request)
 
@@ -41,6 +47,17 @@ class TestLimitRequestMappers:
         assert result.enrollment is not None
         assert request.enrollment is not None
         assert result.enrollment.maxEnrollments == request.enrollment.max_enrollments
+
+    def test_to_spec_subject_limits_omits_empty_overrides(self) -> None:
+        request = SubjectLimits(
+            certificate=SubjectCertificateLimits(),
+            enrollment=SubjectEnrollmentLimits(),
+        )
+
+        result = to_spec(request)
+
+        assert result.certificate is None
+        assert result.enrollment is None
 
     def test_to_spec_api_rate_limits(
         self,
@@ -72,6 +89,8 @@ class TestLimitResponseMappers:
         result = from_spec(response)
 
         assert isinstance(result, ContextLimits)
+        assert result.tokens is not None
+        assert result.tokens.max_tokens == response.tokens.maxTokens
         assert result.online_session.max_invoices == response.onlineSession.maxInvoices
         assert result.batch_session.max_invoice_size_mb == (
             response.batchSession.maxInvoiceSizeInMB

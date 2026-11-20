@@ -1,3 +1,11 @@
+## Unreleased
+
+- Support the KSeF API 2.10 authentication and token revision 2 endpoints in
+  the sync and async raw clients. Use `generate_token_rev2()` to set the
+  validity window and `token_status_rev2()` to check whether approval is needed.
+- Add token approval, TEST approval expiry, context token limits, and the EU
+  entity permission `collective_identifier_manage`.
+
 ## v1.4.0 (2026-11-14)
 
 ### Fixed

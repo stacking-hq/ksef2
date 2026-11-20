@@ -62,6 +62,7 @@ class ExceptionCode(IntEnum):
         INVALID_FILE_HASH: The file hash is invalid.
         VALIDATION_ERROR: KSeF rejected the request as invalid.
         SIGNATURE_AUTH_TYPE_CONFLICT: The signature conflicts with the authentication type.
+        TOKEN_NOT_FOUND: The token reference was not found.
         INVALID_CONTINUATION_TOKEN: The continuation token is malformed or invalid.
         UNKNOWN_KEY_ID: The encryption key identifier is unknown or points to a retired key.
         CSR_DATA_UNAVAILABLE: CSR data cannot be fetched for the authentication method used.
@@ -77,6 +78,9 @@ class ExceptionCode(IntEnum):
         INVALID_CSR_SIGNATURE_ALGORITHM: The CSR signature algorithm is invalid.
         TOKEN_PERMISSIONS_NOT_HELD: A token cannot get permissions the caller does not hold.
         TOKEN_CONTEXT_NOT_ALLOWED: A token cannot be generated for the current context type.
+        TOKEN_STATUS_CONFLICT: The token status does not allow the operation.
+        TOKEN_APPROVAL_AUTH_METHOD_NOT_ALLOWED: The authentication method does not allow token approval.
+        TOKEN_CONTEXT_LIMIT_REACHED: The context has reached its token limit.
         OBJECT_ALREADY_EXISTS: The object being created already exists.
         COLLECTIVE_INVOICE_NOT_FOUND: No invoice exists with the given identifier.
         COLLECTIVE_IDENTIFIER_LIMIT_REACHED: The invoice already has the maximum number of collective identifiers.
@@ -119,6 +123,7 @@ class ExceptionCode(IntEnum):
     INVALID_FILE_HASH = 21403
     VALIDATION_ERROR = 21405
     SIGNATURE_AUTH_TYPE_CONFLICT = 21406
+    TOKEN_NOT_FOUND = 21409
     INVALID_CONTINUATION_TOKEN = 21418
     UNKNOWN_KEY_ID = 21470
     CSR_DATA_UNAVAILABLE = 25001
@@ -134,6 +139,9 @@ class ExceptionCode(IntEnum):
     INVALID_CSR_SIGNATURE_ALGORITHM = 25011
     TOKEN_PERMISSIONS_NOT_HELD = 26001
     TOKEN_CONTEXT_NOT_ALLOWED = 26002
+    TOKEN_STATUS_CONFLICT = 26004
+    TOKEN_APPROVAL_AUTH_METHOD_NOT_ALLOWED = 26005
+    TOKEN_CONTEXT_LIMIT_REACHED = 26006
     OBJECT_ALREADY_EXISTS = 30001
     COLLECTIVE_INVOICE_NOT_FOUND = 71001
     COLLECTIVE_IDENTIFIER_LIMIT_REACHED = 71002

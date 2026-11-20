@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from datetime import datetime
 from typing import Protocol, cast
 from urllib.parse import urlencode
 
@@ -54,5 +55,9 @@ def build_params(
     adapter: QueryParamsAdapter | None = None,
 ) -> httpx.QueryParams:
     validated = (adapter or DEFAULT_PARAMS_ADAPTER).validate_python(params)
-    filtered = {key: value for key, value in validated.items() if value is not None}
+    filtered = {
+        key: value.isoformat() if isinstance(value, datetime) else value
+        for key, value in validated.items()
+        if value is not None
+    }
     return httpx.QueryParams(urlencode(filtered, doseq=True))

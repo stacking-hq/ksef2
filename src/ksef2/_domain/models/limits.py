@@ -21,6 +21,13 @@ class CollectiveIdentifierLimits(KSeFBaseModel):
     """Maximum number of invoices in one collective identifier."""
 
 
+class TokenLimits(KSeFBaseModel):
+    """KSeF token limit for the authenticated context."""
+
+    max_tokens: int
+    """Maximum number of tokens counted against the context limit."""
+
+
 class ContextLimits(KSeFBaseModel):
     """Limits that apply to the authenticated KSeF context."""
 
@@ -33,6 +40,8 @@ class ContextLimits(KSeFBaseModel):
     """Limits for batch sessions."""
     collective_identifier: CollectiveIdentifierLimits
     """Limits for collective identifiers."""
+    tokens: TokenLimits | None = None
+    """Limits for KSeF tokens, if available."""
 
 
 class SubjectCertificateLimits(KSeFBaseModel):

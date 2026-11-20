@@ -239,6 +239,10 @@ _CODE_HINTS: dict[int, str] = {
         "`client.authentication.with_xades()` instead of "
         "`client.authentication.with_token()`."
     ),
+    21409: (
+        "Check the token reference number and authenticate "
+        "in the context that owns the token."
+    ),
     25003: (
         "Fetch the subject data KSeF expects with `get_enrollment_data()` and build a"
         " new CSR before calling `enroll()`."
@@ -258,6 +262,17 @@ _CODE_HINTS: dict[int, str] = {
     26002: (
         "KSeF tokens cannot be generated in this context type. Authenticate in a "
         "supported context before calling `generate()`."
+    ),
+    26004: (
+        "Check the current token status with `token_status_rev2()` before retrying."
+    ),
+    26005: (
+        "Authenticate with an accepted XAdES signature or "
+        "the National Node before approving the token."
+    ),
+    26006: (
+        "Check the token limit with `get_context_limits()` and "
+        "revoke an unused token before generating another."
     ),
     30001: (
         "The subject or person already exists on KSeF TEST. Reuse it, or remove it "

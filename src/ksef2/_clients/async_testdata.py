@@ -6,6 +6,7 @@ from typing import Self, final
 
 import httpx
 
+from ksef2._domain.identifiers import require_nonempty
 from ksef2._domain.models.base import validation_errors
 
 from ksef2._core import exceptions
@@ -225,6 +226,15 @@ class AsyncTestDataClient:
         with validation_errors():
             body = to_spec(UnblockContextRequest(context=context))
         await self._endpoints.unblock_context(body)
+
+    async def expire_token_approval(self, *, reference_number: str) -> None:
+        """Simulate expiry of a pending token approval in the TEST environment.
+
+        Args:
+            reference_number: Reference number of the token.
+        """
+        require_nonempty(reference_number, "reference_number")
+        await self._endpoints.expire_token_approval(reference_number=reference_number)
 
     async def update_certificate_valid_to(
         self,
