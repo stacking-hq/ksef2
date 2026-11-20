@@ -89,6 +89,13 @@ def _raise(status: int, code: int) -> exceptions.KSeFApiError:
     return exc_info.value
 
 
+def test_missing_token_is_classified_as_not_found() -> None:
+    error = _raise(400, 21409)
+
+    assert isinstance(error, exceptions.KSeFNotFoundError)
+    assert error.exception_code is ExceptionCode.TOKEN_NOT_FOUND
+
+
 class TestCodeHints:
     @pytest.mark.parametrize(
         "code",

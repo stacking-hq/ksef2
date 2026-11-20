@@ -62,6 +62,33 @@ class AuthEndpoints(BaseEndpoints):
             spec.AuthenticationListResponse,
         )
 
+    def list_sessions_rev2(
+        self,
+        continuation_token: str | None = None,
+        **params: Unpack[AuthSessionsQueryParams],
+    ) -> spec.AuthenticationListResponseRev2:
+        """Fetch one page of authentication sessions.
+
+        Args:
+            continuation_token: Token from the previous page's response; ``None`` requests the first page.
+            **params: Optional query parameters (``AuthSessionsQueryParams``).
+
+        Returns:
+            The parsed KSeF response (``spec.AuthenticationListResponseRev2``).
+        """
+        req_headers = (
+            {"x-continuation-token": continuation_token} if continuation_token else None
+        )
+
+        return self._parse(
+            self._transport.get(
+                path=routes.AuthRoutes.LIST_SESSIONS_REV2,
+                params=self.build_params(params, self._AUTH_SESSIONS_PARAMS),
+                headers=req_headers,
+            ),
+            spec.AuthenticationListResponseRev2,
+        )
+
     def xades_auth(
         self,
         signed_xml: bytes,
@@ -144,6 +171,30 @@ class AuthEndpoints(BaseEndpoints):
                 headers=headers.KSeFHeaders.bearer(bearer_token),
             ),
             spec.AuthenticationOperationStatusResponse,
+        )
+
+    def auth_status_rev2(
+        self,
+        bearer_token: str,
+        reference_number: str,
+    ) -> spec.AuthenticationOperationStatusResponseRev2:
+        """Fetch the status of an in-progress authentication operation.
+
+        Args:
+            bearer_token: Bearer token to authenticate the request with.
+            reference_number: Reference number of the authentication operation or session.
+
+        Returns:
+            The parsed KSeF response (``spec.AuthenticationOperationStatusResponseRev2``).
+        """
+        return self._parse(
+            self._transport.get(
+                path=routes.AuthRoutes.AUTH_STATUS_REV2.format(
+                    referenceNumber=reference_number
+                ),
+                headers=headers.KSeFHeaders.bearer(bearer_token),
+            ),
+            spec.AuthenticationOperationStatusResponseRev2,
         )
 
     def redeem_token(

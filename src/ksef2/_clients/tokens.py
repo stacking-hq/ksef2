@@ -434,6 +434,15 @@ class TokensClient:
         """
         return self.get_status(reference_number=reference_number)
 
+    def approve(self, *, reference_number: str) -> None:
+        """Approve a revision 2 token using an eligible authenticated session.
+
+        Args:
+            reference_number: Reference number of the token.
+        """
+        require_nonempty(reference_number, "reference_number")
+        self._endpoints.approve_token(reference_number=reference_number)
+
     def revoke(
         self,
         *,

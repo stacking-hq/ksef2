@@ -9,7 +9,7 @@ Grupy operacji niskiego poziomu są cienkimi fasadami nad metodami SDK odpowiada
 
 | Moduł | Metody |
 | --- | --- |
-| `client.raw.auth` | `challenge`, `token_auth`, `xades_auth`, `auth_status`, `redeem_token`, `refresh_token` |
+| `client.raw.auth` | `challenge`, `token_auth`, `xades_auth`, `auth_status`, `auth_status_rev2`, `redeem_token`, `refresh_token` |
 | `client.raw.encryption` | `fetch_public_certificates` |
 | `client.raw.peppol` | `query_providers` |
 | `client.raw.testdata` | `create_subject`, `delete_subject`, `create_person`, `delete_person`, `grant_permissions`, `revoke_permissions`, `enable_attachments`, `revoke_attachments`, `block_context`, `unblock_context` |
@@ -20,7 +20,7 @@ Grupy operacji niskiego poziomu są cienkimi fasadami nad metodami SDK odpowiada
 
 | Moduł | Metody |
 | --- | --- |
-| `auth.raw.auth` | `list_sessions`, `terminate_current_session`, `terminate_auth_session`; także metody auth, gdy są związane z uwierzytelnionym transportem |
+| `auth.raw.auth` | `list_sessions`, `list_sessions_rev2`, `terminate_current_session`, `terminate_auth_session`; także metody auth, gdy są związane z uwierzytelnionym transportem |
 | `auth.raw.certificates` | `get_limits`, `get_enrollment_data`, `enroll`, `get_enrollment_status`, `retrieve`, `revoke`, `query` |
 | `auth.raw.collective_identifiers` | `generate`, `query`, `query_by_ksef_number`, `list_invoices` |
 | `auth.raw.encryption` | `fetch_public_certificates` |
@@ -32,8 +32,10 @@ Grupy operacji niskiego poziomu są cienkimi fasadami nad metodami SDK odpowiada
 | `auth.raw.permissions.query` | `query_entities_grants`, `query_personal_grants`, `query_attachments_status`, `query_authorizations_grants`, `query_eu_entities_grants`, `query_persons_grants`, `query_subordinate_entities_roles`, `query_subunits_grants` |
 | `auth.raw.permissions.status` | `query_operation_status`, `query_entity_roles` |
 | `auth.raw.session` | `open_online`, `terminate_online`, `open_batch`, `close_batch`, `get_session_upo`, `list_sessions` |
-| `auth.raw.testdata` | Te same metody co `client.raw.testdata`; dostępne tylko w `Environment.TEST`. |
-| `auth.raw.tokens` | `generate_token`, `list_tokens`, `token_status`, `revoke_token` |
+| `auth.raw.testdata` | Te same metody co `client.raw.testdata` oraz `expire_token_approval`. |
+| `auth.raw.tokens` | `generate_token`, `generate_token_rev2`, `list_tokens`, `list_tokens_rev2`, `token_status`, `token_status_rev2`, `approve_token`, `revoke_token` |
+
+Użyj `spec.GenerateTokenRequestRev2` w `generate_token_rev2()`, aby podać opcjonalne daty ważności. Token utworzony w sesji uwierzytelnionej tokenem wymaga zatwierdzenia w odpowiednio uprawnionej sesji uwierzytelnionej podpisem XAdES lub przez Węzeł Krajowy. Przed użyciem tokena sprawdź jego zatwierdzenie i ważność metodą `token_status_rev2()`.
 
 ## Importy
 

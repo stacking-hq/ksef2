@@ -31,6 +31,8 @@ __auth_endpoints__ = [
     EndpointRef("GET", routes.AuthRoutes.LIST_SESSIONS),
     EndpointRef("DELETE", routes.AuthRoutes.TERMINATE_CURRENT_SESSION),
     EndpointRef("DELETE", routes.AuthRoutes.TERMINATE_AUTH_SESSION),
+    EndpointRef("GET", routes.AuthRoutes.AUTH_STATUS_REV2),
+    EndpointRef("GET", routes.AuthRoutes.LIST_SESSIONS_REV2),
 ]
 
 __encryption_endpoints__ = [
@@ -85,6 +87,7 @@ __testdata_endpoints__ = [
     EndpointRef("POST", routes.TestDataRoutes.BLOCK_CONTEXT),
     EndpointRef("POST", routes.TestDataRoutes.UNBLOCK_CONTEXT),
     EndpointRef("PUT", routes.TestDataRoutes.UPDATE_CERTIFICATE),
+    EndpointRef("POST", routes.TestDataRoutes.EXPIRE_TOKEN_APPROVAL),
 ]
 
 __tokens_endpoints__ = [
@@ -92,6 +95,10 @@ __tokens_endpoints__ = [
     EndpointRef("GET", routes.TokenRoutes.LIST_TOKENS),
     EndpointRef("GET", routes.TokenRoutes.TOKEN_STATUS),
     EndpointRef("DELETE", routes.TokenRoutes.REVOKE_TOKEN),
+    EndpointRef("GET", routes.TokenRoutes.LIST_TOKENS_REV2),
+    EndpointRef("GET", routes.TokenRoutes.TOKEN_STATUS_REV2),
+    EndpointRef("POST", routes.TokenRoutes.GENERATE_TOKEN_REV2),
+    EndpointRef("POST", routes.TokenRoutes.APPROVE_TOKEN),
 ]
 
 __permissions_endpoints__ = [

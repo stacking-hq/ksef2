@@ -116,6 +116,7 @@ _AUTH_CODES = frozenset(
 _NOT_FOUND_CODES = frozenset(
     {
         exceptions.ExceptionCode.INVOICE_NOT_FOUND,
+        exceptions.ExceptionCode.TOKEN_NOT_FOUND,
         exceptions.ExceptionCode.SESSION_NOT_FOUND,
         exceptions.ExceptionCode.QUERY_RESULT_NOT_FOUND,
         exceptions.ExceptionCode.ENROLLMENT_NOT_FOUND,
@@ -239,6 +240,10 @@ _CODE_HINTS: dict[int, str] = {
         "`client.authentication.with_xades()` instead of "
         "`client.authentication.with_token()`."
     ),
+    21409: (
+        "Check the token reference number and authenticate "
+        "in the context that owns the token."
+    ),
     25003: (
         "Fetch the subject data KSeF expects with `get_enrollment_data()` and build a"
         " new CSR before calling `enroll()`."
@@ -258,6 +263,15 @@ _CODE_HINTS: dict[int, str] = {
     26002: (
         "KSeF tokens cannot be generated in this context type. Authenticate in a "
         "supported context before calling `generate()`."
+    ),
+    26004: ("Check the token status through the revision 2 endpoint before retrying."),
+    26005: (
+        "Authenticate with an accepted XAdES signature or "
+        "the National Node before approving the token."
+    ),
+    26006: (
+        "Check the token limit with `get_context_limits()` and "
+        "revoke an unused token before generating another."
     ),
     30001: (
         "The subject or person already exists on KSeF TEST. Reuse it, or remove it "

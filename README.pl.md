@@ -55,7 +55,7 @@ Projekt nie jest publikowany, zatwierdzany ani wspierany przez Ministerstwo
 Finansów. Oficjalna [dokumentacja KSeF](https://api-test.ksef.mf.gov.pl/docs/v2/)
 pozostaje źródłem prawdy dla zachowania API.
 
-SDK obecnie celuje w wersję OpenAPI KSeF `2.9.0`.
+SDK obecnie celuje w wersję OpenAPI KSeF `2.10.0`.
 
 ## Instalacja
 

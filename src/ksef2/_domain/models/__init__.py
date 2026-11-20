@@ -201,6 +201,7 @@ from ksef2._domain.models.limits import (
     ContextLimits,
     SessionLimits,
     SubjectLimits,
+    TokenLimits,
 )
 from ksef2._domain.models.peppol import (
     PeppolProvider,
@@ -451,6 +452,7 @@ __all__ = [
     "ContextLimits",
     "SessionLimits",
     "SubjectLimits",
+    "TokenLimits",
     # peppol
     "PeppolProvider",
     "ListPeppolProvidersResponse",

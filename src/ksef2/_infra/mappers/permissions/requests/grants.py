@@ -254,6 +254,8 @@ def eu_entity_permission_from_literal(value: str) -> spec.EuEntityPermissionType
             return spec.EuEntityPermissionType.InvoiceRead
         case "invoice_write":
             return spec.EuEntityPermissionType.InvoiceWrite
+        case "collective_identifier_manage":
+            return spec.EuEntityPermissionType.CollectiveIdentifierManage
         case _:
             raise ValueError(f"Unknown EU entity permission type: {value!r}")
 

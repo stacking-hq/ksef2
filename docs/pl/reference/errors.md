@@ -294,8 +294,12 @@ Wskazówki do błędów API zależą najpierw od kodu KSeF, potem od statusu HTT
 | inny | 25003 | `KSeFApiError` | Fetch the subject data KSeF expects with `get_enrollment_data()` and build a new CSR before calling `enroll()`. |
 | inny | 25006 | `KSeFApiError` | KSeF allows only a limited number of certificate enrollments. `get_limits()` shows how many are still allowed. |
 | inny | 25007 | `KSeFApiError` | You hold the maximum number of KSeF certificates. Revoke one you no longer use with `revoke()`, and check `get_limits()` for the limit. |
+| inny | 21409 | `KSeFNotFoundError` | Check the token reference number and authenticate in the context that owns the token. |
 | inny | 26001 | `KSeFApiError` | A token can only get permissions the authenticated identity holds. Request fewer permissions in `generate()`. |
 | inny | 26002 | `KSeFApiError` | KSeF tokens cannot be generated in this context type. Authenticate in a supported context before calling `generate()`. |
+| inny | 26004 | `KSeFApiError` | Check the token status through the revision 2 endpoint before retrying. |
+| inny | 26005 | `KSeFApiError` | Authenticate with an accepted XAdES signature or the National Node before approving the token. |
+| inny | 26006 | `KSeFApiError` | Check the token limit with `get_context_limits()` and revoke an unused token before generating another. |
 | inny | 30001 | `KSeFApiError` | The subject or person already exists on KSeF TEST. Reuse it, or remove it first with `delete_subject()` or `delete_person()`. |
 | 401 | inny | `KSeFAuthError` | KSeF rejected the credentials or the access token. Authenticate again with `client.authentication.with_token()` or `client.authentication.with_xades()`, and check that the token or certificate is valid for this context. |
 | 403 | inny | `KSeFPermissionDeniedError` | The authenticated identity is not allowed to do this in the current context. Check the reason in `details`, and grant the missing permission with the permissions client, for example `grant_person()`. |
@@ -391,6 +395,7 @@ dla faktury, którą odrzucił (na przykład duplikatu, status 440). Najpierw wy
 | `21403` | `INVALID_FILE_HASH` | Nieprawidłowy skrót pliku. |
 | `21405` | `VALIDATION_ERROR` | Błąd walidacji danych wejściowych. |
 | `21406` | `SIGNATURE_AUTH_TYPE_CONFLICT` | Konflikt podpisu i typu uwierzytelnienia. |
+| `21409` | `TOKEN_NOT_FOUND` | Nie znaleziono tokena o podanym numerze referencyjnym. |
 | `21418` | `INVALID_CONTINUATION_TOKEN` | Przekazany token kontynuacji jest nieprawidłowy. |
 | `21470` | `UNKNOWN_KEY_ID` | Identyfikator klucza jest nieznany lub wskazuje na wycofany klucz. |
 | `25001` | `CSR_DATA_UNAVAILABLE` | Brak możliwości pobrania danych do CSR dla wykorzystanego sposobu uwierzytelnienia. |
@@ -406,6 +411,9 @@ dla faktury, którą odrzucił (na przykład duplikatu, status 440). Najpierw wy
 | `25011` | `INVALID_CSR_SIGNATURE_ALGORITHM` | Nieprawidłowy algorytm podpisu CSR. |
 | `26001` | `TOKEN_PERMISSIONS_NOT_HELD` | Nie można nadać tokenowi uprawnień, których nie posiadasz. |
 | `26002` | `TOKEN_CONTEXT_NOT_ALLOWED` | Nie można wygenerować tokena dla obecnego typu kontekstu. |
+| `26004` | `TOKEN_STATUS_CONFLICT` | Status tokena nie pozwala na wykonanie operacji. |
+| `26005` | `TOKEN_APPROVAL_AUTH_METHOD_NOT_ALLOWED` | Użyta metoda uwierzytelnienia nie pozwala na zatwierdzenie tokena. |
+| `26006` | `TOKEN_CONTEXT_LIMIT_REACHED` | Osiągnięto limit tokenów w kontekście. |
 | `30001` | `OBJECT_ALREADY_EXISTS` | Podmiot lub uprawnienie już istnieje. |
 | `71001` | `COLLECTIVE_INVOICE_NOT_FOUND` | Faktura o podanym identyfikatorze nie istnieje. |
 | `71002` | `COLLECTIVE_IDENTIFIER_LIMIT_REACHED` | Faktura jest już przypisana do maksymalnej liczby identyfikatorów zbiorczych. |

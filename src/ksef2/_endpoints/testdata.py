@@ -138,6 +138,18 @@ class TestDataEndpoints(BaseEndpoints):
             json=body.model_dump(mode="json", by_alias=True),
         )
 
+    def expire_token_approval(self, reference_number: str) -> None:
+        """Expire the approval window of a token in the TEST environment.
+
+        Args:
+            reference_number: Reference number of the token.
+        """
+        _ = self._transport.post(
+            path=routes.TestDataRoutes.EXPIRE_TOKEN_APPROVAL.format(
+                referenceNumber=reference_number
+            ),
+        )
+
     def update_certificate(
         self,
         serial_number: str,

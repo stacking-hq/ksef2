@@ -94,6 +94,11 @@ class TestDataRoutes(Route):
     UNBLOCK_CONTEXT = (HttpMethod.POST, "/testdata/context/unblock")
     UPDATE_CERTIFICATE = (HttpMethod.PUT, "/testdata/certificates/{serialNumber}")
 
+    EXPIRE_TOKEN_APPROVAL = (
+        HttpMethod.POST,
+        "/testdata/tokens/{referenceNumber}/expire-approval",
+    )
+
 
 class LimitRoutes(Route):
     GET_CONTEXT_LIMITS = (HttpMethod.GET, "/limits/context")
@@ -114,6 +119,11 @@ class TokenRoutes(Route):
     TOKEN_STATUS = (HttpMethod.GET, "/tokens/{referenceNumber}")
     REVOKE_TOKEN = (HttpMethod.DELETE, "/tokens/{referenceNumber}")
 
+    GENERATE_TOKEN_REV2 = (HttpMethod.POST, "/tokens/rev2")
+    LIST_TOKENS_REV2 = (HttpMethod.GET, "/tokens/rev2")
+    TOKEN_STATUS_REV2 = (HttpMethod.GET, "/tokens/rev2/{referenceNumber}")
+    APPROVE_TOKEN = (HttpMethod.POST, "/tokens/{referenceNumber}/approve")
+
 
 class AuthRoutes(Route):
     CHALLENGE = (HttpMethod.POST, "/auth/challenge")
@@ -125,6 +135,9 @@ class AuthRoutes(Route):
     LIST_SESSIONS = (HttpMethod.GET, "/auth/sessions")
     TERMINATE_CURRENT_SESSION = (HttpMethod.DELETE, "/auth/sessions/current")
     TERMINATE_AUTH_SESSION = (HttpMethod.DELETE, "/auth/sessions/{referenceNumber}")
+
+    LIST_SESSIONS_REV2 = (HttpMethod.GET, "/auth/sessions/rev2")
+    AUTH_STATUS_REV2 = (HttpMethod.GET, "/auth/rev2/{referenceNumber}")
 
 
 class EncryptionRoutes(Route):

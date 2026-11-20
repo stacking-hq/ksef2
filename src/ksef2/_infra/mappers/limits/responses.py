@@ -14,6 +14,7 @@ from ksef2._domain.models.limits import (
     SubjectCertificateLimits,
     SubjectEnrollmentLimits,
     SubjectLimits,
+    TokenLimits,
 )
 from ksef2._infra.schema.api import spec
 
@@ -59,6 +60,7 @@ def _(response: spec.EffectiveContextLimits) -> ContextLimits:
         collective_identifier=CollectiveIdentifierLimits(
             max_invoices=response.collectiveIdentifier.maxInvoices,
         ),
+        tokens=TokenLimits(max_tokens=response.tokens.maxTokens),
     )
 
 

@@ -204,6 +204,10 @@ def eu_query_permission_from_literal(
             return spec.EuEntityPermissionsQueryPermissionType.InvoiceRead
         case "introspection":
             return spec.EuEntityPermissionsQueryPermissionType.Introspection
+        case "collective_identifier_manage":
+            return (
+                spec.EuEntityPermissionsQueryPermissionType.CollectiveIdentifierManage
+            )
         case _:
             raise ValueError(f"Unknown EU query permission type: {value!r}")
 
@@ -220,6 +224,10 @@ def eu_query_permission_from_enum(
             return spec.EuEntityPermissionsQueryPermissionType.InvoiceRead
         case EuEntityQueryPermissionTypeEnum.INTROSPECTION:
             return spec.EuEntityPermissionsQueryPermissionType.Introspection
+        case EuEntityQueryPermissionTypeEnum.COLLECTIVE_IDENTIFIER_MANAGE:
+            return (
+                spec.EuEntityPermissionsQueryPermissionType.CollectiveIdentifierManage
+            )
         case _ as unreachable:  # pyright: ignore[reportUnnecessaryComparison]
             assert_never(unreachable)
 

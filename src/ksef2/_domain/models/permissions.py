@@ -67,7 +67,9 @@ type IndirectTargetIdentifierType = Literal["nip", "all_partners", "internal_id"
 
 type SubunitIdentifierType = Literal["nip", "internal_id"]
 
-type EuEntityPermissionType = Literal["invoice_read", "invoice_write"]
+type EuEntityPermissionType = Literal[
+    "invoice_read", "invoice_write", "collective_identifier_manage"
+]
 
 type EuEntityAdminContextIdentifierType = Literal["nip_vat_ue"]
 
@@ -111,7 +113,11 @@ type SubordinateEntityRoleType = Literal[
 ]
 
 type EuEntityQueryPermissionType = Literal[
-    "vat_ue_manage", "invoice_write", "invoice_read", "introspection"
+    "vat_ue_manage",
+    "invoice_write",
+    "invoice_read",
+    "introspection",
+    "collective_identifier_manage",
 ]
 
 
@@ -194,6 +200,7 @@ class EuEntityPermissionTypeEnum(StrEnum):
 
     INVOICE_READ = "invoice_read"
     INVOICE_WRITE = "invoice_write"
+    COLLECTIVE_IDENTIFIER_MANAGE = "collective_identifier_manage"
 
 
 class EuEntityAdminContextIdentifierTypeEnum(StrEnum):
@@ -248,6 +255,7 @@ class EuEntityQueryPermissionTypeEnum(StrEnum):
     INVOICE_WRITE = "invoice_write"
     INVOICE_READ = "invoice_read"
     INTROSPECTION = "introspection"
+    COLLECTIVE_IDENTIFIER_MANAGE = "collective_identifier_manage"
 
 
 class ScopeLiteralEnum(StrEnum):
