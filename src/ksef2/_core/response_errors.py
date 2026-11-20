@@ -116,6 +116,7 @@ _AUTH_CODES = frozenset(
 _NOT_FOUND_CODES = frozenset(
     {
         exceptions.ExceptionCode.INVOICE_NOT_FOUND,
+        exceptions.ExceptionCode.TOKEN_NOT_FOUND,
         exceptions.ExceptionCode.SESSION_NOT_FOUND,
         exceptions.ExceptionCode.QUERY_RESULT_NOT_FOUND,
         exceptions.ExceptionCode.ENROLLMENT_NOT_FOUND,
@@ -263,9 +264,7 @@ _CODE_HINTS: dict[int, str] = {
         "KSeF tokens cannot be generated in this context type. Authenticate in a "
         "supported context before calling `generate()`."
     ),
-    26004: (
-        "Check the current token status with `token_status_rev2()` before retrying."
-    ),
+    26004: ("Check the token status through the revision 2 endpoint before retrying."),
     26005: (
         "Authenticate with an accepted XAdES signature or "
         "the National Node before approving the token."

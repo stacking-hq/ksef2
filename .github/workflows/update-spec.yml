@@ -62,6 +62,10 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           add-paths: |
+            README.md
+            README.pl.md
+            docs/en/reference/release-notes-1-0-0.md
+            docs/pl/reference/release-notes-1-0-0.md
             uv.lock
             openapi.json
             src/ksef2/__openapi_version__.py

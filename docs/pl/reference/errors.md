@@ -294,10 +294,10 @@ Wskazówki do błędów API zależą najpierw od kodu KSeF, potem od statusu HTT
 | inny | 25003 | `KSeFApiError` | Fetch the subject data KSeF expects with `get_enrollment_data()` and build a new CSR before calling `enroll()`. |
 | inny | 25006 | `KSeFApiError` | KSeF allows only a limited number of certificate enrollments. `get_limits()` shows how many are still allowed. |
 | inny | 25007 | `KSeFApiError` | You hold the maximum number of KSeF certificates. Revoke one you no longer use with `revoke()`, and check `get_limits()` for the limit. |
-| inny | 21409 | `KSeFApiError` | Check the token reference number and authenticate in the context that owns the token. |
+| inny | 21409 | `KSeFNotFoundError` | Check the token reference number and authenticate in the context that owns the token. |
 | inny | 26001 | `KSeFApiError` | A token can only get permissions the authenticated identity holds. Request fewer permissions in `generate()`. |
 | inny | 26002 | `KSeFApiError` | KSeF tokens cannot be generated in this context type. Authenticate in a supported context before calling `generate()`. |
-| inny | 26004 | `KSeFApiError` | Check the current token status with `token_status_rev2()` before retrying. |
+| inny | 26004 | `KSeFApiError` | Check the token status through the revision 2 endpoint before retrying. |
 | inny | 26005 | `KSeFApiError` | Authenticate with an accepted XAdES signature or the National Node before approving the token. |
 | inny | 26006 | `KSeFApiError` | Check the token limit with `get_context_limits()` and revoke an unused token before generating another. |
 | inny | 30001 | `KSeFApiError` | The subject or person already exists on KSeF TEST. Reuse it, or remove it first with `delete_subject()` or `delete_person()`. |
