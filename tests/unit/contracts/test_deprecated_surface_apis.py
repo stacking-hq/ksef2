@@ -22,7 +22,10 @@ from ksef2._core.routes import AuthRoutes
 from ksef2._clients.tokens import TokensClient
 from ksef2._domain.models.permissions import GrantPermissionsResponse
 from ksef2._infra.schema.api import spec
-from tests.unit.factories.tokens import TokenStatusResponseFactory
+from tests.unit.factories.tokens import (
+    TokenStatusResponseRev2Factory,
+    token_status_rev2,
+)
 
 from tests.unit.clients.test_paging import (
     COLLECTIONS,
@@ -180,9 +183,11 @@ class TestDeprecatedPagingAliases:
         assert len(flavor.transport.calls) == 1
 
 
-def _token_status(flavor: Flavor, status: spec.AuthenticationTokenStatus) -> None:
+def _token_status(flavor: Flavor, status: spec.TokenStatusRev2Code) -> None:
     flavor.transport.enqueue(
-        TokenStatusResponseFactory.build(status=status).model_dump(mode="json")
+        TokenStatusResponseRev2Factory.build(
+            status=token_status_rev2(status)
+        ).model_dump(mode="json")
     )
 
 
@@ -193,8 +198,8 @@ class TestDeprecatedTokenAliases:
     def test_wait_for_activation_warns_once_and_polls_until_active(
         self, flavor: Flavor
     ) -> None:
-        _token_status(flavor, spec.AuthenticationTokenStatus.Pending)
-        _token_status(flavor, spec.AuthenticationTokenStatus.Active)
+        _token_status(flavor, spec.TokenStatusRev2Code.Pending)
+        _token_status(flavor, spec.TokenStatusRev2Code.Active)
         tokens = self._tokens(flavor)
 
         status = once(
@@ -210,7 +215,7 @@ class TestDeprecatedTokenAliases:
         assert len(flavor.transport.calls) == 2
 
     def test_status_warns_once_and_returns_the_status(self, flavor: Flavor) -> None:
-        _token_status(flavor, spec.AuthenticationTokenStatus.Pending)
+        _token_status(flavor, spec.TokenStatusRev2Code.Pending)
         tokens = self._tokens(flavor)
 
         status = once(

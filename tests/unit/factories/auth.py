@@ -159,3 +159,35 @@ class DomainRefreshedTokenFactory(ModelFactory[domain_auth.RefreshedToken]):
         token="access-token",
         valid_until=_future_time(),
     )
+
+
+_AUTH_METHOD_REV2 = spec.AuthenticationMethodInfoRev2(
+    category=spec.AuthenticationMethodCategoryRev2(
+        code=spec.AuthenticationMethodCategoryRev2Code.Token,
+        rawCode="Token",
+        displayName="Token",
+    ),
+    code="token.ksef",
+    displayName="Token KSeF",
+)
+
+
+@register_fixture(name="auth_status_rev2_resp")
+class AuthenticationOperationStatusResponseRev2Factory(
+    ModelFactory[spec.AuthenticationOperationStatusResponseRev2]
+):
+    authenticationMethodInfo = _AUTH_METHOD_REV2
+
+
+class AuthenticationListItemRev2Factory(ModelFactory[spec.AuthenticationListItemRev2]):
+    authenticationMethodInfo = _AUTH_METHOD_REV2
+    referenceNumber = "20250514-AU-2DFC46C000-3AC6D5877F-D4"
+
+
+@register_fixture(name="auth_list_rev2_resp")
+class AuthenticationListResponseRev2Factory(
+    ModelFactory[spec.AuthenticationListResponseRev2]
+):
+    @classmethod
+    def items(cls) -> list[spec.AuthenticationListItemRev2]:
+        return [AuthenticationListItemRev2Factory.build()]

@@ -478,6 +478,24 @@ class TestPermissionsQueryResponseMapper:
         assert output.subject_first_name == "Jan"
         assert output.entity_address == "Main Street 1"
 
+    def test_maps_eu_collective_identifier_permission(
+        self, perm_eu_entity_permission_item: BaseFactory[spec.EuEntityPermission]
+    ) -> None:
+        wire_permission = (
+            spec.EuEntityPermissionsQueryPermissionType.CollectiveIdentifierManage
+        )
+        result = eu_entity_from_spec(
+            perm_eu_entity_permission_item.build(permissionScope=wire_permission)
+        )
+
+        assert result.permission_type == "collective_identifier_manage"
+        assert (
+            eu_query_permission_from_enum(
+                domain_permissions.EuEntityQueryPermissionTypeEnum.COLLECTIVE_IDENTIFIER_MANAGE
+            )
+            is wire_permission
+        )
+
     def test_maps_eu_entity_permission_with_subject_entity_details(
         self,
         perm_eu_entity_permission_item: BaseFactory[spec.EuEntityPermission],

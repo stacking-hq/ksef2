@@ -107,6 +107,16 @@ def _(request: TokenStatusEnum) -> spec.AuthenticationTokenStatus:
             return spec.AuthenticationTokenStatus.Revoked
         case TokenStatusEnum.FAILED:
             return spec.AuthenticationTokenStatus.Failed
+        case (
+            TokenStatusEnum.NOT_YET_ACTIVE
+            | TokenStatusEnum.AWAITING_APPROVAL
+            | TokenStatusEnum.APPROVAL_EXPIRED
+            | TokenStatusEnum.EXPIRED
+            | TokenStatusEnum.OTHER
+        ):
+            raise ValueError(
+                f"Token status {request.value!r} has no revision 1 equivalent"
+            )
         case _ as unreachable:  # pyright: ignore[reportUnnecessaryComparison]
             assert_never(unreachable)
 

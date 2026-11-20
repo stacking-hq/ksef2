@@ -17,7 +17,6 @@ from ksef2._domain.models.testdata import (
 )
 from ksef2._domain.models.tokens import (
     GenerateTokenResponse,
-    TokenAuthorIdentifier,
     TokenStatusResponse,
 )
 
@@ -173,18 +172,16 @@ def test_list_tokens_with_author_filter(token_context):
     if not all_tokens:
         pytest.skip("No tokens available to test author filter")
 
-    # Use the first token'request author for filtering
     first_author = all_tokens[0].author_identifier
 
-    author_filter = TokenAuthorIdentifier(
-        type=first_author.type,
-        value=first_author.value,
-    )
+    author_type = first_author.type
+    if author_type == "other":
+        pytest.skip("KSeF does not accept unknown author types in token filters")
 
     tokens = auth.tokens.list(
         params=TokenListParams(
-            author_identifier=author_filter.value,
-            author_identifier_type=author_filter.type,
+            author_identifier=first_author.value,
+            author_identifier_type=author_type,
         )
     ).first_page()
 

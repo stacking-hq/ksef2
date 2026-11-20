@@ -1,19 +1,64 @@
 from datetime import datetime, timezone
 
+import pytest
+
 from ksef2 import Environment
-from ksef2.raw import RawAuthenticatedClient, RawClient, spec
-from tests.unit.fakes.transport import FakeTransport
+from ksef2.clients import (
+    AsyncTestDataClient,
+    AsyncTokensClient,
+    TestDataClient as SandboxClient,
+    TokensClient,
+)
+from ksef2.models import TokenListParams
+from ksef2.raw import (
+    AsyncRawAuthenticatedClient,
+    AsyncRawClient,
+    ListTokensRev2QueryParams,
+    RawAuthenticatedClient,
+    RawClient,
+    spec,
+)
+from ksef2.raw.mappers.auth import from_spec
+from tests.unit.fakes.transport import AsyncFakeTransport
+from tests.unit.factories.tokens import (
+    QueryTokensResponseItemRev2Factory,
+    token_status_rev2,
+)
+from tests.unit.support.flavors import Flavor
+from ksef2._core.exceptions import KSeFArgumentError
 
 REFERENCE = "0" * 36
 VALID_FROM = datetime(2027, 1, 1, tzinfo=timezone.utc)
 
 
-def test_rev2_token_workflow(fake_transport: FakeTransport) -> None:
-    auth = RawAuthenticatedClient(
-        transport=fake_transport,
-        authed_transport=fake_transport,
-        environment=Environment.TEST,
+def _raw_clients(
+    flavor: Flavor,
+) -> tuple[
+    RawClient | AsyncRawClient, RawAuthenticatedClient | AsyncRawAuthenticatedClient
+]:
+    transport = flavor.transport
+    if isinstance(transport, AsyncFakeTransport):
+        return (
+            AsyncRawClient(transport, Environment.TEST),
+            AsyncRawAuthenticatedClient(
+                transport=transport,
+                authed_transport=transport,
+                environment=Environment.TEST,
+            ),
+        )
+    return (
+        RawClient(transport, Environment.TEST),
+        RawAuthenticatedClient(
+            transport=transport,
+            authed_transport=transport,
+            environment=Environment.TEST,
+        ),
     )
+
+
+def test_rev2_token_workflow(flavor: Flavor) -> None:
+    _, auth = _raw_clients(flavor)
+    fake_transport = flavor.transport
     fake_transport.enqueue({"referenceNumber": REFERENCE, "token": "secret"}, 202)
     fake_transport.enqueue({"tokens": [], "continuationToken": "next"})
     token_status = {
@@ -41,29 +86,30 @@ def test_rev2_token_workflow(fake_transport: FakeTransport) -> None:
     fake_transport.enqueue(status_code=204)
     fake_transport.enqueue(status_code=204)
 
-    generated = auth.tokens.generate_token_rev2(
-        spec.GenerateTokenRequestRev2(
-            permissions=[spec.TokenPermissionType.InvoiceRead],
-            description="reporting",
-            validFrom=VALID_FROM,
+    generated = flavor.run(
+        auth.tokens.generate_token_rev2(
+            spec.GenerateTokenRequestRev2(
+                permissions=[spec.TokenPermissionType.InvoiceRead],
+                description="reporting",
+                validFrom=VALID_FROM,
+            )
         )
     )
     assert generated.referenceNumber == REFERENCE
     assert generated.token == "secret"
-    page = auth.tokens.list_tokens_rev2(
-        continuation_token="previous",
-        status=[
-            spec.TokenStatusFilterRev2.AwaitingApproval,
-            spec.TokenStatusFilterRev2.NotYetActive,
-        ],
-        validFrom=VALID_FROM,
+    filters: ListTokensRev2QueryParams = {
+        "status": (spec.TokenStatusFilterRev2.AwaitingApproval, "NotYetActive"),
+        "validFrom": "2027-01-01T00:00:00Z",
+    }
+    page = flavor.run(
+        auth.tokens.list_tokens_rev2(continuation_token="previous", **filters)
     )
     assert page.continuationToken == "next"
-    status = auth.tokens.token_status_rev2(REFERENCE)
+    status = flavor.run(auth.tokens.token_status_rev2(REFERENCE))
     assert status.validFrom == VALID_FROM
     assert status.status.code is spec.TokenStatusRev2Code.AwaitingApproval
-    auth.tokens.approve_token(REFERENCE)
-    auth.testdata.expire_token_approval(REFERENCE)
+    flavor.run(auth.tokens.approve_token(REFERENCE))
+    flavor.run(auth.testdata.expire_token_approval(REFERENCE))
 
     create, listing, get_status, approve, expire = fake_transport.calls
     assert (create.method, create.path) == ("POST", "/tokens/rev2")
@@ -86,13 +132,9 @@ def test_rev2_token_workflow(fake_transport: FakeTransport) -> None:
     assert approve.json is expire.json is None
 
 
-def test_rev2_auth_status_and_sessions(fake_transport: FakeTransport) -> None:
-    root = RawClient(fake_transport, Environment.TEST)
-    auth = RawAuthenticatedClient(
-        transport=fake_transport,
-        authed_transport=fake_transport,
-        environment=Environment.TEST,
-    )
+def test_rev2_auth_status_and_sessions(flavor: Flavor) -> None:
+    root, auth = _raw_clients(flavor)
+    fake_transport = flavor.transport
     operation = {
         "startDate": "2027-01-01T00:00:00Z",
         "authenticationMethodInfo": {
@@ -101,7 +143,7 @@ def test_rev2_auth_status_and_sessions(fake_transport: FakeTransport) -> None:
                 "rawCode": "XadesSignature",
                 "displayName": "XAdES",
             },
-            "code": "QualifiedSignature",
+            "code": "xades.qualified-signature",
             "displayName": "Qualified signature",
         },
         "status": {"code": 200, "description": "Authenticated"},
@@ -111,11 +153,15 @@ def test_rev2_auth_status_and_sessions(fake_transport: FakeTransport) -> None:
         {"items": [{**operation, "referenceNumber": REFERENCE, "isCurrent": True}]}
     )
 
-    status = root.auth.auth_status_rev2("temporary", REFERENCE)
-    assert status.authenticationMethodInfo.code == "QualifiedSignature"
-    sessions = auth.auth.list_sessions_rev2(continuation_token="previous", pageSize=10)
+    status = flavor.run(root.auth.auth_status_rev2("temporary", REFERENCE))
+    assert status.authenticationMethodInfo.code == "xades.qualified-signature"
+    sessions = flavor.run(
+        auth.auth.list_sessions_rev2(continuation_token="previous", pageSize=10)
+    )
     assert sessions.items[0].referenceNumber == REFERENCE
     assert sessions.items[0].isCurrent is True
+    assert from_spec(status).authentication_method_category == "xades_signature"
+    assert from_spec(sessions).items[0].is_current is True
 
     status_call, sessions_call = fake_transport.calls
     assert (status_call.method, status_call.path) == ("GET", f"/auth/rev2/{REFERENCE}")
@@ -124,3 +170,50 @@ def test_rev2_auth_status_and_sessions(fake_transport: FakeTransport) -> None:
     assert sessions_call.headers == {"x-continuation-token": "previous"}
     assert sessions_call.params is not None
     assert sessions_call.params["pageSize"] == "10"
+
+
+def test_high_level_token_approval_and_test_expiry(flavor: Flavor) -> None:
+    tokens = flavor.client(TokensClient, AsyncTokensClient)
+    testdata = flavor.client(SandboxClient, AsyncTestDataClient)
+    for operation in (tokens.approve, testdata.expire_token_approval):
+        with pytest.raises(KSeFArgumentError):
+            flavor.run(operation(reference_number=" "))
+
+    assert flavor.transport.calls == []
+    flavor.transport.enqueue(status_code=204)
+    flavor.transport.enqueue(status_code=204)
+
+    flavor.run(tokens.approve(reference_number=REFERENCE))
+    flavor.run(testdata.expire_token_approval(reference_number=REFERENCE))
+
+    assert [(call.method, call.path) for call in flavor.transport.calls] == [
+        ("POST", f"/tokens/{REFERENCE}/approve"),
+        ("POST", f"/testdata/tokens/{REFERENCE}/expire-approval"),
+    ]
+
+
+def test_high_level_token_list_filters_and_failure_details(flavor: Flavor) -> None:
+    tokens = flavor.client(TokensClient, AsyncTokensClient)
+    token = QueryTokensResponseItemRev2Factory.build(
+        status=token_status_rev2(spec.TokenStatusRev2Code.ApprovalExpired),
+        failure=spec.TokenFailureRev2(code="Expired", description="Approval expired"),
+    )
+    flavor.transport.enqueue({"tokens": [token.model_dump(mode="json")]})
+    params = TokenListParams(
+        status=["approval_expired"],
+        author_identifier="1234567890",
+        author_identifier_type="nip",
+        valid_to=VALID_FROM,
+    )
+
+    items = flavor.run(tokens.list(params=params).first_page())
+
+    call = flavor.transport.calls[0]
+    assert call.path == "/tokens/rev2"
+    assert call.params is not None
+    assert call.params["status"] == "ApprovalExpired"
+    assert call.params["authorIdentifierType"] == "Nip"
+    assert call.params["validTo"] == "2027-01-01T00:00:00+00:00"
+    assert items[0].status == "approval_expired"
+    assert items[0].valid_to == token.validTo
+    assert items[0].failure.code == "Expired"

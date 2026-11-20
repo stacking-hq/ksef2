@@ -47,7 +47,7 @@ class AsyncSessionManagementClient:
         continuation_token: str | None = None,
     ) -> AuthenticationSessionsResponse:
         return from_spec(
-            await self._auth_ep.list_sessions(
+            await self._auth_ep.list_sessions_rev2(
                 continuation_token=continuation_token,
                 pageSize=page_size,
             )

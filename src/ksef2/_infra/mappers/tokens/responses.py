@@ -5,6 +5,7 @@ from functools import singledispatch
 from typing import assert_never, overload
 
 from pydantic import BaseModel
+from pydantic.alias_generators import to_snake
 
 from ksef2._domain.models.tokens import (
     GenerateTokenResponse,
@@ -14,27 +15,37 @@ from ksef2._domain.models.tokens import (
     TokenContextIdentifier,
     TokenContextIdentifierType,
     TokenInfo,
+    TokenFailure,
     TokenPermission,
     TokenStatus,
+    TokenStatusEnum,
     TokenStatusResponse,
 )
 from ksef2._infra.schema.api import spec
 
 
 @overload
-def from_spec(response: spec.GenerateTokenResponse) -> GenerateTokenResponse: ...
+def from_spec(
+    response: spec.GenerateTokenResponse | spec.GenerateTokenResponseRev2,
+) -> GenerateTokenResponse: ...
 
 
 @overload
-def from_spec(response: spec.TokenStatusResponse) -> TokenStatusResponse: ...
+def from_spec(
+    response: spec.TokenStatusResponse | spec.TokenStatusResponseRev2,
+) -> TokenStatusResponse: ...
 
 
 @overload
-def from_spec(response: spec.QueryTokensResponse) -> QueryTokensResponse: ...
+def from_spec(
+    response: spec.QueryTokensResponse | spec.QueryTokensResponseRev2,
+) -> QueryTokensResponse: ...
 
 
 @overload
-def from_spec(response: spec.QueryTokensResponseItem) -> TokenInfo: ...
+def from_spec(
+    response: spec.QueryTokensResponseItem | spec.QueryTokensResponseItemRev2,
+) -> TokenInfo: ...
 
 
 @overload
@@ -177,7 +188,9 @@ def _(response: spec.TokenContextIdentifierTypeIdentifier) -> TokenContextIdenti
 
 
 @_from_spec.register
-def _(response: spec.GenerateTokenResponse) -> GenerateTokenResponse:
+def _(
+    response: spec.GenerateTokenResponse | spec.GenerateTokenResponseRev2,
+) -> GenerateTokenResponse:
     return GenerateTokenResponse(
         reference_number=response.referenceNumber,
         token=response.token,
@@ -212,4 +225,89 @@ def _(response: spec.QueryTokensResponse) -> QueryTokensResponse:
     return QueryTokensResponse(
         continuation_token=response.continuationToken,
         tokens=[from_spec(t) for t in response.tokens],
+    )
+
+
+def _rev2_status(status: spec.TokenStatusRev2) -> TokenStatus:
+    if status.code is spec.TokenStatusRev2Code.FutureValue:
+        return "other"
+    return TokenStatusEnum(to_snake(status.code.value)).value
+
+
+def _rev2_failure(failure: spec.TokenFailureRev2 | None) -> TokenFailure | None:
+    if failure is None:
+        return None
+    return TokenFailure(
+        code=failure.code, description=failure.description, details=failure.details
+    )
+
+
+@_from_spec.register
+def _(response: spec.TokenStatusResponseRev2) -> TokenStatusResponse:
+    status = _rev2_status(response.status)
+    return TokenStatusResponse(
+        reference_number=response.referenceNumber,
+        status=status,
+        valid_from=response.validFrom,
+        valid_to=response.validTo,
+        failure=_rev2_failure(response.failure),
+        raw_status=response.status.rawCode if status == "other" else None,
+    )
+
+
+@_from_spec.register
+def _(response: spec.QueryTokensResponseItemRev2) -> TokenInfo:
+    author = response.authorIdentifier
+    context = response.contextIdentifier
+    unknown_author = (
+        author.type.code is spec.TokenAuthorIdentifierTypeCodeRev2.FutureValue
+    )
+    unknown_context = (
+        context.type.code is spec.TokenContextIdentifierTypeCodeRev2.FutureValue
+    )
+    status = _rev2_status(response.status)
+    failure = _rev2_failure(response.failure)
+    return TokenInfo(
+        reference_number=response.referenceNumber,
+        author_identifier=TokenAuthorIdentifier(
+            type="other"
+            if unknown_author
+            else from_spec(spec.TokenAuthorIdentifierType(author.type.code.value)),
+            value=author.value,
+            raw_type=author.type.rawCode if unknown_author else None,
+        ),
+        context_identifier=TokenContextIdentifier(
+            type="other"
+            if unknown_context
+            else from_spec(spec.TokenContextIdentifierType(context.type.code.value)),
+            value=context.value,
+            raw_type=context.type.rawCode if unknown_context else None,
+        ),
+        description=response.description,
+        requested_permissions=[
+            from_spec(spec.TokenPermissionType(permission.code.value))
+            for permission in response.requestedPermissions
+            if permission.code is not spec.TokenPermissionCodeRev2.FutureValue
+        ],
+        unknown_permissions=[
+            permission.rawCode
+            for permission in response.requestedPermissions
+            if permission.code is spec.TokenPermissionCodeRev2.FutureValue
+        ],
+        date_created=response.dateCreated,
+        last_use_date=response.lastUseDate,
+        status=status,
+        status_details=failure.details if failure else None,
+        valid_from=response.validFrom,
+        valid_to=response.validTo,
+        failure=failure,
+        raw_status=response.status.rawCode if status == "other" else None,
+    )
+
+
+@_from_spec.register
+def _(response: spec.QueryTokensResponseRev2) -> QueryTokensResponse:
+    return QueryTokensResponse(
+        continuation_token=response.continuationToken,
+        tokens=[from_spec(token) for token in response.tokens],
     )

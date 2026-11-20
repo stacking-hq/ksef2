@@ -55,6 +55,21 @@ A timeout or transport error from `wait()` does not discard the credential you
 already stored. Resume the status check later with
 `auth.tokens.get_status(reference_number=...)`.
 
+### Approve a pending token
+
+If `get_status()` returns `awaiting_approval`, approve the token from an eligible
+session authenticated with an accepted XAdES signature or the National Node.
+
+```python
+approval_auth.tokens.approve(reference_number=token.reference_number)
+status = token.wait(timeout=60.0)
+```
+
+Set timezone-aware `valid_from` and `valid_to` when calling `generate()` to
+schedule a validity period. A token with status `not_yet_active` becomes usable
+when KSeF reports `active`. `get_status()` and list items expose `valid_from`,
+`valid_to`, and any `failure`.
+
 ### Resume the handle after a restart
 
 `token.resume_state()` returns a `GeneratedTokenResumeState`: the token's

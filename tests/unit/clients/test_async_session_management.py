@@ -21,11 +21,11 @@ class TestAsyncSessionManagementClient:
     def test_query(
         self,
         async_fake_transport: AsyncFakeTransport,
-        auth_list_resp: BaseFactory[spec.AuthenticationListResponse],
+        auth_list_rev2_resp: BaseFactory[spec.AuthenticationListResponseRev2],
     ) -> None:
         client = AsyncSessionManagementClient(async_fake_transport)
         async_fake_transport.enqueue(
-            auth_list_resp.build(continuationToken=None).model_dump(mode="json")
+            auth_list_rev2_resp.build(continuationToken=None).model_dump(mode="json")
         )
 
         result = asyncio.run(client.query())
@@ -37,14 +37,16 @@ class TestAsyncSessionManagementClient:
     def test_all(
         self,
         async_fake_transport: AsyncFakeTransport,
-        auth_list_resp: BaseFactory[spec.AuthenticationListResponse],
+        auth_list_rev2_resp: BaseFactory[spec.AuthenticationListResponseRev2],
     ) -> None:
         client = AsyncSessionManagementClient(async_fake_transport)
         async_fake_transport.enqueue(
-            auth_list_resp.build(continuationToken="next-token").model_dump(mode="json")
+            auth_list_rev2_resp.build(continuationToken="next-token").model_dump(
+                mode="json"
+            )
         )
         async_fake_transport.enqueue(
-            auth_list_resp.build(continuationToken=None).model_dump(mode="json")
+            auth_list_rev2_resp.build(continuationToken=None).model_dump(mode="json")
         )
 
         results = asyncio.run(_collect_pages(client.all()))

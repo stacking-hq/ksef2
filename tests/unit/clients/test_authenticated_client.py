@@ -123,16 +123,16 @@ class TestAuthenticatedClientFacade:
         self,
         fake_transport: FakeTransport,
         domain_auth_tokens: BaseFactory[AuthTokens],
-        token_list_resp: BaseFactory[spec.QueryTokensResponse],
+        token_list_rev2_resp: BaseFactory[spec.QueryTokensResponseRev2],
     ) -> None:
-        fake_transport.enqueue(token_list_resp.build().model_dump(mode="json"))
+        fake_transport.enqueue(token_list_rev2_resp.build().model_dump(mode="json"))
         client = _build_client(fake_transport, domain_auth_tokens.build())
 
         _ = client.tokens.list_page()
 
         call = fake_transport.calls[0]
         assert call.method == "GET"
-        assert call.path == TokenRoutes.LIST_TOKENS
+        assert call.path == TokenRoutes.LIST_TOKENS_REV2
         assert call.headers == {"Authorization": f"Bearer {_TOKEN}"}
 
     @legacy_api
@@ -140,16 +140,16 @@ class TestAuthenticatedClientFacade:
         self,
         fake_transport: FakeTransport,
         domain_auth_tokens: BaseFactory[AuthTokens],
-        auth_list_resp: BaseFactory[spec.AuthenticationListResponse],
+        auth_list_rev2_resp: BaseFactory[spec.AuthenticationListResponseRev2],
     ) -> None:
-        fake_transport.enqueue(auth_list_resp.build().model_dump(mode="json"))
+        fake_transport.enqueue(auth_list_rev2_resp.build().model_dump(mode="json"))
         client = _build_client(fake_transport, domain_auth_tokens.build())
 
         _ = client.sessions.query()
 
         call = fake_transport.calls[0]
         assert call.method == "GET"
-        assert call.path == "/auth/sessions"
+        assert call.path == "/auth/sessions/rev2"
         assert call.headers == {"Authorization": f"Bearer {_TOKEN}"}
 
 

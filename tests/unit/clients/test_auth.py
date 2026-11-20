@@ -142,14 +142,16 @@ class TestAuthClient:
         domain_public_key_cert: BaseFactory[PublicKeyCertificate],
         auth_challenge_resp: BaseFactory[spec.AuthenticationChallengeResponse],
         auth_init_resp: BaseFactory[spec.AuthenticationInitResponse],
-        auth_status_resp: BaseFactory[spec.AuthenticationOperationStatusResponse],
+        auth_status_rev2_resp: BaseFactory[
+            spec.AuthenticationOperationStatusResponseRev2
+        ],
         auth_tokens_resp: BaseFactory[spec.AuthenticationTokensResponse],
     ) -> None:
         certificate = domain_public_key_cert.build(usage=["ksef_token_encryption"])
         client = _build_auth_client(fake_transport, _token_store(certificate))
         challenge = auth_challenge_resp.build(timestampMs=1735689600000)
         init_response = auth_init_resp.build()
-        status_response = auth_status_resp.build(
+        status_response = auth_status_rev2_resp.build(
             status=spec.StatusInfo(code=200, description="Authenticated")
         )
         tokens_response = auth_tokens_resp.build()
@@ -175,7 +177,7 @@ class TestAuthClient:
         assert token_request.encryptedToken == VALID_BASE64
         assert token_request.publicKeyId == certificate.public_key_id
         assert status_call.method == "GET"
-        assert status_call.path == AuthRoutes.AUTH_STATUS.format(
+        assert status_call.path == AuthRoutes.AUTH_STATUS_REV2.format(
             referenceNumber=init_response.referenceNumber
         )
         assert status_call.headers == {
@@ -205,12 +207,14 @@ class TestAuthClient:
         domain_public_key_cert: BaseFactory[PublicKeyCertificate],
         auth_challenge_resp: BaseFactory[spec.AuthenticationChallengeResponse],
         auth_init_resp: BaseFactory[spec.AuthenticationInitResponse],
-        auth_status_resp: BaseFactory[spec.AuthenticationOperationStatusResponse],
+        auth_status_rev2_resp: BaseFactory[
+            spec.AuthenticationOperationStatusResponseRev2
+        ],
     ) -> None:
         certificate = domain_public_key_cert.build(usage=["ksef_token_encryption"])
         client = _build_auth_client(fake_transport, _token_store(certificate))
         init_response = auth_init_resp.build()
-        status_response = auth_status_resp.build(
+        status_response = auth_status_rev2_resp.build(
             status=spec.StatusInfo(code=200, description="Authenticated")
         )
         transport_error = failure(message)
@@ -258,14 +262,16 @@ class TestAuthClient:
         domain_public_key_cert: BaseFactory[PublicKeyCertificate],
         auth_challenge_resp: BaseFactory[spec.AuthenticationChallengeResponse],
         auth_init_resp: BaseFactory[spec.AuthenticationInitResponse],
-        auth_status_resp: BaseFactory[spec.AuthenticationOperationStatusResponse],
+        auth_status_rev2_resp: BaseFactory[
+            spec.AuthenticationOperationStatusResponseRev2
+        ],
     ) -> None:
         client = _build_auth_client(
             fake_transport,
             _token_store(domain_public_key_cert.build(usage=["ksef_token_encryption"])),
         )
         init_response = auth_init_resp.build()
-        failed_status = auth_status_resp.build(
+        failed_status = auth_status_rev2_resp.build(
             status=spec.StatusInfo(code=450, description="Authentication failed")
         )
         fake_transport.enqueue(auth_challenge_resp.build().model_dump(mode="json"))
@@ -283,14 +289,16 @@ class TestAuthClient:
         domain_public_key_cert: BaseFactory[PublicKeyCertificate],
         auth_challenge_resp: BaseFactory[spec.AuthenticationChallengeResponse],
         auth_init_resp: BaseFactory[spec.AuthenticationInitResponse],
-        auth_status_resp: BaseFactory[spec.AuthenticationOperationStatusResponse],
+        auth_status_rev2_resp: BaseFactory[
+            spec.AuthenticationOperationStatusResponseRev2
+        ],
     ) -> None:
         client = _build_auth_client(
             fake_transport,
             _token_store(domain_public_key_cert.build(usage=["ksef_token_encryption"])),
         )
         init_response = auth_init_resp.build()
-        pending_status = auth_status_resp.build(
+        pending_status = auth_status_rev2_resp.build(
             status=spec.StatusInfo(code=100, description="Pending")
         )
         fake_transport.enqueue(auth_challenge_resp.build().model_dump(mode="json"))
@@ -327,7 +335,9 @@ class TestAuthClient:
         domain_public_key_cert: BaseFactory[PublicKeyCertificate],
         auth_challenge_resp: BaseFactory[spec.AuthenticationChallengeResponse],
         auth_init_resp: BaseFactory[spec.AuthenticationInitResponse],
-        auth_status_resp: BaseFactory[spec.AuthenticationOperationStatusResponse],
+        auth_status_rev2_resp: BaseFactory[
+            spec.AuthenticationOperationStatusResponseRev2
+        ],
         auth_tokens_resp: BaseFactory[spec.AuthenticationTokensResponse],
     ) -> None:
         client = _build_auth_client(
@@ -336,7 +346,7 @@ class TestAuthClient:
         )
         challenge = auth_challenge_resp.build()
         init_response = auth_init_resp.build()
-        status_response = auth_status_resp.build(
+        status_response = auth_status_rev2_resp.build(
             status=spec.StatusInfo(code=200, description="Authenticated")
         )
         tokens_response = auth_tokens_resp.build()
@@ -378,7 +388,9 @@ class TestAuthClient:
         domain_public_key_cert: BaseFactory[PublicKeyCertificate],
         auth_challenge_resp: BaseFactory[spec.AuthenticationChallengeResponse],
         auth_init_resp: BaseFactory[spec.AuthenticationInitResponse],
-        auth_status_resp: BaseFactory[spec.AuthenticationOperationStatusResponse],
+        auth_status_rev2_resp: BaseFactory[
+            spec.AuthenticationOperationStatusResponseRev2
+        ],
         auth_tokens_resp: BaseFactory[spec.AuthenticationTokensResponse],
     ) -> None:
         client = _build_auth_client(
@@ -387,7 +399,7 @@ class TestAuthClient:
         )
         challenge = auth_challenge_resp.build()
         init_response = auth_init_resp.build()
-        status_response = auth_status_resp.build(
+        status_response = auth_status_rev2_resp.build(
             status=spec.StatusInfo(code=200, description="Authenticated")
         )
         tokens_response = auth_tokens_resp.build()
@@ -424,7 +436,9 @@ class TestAuthClient:
         domain_public_key_cert: BaseFactory[PublicKeyCertificate],
         auth_challenge_resp: BaseFactory[spec.AuthenticationChallengeResponse],
         auth_init_resp: BaseFactory[spec.AuthenticationInitResponse],
-        auth_status_resp: BaseFactory[spec.AuthenticationOperationStatusResponse],
+        auth_status_rev2_resp: BaseFactory[
+            spec.AuthenticationOperationStatusResponseRev2
+        ],
         auth_tokens_resp: BaseFactory[spec.AuthenticationTokensResponse],
     ) -> None:
         client = flavor.auth_client(
@@ -432,7 +446,7 @@ class TestAuthClient:
         )
         challenge = auth_challenge_resp.build()
         init_response = auth_init_resp.build()
-        status_response = auth_status_resp.build(
+        status_response = auth_status_rev2_resp.build(
             status=spec.StatusInfo(code=200, description="Authenticated")
         )
         tokens_response = auth_tokens_resp.build()
@@ -788,10 +802,10 @@ class TestSessionManagementClient:
     def test_query_authentication_page(
         self,
         fake_transport: FakeTransport,
-        auth_list_resp: BaseFactory[spec.AuthenticationListResponse],
+        auth_list_rev2_resp: BaseFactory[spec.AuthenticationListResponseRev2],
     ) -> None:
         client = SessionManagementClient(fake_transport)
-        response = auth_list_resp.build(continuationToken="next-page")
+        response = auth_list_rev2_resp.build(continuationToken="next-page")
         fake_transport.enqueue(response.model_dump(mode="json"))
 
         result = client.query(page_size=20)
@@ -801,7 +815,7 @@ class TestSessionManagementClient:
         assert len(result.items) == len(response.items)
         call = fake_transport.calls[0]
         assert call.method == "GET"
-        assert call.path == AuthRoutes.LIST_SESSIONS
+        assert call.path == AuthRoutes.LIST_SESSIONS_REV2
         assert call.params is not None
         assert call.params["pageSize"] == "20"
 
@@ -809,11 +823,11 @@ class TestSessionManagementClient:
     def test_all_authentication_iterates_over_pages(
         self,
         fake_transport: FakeTransport,
-        auth_list_resp: BaseFactory[spec.AuthenticationListResponse],
+        auth_list_rev2_resp: BaseFactory[spec.AuthenticationListResponseRev2],
     ) -> None:
         client = SessionManagementClient(fake_transport)
-        first = auth_list_resp.build(continuationToken="ct-2")
-        second = auth_list_resp.build(continuationToken=None)
+        first = auth_list_rev2_resp.build(continuationToken="ct-2")
+        second = auth_list_rev2_resp.build(continuationToken=None)
         fake_transport.enqueue(first.model_dump(mode="json"))
         fake_transport.enqueue(second.model_dump(mode="json"))
 
@@ -873,7 +887,7 @@ def test_redemption_transport_error_keeps_the_redemption_contract(
     domain_public_key_cert: BaseFactory[PublicKeyCertificate],
     auth_challenge_resp: BaseFactory[spec.AuthenticationChallengeResponse],
     auth_init_resp: BaseFactory[spec.AuthenticationInitResponse],
-    auth_status_resp: BaseFactory[spec.AuthenticationOperationStatusResponse],
+    auth_status_rev2_resp: BaseFactory[spec.AuthenticationOperationStatusResponseRev2],
 ) -> None:
     """The wrapped request failure still ends as the one-shot redemption error."""
     requests: list[httpx.Request] = []
@@ -881,7 +895,7 @@ def test_redemption_transport_error_keeps_the_redemption_contract(
         mode="json"
     )
     init = auth_init_resp.build().model_dump(mode="json")
-    status = auth_status_resp.build(
+    status = auth_status_rev2_resp.build(
         status=spec.StatusInfo(code=200, description="Authenticated")
     ).model_dump(mode="json")
 
@@ -1010,7 +1024,9 @@ class TestWithStoredCertificate:
         flavor: Flavor,
         auth_challenge_resp: BaseFactory[spec.AuthenticationChallengeResponse],
         auth_init_resp: BaseFactory[spec.AuthenticationInitResponse],
-        auth_status_resp: BaseFactory[spec.AuthenticationOperationStatusResponse],
+        auth_status_rev2_resp: BaseFactory[
+            spec.AuthenticationOperationStatusResponseRev2
+        ],
         auth_tokens_resp: BaseFactory[spec.AuthenticationTokensResponse],
     ) -> None:
         client = flavor.auth_client()
@@ -1022,7 +1038,7 @@ class TestWithStoredCertificate:
             (
                 auth_challenge_resp.build(),
                 auth_init_resp.build(),
-                auth_status_resp.build(
+                auth_status_rev2_resp.build(
                     status=spec.StatusInfo(code=200, description="Authenticated")
                 ),
                 auth_tokens_resp.build(),

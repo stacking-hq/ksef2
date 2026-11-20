@@ -37,6 +37,21 @@ status = token.wait(timeout=60.0, poll_interval=1.0)
 
 Limit czasu albo błąd połączenia z `wait()` nie kasuje sekretu zapisanego wcześniej. Wznów sprawdzanie później przez `auth.tokens.get_status(reference_number=...)`.
 
+### Zatwierdź oczekujący token
+
+Jeśli `get_status()` zwraca `awaiting_approval`, zatwierdź token w uprawnionej
+sesji uwierzytelnionej akceptowanym podpisem XAdES lub przez Węzeł Krajowy.
+
+```python
+approval_auth.tokens.approve(reference_number=token.reference_number)
+status = token.wait(timeout=60.0)
+```
+
+Aby zaplanować okres ważności, podaj w `generate()` daty `valid_from` i
+`valid_to` ze strefą czasową. Token ze statusem `not_yet_active` można użyć,
+gdy KSeF zwróci `active`. Metoda `get_status()` i wyniki listowania udostępniają
+`valid_from`, `valid_to` oraz ewentualne informacje o błędzie w polu `failure`.
+
 ### Wznów obiekt po restarcie
 
 `token.resume_state()` zwraca `GeneratedTokenResumeState`: numer referencyjny tokena i nic więcej. Zapisz go przez `to_json()` i przekaż do `auth.tokens.generation()`, gdy proces roboczy kolejki albo proces po restarcie przejmuje zadanie ponownie.
