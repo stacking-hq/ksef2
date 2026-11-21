@@ -25,7 +25,7 @@ from ksef2._clients.permissions import PermissionsClient
 from ksef2._clients.session_management import SessionManagementClient
 from ksef2._clients.tokens import TokensClient
 from ksef2._domain.models.collective_identifiers import CollectiveIdentifiersQuery
-from tests.unit.factories.auth import AuthenticationListResponseFactory
+from tests.unit.factories.auth import AuthenticationListResponseRev2Factory
 from tests.unit.factories.certificates import QueryCertificatesResponseFactory
 from tests.unit.factories.collective_identifiers import (
     CollectiveIdentifierInvoicesResponseFactory,
@@ -51,7 +51,7 @@ from tests.unit.factories.permissions import (
     QuerySubunitPermissionsResponseFactory,
 )
 from tests.unit.factories.session import SessionsQueryResponseFactory
-from tests.unit.factories.tokens import QueryTokensResponseFactory
+from tests.unit.factories.tokens import QueryTokensResponseRev2Factory
 from tests.unit.support.flavors import Flavor
 
 KSEF_NUMBER = "1234567890-20250625-ABC123-DEF456-07"
@@ -108,7 +108,7 @@ COLLECTIONS = [
         "tokens.list",
         TokensClient,
         AsyncTokensClient,
-        QueryTokensResponseFactory,
+        QueryTokensResponseRev2Factory,
         "tokens",
         CURSOR,
         "list",
@@ -135,7 +135,7 @@ COLLECTIONS = [
         "sessions.list",
         SessionManagementClient,
         AsyncSessionManagementClient,
-        AuthenticationListResponseFactory,
+        AuthenticationListResponseRev2Factory,
         "items",
         CURSOR,
         "list",

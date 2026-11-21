@@ -29,13 +29,15 @@ class DomainContextLimitsFactory(ModelFactory[domain_limits.ContextLimits]):
 @register_fixture(name="domain_limit_subject_certificate")
 class DomainSubjectCertificateLimitsFactory(
     ModelFactory[domain_limits.SubjectCertificateLimits]
-): ...
+):
+    max_certificates = 3
 
 
 @register_fixture(name="domain_limit_subject_enrollment")
 class DomainSubjectEnrollmentLimitsFactory(
     ModelFactory[domain_limits.SubjectEnrollmentLimits]
-): ...
+):
+    max_enrollments = 5
 
 
 @register_fixture(name="domain_limit_subject")

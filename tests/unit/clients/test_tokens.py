@@ -10,8 +10,9 @@ from ksef2._core.routes import TokenRoutes
 from ksef2._domain.models import tokens
 from ksef2._infra.schema.api import spec
 from tests.unit.factories.tokens import (
-    QueryTokensResponseItemFactory,
-    TokenStatusResponseFactory,
+    QueryTokensResponseItemRev2Factory,
+    TokenStatusResponseRev2Factory,
+    token_status_rev2,
 )
 from tests.unit.fakes.transport import FakeTransport
 from tests.unit.support.helpers import legacy_api
@@ -41,7 +42,7 @@ class TestTokensClient:
         assert len(fake_transport.calls) == 1
         call = fake_transport.calls[0]
         assert call.method == "POST"
-        assert str(call.path) == TokenRoutes.GENERATE_TOKEN
+        assert str(call.path) == TokenRoutes.GENERATE_TOKEN_REV2
 
     @legacy_api
     def test_wait_for_activation_polls_until_active(
@@ -49,11 +50,11 @@ class TestTokensClient:
         tokens_client: TokensClient,
         fake_transport: FakeTransport,
     ):
-        pending_resp = TokenStatusResponseFactory.build(
-            status=spec.AuthenticationTokenStatus.Pending
+        pending_resp = TokenStatusResponseRev2Factory.build(
+            status=token_status_rev2(spec.TokenStatusRev2Code.Pending)
         )
-        active_resp = TokenStatusResponseFactory.build(
-            status=spec.AuthenticationTokenStatus.Active
+        active_resp = TokenStatusResponseRev2Factory.build(
+            status=token_status_rev2(spec.TokenStatusRev2Code.Active)
         )
         fake_transport.enqueue(pending_resp.model_dump(mode="json"))
         fake_transport.enqueue(active_resp.model_dump(mode="json"))
@@ -72,8 +73,8 @@ class TestTokensClient:
         tokens_client: TokensClient,
         fake_transport: FakeTransport,
     ):
-        failed_resp = TokenStatusResponseFactory.build(
-            status=spec.AuthenticationTokenStatus.Failed
+        failed_resp = TokenStatusResponseRev2Factory.build(
+            status=token_status_rev2(spec.TokenStatusRev2Code.Failed)
         )
         fake_transport.enqueue(failed_resp.model_dump(mode="json"))
 
@@ -96,8 +97,8 @@ class TestTokensClient:
         token_generate_resp: BaseFactory[spec.GenerateTokenResponse],
     ):
         gen_resp = token_generate_resp.build()
-        pending_resp = TokenStatusResponseFactory.build(
-            status=spec.AuthenticationTokenStatus.Pending
+        pending_resp = TokenStatusResponseRev2Factory.build(
+            status=token_status_rev2(spec.TokenStatusRev2Code.Pending)
         )
         fake_transport.enqueue(gen_resp.model_dump(mode="json"))
         fake_transport.enqueue(pending_resp.model_dump(mode="json"))
@@ -154,9 +155,9 @@ class TestTokensClient:
         self,
         tokens_client: TokensClient,
         fake_transport: FakeTransport,
-        token_list_resp: BaseFactory[spec.QueryTokensResponse],
+        token_list_rev2_resp: BaseFactory[spec.QueryTokensResponseRev2],
     ):
-        expected = token_list_resp.build()
+        expected = token_list_rev2_resp.build()
         fake_transport.enqueue(expected.model_dump(mode="json"))
 
         result = tokens_client.list_page()
@@ -166,15 +167,15 @@ class TestTokensClient:
         assert len(fake_transport.calls) == 1
         call = fake_transport.calls[0]
         assert call.method == "GET"
-        assert str(call.path) == TokenRoutes.LIST_TOKENS
+        assert str(call.path) == TokenRoutes.LIST_TOKENS_REV2
 
     def test_list_page_with_continuation_token(
         self,
         tokens_client: TokensClient,
         fake_transport: FakeTransport,
-        token_list_resp: BaseFactory[spec.QueryTokensResponse],
+        token_list_rev2_resp: BaseFactory[spec.QueryTokensResponseRev2],
     ):
-        expected = token_list_resp.build()
+        expected = token_list_rev2_resp.build()
         fake_transport.enqueue(expected.model_dump(mode="json"))
 
         result = tokens_client.list_page(continuation_token="ct-abc")
@@ -188,11 +189,11 @@ class TestTokensClient:
         self,
         tokens_client: TokensClient,
         fake_transport: FakeTransport,
-        token_list_resp: BaseFactory[spec.QueryTokensResponse],
+        token_list_rev2_resp: BaseFactory[spec.QueryTokensResponseRev2],
     ) -> None:
         """Bindings fetch one page per call, so ``list_page`` stays a supported API."""
         fake_transport.enqueue(
-            token_list_resp.build(continuationToken=None).model_dump(mode="json")
+            token_list_rev2_resp.build(continuationToken=None).model_dump(mode="json")
         )
 
         with warnings.catch_warnings():
@@ -206,10 +207,10 @@ class TestTokensClient:
         self,
         tokens_client: TokensClient,
         fake_transport: FakeTransport,
-        token_list_resp: BaseFactory[spec.QueryTokensResponse],
+        token_list_rev2_resp: BaseFactory[spec.QueryTokensResponseRev2],
     ) -> None:
         fake_transport.enqueue(
-            token_list_resp.build(continuationToken=None).model_dump(mode="json")
+            token_list_rev2_resp.build(continuationToken=None).model_dump(mode="json")
         )
 
         with warnings.catch_warnings(record=True) as caught:
@@ -224,9 +225,9 @@ class TestTokensClient:
         self,
         tokens_client: TokensClient,
         fake_transport: FakeTransport,
-        token_list_resp: BaseFactory[spec.QueryTokensResponse],
+        token_list_rev2_resp: BaseFactory[spec.QueryTokensResponseRev2],
     ):
-        expected = token_list_resp.build(continuationToken=None)
+        expected = token_list_rev2_resp.build(continuationToken=None)
         fake_transport.enqueue(expected.model_dump(mode="json"))
 
         pages = list(tokens_client.list_all())
@@ -239,14 +240,14 @@ class TestTokensClient:
         self,
         tokens_client: TokensClient,
         fake_transport: FakeTransport,
-        token_list_resp: BaseFactory[spec.QueryTokensResponse],
+        token_list_rev2_resp: BaseFactory[spec.QueryTokensResponseRev2],
     ):
-        page1 = token_list_resp.build(
-            tokens=[QueryTokensResponseItemFactory.build()],
+        page1 = token_list_rev2_resp.build(
+            tokens=[QueryTokensResponseItemRev2Factory.build()],
             continuationToken="ct-page2",
         )
-        page2 = token_list_resp.build(
-            tokens=[QueryTokensResponseItemFactory.build()],
+        page2 = token_list_rev2_resp.build(
+            tokens=[QueryTokensResponseItemRev2Factory.build()],
             continuationToken=None,
         )
         fake_transport.enqueue(page1.model_dump(mode="json"))
@@ -262,9 +263,9 @@ class TestTokensClient:
         self,
         tokens_client: TokensClient,
         fake_transport: FakeTransport,
-        token_status_resp: BaseFactory[spec.TokenStatusResponse],
+        token_status_rev2_resp: BaseFactory[spec.TokenStatusResponseRev2],
     ):
-        expected = token_status_resp.build()
+        expected = token_status_rev2_resp.build()
         fake_transport.enqueue(expected.model_dump(mode="json"))
 
         result = tokens_client.status(reference_number="ref-123")

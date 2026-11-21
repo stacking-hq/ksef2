@@ -88,14 +88,16 @@ class TestAsyncAuthClient:
         domain_public_key_cert: BaseFactory[PublicKeyCertificate],
         auth_challenge_resp: BaseFactory[spec.AuthenticationChallengeResponse],
         auth_init_resp: BaseFactory[spec.AuthenticationInitResponse],
-        auth_status_resp: BaseFactory[spec.AuthenticationOperationStatusResponse],
+        auth_status_rev2_resp: BaseFactory[
+            spec.AuthenticationOperationStatusResponseRev2
+        ],
         auth_tokens_resp: BaseFactory[spec.AuthenticationTokensResponse],
     ) -> None:
         certificate = domain_public_key_cert.build(usage=["ksef_token_encryption"])
         client = _build_auth_client(async_fake_transport, _token_store(certificate))
         challenge = auth_challenge_resp.build(timestampMs=1735689600000)
         init_response = auth_init_resp.build()
-        status_response = auth_status_resp.build(
+        status_response = auth_status_rev2_resp.build(
             status=spec.StatusInfo(code=200, description="Authenticated")
         )
         tokens_response = auth_tokens_resp.build()
@@ -125,7 +127,7 @@ class TestAsyncAuthClient:
         assert token_request.encryptedToken == VALID_BASE64
         assert token_request.publicKeyId == certificate.public_key_id
         assert status_call.method == "GET"
-        assert status_call.path == AuthRoutes.AUTH_STATUS.format(
+        assert status_call.path == AuthRoutes.AUTH_STATUS_REV2.format(
             referenceNumber=init_response.referenceNumber
         )
         assert status_call.headers == {
@@ -155,12 +157,14 @@ class TestAsyncAuthClient:
         domain_public_key_cert: BaseFactory[PublicKeyCertificate],
         auth_challenge_resp: BaseFactory[spec.AuthenticationChallengeResponse],
         auth_init_resp: BaseFactory[spec.AuthenticationInitResponse],
-        auth_status_resp: BaseFactory[spec.AuthenticationOperationStatusResponse],
+        auth_status_rev2_resp: BaseFactory[
+            spec.AuthenticationOperationStatusResponseRev2
+        ],
     ) -> None:
         certificate = domain_public_key_cert.build(usage=["ksef_token_encryption"])
         client = _build_auth_client(async_fake_transport, _token_store(certificate))
         init_response = auth_init_resp.build()
-        status_response = auth_status_resp.build(
+        status_response = auth_status_rev2_resp.build(
             status=spec.StatusInfo(code=200, description="Authenticated")
         )
         transport_error = failure(message)
@@ -212,14 +216,16 @@ class TestAsyncAuthClient:
         domain_public_key_cert: BaseFactory[PublicKeyCertificate],
         auth_challenge_resp: BaseFactory[spec.AuthenticationChallengeResponse],
         auth_init_resp: BaseFactory[spec.AuthenticationInitResponse],
-        auth_status_resp: BaseFactory[spec.AuthenticationOperationStatusResponse],
+        auth_status_rev2_resp: BaseFactory[
+            spec.AuthenticationOperationStatusResponseRev2
+        ],
     ) -> None:
         client = _build_auth_client(
             async_fake_transport,
             _token_store(domain_public_key_cert.build(usage=["ksef_token_encryption"])),
         )
         init_response = auth_init_resp.build()
-        failed_status = auth_status_resp.build(
+        failed_status = auth_status_rev2_resp.build(
             status=spec.StatusInfo(code=450, description="Authentication failed")
         )
         async_fake_transport.enqueue(
@@ -239,14 +245,16 @@ class TestAsyncAuthClient:
         domain_public_key_cert: BaseFactory[PublicKeyCertificate],
         auth_challenge_resp: BaseFactory[spec.AuthenticationChallengeResponse],
         auth_init_resp: BaseFactory[spec.AuthenticationInitResponse],
-        auth_status_resp: BaseFactory[spec.AuthenticationOperationStatusResponse],
+        auth_status_rev2_resp: BaseFactory[
+            spec.AuthenticationOperationStatusResponseRev2
+        ],
     ) -> None:
         client = _build_auth_client(
             async_fake_transport,
             _token_store(domain_public_key_cert.build(usage=["ksef_token_encryption"])),
         )
         init_response = auth_init_resp.build()
-        pending_status = auth_status_resp.build(
+        pending_status = auth_status_rev2_resp.build(
             status=spec.StatusInfo(code=100, description="Pending")
         )
         async_fake_transport.enqueue(
@@ -287,7 +295,9 @@ class TestAsyncAuthClient:
         domain_public_key_cert: BaseFactory[PublicKeyCertificate],
         auth_challenge_resp: BaseFactory[spec.AuthenticationChallengeResponse],
         auth_init_resp: BaseFactory[spec.AuthenticationInitResponse],
-        auth_status_resp: BaseFactory[spec.AuthenticationOperationStatusResponse],
+        auth_status_rev2_resp: BaseFactory[
+            spec.AuthenticationOperationStatusResponseRev2
+        ],
         auth_tokens_resp: BaseFactory[spec.AuthenticationTokensResponse],
     ) -> None:
         client = _build_auth_client(
@@ -296,7 +306,7 @@ class TestAsyncAuthClient:
         )
         challenge = auth_challenge_resp.build()
         init_response = auth_init_resp.build()
-        status_response = auth_status_resp.build(
+        status_response = auth_status_rev2_resp.build(
             status=spec.StatusInfo(code=200, description="Authenticated")
         )
         tokens_response = auth_tokens_resp.build()

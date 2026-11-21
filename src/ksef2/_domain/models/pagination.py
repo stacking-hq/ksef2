@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Self
 
-from pydantic import BaseModel, Field, field_serializer, field_validator
+from pydantic import AwareDatetime, BaseModel, Field, field_serializer, field_validator
 
 from ksef2._domain.models.base import KSeFBaseModel, KSeFBaseParams
 from ksef2._domain.models.invoices import (
@@ -21,7 +21,11 @@ from ksef2._domain.models.session import (
     session_status_to_spec,
     session_type_to_spec,
 )
-from ksef2._domain.models.tokens import TokenAuthorIdentifierType, TokenStatus
+from ksef2._domain.models.tokens import (
+    TokenAuthorIdentifierType,
+    TokenStatus as TokenStatus,
+    TokenStatusFilter,
+)
 from ksef2._domain.types import (
     CollectiveIdentifierQueryParams,
     InvoiceMetadataQueryParams,
@@ -194,7 +198,7 @@ class SessionInvoiceListParams(TokenPaginationParams):
 class TokenListParams(KSeFBaseParams[ListTokensQueryParams], PageSizeMixin):
     """Query parameters for token listings."""
 
-    status: list[TokenStatus] | None = None
+    status: list[TokenStatusFilter] | None = None
     """Match tokens in any of these statuses."""
     description: str | None = None
     """Match tokens whose description contains this text."""
@@ -202,6 +206,26 @@ class TokenListParams(KSeFBaseParams[ListTokensQueryParams], PageSizeMixin):
     """Match tokens created by this identifier."""
     author_identifier_type: TokenAuthorIdentifierType | None = None
     """Kind of identifier in ``author_identifier``."""
+    valid_from: AwareDatetime | None = None
+    """Filter by the start of the token validity period."""
+    valid_to: AwareDatetime | None = None
+    """Filter by the end of the token validity period."""
+
+    @field_serializer("status")
+    def _serialize_status(
+        self, values: list[TokenStatusFilter] | None
+    ) -> list[str] | None:
+        if values is None:
+            return None
+        return [
+            "".join(part.title() for part in status.split("_")) for status in values
+        ]
+
+    @field_serializer("author_identifier_type")
+    def _serialize_author_type(
+        self, value: TokenAuthorIdentifierType | None
+    ) -> str | None:
+        return value.title() if value is not None else None
 
 
 class ListSessionsQuery(

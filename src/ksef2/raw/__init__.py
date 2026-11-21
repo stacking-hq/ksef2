@@ -7,6 +7,7 @@ from ksef2._core.crypto import (
     generate_session_key,
     sha256_b64,
 )
+from ksef2._infra.schema.api.supp.tokens import ListTokensRev2QueryParams
 from ksef2._infra.schema.api import spec as spec
 from ksef2._infra.schema.api import supp as supp
 from ksef2._infra.schema.api.supp import (
@@ -36,6 +37,7 @@ __all__ = [
     "AsyncRawAuthenticatedClient",
     "AsyncRawClient",
     "AsyncRawPermissionsEndpoints",
+    "ListTokensRev2QueryParams",
     "RawAuthenticatedClient",
     "RawClient",
     "RawPermissionsEndpoints",

@@ -19,8 +19,19 @@ type TokenPermission = Literal[
     "collective_identifier_manage",
 ]
 
-type TokenStatus = Literal["pending", "active", "revoking", "revoked", "failed"]
+type TokenStatusFilter = Literal[
+    "pending",
+    "active",
+    "revoking",
+    "revoked",
+    "failed",
+    "not_yet_active",
+    "awaiting_approval",
+    "approval_expired",
+    "expired",
+]
 
+type TokenStatus = TokenStatusFilter | Literal["other"]
 type TokenAuthorIdentifierType = Literal["nip", "pesel", "fingerprint"]
 
 type TokenContextIdentifierType = Literal[
@@ -49,6 +60,11 @@ class TokenStatusEnum(StrEnum):
     REVOKING = "revoking"
     REVOKED = "revoked"
     FAILED = "failed"
+    NOT_YET_ACTIVE = "not_yet_active"
+    AWAITING_APPROVAL = "awaiting_approval"
+    APPROVAL_EXPIRED = "approval_expired"
+    EXPIRED = "expired"
+    OTHER = "other"
 
 
 class TokenAuthorIdentifierTypeEnum(StrEnum):
@@ -71,19 +87,23 @@ class TokenContextIdentifierTypeEnum(StrEnum):
 class TokenAuthorIdentifier(KSeFBaseModel):
     """Identifies the subject that created the token."""
 
-    type: TokenAuthorIdentifierType
+    type: TokenAuthorIdentifierType | Literal["other"]
     """Kind of identifier in ``value``."""
     value: str
     """Identifier of the subject that created the token."""
+    raw_type: str | None = None
+    """Wire code for an unrecognized identifier type."""
 
 
 class TokenContextIdentifier(KSeFBaseModel):
     """Identifies the taxpayer or organizational context bound to a token."""
 
-    type: TokenContextIdentifierType
+    type: TokenContextIdentifierType | Literal["other"]
     """Kind of identifier in ``value``."""
     value: str
     """Identifier of the context the token is bound to."""
+    raw_type: str | None = None
+    """Wire code for an unrecognized identifier type."""
 
 
 class GenerateTokenResponse(KSeFBaseModel):
@@ -113,6 +133,17 @@ class GeneratedTokenResumeState(KSeFResumeState):
     """
 
 
+class TokenFailure(KSeFBaseModel):
+    """Failure information reported for an unusable token."""
+
+    code: str
+    """Failure code reported by KSeF."""
+    description: str
+    """Human-readable reason for the failure."""
+    details: list[str] | None = None
+    """Additional failure details, when KSeF supplies them."""
+
+
 class TokenStatusResponse(KSeFBaseModel):
     """Current lifecycle status of one token."""
 
@@ -120,6 +151,14 @@ class TokenStatusResponse(KSeFBaseModel):
     """KSeF reference number of the operation or resource."""
     status: TokenStatus
     """Current lifecycle status of the token."""
+    valid_from: datetime | None = None
+    """Start of the validity period, when reported by KSeF."""
+    valid_to: datetime | None = None
+    """End of the validity period, when reported by KSeF."""
+    failure: TokenFailure | None = None
+    """Failure information reported by KSeF, if any."""
+    raw_status: str | None = None
+    """Wire code for an unrecognized status."""
 
 
 class TokenInfo(KSeFBaseModel):
@@ -141,6 +180,16 @@ class TokenInfo(KSeFBaseModel):
     """When the token was last used; ``None`` if never used."""
     status: TokenStatus
     """Current lifecycle status of the token."""
+    valid_from: datetime | None = None
+    """Start of the validity period, when reported by KSeF."""
+    valid_to: datetime | None = None
+    """End of the validity period, when reported by KSeF."""
+    failure: TokenFailure | None = None
+    """Failure information reported by KSeF, if any."""
+    raw_status: str | None = None
+    """Wire code for an unrecognized status."""
+    unknown_permissions: list[str] = Field(default_factory=list)
+    """Wire codes for unrecognized permissions."""
     status_details: list[str] | None
     """Additional status details, if any."""
 

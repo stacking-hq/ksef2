@@ -47,13 +47,14 @@ def from_spec(
 
 @overload
 def from_spec(
-    response: spec.AuthenticationOperationStatusResponse,
+    response: spec.AuthenticationOperationStatusResponse
+    | spec.AuthenticationOperationStatusResponseRev2,
 ) -> AuthOperationStatus: ...
 
 
 @overload
 def from_spec(
-    response: spec.AuthenticationListResponse,
+    response: spec.AuthenticationListResponse | spec.AuthenticationListResponseRev2,
 ) -> AuthenticationSessionsResponse: ...
 
 
@@ -66,7 +67,9 @@ def from_spec(response: spec.AuthenticationTokenRefreshResponse) -> RefreshedTok
 
 
 @overload
-def from_spec(response: spec.AuthenticationListItem) -> AuthenticationSession: ...
+def from_spec(
+    response: spec.AuthenticationListItem | spec.AuthenticationListItemRev2,
+) -> AuthenticationSession: ...
 
 
 def from_spec(response: BaseModel | Enum) -> object:
@@ -169,13 +172,26 @@ def _(response: spec.AuthenticationMethodCategory) -> AuthenticationMethodCatego
             assert_never(unreachable)
 
 
+def _method_category(
+    info: spec.AuthenticationMethodInfo | spec.AuthenticationMethodInfoRev2,
+) -> AuthenticationMethodCategory:
+    if isinstance(info, spec.AuthenticationMethodInfo):
+        return from_spec(info.category)
+    if info.category.code is spec.AuthenticationMethodCategoryRev2Code.FutureValue:
+        return "other"
+    return from_spec(spec.AuthenticationMethodCategory(info.category.code.value))
+
+
 @_from_spec.register
-def _(response: spec.AuthenticationOperationStatusResponse) -> AuthOperationStatus:
+def _(
+    response: spec.AuthenticationOperationStatusResponse
+    | spec.AuthenticationOperationStatusResponseRev2,
+) -> AuthOperationStatus:
     return AuthOperationStatus(
         start_date=response.startDate,
         authentication_method=_method_from_code(response.authenticationMethodInfo.code),
-        authentication_method_category=from_spec(
-            response.authenticationMethodInfo.category
+        authentication_method_category=_method_category(
+            response.authenticationMethodInfo
         ),
         authentication_method_code=response.authenticationMethodInfo.code,
         authentication_method_display_name=response.authenticationMethodInfo.displayName,
@@ -189,12 +205,14 @@ def _(response: spec.AuthenticationOperationStatusResponse) -> AuthOperationStat
 
 
 @_from_spec.register
-def _(response: spec.AuthenticationListItem) -> AuthenticationSession:
+def _(
+    response: spec.AuthenticationListItem | spec.AuthenticationListItemRev2,
+) -> AuthenticationSession:
     return AuthenticationSession(
         start_date=response.startDate,
         authentication_method=_method_from_code(response.authenticationMethodInfo.code),
-        authentication_method_category=from_spec(
-            response.authenticationMethodInfo.category
+        authentication_method_category=_method_category(
+            response.authenticationMethodInfo
         ),
         authentication_method_code=response.authenticationMethodInfo.code,
         authentication_method_display_name=response.authenticationMethodInfo.displayName,
@@ -210,7 +228,9 @@ def _(response: spec.AuthenticationListItem) -> AuthenticationSession:
 
 
 @_from_spec.register
-def _(response: spec.AuthenticationListResponse) -> AuthenticationSessionsResponse:
+def _(
+    response: spec.AuthenticationListResponse | spec.AuthenticationListResponseRev2,
+) -> AuthenticationSessionsResponse:
     return AuthenticationSessionsResponse(
         continuation_token=response.continuationToken,
         items=[from_spec(item) for item in response.items],

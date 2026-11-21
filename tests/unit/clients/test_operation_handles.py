@@ -3,6 +3,7 @@
 Each ``wait()`` is covered for success, KSeF failure and timeout, sync and async.
 """
 
+from datetime import datetime, timezone
 from typing import Any
 
 import httpx
@@ -35,7 +36,10 @@ from tests.unit.factories.permissions import (
     DomainGrantPersonPermissionsRequestFactory,
     DomainGrantSubunitPermissionsRequestFactory,
 )
-from tests.unit.factories.tokens import TokenStatusResponseFactory
+from tests.unit.factories.tokens import (
+    TokenStatusResponseRev2Factory,
+    token_status_rev2,
+)
 from tests.unit.support.flavors import Flavor
 
 
@@ -51,21 +55,27 @@ class TestGeneratedToken:
         self,
         flavor: Flavor,
         generate_resp: BaseFactory[spec.GenerateTokenResponse],
+        *,
+        valid_from: datetime | None = None,
+        valid_to: datetime | None = None,
     ) -> tuple[Any, spec.GenerateTokenResponse]:
         response = generate_resp.build()
         flavor.transport.enqueue(response.model_dump(mode="json"))
         generated = flavor.run(
             self._tokens(flavor).generate(
-                permissions=["invoice_read"], description="Test token"
+                permissions=["invoice_read"],
+                description="Test token",
+                valid_from=valid_from,
+                valid_to=valid_to,
             )
         )
         return generated, response
 
-    def _enqueue_status(
-        self, flavor: Flavor, status: spec.AuthenticationTokenStatus
-    ) -> None:
+    def _enqueue_status(self, flavor: Flavor, status: spec.TokenStatusRev2Code) -> None:
         flavor.transport.enqueue(
-            TokenStatusResponseFactory.build(status=status).model_dump(mode="json")
+            TokenStatusResponseRev2Factory.build(
+                status=token_status_rev2(status)
+            ).model_dump(mode="json")
         )
 
     def test_is_a_handle_and_reads_the_one_time_token_immediately(
@@ -79,7 +89,26 @@ class TestGeneratedToken:
         assert generated.token == response.token
         assert generated.reference_number == response.referenceNumber
         assert len(flavor.transport.calls) == 1
-        assert flavor.transport.calls[0].path == TokenRoutes.GENERATE_TOKEN
+        assert flavor.transport.calls[0].path == TokenRoutes.GENERATE_TOKEN_REV2
+
+    def test_generate_sends_validity_dates(
+        self,
+        flavor: Flavor,
+        token_generate_resp: BaseFactory[spec.GenerateTokenResponse],
+    ) -> None:
+        self._generate(
+            flavor,
+            token_generate_resp,
+            valid_from=datetime(2027, 1, 1, tzinfo=timezone.utc),
+            valid_to=datetime(2027, 2, 1, tzinfo=timezone.utc),
+        )
+
+        assert flavor.transport.calls[0].json == {
+            "permissions": ["InvoiceRead"],
+            "description": "Test token",
+            "validFrom": "2027-01-01T00:00:00Z",
+            "validTo": "2027-02-01T00:00:00Z",
+        }
 
     def test_exposes_every_generate_response_field(
         self,
@@ -111,25 +140,34 @@ class TestGeneratedToken:
         token_generate_resp: BaseFactory[spec.GenerateTokenResponse],
     ) -> None:
         generated, _ = self._generate(flavor, token_generate_resp)
-        self._enqueue_status(flavor, spec.AuthenticationTokenStatus.Pending)
-        self._enqueue_status(flavor, spec.AuthenticationTokenStatus.Active)
+        self._enqueue_status(flavor, spec.TokenStatusRev2Code.AwaitingApproval)
+        self._enqueue_status(flavor, spec.TokenStatusRev2Code.NotYetActive)
+        self._enqueue_status(flavor, spec.TokenStatusRev2Code.Active)
 
         status = flavor.run(generated.wait(timeout=1.0, poll_interval=0.0))
 
         assert status.status == "active"
-        assert len(flavor.transport.calls) == 3
-        assert flavor.transport.calls[1].method == "GET"
+        assert len(flavor.transport.calls) == 4
+        assert all(
+            call.method == "GET" and call.path.startswith("/tokens/rev2/")
+            for call in flavor.transport.calls[1:]
+        )
 
     @pytest.mark.parametrize(
         "terminal",
-        [spec.AuthenticationTokenStatus.Failed, spec.AuthenticationTokenStatus.Revoked],
-        ids=["failed", "revoked"],
+        [
+            spec.TokenStatusRev2Code.Failed,
+            spec.TokenStatusRev2Code.Revoked,
+            spec.TokenStatusRev2Code.ApprovalExpired,
+            spec.TokenStatusRev2Code.Expired,
+            spec.TokenStatusRev2Code.FutureValue,
+        ],
     )
     def test_wait_raises_when_activation_fails(
         self,
         flavor: Flavor,
         token_generate_resp: BaseFactory[spec.GenerateTokenResponse],
-        terminal: spec.AuthenticationTokenStatus,
+        terminal: spec.TokenStatusRev2Code,
     ) -> None:
         generated, _ = self._generate(flavor, token_generate_resp)
         self._enqueue_status(flavor, terminal)
@@ -143,7 +181,7 @@ class TestGeneratedToken:
         token_generate_resp: BaseFactory[spec.GenerateTokenResponse],
     ) -> None:
         generated, response = self._generate(flavor, token_generate_resp)
-        self._enqueue_status(flavor, spec.AuthenticationTokenStatus.Pending)
+        self._enqueue_status(flavor, spec.TokenStatusRev2Code.Pending)
 
         with pytest.raises(
             exceptions.KSeFTokenStatusTimeoutError, match="not active"
@@ -173,7 +211,7 @@ class TestGeneratedToken:
         token_generate_resp: BaseFactory[spec.GenerateTokenResponse],
     ) -> None:
         generated, _ = self._generate(flavor, token_generate_resp)
-        self._enqueue_status(flavor, spec.AuthenticationTokenStatus.Pending)
+        self._enqueue_status(flavor, spec.TokenStatusRev2Code.Pending)
 
         status = flavor.run(generated.get_status())
 

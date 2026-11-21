@@ -1,3 +1,5 @@
+from tests.unit.factories.tokens import token_status_rev2
+
 """Saving and resuming every handle KSeF finishes asynchronously.
 
 Each round trip goes through ``resume_state().to_json()``, crosses to a new
@@ -110,16 +112,14 @@ def _operation_status(code: int) -> dict[str, Any]:
 
 
 def _token_status(
-    token_status_resp: BaseFactory[spec.TokenStatusResponse], *, active: bool
+    token_status_rev2_resp: BaseFactory[spec.TokenStatusResponseRev2], *, active: bool
 ) -> dict[str, Any]:
     status = (
-        spec.AuthenticationTokenStatus.Active
-        if active
-        else spec.AuthenticationTokenStatus.Pending
+        spec.TokenStatusRev2Code.Active if active else spec.TokenStatusRev2Code.Pending
     )
-    return token_status_resp.build(referenceNumber=TOKEN_REF, status=status).model_dump(
-        mode="json"
-    )
+    return token_status_rev2_resp.build(
+        referenceNumber=TOKEN_REF, status=token_status_rev2(status)
+    ).model_dump(mode="json")
 
 
 def _generate(
@@ -187,7 +187,7 @@ def test_generated_token_resume_state_omits_the_one_time_token(
 def test_generated_token_resume_round_trip_polls_the_same_reference(
     flavor: Flavor,
     token_generate_resp: BaseFactory[spec.GenerateTokenResponse],
-    token_status_resp: BaseFactory[spec.TokenStatusResponse],
+    token_status_rev2_resp: BaseFactory[spec.TokenStatusResponseRev2],
 ) -> None:
     generated = _generate(flavor, token_generate_resp)
 
@@ -195,21 +195,21 @@ def test_generated_token_resume_round_trip_polls_the_same_reference(
     resumed = flavor.client(TokensClient, AsyncTokensClient).generation(saved)
 
     assert resumed.reference_number == TOKEN_REF
-    assert _paths(flavor) == [TokenRoutes.GENERATE_TOKEN]
+    assert _paths(flavor) == [TokenRoutes.GENERATE_TOKEN_REV2]
 
-    flavor.transport.enqueue(_token_status(token_status_resp, active=True))
+    flavor.transport.enqueue(_token_status(token_status_rev2_resp, active=True))
     status = flavor.run(resumed.get_status())
-    flavor.transport.enqueue(_token_status(token_status_resp, active=True))
+    flavor.transport.enqueue(_token_status(token_status_rev2_resp, active=True))
     from_the_original_handle = flavor.run(generated.get_status())
 
     assert status.status == "active"
     assert status == from_the_original_handle
-    assert _paths(flavor)[-1] == TokenRoutes.TOKEN_STATUS.format(
+    assert _paths(flavor)[-1] == TokenRoutes.TOKEN_STATUS_REV2.format(
         referenceNumber=TOKEN_REF
     )
 
     flavor.transport.clear()
-    flavor.transport.enqueue(_token_status(token_status_resp, active=True))
+    flavor.transport.enqueue(_token_status(token_status_rev2_resp, active=True))
     waited = flavor.run(resumed.wait(timeout=1.0, poll_interval=0.0))
 
     assert waited == status

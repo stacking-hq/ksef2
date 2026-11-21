@@ -3,29 +3,17 @@
 
 """Async token endpoints for managing access tokens."""
 
-from typing import NotRequired, TypedDict, Unpack, final
+from typing import Unpack, final
 
-from pydantic import AwareDatetime, TypeAdapter
+from pydantic import TypeAdapter
 
 from ksef2._core import routes
 from ksef2._domain.types import ListTokensQueryParams
 from ksef2._endpoints.base import BaseEndpoints
 from ksef2._infra.schema.api import spec
+from ksef2._infra.schema.api.supp.tokens import ListTokensRev2QueryParams
 
-
-class _ListTokensRev2QueryParams(TypedDict):
-    """Wire-format filters for the revision 2 token listing."""
-
-    status: NotRequired[list[spec.TokenStatusFilterRev2] | None]
-    description: NotRequired[str | None]
-    authorIdentifier: NotRequired[str | None]
-    authorIdentifierType: NotRequired[spec.TokenAuthorIdentifierTypeFilterRev2 | None]
-    validFrom: NotRequired[AwareDatetime | None]
-    validTo: NotRequired[AwareDatetime | None]
-    pageSize: NotRequired[int | None]
-
-
-_LIST_TOKENS_REV2_PARAMS = TypeAdapter(_ListTokensRev2QueryParams)
+_LIST_TOKENS_REV2_PARAMS = TypeAdapter(ListTokensRev2QueryParams)
 _LIST_TOKENS_PARAMS = TypeAdapter(ListTokensQueryParams)
 
 
@@ -102,7 +90,7 @@ class TokenEndpoints(BaseEndpoints):
     def list_tokens_rev2(
         self,
         continuation_token: str | None = None,
-        **params: Unpack[_ListTokensRev2QueryParams],
+        **params: Unpack[ListTokensRev2QueryParams],
     ) -> spec.QueryTokensResponseRev2:
         """Fetch one page of tokens.
 

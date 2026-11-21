@@ -227,7 +227,11 @@ from ksef2._domain.models.session import (
     StatusInfo,
     deprecation_message,
 )
-from ksef2._domain.models.tokens import GenerateTokenResponse, TokenStatusResponse
+from ksef2._domain.models.tokens import (
+    GenerateTokenResponse,
+    TokenFailure,
+    TokenStatusResponse,
+)
 from ksef2._domain.models.auth import (
     ContextIdentifierTypeEnum,
 )
@@ -459,6 +463,7 @@ __all__ = [
     "TokenPermission",
     "TokenStatus",
     "TokenStatusResponse",
+    "TokenFailure",
     "AuthenticationMethodCategory",
     "AuthenticationMethod",
     "AuthenticationResumeState",

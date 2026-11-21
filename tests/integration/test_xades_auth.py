@@ -4,7 +4,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat
 
 from ksef2._clients.authenticated import AuthenticatedClient
-from ksef2._core.exceptions import KSeFApiError
+from ksef2._core.tools import generate_nip
 from ksef2._domain.models.tokens import GenerateTokenResponse
 from ksef2.xades import XAdESCredentials, generate_test_certificate
 
@@ -61,31 +61,29 @@ def test_xades_auth_with_self_signed_cert(xades_authenticated_context):
 
 
 @pytest.mark.integration
-def test_generate_ksef_token(xades_authenticated_context):
-    """Generate a new KSeF token after XAdES authentication.
-
-    This creates a KSeF token that can be used for future authenticate_token() calls
-    instead of XAdES authentication.
-
-    Note: This may fail if the authenticated entity doesn'request have CredentialsManage
-    permission. The testdata API requires granting permissions to a person (PESEL),
-    not a subject (NIP).
-    """
-    client, auth = xades_authenticated_context
-
-    try:
-        ksef_token_response = auth.tokens.generate(
-            permissions=[
-                "invoice_write",
-                "invoice_read",
-            ],
+def test_generate_ksef_token(real_client):
+    """Generate a KSeF token after XAdES login in a fresh TEST context."""
+    nip = generate_nip()
+    with real_client.testdata.temporal() as temp:
+        temp.create_subject(
+            nip=nip,
+            subject_type="enforcement_authority",
+            description="XAdES token generation test",
+        )
+        cert, private_key = generate_test_certificate(nip)
+        auth = real_client.authentication.with_xades(
+            nip=nip,
+            cert=cert,
+            private_key=private_key,
+        )
+        generated = auth.tokens.generate(
+            permissions=["invoice_write", "invoice_read"],
             description="Integration test KSeF token",
         )
-
-        assert isinstance(ksef_token_response.response, GenerateTokenResponse)
-        assert ksef_token_response.token is not None
-        assert ksef_token_response.reference_number is not None
-    except KSeFApiError as e:
-        if "401" in str(e) or "credentials" in str(e).lower():
-            pytest.skip("Token generation requires CredentialsManage permission")
-        raise
+        try:
+            _ = generated.wait()
+            assert isinstance(generated.response, GenerateTokenResponse)
+            assert generated.token
+            assert generated.reference_number
+        finally:
+            auth.tokens.revoke(reference_number=generated.reference_number)

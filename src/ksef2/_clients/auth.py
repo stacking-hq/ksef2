@@ -654,7 +654,7 @@ class AuthClient:
 
         def _poll() -> AuthOperationStatus:
             status = from_spec(
-                self._auth_ep.auth_status(
+                self._auth_ep.auth_status_rev2(
                     bearer_token=auth_token_local,
                     reference_number=reference_number_local,
                 )

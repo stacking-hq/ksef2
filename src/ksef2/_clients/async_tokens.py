@@ -1,7 +1,7 @@
 """Async KSeF token branch client."""
 
-import builtins
 from collections.abc import AsyncGenerator, AsyncIterator, Coroutine, Sequence
+from datetime import datetime
 from typing import cast, final, override
 
 from typing_extensions import deprecated
@@ -19,7 +19,7 @@ from ksef2._core.async_protocols import AsyncMiddleware
 from ksef2._domain.models.pagination import Page, TokenListParams
 from ksef2._domain.models.tokens import (
     GeneratedTokenResumeState,
-    GenerateTokenRequest,
+    GenerateTokenRequest as GenerateTokenRequest,
     GenerateTokenResponse,
     QueryTokensResponse,
     TokenInfo,
@@ -29,6 +29,7 @@ from ksef2._domain.models.tokens import (
 )
 from ksef2._endpoints.async_tokens import AsyncTokenEndpoints
 from ksef2._infra.mappers.tokens import from_spec, to_spec
+from ksef2._infra.schema.api import spec
 
 async_poll_until = _until
 
@@ -153,7 +154,14 @@ class AsyncGeneratedToken(
 
     @override
     def _check_status(self, status: TokenStatusResponse) -> None:
-        if status.status in ("failed", "revoked"):
+        if status.status in (
+            "failed",
+            "revoking",
+            "revoked",
+            "approval_expired",
+            "expired",
+            "other",
+        ):
             raise exceptions.KSeFTokenActivationFailedError(
                 self.reference_number, status.status
             )
@@ -176,6 +184,9 @@ class AsyncGeneratedToken(
         poll_interval: float = 1.0,
     ) -> TokenStatusResponse:
         """Poll until the token becomes active or reaches a terminal state.
+
+        Tokens awaiting approval or the start of their validity period are still
+        pending. Approve a token from an eligible session before waiting on it.
 
         Args:
             timeout: Maximum number of seconds to wait for activation.
@@ -260,12 +271,16 @@ class AsyncTokensClient:
         *,
         permissions: Sequence[TokenPermission | TokenPermissionEnum | str],
         description: str,
+        valid_from: datetime | None = None,
+        valid_to: datetime | None = None,
     ) -> AsyncGeneratedToken:
         """Create a token and return a handle exposing its one-time credential.
 
         Args:
             permissions: Permissions to include in the generated token.
             description: Human-readable label shown in KSeF token listings.
+            valid_from: Optional timezone-aware start of the validity period.
+            valid_to: Optional timezone-aware end of the validity period.
 
         Returns:
             A handle whose ``token`` is the one-time secret KSeF returns only once;
@@ -291,14 +306,16 @@ class AsyncTokensClient:
             for value in permissions
         ]
         with validation_errors():
-            request = GenerateTokenRequest(
-                permissions=cast(
-                    builtins.list[TokenPermission], normalized_permissions
-                ),
+            body = spec.GenerateTokenRequestRev2(
+                permissions=[
+                    to_spec(cast(TokenPermission, permission))
+                    for permission in normalized_permissions
+                ],
                 description=description,
+                validFrom=valid_from,
+                validTo=valid_to,
             )
-            body = to_spec(request)
-        spec_resp = await self._endpoints.generate_token(body=body)
+        spec_resp = await self._endpoints.generate_token_rev2(body=body)
         response = from_spec(spec_resp)
         return AsyncGeneratedToken(self, response.reference_number, response)
 
@@ -338,7 +355,7 @@ class AsyncTokensClient:
         params: TokenListParams | None = None,
     ) -> QueryTokensResponse:
         parameters = params or TokenListParams()
-        spec_resp = await self._endpoints.list_tokens(
+        spec_resp = await self._endpoints.list_tokens_rev2(
             continuation_token=continuation_token, **parameters.to_query_params()
         )
         return from_spec(spec_resp)
@@ -409,7 +426,7 @@ class AsyncTokensClient:
         Returns:
             The token's current lifecycle status.
         """
-        spec_resp = await self._endpoints.token_status(
+        spec_resp = await self._endpoints.token_status_rev2(
             reference_number=reference_number
         )
         return from_spec(spec_resp)
@@ -437,7 +454,10 @@ class AsyncTokensClient:
         return self.get_status(reference_number=reference_number)
 
     async def approve(self, *, reference_number: str) -> None:
-        """Approve a revision 2 token using an eligible authenticated session.
+        """Approve a token awaiting approval.
+
+        Use an eligible session authenticated with an accepted XAdES signature
+        or the National Node.
 
         Args:
             reference_number: Reference number of the token.

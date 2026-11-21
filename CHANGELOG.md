@@ -1,5 +1,11 @@
 ## Unreleased
 
+- Use revision 2 for high-level authentication status, authentication session
+  listing, and token generation, listing, and status. The raw revision 1
+  methods remain available.
+- Accept token validity dates and expose approval, activation, expiry, and
+  failure information. Token handles wait until KSeF reports the token active.
+
 - Support the KSeF API 2.10 authentication and token revision 2 endpoints in
   the sync and async raw clients. Use `generate_token_rev2()` to set the
   validity window and `token_status_rev2()` to check whether approval is needed.

@@ -50,7 +50,7 @@ class SessionManagementClient:
         continuation_token: str | None = None,
     ) -> AuthenticationSessionsResponse:
         return from_spec(
-            self._auth_ep.list_sessions(
+            self._auth_ep.list_sessions_rev2(
                 continuation_token=continuation_token,
                 pageSize=page_size,
             )

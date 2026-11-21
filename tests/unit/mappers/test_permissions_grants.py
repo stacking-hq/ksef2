@@ -24,6 +24,7 @@ from ksef2._infra.mappers.permissions.responses import grant_from_spec
 from ksef2._infra.schema.api import spec
 from tests.unit.factories.permissions import (
     DomainGrantEuEntityAdministrationRequestFactory,
+    DomainGrantEuEntityPermissionsRequestFactory,
     DomainGrantIndirectPermissionsRequestFactory,
     DomainGrantPersonPermissionsRequestFactory,
 )
@@ -45,6 +46,17 @@ class TestPermissionsGrantRequestMapper:
             )
             == spec.IndirectPermissionType.CollectiveIdentifierManage
         )
+
+    def test_grants_collective_identifier_management_to_eu_entity(self) -> None:
+        request = DomainGrantEuEntityPermissionsRequestFactory.build(
+            permissions=["collective_identifier_manage"]
+        )
+
+        result = grant_to_spec(request)
+
+        assert result.permissions == [
+            spec.EuEntityPermissionType.CollectiveIdentifierManage
+        ]
 
     def test_maps_grant_person_request_payload(self) -> None:
         request = DomainGrantPersonPermissionsRequestFactory.build(
