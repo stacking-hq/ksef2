@@ -104,5 +104,5 @@ KSeF session when retries matter.
 
 ## Reference
 
-- [Sending invoices](sending-invoices.md)
+- [Sending invoices](../how-to-guides/send-invoices.md)
 - [FA(3) API reference](../reference/api/fa3.md)

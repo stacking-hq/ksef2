@@ -70,4 +70,4 @@ with auth.online_session(form_code=FormSchema.FA3) as session:
 ## Opis API
 
 - [Opis API FA(3)](../reference/api/fa3.md)
-- [Faktury](invoices.md)
+- [Faktury](../how-to-guides/build-fa3-invoices.md)
