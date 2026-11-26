@@ -5,7 +5,7 @@ description: Stability boundary and the documented public surface of the first s
 
 ksef2 1.0.0 is the first release that treats documented application-facing
 imports as a compatibility contract for the 1.x line.
-The SDK currently targets KSeF OpenAPI version `2.10.0`.
+The SDK currently targets KSeF OpenAPI version `2.10.1`.
 
 > **Unofficial SDK.** ksef2 is community-maintained. It is not published,
 > endorsed, or supported by Poland's Ministry of Finance. The official KSeF

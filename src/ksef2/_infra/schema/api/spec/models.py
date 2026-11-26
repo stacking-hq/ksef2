@@ -476,7 +476,9 @@ class CollectiveIdentifierEffectiveContextLimits(BaseModel):
 
 
 class CollectiveIdentifierInvoicesQueryRequest(BaseModel):
-    collectiveIdentifierNumbers: list[str]
+    collectiveIdentifierNumbers: Annotated[
+        list[str], Field(max_length=10, min_length=1)
+    ]
     """
     Numery identyfikatorów zbiorczych. Maksymalna liczba to 10.
     """
@@ -2383,7 +2385,7 @@ class TokenStatusFilterRev2(StrEnum):
     | Failed | Nie udało się aktywować tokena. Należy wygenerować nowy token, obecny nie może być wykorzystywany do uwierzytelniania. |
     | NotYetActive | Token został wygenerowany poprawnie natomiast, termin jego ważności jeszcze się nie rozpoczął. |
     | AwaitingApproval | Token został wygenerowany za pomocą tokena KSeF i oczekuje na zatwierdzenie. Do czasu zatwierdzenia nie może być używany do uwierzytelniania. |
-    | ApprovalExpired | Upłynął czas 24 godzin oczekiwania na zatwierdzenie. Token nie może już zostać zatwierdzony ani być wykorzystywany do uwierzytelniania. Należy ponownie zainicjować generowanie nowego tokena. |
+    | ApprovalExpired | Upłynął czas na zatwierdzenie (24 godziny od nadania statusu `AwaitingApproval`). Token nie może już zostać zatwierdzony ani być wykorzystywany do uwierzytelniania. Należy ponownie zainicjować generowanie nowego tokena. |
     | Expired | Termin ważności tokena upłynął. |
 
     """
@@ -2457,7 +2459,7 @@ class TokenStatusRev2Code(StrEnum):
     | Failed | Aktywacja tokenu zakończona niepowodzeniem | Nie udało się aktywować tokenu. Należy wygenerować nowy token.            Obecny token nie może być wykorzystywany do uwierzytelniania. |
     | NotYetActive | Token jeszcze nieaktywny | Token został wygenerowany poprawnie, ale okres jego ważności            jeszcze się nie rozpoczął. |
     | AwaitingApproval | Token oczekuje na zatwierdzenie | Token został wygenerowany za pomocą tokena KSeF i oczekuje na zatwierdzenie. Do czasu zatwierdzenia nie może być używany do uwierzytelniania. |
-    | ApprovalExpired | Upłynął termin zatwierdzenia tokena | Upłynął czas 24 godzin oczekiwania na zatwierdzenie. Token nie może już zostać zatwierdzony ani być wykorzystywany do uwierzytelniania. Należy ponownie zainicjować generowanie nowego tokena. |
+    | ApprovalExpired | Upłynął termin zatwierdzenia tokena | Upłynął czas na zatwierdzenie (24 godziny od nadania statusu `AwaitingApproval`). Token nie może już zostać zatwierdzony ani być wykorzystywany do uwierzytelniania. Należy ponownie zainicjować generowanie nowego tokena. |
     | Expired | Token wygasł | Termin ważności tokenu upłynął. |
     | FutureValue |  | Status tokenu nieznany w momencie wydania bieżącej wersji modelu.            Rzeczywisty kod statusu jest dostępny w polu `rawCode`,            a jego nazwa w polu `displayName`. |
 
@@ -4547,7 +4549,7 @@ class TokenStatusRev2(BaseModel):
     | Failed | Aktywacja tokenu zakończona niepowodzeniem | Nie udało się aktywować tokenu. Należy wygenerować nowy token.            Obecny token nie może być wykorzystywany do uwierzytelniania. |
     | NotYetActive | Token jeszcze nieaktywny | Token został wygenerowany poprawnie, ale okres jego ważności            jeszcze się nie rozpoczął. |
     | AwaitingApproval | Token oczekuje na zatwierdzenie | Token został wygenerowany za pomocą tokena KSeF i oczekuje na zatwierdzenie. Do czasu zatwierdzenia nie może być używany do uwierzytelniania. |
-    | ApprovalExpired | Upłynął termin zatwierdzenia tokena | Upłynął czas 24 godzin oczekiwania na zatwierdzenie. Token nie może już zostać zatwierdzony ani być wykorzystywany do uwierzytelniania. Należy ponownie zainicjować generowanie nowego tokena. |
+    | ApprovalExpired | Upłynął termin zatwierdzenia tokena | Upłynął czas na zatwierdzenie (24 godziny od nadania statusu `AwaitingApproval`). Token nie może już zostać zatwierdzony ani być wykorzystywany do uwierzytelniania. Należy ponownie zainicjować generowanie nowego tokena. |
     | Expired | Token wygasł | Termin ważności tokenu upłynął. |
     | FutureValue |  | Status tokenu nieznany w momencie wydania bieżącej wersji modelu.            Rzeczywisty kod statusu jest dostępny w polu `rawCode`,            a jego nazwa w polu `displayName`. |
 

@@ -2,7 +2,7 @@
   "openapi": "3.0.4",
   "info": {
     "title": "KSeF API TE",
-    "description": "**Wersja API:** 2.10.0 (build 2.10.0-te-20261117.2+ace86902e3d938fefd6ddc577c64d175b1d63d20)<br>\n**Klucze publiczne** Ministerstwa Finansów (dla danego środowiska): [Pobierz klucze](#tag/Certyfikaty-klucza-publicznego)<br>\n**Historia zmian:** [Changelog](https://github.com/CIRFMF/ksef-api/blob/main/api-changelog.md)<br>\n**Rozszerzona dokumentacja API:** [ksef-docs](https://github.com/CIRFMF/ksef-api/tree/main)\n\n**Adres serwera API:** `https://api-test.ksef.mf.gov.pl/v2`\n",
+    "description": "**Wersja API:** 2.10.1 (build 2.10.1-te-20261126.1+fe9fde0e4dfe94c26e02fae135b204fb9c95bb37)<br>\n**Klucze publiczne** Ministerstwa Finansów (dla danego środowiska): [Pobierz klucze](#tag/Certyfikaty-klucza-publicznego)<br>\n**Limity żądań API:** [Limity i ograniczenia](#tag/Limity-i-ograniczenia)<br>\n**Historia zmian:** [Changelog](https://github.com/CIRFMF/ksef-api/blob/main/api-changelog.md)<br>\n**Rozszerzona dokumentacja API:** [ksef-docs](https://github.com/CIRFMF/ksef-api/tree/main)\n\n**Adres serwera API:** `https://api-test.ksef.mf.gov.pl/v2`\n",
     "version": "v2"
   },
   "servers": [
@@ -124,7 +124,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -299,7 +299,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -395,7 +395,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -496,7 +496,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -593,7 +593,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -698,7 +698,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -824,7 +824,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -957,7 +957,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -1087,7 +1087,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -1205,7 +1205,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -1365,7 +1365,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -1491,7 +1491,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -1613,7 +1613,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | -\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | - |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -1700,7 +1700,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | -\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | - |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -1782,7 +1782,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | -\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | - |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -1872,7 +1872,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | -\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | - |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -1954,7 +1954,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | -\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | - |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -2051,7 +2051,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | -\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | - |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -2141,7 +2141,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | -\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | - |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -2223,7 +2223,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | -\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | - |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -2305,7 +2305,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | -\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | - |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -2381,7 +2381,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -2459,7 +2459,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -2570,7 +2570,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 20 | 120 | 240 | collectiveIdentifier\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 20 | 120 | 240 | collectiveIdentifier |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -2728,7 +2728,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 20 | 120 | 240 | collectiveIdentifier\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 20 | 120 | 240 | collectiveIdentifier |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -2900,7 +2900,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 20 | 120 | 240 | collectiveIdentifier\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 20 | 120 | 240 | collectiveIdentifier |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -3047,7 +3047,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 20 | 120 | 240 | collectiveIdentifier\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 20 | 120 | 240 | collectiveIdentifier |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -3177,7 +3177,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -3282,7 +3282,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -3466,7 +3466,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -3574,7 +3574,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -3662,7 +3662,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -3765,7 +3765,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -3853,7 +3853,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -3959,7 +3959,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -4047,7 +4047,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -4137,7 +4137,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -4276,7 +4276,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -4418,7 +4418,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -4551,7 +4551,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -4695,7 +4695,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -4836,7 +4836,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -4987,7 +4987,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -5131,7 +5131,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -5245,7 +5245,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -5361,7 +5361,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -5496,7 +5496,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -5593,7 +5593,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -5684,6 +5684,18 @@
                 "schema": {
                   "$ref": "#/components/schemas/Sha256HashBase64"
                 }
+              },
+              "x-ms-meta-acquisition-date": {
+                "description": "Data nadania numeru KSeF",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-ms-meta-permanent-storage-date": {
+                "description": "Data trwałego zapisu faktury w repozytorium systemu KSeF",
+                "schema": {
+                  "type": "string"
+                }
               }
             },
             "content": {
@@ -5711,7 +5723,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 8 | 16 | 64 | invoiceDownload\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 8 | 16 | 64 | invoiceDownload |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -5975,7 +5987,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 8 | 16 | 20 | invoiceMetadata\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 8 | 16 | 20 | invoiceMetadata |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -6126,7 +6138,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 8 | 16 | 20 | invoiceExport\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 8 | 16 | 20 | invoiceExport |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -6213,24 +6225,6 @@
           }
         ],
         "responses": {
-          "410": {
-            "description": "Gone",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GoneProblemDetails"
-                },
-                "example": {
-                  "title": "Gone",
-                  "status": 410,
-                  "instance": "{{uri_path}}",
-                  "detail": "Operacja wygasła i nie jest już dostępna.",
-                  "timestamp": "2025-07-11T12:23:56.0154302+00:00",
-                  "traceId": "673843e023c432286660bc0501a3af44"
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "headers": {
@@ -6276,6 +6270,24 @@
               }
             }
           },
+          "410": {
+            "description": "Gone",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoneProblemDetails"
+                },
+                "example": {
+                  "title": "Gone",
+                  "status": 410,
+                  "instance": "{{uri_path}}",
+                  "detail": "Operacja wygasła i nie jest już dostępna.",
+                  "timestamp": "2025-07-11T12:23:56.0154302+00:00",
+                  "traceId": "673843e023c432286660bc0501a3af44"
+                }
+              }
+            }
+          },
           "400": {
             "description": "| ExceptionCode       | ExceptionDescription                                | Details                                                       | \n|---------------------|-----------------------------------------------------|---------------------------------------------------------------|\n| 21175               | Wynik zapytania o podanym identyfikatorze nie istnieje.     |                                  |\n| 21405 | Błąd walidacji danych wejściowych. | {treść błędu z walidatora} |",
             "content": {
@@ -6293,7 +6305,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 60 | 600 | invoiceExportStatus\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 60 | 600 | invoiceExportStatus |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -6542,7 +6554,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 5 | 10 | 60 | sessionList\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 5 | 10 | 60 | sessionList |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -6681,7 +6693,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 120 | 1200 | sessionMisc\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 120 | 1200 | sessionMisc |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -6853,7 +6865,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 20 | 200 | sessionInvoiceList\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 20 | 200 | sessionInvoiceList |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -6992,7 +7004,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 30 | 120 | 1200 | invoiceStatus\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 30 | 120 | 1200 | invoiceStatus |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -7149,7 +7161,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 20 | 200 | sessionInvoiceList\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 20 | 200 | sessionInvoiceList |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -7278,7 +7290,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 120 | 1200 | sessionMisc\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 120 | 1200 | sessionMisc |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -7407,7 +7419,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 120 | 1200 | sessionMisc\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 120 | 1200 | sessionMisc |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -7536,7 +7548,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 120 | 1200 | sessionMisc\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 120 | 1200 | sessionMisc |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -7603,7 +7615,7 @@
           "Tokeny KSeF"
         ],
         "summary": "Wygenerowanie nowego tokena",
-        "description": "**Wycofanie:** operacja jest przestarzała i zostanie wycofana 30.09.2027. Zastępuje ją nowa rewizja: [`POST /tokens/rev2`](/docs/v2/index.html#tag/Tokeny-KSeF/paths/~1tokens~1rev2/post).\n\nZwraca token, który może być użyty do uwierzytelniania się w KSeF.\n\nToken może być generowany tylko w kontekście NIP lub identyfikatora wewnętrznego. Jest zwracany tylko raz. Zaczyna być aktywny w momencie gdy jego status zmieni się na `Active`.\n            \nToken wygenerowany od 07.11.2026 jest ważny przez 90 dni od momentu wygenerowania, o ile nie zostanie wcześniej unieważniony.\n\n**Headers:**\n\n`X-Error-Format: problem-details` - ustawienie tego nagłówka powoduje zwracanie błędów w formacie **Problem Details** (`application/problem+json`).",
+        "description": "**Wycofanie:** operacja jest przestarzała i zostanie wycofana 30.09.2027. Zastępuje ją nowa rewizja: [`POST /tokens/rev2`](/docs/v2/index.html#tag/Tokeny-KSeF/paths/~1tokens~1rev2/post).\n\nZwraca token, który może być użyty do uwierzytelniania się w KSeF.\n\nToken może być generowany tylko w kontekście NIP lub identyfikatora wewnętrznego. Jest zwracany tylko raz. Zaczyna być aktywny w momencie gdy jego status zmieni się na `Active`.\n            \nToken wygenerowany od 08.11.2026 jest ważny przez 90 dni od momentu wygenerowania, o ile nie zostanie wcześniej unieważniony.\n\n**Headers:**\n\n`X-Error-Format: problem-details` - ustawienie tego nagłówka powoduje zwracanie błędów w formacie **Problem Details** (`application/problem+json`).",
         "requestBody": {
           "content": {
             "application/json": {
@@ -7693,7 +7705,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -7926,7 +7938,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -8018,7 +8030,7 @@
           "Tokeny KSeF"
         ],
         "summary": "Wygenerowanie nowego tokena o określonym okresie ważności (rev2)",
-        "description": "Zwraca token, który może być użyty do uwierzytelniania w KSeF. Token jest zwracany tylko raz i może być generowany wyłącznie w kontekście NIP lub identyfikatora wewnętrznego. Do uwierzytelniania można go użyć dopiero po uzyskaniu statusu `Active`.\n            \nOkres ważności tokena określają właściwości `validFrom` i `validTo`:\n* `validFrom` może przypadać najpóźniej 60 dni po zainicjowaniu generowania tokena. Jeśli nie zostanie podana, przyjmuje wartość odpowiadającą momentowi inicjacji.\n* `validTo` może przypadać najpóźniej 365 dni po `validFrom`. Jeśli nie zostanie podana, okres ważności wynosi 90 dni od `validFrom`.\n            \nJeśli okres ważności jeszcze się nie rozpoczął, token, który został zatwierdzony lub nie wymaga zatwierdzenia, ma status `NotYetActive`. Każdy token ma niezależny okres ważności. Wygaśnięcie lub unieważnienie tokena użytego do uwierzytelnienia sesji nie wpływa na ważność nowego tokena.\n            \nPierwszy token można wygenerować wyłącznie po uwierzytelnieniu za pomocą Węzła Krajowego lub podpisu w formacie XAdES akceptowanego w procesie uwierzytelniania w KSeF. Kolejne tokeny można generować również w sesji uwierzytelnionej tokenem KSeF.\n            \nToken wygenerowany po uwierzytelnieniu za pomocą Węzła Krajowego lub podpisu XAdES nie wymaga zatwierdzenia. Token wygenerowany w sesji uwierzytelnionej tokenem KSeF otrzymuje status `AwaitingApproval` i przed użyciem musi zostać zatwierdzony osobnym endpointem, po uwierzytelnieniu za pomocą Węzła Krajowego lub podpisu XAdES. Na zatwierdzenie przewidziano 24 h od nadania statusu `AwaitingApproval`. Po tym czasie token przechodzi w status `ApprovalExpired` i nie może już zostać zatwierdzony.\n            \nMaksymalna liczba tokenów w kontekście to 100. Do limitu wliczają się tokeny w statusach `Active`, `NotYetActive`, `Pending` i `AwaitingApproval`, niezależnie od autora i rewizji endpointu, za pomocą której zostały wygenerowane. Próba wygenerowania tokena ponad limit kończy się błędem.\n\n**Headers:**\n\n`X-Error-Format: problem-details` - ustawienie tego nagłówka powoduje zwracanie błędów w formacie **Problem Details** (`application/problem+json`).",
+        "description": "Zwraca token, który może być użyty do uwierzytelniania w KSeF. Token jest zwracany tylko raz i może być generowany wyłącznie w kontekście NIP lub identyfikatora wewnętrznego. Do uwierzytelniania można go użyć dopiero po uzyskaniu statusu `Active`.\n            \nOkres ważności tokena określają właściwości `validFrom` i `validTo`:\n* `validFrom` może przypadać najpóźniej 60 dni po zainicjowaniu generowania tokena. Jeśli nie zostanie podana, przyjmuje wartość odpowiadającą momentowi inicjacji.\n* `validTo` może przypadać najpóźniej 365 dni po `validFrom`. Jeśli nie zostanie podana, okres ważności wynosi 90 dni od `validFrom`.\n            \nJeśli okres ważności jeszcze się nie rozpoczął, token, który został zatwierdzony lub nie wymaga zatwierdzenia, ma status `NotYetActive`. Każdy token ma niezależny okres ważności. Wygaśnięcie lub unieważnienie tokena użytego do uwierzytelnienia sesji nie wpływa na ważność nowego tokena.\n            \nPierwszy token można wygenerować wyłącznie po uwierzytelnieniu za pomocą Węzła Krajowego lub podpisu w formacie XAdES akceptowanego w procesie uwierzytelniania w KSeF. Kolejne tokeny można generować również w sesji uwierzytelnionej tokenem KSeF.\n            \nToken wygenerowany po uwierzytelnieniu za pomocą Węzła Krajowego lub podpisu XAdES nie wymaga zatwierdzenia. Token wygenerowany w sesji uwierzytelnionej tokenem KSeF otrzymuje status `AwaitingApproval` i przed użyciem musi zostać zatwierdzony osobnym endpointem, po uwierzytelnieniu za pomocą Węzła Krajowego lub podpisu XAdES. Na zatwierdzenie przewidziano 24 godziny od nadania statusu `AwaitingApproval`. Po tym czasie token przechodzi w status `ApprovalExpired` i nie może już zostać zatwierdzony.\n            \nMaksymalna liczba tokenów w kontekście to 100. Do limitu wliczają się tokeny w statusach `Active`, `NotYetActive`, `Pending` i `AwaitingApproval`, niezależnie od autora i rewizji endpointu, za pomocą której zostały wygenerowane. Próba wygenerowania tokena ponad limit kończy się błędem.\n\n**Headers:**\n\n`X-Error-Format: problem-details` - ustawienie tego nagłówka powoduje zwracanie błędów w formacie **Problem Details** (`application/problem+json`).",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8084,7 +8096,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -8148,7 +8160,7 @@
           {
             "name": "status",
             "in": "query",
-            "description": "Status tokenów do zwrócenia. W przypadku braku parametru zwracane są wszystkie tokeny. Parametr można przekazać wielokrotnie.\n| Wartość | Opis |\n| --- | --- |\n| Pending | Token został utworzony ale jest jeszcze w trakcie aktywacji i nadawania uprawnień. Nie może być jeszcze wykorzystywany do uwierzytelniania. |\n| Active | Token jest aktywny i może być wykorzystywany do uwierzytelniania. |\n| Revoking | Token jest w trakcie unieważniania. Nie może już być wykorzystywany do uwierzytelniania. |\n| Revoked | Token został unieważniony i nie może być wykorzystywany do uwierzytelniania. |\n| Failed | Nie udało się aktywować tokena. Należy wygenerować nowy token, obecny nie może być wykorzystywany do uwierzytelniania. |\n| NotYetActive | Token został wygenerowany poprawnie natomiast, termin jego ważności jeszcze się nie rozpoczął. |\n| AwaitingApproval | Token został wygenerowany za pomocą tokena KSeF i oczekuje na zatwierdzenie. Do czasu zatwierdzenia nie może być używany do uwierzytelniania. |\n| ApprovalExpired | Upłynął czas 24 godzin oczekiwania na zatwierdzenie. Token nie może już zostać zatwierdzony ani być wykorzystywany do uwierzytelniania. Należy ponownie zainicjować generowanie nowego tokena. |\n| Expired | Termin ważności tokena upłynął. |\n",
+            "description": "Status tokenów do zwrócenia. W przypadku braku parametru zwracane są wszystkie tokeny. Parametr można przekazać wielokrotnie.\n| Wartość | Opis |\n| --- | --- |\n| Pending | Token został utworzony ale jest jeszcze w trakcie aktywacji i nadawania uprawnień. Nie może być jeszcze wykorzystywany do uwierzytelniania. |\n| Active | Token jest aktywny i może być wykorzystywany do uwierzytelniania. |\n| Revoking | Token jest w trakcie unieważniania. Nie może już być wykorzystywany do uwierzytelniania. |\n| Revoked | Token został unieważniony i nie może być wykorzystywany do uwierzytelniania. |\n| Failed | Nie udało się aktywować tokena. Należy wygenerować nowy token, obecny nie może być wykorzystywany do uwierzytelniania. |\n| NotYetActive | Token został wygenerowany poprawnie natomiast, termin jego ważności jeszcze się nie rozpoczął. |\n| AwaitingApproval | Token został wygenerowany za pomocą tokena KSeF i oczekuje na zatwierdzenie. Do czasu zatwierdzenia nie może być używany do uwierzytelniania. |\n| ApprovalExpired | Upłynął czas na zatwierdzenie (24 godziny od nadania statusu `AwaitingApproval`). Token nie może już zostać zatwierdzony ani być wykorzystywany do uwierzytelniania. Należy ponownie zainicjować generowanie nowego tokena. |\n| Expired | Termin ważności tokena upłynął. |\n",
             "schema": {
               "type": "array",
               "items": {
@@ -8305,7 +8317,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -8465,7 +8477,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -8589,7 +8601,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -8737,7 +8749,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -8798,7 +8810,7 @@
           "Tokeny KSeF"
         ],
         "summary": "Zatwierdzenie tokena",
-        "description": "Zatwierdza token w statusie `AwaitingApproval` wskazany numerem referencyjnym. Zatwierdzenia wymaga wyłącznie token, którego generowanie zainicjowano w `rev2` po uwierzytelnieniu tokenem KSeF. Do czasu zatwierdzenia token nie może być użyty do uwierzytelnienia. Tokeny wygenerowane po uwierzytelnieniu inną metodą lub przez dotychczasowe endpointy nie wymagają zatwierdzenia.\n            \nNa zatwierdzenie tokena przewidziano 24 h od momentu nadania statusu `AwaitingApproval`. Po upływie tego czasu token automatycznie przechodzi w status `ApprovalExpired` i nie może już zostać zatwierdzony ani użyty do uwierzytelnienia. Uzyskanie nowego tokena wymaga ponownego zainicjowania generowania.\n            \nToken może zatwierdzić:\n* podmiot posiadający uprawnienia właścicielskie (`Owner`),\n* podmiot z uprawnieniem `CredentialsManage`,\n* właściciel tokena, jeśli posiada wszystkie uprawnienia przewidziane dla tego tokena.\n            \nWłaścicielem i autorem tokena jest podmiot, który zainicjował jego generowanie, wskazany w `authorIdentifier`. Zatwierdzenie tokena przez inny podmiot nie zmienia jego autora. Przy zatwierdzaniu jako właściciel tożsamość zatwierdzającego musi być zgodna z typem i wartością `authorIdentifier`.\n            \nZatwierdzenie tokena innego podmiotu wymaga uprawnień właścicielskich (`Owner`) lub uprawnienia `CredentialsManage` w danym kontekście.\n            \nZatwierdzenie wymaga uwierzytelnienia za pomocą Węzła Krajowego lub podpisu w formacie XAdES akceptowanego w procesie uwierzytelniania w KSeF.\n            \nPo zatwierdzeniu token przechodzi ze statusu `AwaitingApproval` do `Active` albo `NotYetActive`, zależnie od tego, czy rozpoczął się jego okres ważności.\n\n**Headers:**\n\n`X-Error-Format: problem-details` - ustawienie tego nagłówka powoduje zwracanie błędów w formacie **Problem Details** (`application/problem+json`).",
+        "description": "Zatwierdza token w statusie `AwaitingApproval` wskazany numerem referencyjnym. Zatwierdzenia wymaga wyłącznie token, którego generowanie zainicjowano w `rev2` po uwierzytelnieniu tokenem KSeF. Do czasu zatwierdzenia token nie może być użyty do uwierzytelnienia. Tokeny wygenerowane po uwierzytelnieniu inną metodą lub przez dotychczasowe endpointy nie wymagają zatwierdzenia.\n            \nNa zatwierdzenie tokena przewidziano 24 godziny od momentu nadania statusu `AwaitingApproval`. Po upływie tego czasu token automatycznie przechodzi w status `ApprovalExpired` i nie może już zostać zatwierdzony ani użyty do uwierzytelnienia. Uzyskanie nowego tokena wymaga ponownego zainicjowania generowania.\n            \nToken może zatwierdzić:\n* podmiot posiadający uprawnienia właścicielskie (`Owner`),\n* podmiot z uprawnieniem `CredentialsManage`,\n* właściciel tokena, jeśli posiada wszystkie uprawnienia przewidziane dla tego tokena.\n            \nWłaścicielem i autorem tokena jest podmiot, który zainicjował jego generowanie, wskazany w `authorIdentifier`. Zatwierdzenie tokena przez inny podmiot nie zmienia jego autora. Przy zatwierdzaniu jako właściciel tożsamość zatwierdzającego musi być zgodna z typem i wartością `authorIdentifier`.\n            \nZatwierdzenie tokena innego podmiotu wymaga uprawnień właścicielskich (`Owner`) lub uprawnienia `CredentialsManage` w danym kontekście.\n            \nZatwierdzenie wymaga uwierzytelnienia za pomocą Węzła Krajowego lub podpisu w formacie XAdES akceptowanego w procesie uwierzytelniania w KSeF.\n            \nPo zatwierdzeniu token przechodzi ze statusu `AwaitingApproval` do `Active` albo `NotYetActive`, zależnie od tego, czy rozpoczął się jego okres ważności.\n\n**Headers:**\n\n`X-Error-Format: problem-details` - ustawienie tego nagłówka powoduje zwracanie błędów w formacie **Problem Details** (`application/problem+json`).",
         "parameters": [
           {
             "name": "referenceNumber",
@@ -8838,7 +8850,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -8939,7 +8951,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -9071,7 +9083,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | -\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | - |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -9157,7 +9169,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | -\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | - |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -9255,7 +9267,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | -\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | - |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -9359,7 +9371,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | -\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | - |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -9435,7 +9447,7 @@
                 "examples": {
                   "Kod 100 | Uwierzytelnianie w toku": {
                     "value": {
-                      "startDate": "0001-01-01T00:00:00+00:00",
+                      "startDate": "2025-05-14T13:23:39+00:00",
                       "authenticationMethod": "Token",
                       "status": {
                         "code": 100,
@@ -9445,7 +9457,7 @@
                   },
                   "Kod 200 | Uwierzytelnianie zakończone sukcesem": {
                     "value": {
-                      "startDate": "0001-01-01T00:00:00+00:00",
+                      "startDate": "2025-05-14T13:23:39+00:00",
                       "authenticationMethod": "Token",
                       "status": {
                         "code": 200,
@@ -9455,7 +9467,7 @@
                   },
                   "Kod 460 | Uwierzytelnianie zakończone niepowodzeniem | Nieważny certyfikat": {
                     "value": {
-                      "startDate": "0001-01-01T00:00:00+00:00",
+                      "startDate": "2025-05-14T13:23:39+00:00",
                       "authenticationMethod": "Token",
                       "status": {
                         "code": 460,
@@ -9468,7 +9480,7 @@
                   },
                   "Kod 460 | Uwierzytelnianie zakończone niepowodzeniem | Błąd weryfikacji łańcucha certyfikatów": {
                     "value": {
-                      "startDate": "0001-01-01T00:00:00+00:00",
+                      "startDate": "2025-05-14T13:23:39+00:00",
                       "authenticationMethod": "Token",
                       "status": {
                         "code": 460,
@@ -9481,7 +9493,7 @@
                   },
                   "Kod 460 | Uwierzytelnianie zakończone niepowodzeniem | Niezaufany łańcuch certyfikatów": {
                     "value": {
-                      "startDate": "0001-01-01T00:00:00+00:00",
+                      "startDate": "2025-05-14T13:23:39+00:00",
                       "authenticationMethod": "Token",
                       "status": {
                         "code": 460,
@@ -9494,7 +9506,7 @@
                   },
                   "Kod 460 | Uwierzytelnianie zakończone niepowodzeniem | Certyfikat odwołany": {
                     "value": {
-                      "startDate": "0001-01-01T00:00:00+00:00",
+                      "startDate": "2025-05-14T13:23:39+00:00",
                       "authenticationMethod": "Token",
                       "status": {
                         "code": 460,
@@ -9507,7 +9519,7 @@
                   },
                   "Kod 460 | Uwierzytelnianie zakończone niepowodzeniem | Niepoprawny certyfikat": {
                     "value": {
-                      "startDate": "0001-01-01T00:00:00+00:00",
+                      "startDate": "2025-05-14T13:23:39+00:00",
                       "authenticationMethod": "Token",
                       "status": {
                         "code": 460,
@@ -9520,7 +9532,7 @@
                   },
                   "Kod 500 | Nieznany błąd": {
                     "value": {
-                      "startDate": "0001-01-01T00:00:00+00:00",
+                      "startDate": "2025-05-14T13:23:39+00:00",
                       "authenticationMethod": "Token",
                       "status": {
                         "code": 500,
@@ -9595,7 +9607,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | -\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | - |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -9886,7 +9898,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | -\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | - |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -9991,7 +10003,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | -\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | - |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -10092,7 +10104,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | -\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 60 | - | - | - |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -10220,7 +10232,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | onlineSession\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | onlineSession |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -10365,7 +10377,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 180 | invoiceSend\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 180 | invoiceSend |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -10471,7 +10483,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 20 | 60 | 240 | onlineSessionClose\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 20 | 60 | 240 | onlineSessionClose |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -10628,7 +10640,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 20 | 60 | batchSession\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 20 | 60 | batchSession |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -10733,7 +10745,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 20 | 40 | 120 | batchSessionClose\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 20 | 40 | 120 | batchSessionClose |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -10903,7 +10915,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -11089,7 +11101,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -11268,7 +11280,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -11440,7 +11452,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -11586,7 +11598,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -11755,7 +11767,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -11943,7 +11955,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -12118,7 +12130,7 @@
             "x-summary": "Bad Request"
           },
           "429": {
-            "description": "| | req / s | req / min | req / h | grupa\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other\n",
+            "description": "| | req / s | req / min | req / h | grupa |\n| --- | --- | --- | --- | --- |\n| **Limity liczby żądań** | 10 | 30 | 120 | other |\n",
             "headers": {
               "Retry-After": {
                 "schema": {
@@ -13719,6 +13731,8 @@
         "type": "object",
         "properties": {
           "collectiveIdentifierNumbers": {
+            "maxItems": 10,
+            "minItems": 1,
             "type": "array",
             "items": {
               "type": "string"
@@ -21013,7 +21027,7 @@
           "Expired"
         ],
         "type": "string",
-        "description": "| Wartość | Opis |\n| --- | --- |\n| Pending | Token został utworzony ale jest jeszcze w trakcie aktywacji i nadawania uprawnień. Nie może być jeszcze wykorzystywany do uwierzytelniania. |\n| Active | Token jest aktywny i może być wykorzystywany do uwierzytelniania. |\n| Revoking | Token jest w trakcie unieważniania. Nie może już być wykorzystywany do uwierzytelniania. |\n| Revoked | Token został unieważniony i nie może być wykorzystywany do uwierzytelniania. |\n| Failed | Nie udało się aktywować tokena. Należy wygenerować nowy token, obecny nie może być wykorzystywany do uwierzytelniania. |\n| NotYetActive | Token został wygenerowany poprawnie natomiast, termin jego ważności jeszcze się nie rozpoczął. |\n| AwaitingApproval | Token został wygenerowany za pomocą tokena KSeF i oczekuje na zatwierdzenie. Do czasu zatwierdzenia nie może być używany do uwierzytelniania. |\n| ApprovalExpired | Upłynął czas 24 godzin oczekiwania na zatwierdzenie. Token nie może już zostać zatwierdzony ani być wykorzystywany do uwierzytelniania. Należy ponownie zainicjować generowanie nowego tokena. |\n| Expired | Termin ważności tokena upłynął. |\n"
+        "description": "| Wartość | Opis |\n| --- | --- |\n| Pending | Token został utworzony ale jest jeszcze w trakcie aktywacji i nadawania uprawnień. Nie może być jeszcze wykorzystywany do uwierzytelniania. |\n| Active | Token jest aktywny i może być wykorzystywany do uwierzytelniania. |\n| Revoking | Token jest w trakcie unieważniania. Nie może już być wykorzystywany do uwierzytelniania. |\n| Revoked | Token został unieważniony i nie może być wykorzystywany do uwierzytelniania. |\n| Failed | Nie udało się aktywować tokena. Należy wygenerować nowy token, obecny nie może być wykorzystywany do uwierzytelniania. |\n| NotYetActive | Token został wygenerowany poprawnie natomiast, termin jego ważności jeszcze się nie rozpoczął. |\n| AwaitingApproval | Token został wygenerowany za pomocą tokena KSeF i oczekuje na zatwierdzenie. Do czasu zatwierdzenia nie może być używany do uwierzytelniania. |\n| ApprovalExpired | Upłynął czas na zatwierdzenie (24 godziny od nadania statusu `AwaitingApproval`). Token nie może już zostać zatwierdzony ani być wykorzystywany do uwierzytelniania. Należy ponownie zainicjować generowanie nowego tokena. |\n| Expired | Termin ważności tokena upłynął. |\n"
       },
       "TokenStatusResponse": {
         "required": [
@@ -21214,7 +21228,7 @@
                 "$ref": "#/components/schemas/TokenStatusRev2Code"
               }
             ],
-            "description": "Kod wartości słownikowej.\n| Code | DisplayName | Opis |\n| --- | --- | --- |\n| Pending | Token w trakcie aktywacji | Token został utworzony, ale trwa jego aktywacja i nadawanie uprawnień.            Nie może być jeszcze wykorzystywany do uwierzytelniania. |\n| Active | Token aktywny | Token jest aktywny i może być wykorzystywany do uwierzytelniania. |\n| Revoking | Token w trakcie unieważniania | Token jest w trakcie unieważniania.            Nie może już być wykorzystywany do uwierzytelniania. |\n| Revoked | Token unieważniony | Token został unieważniony i nie może być wykorzystywany do uwierzytelniania. |\n| Failed | Aktywacja tokenu zakończona niepowodzeniem | Nie udało się aktywować tokenu. Należy wygenerować nowy token.            Obecny token nie może być wykorzystywany do uwierzytelniania. |\n| NotYetActive | Token jeszcze nieaktywny | Token został wygenerowany poprawnie, ale okres jego ważności            jeszcze się nie rozpoczął. |\n| AwaitingApproval | Token oczekuje na zatwierdzenie | Token został wygenerowany za pomocą tokena KSeF i oczekuje na zatwierdzenie. Do czasu zatwierdzenia nie może być używany do uwierzytelniania. |\n| ApprovalExpired | Upłynął termin zatwierdzenia tokena | Upłynął czas 24 godzin oczekiwania na zatwierdzenie. Token nie może już zostać zatwierdzony ani być wykorzystywany do uwierzytelniania. Należy ponownie zainicjować generowanie nowego tokena. |\n| Expired | Token wygasł | Termin ważności tokenu upłynął. |\n| FutureValue |  | Status tokenu nieznany w momencie wydania bieżącej wersji modelu.            Rzeczywisty kod statusu jest dostępny w polu `rawCode`,            a jego nazwa w polu `displayName`. |\n"
+            "description": "Kod wartości słownikowej.\n| Code | DisplayName | Opis |\n| --- | --- | --- |\n| Pending | Token w trakcie aktywacji | Token został utworzony, ale trwa jego aktywacja i nadawanie uprawnień.            Nie może być jeszcze wykorzystywany do uwierzytelniania. |\n| Active | Token aktywny | Token jest aktywny i może być wykorzystywany do uwierzytelniania. |\n| Revoking | Token w trakcie unieważniania | Token jest w trakcie unieważniania.            Nie może już być wykorzystywany do uwierzytelniania. |\n| Revoked | Token unieważniony | Token został unieważniony i nie może być wykorzystywany do uwierzytelniania. |\n| Failed | Aktywacja tokenu zakończona niepowodzeniem | Nie udało się aktywować tokenu. Należy wygenerować nowy token.            Obecny token nie może być wykorzystywany do uwierzytelniania. |\n| NotYetActive | Token jeszcze nieaktywny | Token został wygenerowany poprawnie, ale okres jego ważności            jeszcze się nie rozpoczął. |\n| AwaitingApproval | Token oczekuje na zatwierdzenie | Token został wygenerowany za pomocą tokena KSeF i oczekuje na zatwierdzenie. Do czasu zatwierdzenia nie może być używany do uwierzytelniania. |\n| ApprovalExpired | Upłynął termin zatwierdzenia tokena | Upłynął czas na zatwierdzenie (24 godziny od nadania statusu `AwaitingApproval`). Token nie może już zostać zatwierdzony ani być wykorzystywany do uwierzytelniania. Należy ponownie zainicjować generowanie nowego tokena. |\n| Expired | Token wygasł | Termin ważności tokenu upłynął. |\n| FutureValue |  | Status tokenu nieznany w momencie wydania bieżącej wersji modelu.            Rzeczywisty kod statusu jest dostępny w polu `rawCode`,            a jego nazwa w polu `displayName`. |\n"
           },
           "rawCode": {
             "minLength": 1,
@@ -21242,7 +21256,7 @@
           "FutureValue"
         ],
         "type": "string",
-        "description": "| Code | DisplayName | Opis |\n| --- | --- | --- |\n| Pending | Token w trakcie aktywacji | Token został utworzony, ale trwa jego aktywacja i nadawanie uprawnień.            Nie może być jeszcze wykorzystywany do uwierzytelniania. |\n| Active | Token aktywny | Token jest aktywny i może być wykorzystywany do uwierzytelniania. |\n| Revoking | Token w trakcie unieważniania | Token jest w trakcie unieważniania.            Nie może już być wykorzystywany do uwierzytelniania. |\n| Revoked | Token unieważniony | Token został unieważniony i nie może być wykorzystywany do uwierzytelniania. |\n| Failed | Aktywacja tokenu zakończona niepowodzeniem | Nie udało się aktywować tokenu. Należy wygenerować nowy token.            Obecny token nie może być wykorzystywany do uwierzytelniania. |\n| NotYetActive | Token jeszcze nieaktywny | Token został wygenerowany poprawnie, ale okres jego ważności            jeszcze się nie rozpoczął. |\n| AwaitingApproval | Token oczekuje na zatwierdzenie | Token został wygenerowany za pomocą tokena KSeF i oczekuje na zatwierdzenie. Do czasu zatwierdzenia nie może być używany do uwierzytelniania. |\n| ApprovalExpired | Upłynął termin zatwierdzenia tokena | Upłynął czas 24 godzin oczekiwania na zatwierdzenie. Token nie może już zostać zatwierdzony ani być wykorzystywany do uwierzytelniania. Należy ponownie zainicjować generowanie nowego tokena. |\n| Expired | Token wygasł | Termin ważności tokenu upłynął. |\n| FutureValue |  | Status tokenu nieznany w momencie wydania bieżącej wersji modelu.            Rzeczywisty kod statusu jest dostępny w polu `rawCode`,            a jego nazwa w polu `displayName`. |\n"
+        "description": "| Code | DisplayName | Opis |\n| --- | --- | --- |\n| Pending | Token w trakcie aktywacji | Token został utworzony, ale trwa jego aktywacja i nadawanie uprawnień.            Nie może być jeszcze wykorzystywany do uwierzytelniania. |\n| Active | Token aktywny | Token jest aktywny i może być wykorzystywany do uwierzytelniania. |\n| Revoking | Token w trakcie unieważniania | Token jest w trakcie unieważniania.            Nie może już być wykorzystywany do uwierzytelniania. |\n| Revoked | Token unieważniony | Token został unieważniony i nie może być wykorzystywany do uwierzytelniania. |\n| Failed | Aktywacja tokenu zakończona niepowodzeniem | Nie udało się aktywować tokenu. Należy wygenerować nowy token.            Obecny token nie może być wykorzystywany do uwierzytelniania. |\n| NotYetActive | Token jeszcze nieaktywny | Token został wygenerowany poprawnie, ale okres jego ważności            jeszcze się nie rozpoczął. |\n| AwaitingApproval | Token oczekuje na zatwierdzenie | Token został wygenerowany za pomocą tokena KSeF i oczekuje na zatwierdzenie. Do czasu zatwierdzenia nie może być używany do uwierzytelniania. |\n| ApprovalExpired | Upłynął termin zatwierdzenia tokena | Upłynął czas na zatwierdzenie (24 godziny od nadania statusu `AwaitingApproval`). Token nie może już zostać zatwierdzony ani być wykorzystywany do uwierzytelniania. Należy ponownie zainicjować generowanie nowego tokena. |\n| Expired | Token wygasł | Termin ważności tokenu upłynął. |\n| FutureValue |  | Status tokenu nieznany w momencie wydania bieżącej wersji modelu.            Rzeczywisty kod statusu jest dostępny w polu `rawCode`,            a jego nazwa w polu `displayName`. |\n"
       },
       "TokensEffectiveContextLimits": {
         "required": [
@@ -21485,7 +21499,8 @@
       "name": "Identyfikatory zbiorcze"
     },
     {
-      "name": "Limity i ograniczenia"
+      "name": "Limity i ograniczenia",
+      "description": "**Limity żądań API**\n\nLiczba żądań do API KSeF jest ograniczona. Limity są liczone w przesuwającym się oknie czasowym, a progi req/s, req/min i req/h obowiązują jednocześnie.\n\nObowiązują dwa rodzaje limitów żądań, a przekroczenie któregokolwiek z nich powoduje zablokowanie żądania:\n\n- **limity operacji** – liczone osobno dla każdej operacji. Wartości domyślne na tym środowisku są podane przy odpowiedzi `429` każdej operacji.\n  - **operacje w kontekście** (uwierzytelnione tokenem dostępowym) – limit jest liczony w ramach **pary kontekst i adres IP**, więc żądania w tym samym kontekście z różnych adresów IP są liczone osobno.\n  - **operacje bez kontekstu** (np. operacje procesu uwierzytelniania) – limit jest liczony **tylko w ramach adresu IP**, ponieważ żądanie nie jest powiązane z żadnym kontekstem.\n\n\nZablokowane żądanie kończy się odpowiedzią `429 Too Many Requests`, a nagłówek `Retry-After` wskazuje, po ilu sekundach można ponowić żądanie.\n\nLimity obowiązujące w bieżącym kontekście, w tym limit globalny, zwraca operacja `GET /rate-limits`.\n\nSzczegółowy opis naliczania limitów, blokad i limitów na poszczególnych środowiskach: [Limity żądań API](https://github.com/CIRFMF/ksef-api/blob/main/limity/limity-api.md#limity-%C5%BC%C4%85da%C5%84-api).\n\n**Limity na kontekst i na uwierzytelniony podmiot**\n\nNiezależnie od limitów żądań obowiązują [limity na kontekst](https://github.com/CIRFMF/ksef-api/blob/main/limity/limity.md#limity-na-kontekst), np. maksymalny rozmiar faktury i liczba faktur w sesji, oraz [limity na uwierzytelniony podmiot](https://github.com/CIRFMF/ksef-api/blob/main/limity/limity.md#limity-na-uwierzytelniony-podmiot), np. liczba wniosków o certyfikat i aktywnych certyfikatów KSeF. Wartości obowiązujące w bieżącym kontekście i dla bieżącego podmiotu zwracają operacje `GET /limits/context` i `GET /limits/subject`.\n"
     },
     {
       "name": "Nadawanie uprawnień"
